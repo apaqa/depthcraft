@@ -17,6 +17,7 @@ func _initialize() -> void:
 	await test_place_building_only_consumes_costed_resource()
 	await test_place_building_fails_without_resources()
 	await test_debug_mode_skips_resource_costs()
+	await test_place_facility_creates_instance()
 	await test_left_click_input_places_building()
 	await test_remove_building_returns_partial_resources()
 	await test_cannot_place_on_occupied_tile()
@@ -86,6 +87,16 @@ func test_debug_mode_skips_resource_costs() -> void:
 	_assert(result, "Debug mode should allow building without enough resources.")
 	_assert(setup.player.inventory.get_item_count("wood") == 1, "Debug mode should not consume resources.")
 	setup.building_system.toggle_debug_mode()
+	await _cleanup_setup(setup)
+
+
+func test_place_facility_creates_instance() -> void:
+	var setup := await _create_overworld_setup()
+	setup.player.inventory.add_item("wood", 5)
+	var target_tile := Vector2i(5, 4)
+	_assert(setup.building_system.place_building(target_tile, "workbench"), "Workbench placement should succeed with enough wood.")
+	_assert(setup.building_system.placed_facilities.has(target_tile), "Placed facilities should track the workbench tile.")
+	_assert(setup.building_system.facility_instances.has(target_tile), "Placed facilities should spawn a scene instance.")
 	await _cleanup_setup(setup)
 
 

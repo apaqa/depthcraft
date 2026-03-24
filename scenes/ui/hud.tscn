@@ -1,9 +1,12 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_0mwgc"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_panel.tscn" id="2_qof7f"]
 [ext_resource type="Script" path="res://scripts/ui/interaction_prompt.gd" id="3_ysik2"]
 [ext_resource type="PackedScene" path="res://scenes/ui/build_hud.tscn" id="4_34v3t"]
+[ext_resource type="PackedScene" path="res://scenes/ui/crafting_menu.tscn" id="5_5ob6s"]
+[ext_resource type="PackedScene" path="res://scenes/ui/storage_ui.tscn" id="6_0wa9s"]
+[ext_resource type="PackedScene" path="res://scenes/ui/repair_ui.tscn" id="7_m65e5"]
 
 [node name="HUDCanvas" type="CanvasLayer" unique_id=1278126834]
 
@@ -61,3 +64,9 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 script = ExtResource("3_ysik2")
 
 [node name="BuildHUD" parent="HUD" instance=ExtResource("4_34v3t")]
+
+[node name="CraftingMenu" parent="HUD" instance=ExtResource("5_5ob6s")]
+
+[node name="StorageUI" parent="HUD" instance=ExtResource("6_0wa9s")]
+
+[node name="RepairUI" parent="HUD" instance=ExtResource("7_m65e5")]

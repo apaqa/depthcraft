@@ -23,10 +23,12 @@ var active_level_id: String = ""
 var active_level = null
 var building_layer: TileMapLayer = null
 var placed_buildings: Dictionary = {}
+var placed_facilities: Dictionary = {}
 var selected_building_index: int = 0
 var preview = null
 var home_core_position: Vector2 = Vector2.ZERO
 var home_core_instance = null
+var facility_instances: Dictionary = {}
 var debug_mode: bool = false
 var _loaded_from_save: bool = false
 
@@ -52,6 +54,7 @@ func set_active_level(level_id: String, level) -> void:
 		var save_data: Dictionary = BUILDING_SAVE.load_buildings()
 		placed_buildings = save_data.get("buildings", {})
 		home_core_position = save_data.get("core_position", Vector2.ZERO)
+		placed_facilities = _normalize_facility_save_data(save_data.get("facilities", []))
 		_loaded_from_save = true
 
 	_apply_saved_state_to_level()
@@ -169,7 +172,7 @@ func get_hovered_tile_pos() -> Vector2i:
 
 func get_preview_modulate(tile_pos: Vector2i) -> Color:
 	if state == BuildState.REMOVING:
-		if placed_buildings.has(tile_pos):
+		if placed_buildings.has(tile_pos) or placed_facilities.has(tile_pos):
 			return Color(1.0, 0.75, 0.35, 0.5)
 		return Color(1.0, 0.3, 0.3, 0.5)
 
@@ -179,11 +182,14 @@ func get_preview_modulate(tile_pos: Vector2i) -> Color:
 
 
 func get_selected_building_texture() -> Texture2D:
-	if building_layer == null:
-		return null
-
 	var building := get_selected_building()
 	if building.is_empty():
+		return null
+
+	if str(building.get("kind", "tile")) == "facility":
+		return building.get("preview_texture", null)
+
+	if building_layer == null:
 		return null
 
 	var source := building_layer.tile_set.get_source(int(building["tile_source_id"]))
@@ -208,28 +214,49 @@ func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 		print("BUILD: cost check failed for ", building_id, " at ", tile_pos)
 		return false
 
-	print("BUILD: placing ", building_id, " at ", tile_pos)
-	print("BUILD: layer=", building_layer, " source_id=", int(building["tile_source_id"]), " atlas=", building["tile_atlas_coords"])
-	building_layer.set_cell(tile_pos, int(building["tile_source_id"]), building["tile_atlas_coords"], 0)
-	print("BUILD: set_cell called on layer")
-	placed_buildings[tile_pos] = building_id
+	if str(building.get("kind", "tile")) == "facility":
+		print("BUILD: placing ", building_id, " at ", tile_pos)
+		if not _place_facility(tile_pos, building):
+			_refund_full_cost(building["cost"])
+			return false
+	else:
+		print("BUILD: placing ", building_id, " at ", tile_pos)
+		print("BUILD: layer=", building_layer, " source_id=", int(building["tile_source_id"]), " atlas=", building["tile_atlas_coords"])
+		building_layer.set_cell(tile_pos, int(building["tile_source_id"]), building["tile_atlas_coords"], 0)
+		print("BUILD: set_cell called on layer")
+		print("Cell set. Verify: source=", building_layer.get_cell_source_id(tile_pos), " atlas=", building_layer.get_cell_atlas_coords(tile_pos))
+		placed_buildings[tile_pos] = building_id
 	_auto_save()
 	build_state_changed.emit()
 	return true
 
 
 func remove_building(tile_pos: Vector2i) -> bool:
-	if not placed_buildings.has(tile_pos):
-		return false
+	if placed_buildings.has(tile_pos):
+		var building_id := str(placed_buildings[tile_pos])
+		var building: Dictionary = BUILDING_DATA.get_building(building_id)
+		building_layer.erase_cell(tile_pos)
+		placed_buildings.erase(tile_pos)
+		_refund_partial_cost(building.get("cost", {}))
+		_auto_save()
+		build_state_changed.emit()
+		return true
 
-	var building_id := str(placed_buildings[tile_pos])
-	var building: Dictionary = BUILDING_DATA.get_building(building_id)
-	building_layer.erase_cell(tile_pos)
-	placed_buildings.erase(tile_pos)
-	_refund_partial_cost(building.get("cost", {}))
-	_auto_save()
-	build_state_changed.emit()
-	return true
+	if placed_facilities.has(tile_pos):
+		var facility_id := str(placed_facilities[tile_pos]["id"])
+		var facility_building: Dictionary = BUILDING_DATA.get_building(facility_id)
+		if facility_instances.has(tile_pos):
+			var instance = facility_instances[tile_pos]
+			if is_instance_valid(instance):
+				instance.queue_free()
+			facility_instances.erase(tile_pos)
+		placed_facilities.erase(tile_pos)
+		_refund_partial_cost(facility_building.get("cost", {}))
+		_auto_save()
+		build_state_changed.emit()
+		return true
+
+	return false
 
 
 func is_valid_placement(tile_pos: Vector2i, building_id: String = "") -> bool:
@@ -240,6 +267,9 @@ func is_valid_placement(tile_pos: Vector2i, building_id: String = "") -> bool:
 		return false
 
 	if placed_buildings.has(tile_pos):
+		return false
+
+	if placed_facilities.has(tile_pos):
 		return false
 
 	if tile_pos == _get_player_tile_pos():
@@ -338,6 +368,11 @@ func _refund_partial_cost(cost: Dictionary) -> void:
 			player.inventory.add_item(resource_id, refund_amount)
 
 
+func _refund_full_cost(cost: Dictionary) -> void:
+	for resource_id in cost.keys():
+		player.inventory.add_item(resource_id, int(cost[resource_id]))
+
+
 func _has_blocking_world_object(tile_pos: Vector2i) -> bool:
 	if active_level == null:
 		return false
@@ -369,7 +404,7 @@ func _tile_to_world_center(tile_pos: Vector2i) -> Vector2:
 
 
 func _auto_save() -> void:
-	BUILDING_SAVE.save_buildings(placed_buildings, home_core_position)
+	BUILDING_SAVE.save_buildings(placed_buildings, home_core_position, _serialize_facilities())
 
 
 func _apply_saved_state_to_level() -> void:
@@ -377,12 +412,25 @@ func _apply_saved_state_to_level() -> void:
 		return
 
 	building_layer.clear()
+	for tile_pos in facility_instances.keys():
+		var existing = facility_instances[tile_pos]
+		if is_instance_valid(existing):
+			existing.queue_free()
+	facility_instances.clear()
+
 	for tile_pos in placed_buildings.keys():
 		var building_id := str(placed_buildings[tile_pos])
 		var building := BUILDING_DATA.get_building(building_id)
 		if building.is_empty():
 			continue
 		building_layer.set_cell(tile_pos, int(building["tile_source_id"]), building["tile_atlas_coords"], 0)
+
+	for tile_pos in placed_facilities.keys():
+		var facility_data: Dictionary = placed_facilities[tile_pos]
+		var facility_building := BUILDING_DATA.get_building(str(facility_data.get("id", "")))
+		if facility_building.is_empty():
+			continue
+		_spawn_facility_instance(tile_pos, facility_building, facility_data.get("data", {}))
 
 	_spawn_home_core()
 
@@ -414,3 +462,80 @@ func _ensure_preview() -> void:
 	if preview_parent == null:
 		preview_parent = get_tree().root
 	preview_parent.call_deferred("add_child", preview)
+
+
+func _place_facility(tile_pos: Vector2i, building: Dictionary) -> bool:
+	placed_facilities[tile_pos] = {
+		"id": str(building["id"]),
+		"data": {},
+	}
+	if _spawn_facility_instance(tile_pos, building, {}):
+		return true
+	placed_facilities.erase(tile_pos)
+	return false
+
+
+func _spawn_facility_instance(tile_pos: Vector2i, building: Dictionary, data: Dictionary) -> bool:
+	if active_level == null:
+		return false
+
+	var scene_path := str(building.get("scene_path", ""))
+	if scene_path == "":
+		return false
+
+	var scene: PackedScene = load(scene_path)
+	if scene == null:
+		return false
+
+	if facility_instances.has(tile_pos):
+		var existing = facility_instances[tile_pos]
+		if is_instance_valid(existing):
+			existing.queue_free()
+
+	var instance = scene.instantiate()
+	instance.global_position = _tile_to_world_center(tile_pos)
+	active_level.add_child(instance)
+	if instance.has_method("load_from_data"):
+		instance.load_from_data(data)
+	if instance.has_signal("chest_changed") and not instance.chest_changed.is_connected(_on_facility_changed):
+		instance.chest_changed.connect(_on_facility_changed.bind(tile_pos))
+	facility_instances[tile_pos] = instance
+	return true
+
+
+func _on_facility_changed(tile_pos: Vector2i) -> void:
+	if not placed_facilities.has(tile_pos):
+		return
+	var instance = facility_instances.get(tile_pos, null)
+	if instance != null and instance.has_method("serialize_data"):
+		var record: Dictionary = placed_facilities[tile_pos]
+		record["data"] = instance.serialize_data()
+		placed_facilities[tile_pos] = record
+	_auto_save()
+
+
+func _serialize_facilities() -> Array:
+	var payload: Array = []
+	for tile_pos in placed_facilities.keys():
+		var record: Dictionary = placed_facilities[tile_pos].duplicate(true)
+		record["position"] = [tile_pos.x, tile_pos.y]
+		var instance = facility_instances.get(tile_pos, null)
+		if instance != null and instance.has_method("serialize_data"):
+			record["data"] = instance.serialize_data()
+		payload.append(record)
+	return payload
+
+
+func _normalize_facility_save_data(saved_facilities: Array) -> Dictionary:
+	var normalized: Dictionary = {}
+	for facility_variant in saved_facilities:
+		if typeof(facility_variant) != TYPE_DICTIONARY:
+			continue
+		var facility: Dictionary = facility_variant
+		var pos_data = facility.get("position", [])
+		if pos_data is Array and pos_data.size() >= 2:
+			normalized[Vector2i(int(pos_data[0]), int(pos_data[1]))] = {
+				"id": str(facility.get("id", "")),
+				"data": facility.get("data", {}),
+			}
+	return normalized

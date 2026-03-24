@@ -64,8 +64,8 @@ func test_overworld_visual_layers() -> void:
 	await process_frame
 
 	var overworld = main.current_level
-	_assert(overworld.get_node("BuildingLayer").z_index == -1, "Building layer should render below the player.")
-	_assert(overworld.get_node("TileMapLayer").modulate == Color(0.48, 0.66, 0.4, 1), "Overworld ground should be tinted for outdoor contrast.")
+	_assert(overworld.get_node("BuildingLayer").z_index == 0, "Building layer should render at ground level so built tiles stay visible.")
+	_assert(overworld.get_node("TileMapLayer").modulate == Color(0.55, 0.75, 0.45, 1), "Overworld ground should be brightened for outdoor contrast.")
 	_assert(main.player.z_index == 1, "Player should render above the building layer.")
 
 	main.queue_free()

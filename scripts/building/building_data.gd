@@ -1,9 +1,14 @@
 extends Node
 
+const WORKBENCH_SCENE_PATH := "res://scenes/building/facilities/workbench.tscn"
+const STORAGE_CHEST_SCENE_PATH := "res://scenes/building/facilities/storage_chest.tscn"
+const REPAIR_BENCH_SCENE_PATH := "res://scenes/building/facilities/repair_bench.tscn"
+
 const BUILDINGS := {
 	"wood_wall": {
 		"id": "wood_wall",
 		"name": "Wood Wall / 木墙",
+		"kind": "tile",
 		"cost": {"wood": 2},
 		"has_collision": true,
 		"tile_source_id": 106,
@@ -12,6 +17,7 @@ const BUILDINGS := {
 	"wood_floor": {
 		"id": "wood_floor",
 		"name": "Wood Floor / 木地板",
+		"kind": "tile",
 		"cost": {"wood": 1},
 		"has_collision": false,
 		"tile_source_id": 3,
@@ -20,6 +26,7 @@ const BUILDINGS := {
 	"stone_wall": {
 		"id": "stone_wall",
 		"name": "Stone Wall / 石墙",
+		"kind": "tile",
 		"cost": {"stone": 3},
 		"has_collision": true,
 		"tile_source_id": 107,
@@ -28,6 +35,7 @@ const BUILDINGS := {
 	"stone_floor": {
 		"id": "stone_floor",
 		"name": "Stone Floor / 石地板",
+		"kind": "tile",
 		"cost": {"stone": 2},
 		"has_collision": false,
 		"tile_source_id": 4,
@@ -36,14 +44,39 @@ const BUILDINGS := {
 	"wood_door": {
 		"id": "wood_door",
 		"name": "Wood Door / 木门",
+		"kind": "tile",
 		"cost": {"wood": 3},
 		"has_collision": false,
 		"tile_source_id": 108,
 		"tile_atlas_coords": Vector2i.ZERO,
 	},
+	"workbench": {
+		"id": "workbench",
+		"name": "Workbench / 工作台",
+		"kind": "facility",
+		"cost": {"wood": 5},
+		"scene_path": WORKBENCH_SCENE_PATH,
+		"preview_texture": preload("res://assets/crate.png"),
+	},
+	"storage_chest": {
+		"id": "storage_chest",
+		"name": "Storage Chest / 储物箱",
+		"kind": "facility",
+		"cost": {"wood": 3},
+		"scene_path": STORAGE_CHEST_SCENE_PATH,
+		"preview_texture": preload("res://assets/chest_closed.png"),
+	},
+	"repair_bench": {
+		"id": "repair_bench",
+		"name": "Repair Bench / 修理台",
+		"kind": "facility",
+		"cost": {"stone": 5, "iron_ore": 3},
+		"scene_path": REPAIR_BENCH_SCENE_PATH,
+		"preview_texture": preload("res://assets/boxes_stacked.png"),
+	},
 }
 
-const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door"]
+const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench"]
 
 
 static func get_building(building_id: String) -> Dictionary:

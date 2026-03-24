@@ -39,14 +39,9 @@ func add_item(item_id: String, quantity: int = 1) -> bool:
 			return false
 
 		var stack_quantity: int = min(remaining, int(item_data["max_stack"]))
-		working_items.append({
-			"id": item_data["id"],
-			"name": item_data["name"],
-			"quantity": stack_quantity,
-			"max_stack": item_data["max_stack"],
-			"type": item_data["type"],
-			"icon": item_data["icon"],
-		})
+		var new_stack: Dictionary = item_data.duplicate(true)
+		new_stack["quantity"] = stack_quantity
+		working_items.append(new_stack)
 		remaining -= stack_quantity
 
 	items = working_items
@@ -102,6 +97,34 @@ func get_free_slots() -> int:
 
 func is_full() -> bool:
 	return get_free_slots() == 0
+
+
+func move_stack_to(target_inventory: Inventory, stack_index: int) -> bool:
+	if target_inventory == null:
+		return false
+	if stack_index < 0 or stack_index >= items.size():
+		return false
+
+	var stack: Dictionary = items[stack_index].duplicate(true)
+	if not target_inventory.add_item(str(stack["id"]), int(stack["quantity"])):
+		return false
+
+	items.remove_at(stack_index)
+	inventory_changed.emit()
+	return true
+
+
+func get_state() -> Array[Dictionary]:
+	return _duplicate_items(items)
+
+
+func load_state(saved_items: Array) -> void:
+	items.clear()
+	for stack_variant in saved_items:
+		if typeof(stack_variant) != TYPE_DICTIONARY:
+			continue
+		items.append((stack_variant as Dictionary).duplicate(true))
+	inventory_changed.emit()
 
 
 func _duplicate_items(source_items: Array[Dictionary]) -> Array[Dictionary]:

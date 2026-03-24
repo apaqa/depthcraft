@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/storage_ui.gd" id="1_om3aa"]
+
+[node name="StorageUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+script = ExtResource("1_om3aa")
+visible = false
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.45)
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 44.0
+offset_top = 28.0
+offset_right = 596.0
+offset_bottom = 332.0
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+text = "Storage"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+theme_override_constants/separation = 12
+
+[node name="PlayerPanel" type="PanelContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel"]
+
+[node name="PlayerLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer"]
+text = "Your Bag"
+
+[node name="PlayerGrid" type="GridContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer"]
+columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="ChestPanel" type="PanelContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ChestPanel"]
+
+[node name="ChestLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ChestPanel/VBoxContainer"]
+text = "Storage"
+
+[node name="ChestGrid" type="GridContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ChestPanel/VBoxContainer"]
+columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6

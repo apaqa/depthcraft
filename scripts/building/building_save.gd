@@ -4,7 +4,7 @@ class_name BuildingSave
 const SAVE_PATH := "user://world_save.json"
 
 
-static func save_buildings(placed_buildings: Dictionary, core_pos: Vector2) -> void:
+static func save_buildings(placed_buildings: Dictionary, core_pos: Vector2, facilities: Array = []) -> void:
 	var building_data: Dictionary = {}
 	for tile_pos: Vector2i in placed_buildings.keys():
 		building_data["%d,%d" % [tile_pos.x, tile_pos.y]] = placed_buildings[tile_pos]
@@ -12,6 +12,7 @@ static func save_buildings(placed_buildings: Dictionary, core_pos: Vector2) -> v
 	var payload: Dictionary = {
 		"core_position": [core_pos.x, core_pos.y],
 		"buildings": building_data,
+		"facilities": facilities,
 	}
 
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -26,6 +27,7 @@ static func load_buildings() -> Dictionary:
 		return {
 			"core_position": Vector2.ZERO,
 			"buildings": {},
+			"facilities": [],
 		}
 
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -33,6 +35,7 @@ static func load_buildings() -> Dictionary:
 		return {
 			"core_position": Vector2.ZERO,
 			"buildings": {},
+			"facilities": [],
 		}
 
 	var raw_text: String = file.get_as_text()
@@ -41,6 +44,7 @@ static func load_buildings() -> Dictionary:
 		return {
 			"core_position": Vector2.ZERO,
 			"buildings": {},
+			"facilities": [],
 		}
 
 	var parsed_dict: Dictionary = parsed
@@ -59,6 +63,7 @@ static func load_buildings() -> Dictionary:
 	return {
 		"core_position": core_position,
 		"buildings": runtime_buildings,
+		"facilities": parsed_dict.get("facilities", []),
 	}
 
 

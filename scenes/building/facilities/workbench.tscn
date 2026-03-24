@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/facilities/workbench.gd" id="1_yrx5k"]
+[ext_resource type="Texture2D" path="res://assets/crate.png" id="2_hm2gj"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1q34x"]
+size = Vector2(14, 14)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_34rte"]
+radius = 18.0
+
+[node name="Workbench" type="StaticBody2D"]
+script = ExtResource("1_yrx5k")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_hm2gj")
+texture_filter = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_1q34x")
+
+[node name="InteractionArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionArea"]
+shape = SubResource("CircleShape2D_34rte")

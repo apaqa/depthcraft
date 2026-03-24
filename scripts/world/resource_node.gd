@@ -84,9 +84,15 @@ func get_interaction_prompt() -> String:
 	return "[E] %s %s" % [_get_action_verb(), resource_name]
 
 
+func interact(_player) -> void:
+	hit()
+
+
 func _get_action_verb() -> String:
 	if resource_id == "wood":
 		return "Chop"
+	if resource_id == "fiber":
+		return "Gather"
 	return "Mine"
 
 

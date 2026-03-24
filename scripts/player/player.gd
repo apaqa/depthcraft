@@ -9,6 +9,9 @@ signal interaction_prompt_changed(prompt_text: String)
 signal interaction_prompt_cleared
 signal portal_requested(target_level_id: String)
 signal build_mode_changed(active: bool)
+signal crafting_requested(facility)
+signal storage_requested(facility)
+signal repair_requested(facility)
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interaction_area: Area2D = $InteractionArea
@@ -17,10 +20,10 @@ signal build_mode_changed(active: bool)
 
 const FLOATING_TEXT_SCENE := preload("res://scenes/ui/floating_text.tscn")
 
-var nearby_resource = null
-var nearby_portal = null
 var last_interacted_resource = null
 var build_mode: bool = false
+var nearby_interactables: Array = []
+var ui_blocked: bool = false
 
 
 func _ready() -> void:
@@ -76,6 +79,12 @@ func get_animated_sprite() -> AnimatedSprite2D:
 
 
 func _physics_process(_delta: float) -> void:
+	if ui_blocked:
+		velocity = Vector2.ZERO
+		update_sprite_state(Vector2.ZERO)
+		move_and_slide()
+		return
+
 	var input_direction := get_input_vector()
 	var move_speed := sprint_speed if Input.is_action_pressed("sprint") else speed
 	apply_input_direction(input_direction, move_speed)
@@ -98,80 +107,59 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
+	if ui_blocked:
+		return
+
 
 func _unhandled_input(event: InputEvent) -> void:
-	if build_mode:
+	if build_mode or ui_blocked:
 		return
 
 	if event.is_action_pressed("interact"):
-		_try_gather()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("enter"):
-		_try_enter_portal()
+		_try_interact()
 		get_viewport().set_input_as_handled()
 
 
-func _try_gather() -> void:
-	if nearby_resource == null or nearby_resource.is_depleted:
+func _try_interact() -> void:
+	var interactable = _get_closest_interactable()
+	if interactable == null or not interactable.has_method("interact"):
 		return
 
-	last_interacted_resource = nearby_resource
-	nearby_resource.hit()
-	if nearby_resource != null and nearby_resource.is_depleted:
-		_clear_nearby_resource()
-
-
-func _try_enter_portal() -> void:
-	if nearby_portal == null:
-		return
-
-	portal_requested.emit(nearby_portal.target_level_id)
+	if interactable.has_method("hit"):
+		last_interacted_resource = interactable
+	interactable.interact(self)
 
 
 func _on_interaction_area_entered(area: Area2D) -> void:
 	var owner = area.get_parent()
+	if owner == null or not owner.has_method("get_interaction_prompt"):
+		return
 
-	if owner != null and owner.has_method("hit") and owner.has_method("get_interaction_prompt"):
-		_set_nearby_resource(owner)
-	elif owner != null and owner.has_method("get_interaction_prompt") and owner.has_method("get") and owner.get("target_level_id") != null:
-		nearby_portal = owner
-		_update_prompt()
+	if not nearby_interactables.has(owner):
+		nearby_interactables.append(owner)
+
+	if owner.has_signal("gathered") and not owner.gathered.is_connected(_on_resource_gathered):
+		owner.gathered.connect(_on_resource_gathered)
+	if owner.has_signal("depleted") and not owner.depleted.is_connected(_on_resource_depleted):
+		owner.depleted.connect(_on_resource_depleted)
+	if owner.has_signal("respawned") and not owner.respawned.is_connected(_on_resource_respawned):
+		owner.respawned.connect(_on_resource_respawned)
+	_update_prompt()
 
 
 func _on_interaction_area_exited(area: Area2D) -> void:
 	var owner = area.get_parent()
-
-	if owner == nearby_resource:
-		_clear_nearby_resource()
-	elif owner == nearby_portal:
-		nearby_portal = null
-		_update_prompt()
-
-
-func _set_nearby_resource(resource) -> void:
-	if nearby_resource == resource:
-		_update_prompt()
-		return
-
-	if nearby_resource != null:
-		_disconnect_resource_signals(nearby_resource)
-
-	nearby_resource = resource
-	nearby_resource.gathered.connect(_on_resource_gathered)
-	nearby_resource.depleted.connect(_on_resource_depleted)
-	nearby_resource.respawned.connect(_on_resource_respawned)
-	_update_prompt()
-
-
-func _clear_nearby_resource() -> void:
-	if nearby_resource != null:
-		_disconnect_resource_signals(nearby_resource)
-
-	nearby_resource = null
+	if owner != null and nearby_interactables.has(owner):
+		nearby_interactables.erase(owner)
+	_disconnect_resource_signals(owner)
 	_update_prompt()
 
 
 func _disconnect_resource_signals(resource) -> void:
+	if resource == null:
+		return
+	if not resource.has_signal("gathered"):
+		return
 	if resource.gathered.is_connected(_on_resource_gathered):
 		resource.gathered.disconnect(_on_resource_gathered)
 	if resource.depleted.is_connected(_on_resource_depleted):
@@ -210,16 +198,16 @@ func _show_floating_text(world_position: Vector2, text_value: String, color: Col
 
 
 func _update_prompt() -> void:
-	if build_mode:
+	if build_mode or ui_blocked:
 		interaction_prompt_cleared.emit()
 		return
 
-	if nearby_resource != null and not nearby_resource.is_depleted:
-		interaction_prompt_changed.emit(nearby_resource.get_interaction_prompt())
-		return
-
-	if nearby_portal != null:
-		interaction_prompt_changed.emit(nearby_portal.get_interaction_prompt())
+	var interactable = _get_closest_interactable()
+	if interactable != null:
+		if interactable.has_method("get") and interactable.get("is_depleted") == true:
+			interaction_prompt_cleared.emit()
+			return
+		interaction_prompt_changed.emit(interactable.get_interaction_prompt())
 		return
 
 	interaction_prompt_cleared.emit()
@@ -229,6 +217,36 @@ func _on_build_state_changed() -> void:
 	build_mode = building_system.is_build_mode_active()
 	build_mode_changed.emit(build_mode)
 	_update_prompt()
+
+
+func set_ui_blocked(blocked: bool) -> void:
+	ui_blocked = blocked
+	_update_prompt()
+
+
+func request_crafting_menu(facility) -> void:
+	crafting_requested.emit(facility)
+
+
+func request_storage_menu(facility) -> void:
+	storage_requested.emit(facility)
+
+
+func request_repair_menu(facility) -> void:
+	repair_requested.emit(facility)
+
+
+func _get_closest_interactable():
+	var closest = null
+	var closest_distance := INF
+	for interactable in nearby_interactables:
+		if interactable == null or not is_instance_valid(interactable):
+			continue
+		var distance := global_position.distance_squared_to(interactable.global_position)
+		if distance < closest_distance:
+			closest = interactable
+			closest_distance = distance
+	return closest
 
 
 func _configure_input_actions() -> void:

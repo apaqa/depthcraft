@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/facilities/repair_bench.gd" id="1_kgw6y"]
+[ext_resource type="Texture2D" path="res://assets/boxes_stacked.png" id="2_hydj7"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wn1ph"]
+size = Vector2(14, 14)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_yw2gv"]
+radius = 18.0
+
+[node name="RepairBench" type="StaticBody2D"]
+script = ExtResource("1_kgw6y")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_hydj7")
+texture_filter = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_wn1ph")
+
+[node name="InteractionArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionArea"]
+shape = SubResource("CircleShape2D_yw2gv")

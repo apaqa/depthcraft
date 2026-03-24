@@ -7,6 +7,9 @@ extends Control
 @onready var interaction_prompt: Label = $InteractionPrompt
 @onready var build_hud: Control = $BuildHUD
 @onready var debug_label: Label = $DebugLabel
+@onready var crafting_menu: Control = $CraftingMenu
+@onready var storage_ui: Control = $StorageUI
+@onready var repair_ui: Control = $RepairUI
 
 var player = null
 var inventory = null
@@ -32,6 +35,12 @@ func bind_player(new_player) -> void:
 			player.inventory.inventory_changed.disconnect(_on_inventory_changed)
 		if player.building_system.build_state_changed.is_connected(_refresh_debug_label):
 			player.building_system.build_state_changed.disconnect(_refresh_debug_label)
+		if player.crafting_requested.is_connected(_on_crafting_requested):
+			player.crafting_requested.disconnect(_on_crafting_requested)
+		if player.storage_requested.is_connected(_on_storage_requested):
+			player.storage_requested.disconnect(_on_storage_requested)
+		if player.repair_requested.is_connected(_on_repair_requested):
+			player.repair_requested.disconnect(_on_repair_requested)
 
 	player = new_player
 	inventory = player.inventory
@@ -39,6 +48,9 @@ func bind_player(new_player) -> void:
 	player.interaction_prompt_cleared.connect(hide_interaction_prompt)
 	inventory.inventory_changed.connect(_on_inventory_changed)
 	player.building_system.build_state_changed.connect(_refresh_debug_label)
+	player.crafting_requested.connect(_on_crafting_requested)
+	player.storage_requested.connect(_on_storage_requested)
+	player.repair_requested.connect(_on_repair_requested)
 	if build_hud.has_method("bind_system"):
 		build_hud.bind_system(player.building_system, inventory)
 	_on_inventory_changed()
@@ -46,6 +58,12 @@ func bind_player(new_player) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_modal_open():
+		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact"):
+			_close_all_menus()
+			get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("toggle_inventory"):
 		toggle_inventory_panel()
 		get_viewport().set_input_as_handled()
@@ -55,6 +73,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func toggle_inventory_panel() -> void:
+	if _is_modal_open():
+		return
 	inventory_panel.visible = not inventory_panel.visible
 	if inventory_panel.visible:
 		rebuild_inventory_grid()
@@ -94,6 +114,37 @@ func _refresh_debug_label() -> void:
 		return
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
+
+
+func _on_crafting_requested(_facility) -> void:
+	_close_all_menus()
+	crafting_menu.open_for_inventory(inventory)
+	player.set_ui_blocked(true)
+
+
+func _on_storage_requested(facility) -> void:
+	_close_all_menus()
+	storage_ui.open_for_storage(inventory, facility.inventory)
+	player.set_ui_blocked(true)
+
+
+func _on_repair_requested(_facility) -> void:
+	_close_all_menus()
+	repair_ui.open_for_player(inventory)
+	player.set_ui_blocked(true)
+
+
+func _close_all_menus() -> void:
+	inventory_panel.visible = false
+	crafting_menu.close_menu()
+	storage_ui.close_menu()
+	repair_ui.close_menu()
+	if player != null:
+		player.set_ui_blocked(false)
+
+
+func _is_modal_open() -> bool:
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible
 
 
 func rebuild_inventory_grid() -> void:
