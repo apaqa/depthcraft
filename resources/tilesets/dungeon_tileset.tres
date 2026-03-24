@@ -9,6 +9,12 @@
 [ext_resource type="Texture2D" path="res://assets/wall_right.png" id="7_0cot3"]
 [ext_resource type="Texture2D" path="res://assets/wall_mid.png" id="8_hec18"]
 [ext_resource type="Texture2D" path="res://assets/floor_3.png" id="9_n4e7y"]
+[ext_resource type="Texture2D" path="res://assets/floor_5.png" id="10_rsq7u"]
+[ext_resource type="Texture2D" path="res://assets/floor_8.png" id="11_hv41s"]
+[ext_resource type="Texture2D" path="res://assets/floor_mud_mid_1.png" id="12_kx3lq"]
+[ext_resource type="Texture2D" path="res://assets/crate.png" id="13_n6w9v"]
+[ext_resource type="Texture2D" path="res://assets/wall_missing_brick_1.png" id="14_t4j2m"]
+[ext_resource type="Texture2D" path="res://assets/door_closed.png" id="15_g8f5n"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_4n1rg"]
 texture = ExtResource("1_b5nin")
@@ -52,14 +58,46 @@ texture = ExtResource("8_hec18")
 texture = ExtResource("9_n4e7y")
 0:0/0 = 0
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_f5w8a"]
+texture = ExtResource("10_rsq7u")
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_s9m4d"]
+texture = ExtResource("11_hv41s")
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_q2l7c"]
+texture = ExtResource("12_kx3lq")
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_b8v6p"]
+texture = ExtResource("13_n6w9v")
+0:0/0 = 0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(0, 0, 16, 0, 16, 16, 0, 16)
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_c4n1x"]
+texture = ExtResource("14_t4j2m")
+0:0/0 = 0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(0, 0, 16, 0, 16, 16, 0, 16)
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_p7d3r"]
+texture = ExtResource("15_g8f5n")
+0:0/0 = 0
+
 [resource]
 physics_layer_0/collision_layer = 1
 sources/0 = SubResource("TileSetAtlasSource_4n1rg")
 sources/1 = SubResource("TileSetAtlasSource_4kk21")
 sources/2 = SubResource("TileSetAtlasSource_d4t2n")
+sources/3 = SubResource("TileSetAtlasSource_f5w8a")
+sources/4 = SubResource("TileSetAtlasSource_s9m4d")
+sources/5 = SubResource("TileSetAtlasSource_q2l7c")
 sources/100 = SubResource("TileSetAtlasSource_y1lp4")
 sources/101 = SubResource("TileSetAtlasSource_5p2k2")
 sources/102 = SubResource("TileSetAtlasSource_yin0s")
 sources/103 = SubResource("TileSetAtlasSource_233ex")
 sources/104 = SubResource("TileSetAtlasSource_vsmn6")
 sources/105 = SubResource("TileSetAtlasSource_urh2s")
+sources/106 = SubResource("TileSetAtlasSource_b8v6p")
+sources/107 = SubResource("TileSetAtlasSource_c4n1x")
+sources/108 = SubResource("TileSetAtlasSource_p7d3r")

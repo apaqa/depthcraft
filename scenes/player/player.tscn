@@ -62,6 +62,7 @@ size = Vector2(12, 14)
 radius = 18.0
 
 [node name="Player" type="CharacterBody2D" unique_id=679822307]
+z_index = 1
 script = ExtResource("1_h17s1")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=464455966]

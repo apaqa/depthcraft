@@ -12,6 +12,7 @@ func _initialize() -> void:
 	BUILDING_SAVE.clear_save()
 	await test_building_data_cost()
 	await test_building_data_list()
+	await test_building_tiles_use_distinct_visual_sources()
 	await test_place_building_deducts_resources()
 	await test_place_building_only_consumes_costed_resource()
 	await test_place_building_fails_without_resources()
@@ -36,6 +37,19 @@ func test_building_data_cost() -> void:
 func test_building_data_list() -> void:
 	var buildings: Array[Dictionary] = BUILDING_DATA.get_all_buildings()
 	_assert(buildings.size() >= 5, "Building data should expose all buildable tiles.")
+
+
+func test_building_tiles_use_distinct_visual_sources() -> void:
+	var wood_floor: Dictionary = BUILDING_DATA.get_building("wood_floor")
+	var stone_floor: Dictionary = BUILDING_DATA.get_building("stone_floor")
+	var wood_wall: Dictionary = BUILDING_DATA.get_building("wood_wall")
+	var stone_wall: Dictionary = BUILDING_DATA.get_building("stone_wall")
+	var wood_door: Dictionary = BUILDING_DATA.get_building("wood_door")
+	_assert(int(wood_floor["tile_source_id"]) == 3, "Wood floor should use the dedicated brighter build-floor tile.")
+	_assert(int(stone_floor["tile_source_id"]) == 4, "Stone floor should use the distinct stone build-floor tile.")
+	_assert(int(wood_wall["tile_source_id"]) == 106, "Wood wall should use the wooden barricade tile.")
+	_assert(int(stone_wall["tile_source_id"]) == 107, "Stone wall should use the distinct stone wall tile.")
+	_assert(int(wood_door["tile_source_id"]) == 108, "Wood door should use the door tile.")
 
 
 func test_place_building_deducts_resources() -> void:

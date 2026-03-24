@@ -9,6 +9,7 @@ var _failures: PackedStringArray = []
 func _initialize() -> void:
 	await test_level_transition_keeps_player_and_inventory()
 	await test_dungeon_border_has_no_empty_cells()
+	await test_overworld_visual_layers()
 	_report_results()
 
 
@@ -51,6 +52,23 @@ func test_dungeon_border_has_no_empty_cells() -> void:
 		_assert(dungeon.tile_map_layer.get_cell_source_id(Vector2i(dungeon.ROOM_SIZE.x - 1, y)) != -1, "Right border should be fully walled.")
 
 	dungeon.queue_free()
+	await process_frame
+
+
+func test_overworld_visual_layers() -> void:
+	var main = MAIN_SCENE.instantiate()
+	root.add_child(main)
+	await process_frame
+
+	main.change_level("overworld")
+	await process_frame
+
+	var overworld = main.current_level
+	_assert(overworld.get_node("BuildingLayer").z_index == -1, "Building layer should render below the player.")
+	_assert(overworld.get_node("TileMapLayer").modulate == Color(0.48, 0.66, 0.4, 1), "Overworld ground should be tinted for outdoor contrast.")
+	_assert(main.player.z_index == 1, "Player should render above the building layer.")
+
+	main.queue_free()
 	await process_frame
 
 
