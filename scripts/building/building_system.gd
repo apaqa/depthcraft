@@ -107,6 +107,7 @@ func handle_input(event: InputEvent) -> bool:
 			return true
 
 		if event.button_index == MOUSE_BUTTON_LEFT:
+			print("BUILD: left click detected")
 			if state == BuildState.REMOVING:
 				remove_building(get_hovered_tile_pos())
 			else:
@@ -194,15 +195,23 @@ func get_selected_building_texture() -> Texture2D:
 func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 	var building: Dictionary = BUILDING_DATA.get_building(building_id)
 	if building.is_empty():
+		print("BUILD: missing building data for ", building_id)
 		return false
 
-	if not is_valid_placement(tile_pos, building_id):
+	var is_valid := is_valid_placement(tile_pos, building_id)
+	print("BUILD: validation result = ", is_valid)
+	if not is_valid:
+		print("BUILD: placement blocked for ", building_id, " at ", tile_pos)
 		return false
 
 	if not _consume_cost(building["cost"]):
+		print("BUILD: cost check failed for ", building_id, " at ", tile_pos)
 		return false
 
+	print("BUILD: placing ", building_id, " at ", tile_pos)
+	print("BUILD: layer=", building_layer, " source_id=", int(building["tile_source_id"]), " atlas=", building["tile_atlas_coords"])
 	building_layer.set_cell(tile_pos, int(building["tile_source_id"]), building["tile_atlas_coords"], 0)
+	print("BUILD: set_cell called on layer")
 	placed_buildings[tile_pos] = building_id
 	_auto_save()
 	build_state_changed.emit()

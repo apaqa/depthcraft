@@ -82,7 +82,7 @@ func _physics_process(_delta: float) -> void:
 	move_and_slide()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_toggle"):
 		building_system.toggle_debug_mode()
 		get_viewport().set_input_as_handled()
@@ -96,6 +96,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if build_mode:
 		if building_system.handle_input(event):
 			get_viewport().set_input_as_handled()
+		return
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if build_mode:
 		return
 
 	if event.is_action_pressed("interact"):

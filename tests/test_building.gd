@@ -16,6 +16,7 @@ func _initialize() -> void:
 	await test_place_building_only_consumes_costed_resource()
 	await test_place_building_fails_without_resources()
 	await test_debug_mode_skips_resource_costs()
+	await test_left_click_input_places_building()
 	await test_remove_building_returns_partial_resources()
 	await test_cannot_place_on_occupied_tile()
 	await test_invalid_for_player_position()
@@ -71,6 +72,30 @@ func test_debug_mode_skips_resource_costs() -> void:
 	_assert(result, "Debug mode should allow building without enough resources.")
 	_assert(setup.player.inventory.get_item_count("wood") == 1, "Debug mode should not consume resources.")
 	setup.building_system.toggle_debug_mode()
+	await _cleanup_setup(setup)
+
+
+func test_left_click_input_places_building() -> void:
+	var setup := await _create_overworld_setup()
+	setup.player.inventory.add_item("wood", 5)
+	setup.building_system.toggle_build_mode()
+
+	var mouse_event := InputEventMouseMotion.new()
+	mouse_event.position = Vector2(40, 40)
+	mouse_event.global_position = mouse_event.position
+	Input.parse_input_event(mouse_event)
+	await process_frame
+	var placed_before: int = setup.building_system.placed_buildings.size()
+
+	var click_event := InputEventMouseButton.new()
+	click_event.button_index = MOUSE_BUTTON_LEFT
+	click_event.pressed = true
+	click_event.position = mouse_event.position
+	click_event.global_position = mouse_event.position
+	Input.parse_input_event(click_event)
+	await process_frame
+
+	_assert(setup.building_system.placed_buildings.size() == placed_before + 1, "Left click in build mode should place a building.")
 	await _cleanup_setup(setup)
 
 
