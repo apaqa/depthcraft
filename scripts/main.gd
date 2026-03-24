@@ -30,7 +30,7 @@ func change_level(level_id: String) -> void:
 
 	if current_level != null:
 		if player.get_parent() == current_level:
-			current_level.remove_child(player)
+			player.reparent(level_root)
 		current_level.queue_free()
 
 	current_level = next_scene.instantiate()
@@ -38,6 +38,12 @@ func change_level(level_id: String) -> void:
 	level_root.add_child(current_level)
 	if current_level.has_method("place_player"):
 		current_level.place_player(player)
+	else:
+		player.reparent(level_root)
+
+	player.process_mode = Node.PROCESS_MODE_INHERIT
+	player.set_physics_process(true)
+	player.set_process_unhandled_input(true)
 
 
 func _get_level_scene(level_id: String) -> PackedScene:

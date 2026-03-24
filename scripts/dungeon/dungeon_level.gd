@@ -10,8 +10,6 @@ const SOURCE_TOP_RIGHT := 102
 const SOURCE_WALL_LEFT := 103
 const SOURCE_WALL_RIGHT := 104
 const SOURCE_WALL_MID := 105
-const DOORWAY_Y := 5
-
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
 @onready var player_spawn: Marker2D = $PlayerSpawn
 
@@ -26,9 +24,6 @@ func build_test_room() -> void:
 	for y in range(ROOM_SIZE.y):
 		for x in range(ROOM_SIZE.x):
 			var coords := Vector2i(x, y)
-			if is_doorway(coords):
-				continue
-
 			if y == 0:
 				tile_map_layer.set_cell(coords, get_top_wall_source(x), Vector2i.ZERO)
 			elif y == ROOM_SIZE.y - 1:
@@ -66,7 +61,3 @@ func get_top_wall_source(x: int) -> int:
 	if x == ROOM_SIZE.x - 1:
 		return SOURCE_TOP_RIGHT
 	return SOURCE_TOP_MID
-
-
-func is_doorway(coords: Vector2i) -> bool:
-	return coords.x == ROOM_SIZE.x - 1 and coords.y == DOORWAY_Y

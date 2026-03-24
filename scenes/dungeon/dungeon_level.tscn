@@ -14,6 +14,6 @@ tile_set = ExtResource("2_ur5pq")
 position = Vector2(112, 80)
 
 [node name="ExitPortal" parent="." instance=ExtResource("3_q4k0m")]
-position = Vector2(208, 80)
+position = Vector2(192, 80)
 target_level_id = "overworld"
 prompt_text = "[F] Go Outside"
