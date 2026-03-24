@@ -24,6 +24,7 @@ var last_interacted_resource = null
 var build_mode: bool = false
 var nearby_interactables: Array = []
 var ui_blocked: bool = false
+var in_menu: bool = false
 
 
 func _ready() -> void:
@@ -79,7 +80,7 @@ func get_animated_sprite() -> AnimatedSprite2D:
 
 
 func _physics_process(_delta: float) -> void:
-	if ui_blocked:
+	if in_menu:
 		velocity = Vector2.ZERO
 		update_sprite_state(Vector2.ZERO)
 		move_and_slide()
@@ -95,6 +96,9 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_toggle"):
 		building_system.toggle_debug_mode()
 		get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("dev_reset") or event.is_action_pressed("dev_reset_save"):
 		return
 
 	if event.is_action_pressed("toggle_build"):
@@ -221,6 +225,8 @@ func _on_build_state_changed() -> void:
 
 func set_ui_blocked(blocked: bool) -> void:
 	ui_blocked = blocked
+	in_menu = blocked
+	set_physics_process(true)
 	_update_prompt()
 
 
@@ -252,6 +258,8 @@ func _get_closest_interactable():
 func _configure_input_actions() -> void:
 	_set_key_action("sprint", KEY_SPACE)
 	_set_key_action("debug_toggle", KEY_F9)
+	_set_key_action("dev_reset", KEY_F10)
+	_set_key_action("dev_reset_save", KEY_F11)
 	_set_key_action("dodge", KEY_SHIFT)
 
 

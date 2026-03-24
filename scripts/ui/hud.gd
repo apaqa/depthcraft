@@ -19,6 +19,12 @@ func _ready() -> void:
 	update_hp(100, 100)
 	update_bag_label(0, 20)
 	inventory_panel.visible = false
+	if crafting_menu.has_signal("close_requested") and not crafting_menu.close_requested.is_connected(_on_menu_closed):
+		crafting_menu.close_requested.connect(_on_menu_closed)
+	if storage_ui.has_signal("close_requested") and not storage_ui.close_requested.is_connected(_on_menu_closed):
+		storage_ui.close_requested.connect(_on_menu_closed)
+	if repair_ui.has_signal("close_requested") and not repair_ui.close_requested.is_connected(_on_menu_closed):
+		repair_ui.close_requested.connect(_on_menu_closed)
 
 
 func update_hp(current: int, max_hp: int) -> void:
@@ -69,6 +75,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel") and inventory_panel.visible:
 		inventory_panel.visible = false
+		_on_menu_closed()
 		get_viewport().set_input_as_handled()
 
 
@@ -76,8 +83,12 @@ func toggle_inventory_panel() -> void:
 	if _is_modal_open():
 		return
 	inventory_panel.visible = not inventory_panel.visible
+	if player != null:
+		player.set_ui_blocked(inventory_panel.visible)
 	if inventory_panel.visible:
 		rebuild_inventory_grid()
+	else:
+		_on_menu_closed()
 
 
 func show_interaction_prompt(prompt_text: String) -> void:
@@ -114,6 +125,7 @@ func _refresh_debug_label() -> void:
 		return
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
+	debug_label.text = "[DEBUG MODE]\n[F10] Reset  [F11] Reset+Clear Save" if debug_label.visible else "[DEBUG MODE]"
 
 
 func _on_crafting_requested(_facility) -> void:
@@ -139,6 +151,12 @@ func _close_all_menus() -> void:
 	crafting_menu.close_menu()
 	storage_ui.close_menu()
 	repair_ui.close_menu()
+	_on_menu_closed()
+
+
+func _on_menu_closed() -> void:
+	get_tree().paused = false
+	release_focus()
 	if player != null:
 		player.set_ui_blocked(false)
 

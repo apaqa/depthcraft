@@ -1,5 +1,7 @@
 extends Control
 
+signal close_requested
+
 @onready var player_grid: GridContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer/PlayerGrid
 @onready var chest_grid: GridContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ChestPanel/VBoxContainer/ChestGrid
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
@@ -22,8 +24,12 @@ func open_for_storage(player_inv, chest_inv) -> void:
 
 
 func close_menu() -> void:
+	if not visible:
+		return
 	_unbind_inventory_signals()
 	visible = false
+	release_focus()
+	close_requested.emit()
 
 
 func _unhandled_input(event: InputEvent) -> void:

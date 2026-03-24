@@ -1,5 +1,7 @@
 extends Control
 
+signal close_requested
+
 @onready var detail_label: Label = $PanelContainer/MarginContainer/VBoxContainer/DetailLabel
 
 var player_inventory = null
@@ -17,7 +19,11 @@ func open_for_player(inventory) -> void:
 
 
 func close_menu() -> void:
+	if not visible:
+		return
 	visible = false
+	release_focus()
+	close_requested.emit()
 
 
 func _unhandled_input(event: InputEvent) -> void:

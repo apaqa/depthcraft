@@ -2,6 +2,8 @@ extends Control
 
 const CRAFTING_SYSTEM := preload("res://scripts/crafting/crafting_system.gd")
 
+signal close_requested
+
 @onready var recipe_list: ItemList = $PanelContainer/MarginContainer/HBoxContainer/RecipeList
 @onready var detail_label: Label = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/DetailLabel
 @onready var craft_button: Button = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/CraftButton
@@ -29,7 +31,11 @@ func open_for_inventory(inventory) -> void:
 
 
 func close_menu() -> void:
+	if not visible:
+		return
 	visible = false
+	release_focus()
+	close_requested.emit()
 
 
 func _unhandled_input(event: InputEvent) -> void:

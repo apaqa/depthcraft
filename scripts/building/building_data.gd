@@ -7,7 +7,7 @@ const REPAIR_BENCH_SCENE_PATH := "res://scenes/building/facilities/repair_bench.
 const BUILDINGS := {
 	"wood_wall": {
 		"id": "wood_wall",
-		"name": "Wood Wall / 木墙",
+		"name": "Wood Wall",
 		"kind": "tile",
 		"cost": {"wood": 2},
 		"has_collision": true,
@@ -16,7 +16,7 @@ const BUILDINGS := {
 	},
 	"wood_floor": {
 		"id": "wood_floor",
-		"name": "Wood Floor / 木地板",
+		"name": "Wood Floor",
 		"kind": "tile",
 		"cost": {"wood": 1},
 		"has_collision": false,
@@ -25,7 +25,7 @@ const BUILDINGS := {
 	},
 	"stone_wall": {
 		"id": "stone_wall",
-		"name": "Stone Wall / 石墙",
+		"name": "Stone Wall",
 		"kind": "tile",
 		"cost": {"stone": 3},
 		"has_collision": true,
@@ -34,7 +34,7 @@ const BUILDINGS := {
 	},
 	"stone_floor": {
 		"id": "stone_floor",
-		"name": "Stone Floor / 石地板",
+		"name": "Stone Floor",
 		"kind": "tile",
 		"cost": {"stone": 2},
 		"has_collision": false,
@@ -43,7 +43,7 @@ const BUILDINGS := {
 	},
 	"wood_door": {
 		"id": "wood_door",
-		"name": "Wood Door / 木门",
+		"name": "Wood Door",
 		"kind": "tile",
 		"cost": {"wood": 3},
 		"has_collision": false,
@@ -52,7 +52,7 @@ const BUILDINGS := {
 	},
 	"workbench": {
 		"id": "workbench",
-		"name": "Workbench / 工作台",
+		"name": "Workbench",
 		"kind": "facility",
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
@@ -60,7 +60,7 @@ const BUILDINGS := {
 	},
 	"storage_chest": {
 		"id": "storage_chest",
-		"name": "Storage Chest / 储物箱",
+		"name": "Storage Chest",
 		"kind": "facility",
 		"cost": {"wood": 3},
 		"scene_path": STORAGE_CHEST_SCENE_PATH,
@@ -68,7 +68,7 @@ const BUILDINGS := {
 	},
 	"repair_bench": {
 		"id": "repair_bench",
-		"name": "Repair Bench / 修理台",
+		"name": "Repair Bench",
 		"kind": "facility",
 		"cost": {"stone": 5, "iron_ore": 3},
 		"scene_path": REPAIR_BENCH_SCENE_PATH,

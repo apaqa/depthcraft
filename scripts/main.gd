@@ -3,6 +3,7 @@ extends Node2D
 @onready var hud: Control = $HUDCanvas/HUD
 @onready var level_root: Node2D = $LevelRoot
 
+const BUILDING_SAVE := preload("res://scripts/building/building_save.gd")
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const DUNGEON_SCENE := preload("res://scenes/dungeon/dungeon_level.tscn")
 const OVERWORLD_SCENE := preload("res://scenes/overworld/test_overworld.tscn")
@@ -21,6 +22,18 @@ func _ready() -> void:
 		hud.bind_player(player)
 
 	change_level(current_level_id)
+
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("dev_reset"):
+		get_tree().paused = false
+		get_tree().reload_current_scene()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("dev_reset_save"):
+		get_tree().paused = false
+		BUILDING_SAVE.clear_save()
+		get_tree().reload_current_scene()
+		get_viewport().set_input_as_handled()
 
 
 func change_level(level_id: String) -> void:

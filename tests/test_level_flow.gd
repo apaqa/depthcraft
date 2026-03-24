@@ -10,6 +10,7 @@ func _initialize() -> void:
 	await test_level_transition_keeps_player_and_inventory()
 	await test_dungeon_border_has_no_empty_cells()
 	await test_overworld_visual_layers()
+	await test_menu_close_restores_player_movement_flag()
 	_report_results()
 
 
@@ -67,6 +68,23 @@ func test_overworld_visual_layers() -> void:
 	_assert(overworld.get_node("BuildingLayer").z_index == 0, "Building layer should render at ground level so built tiles stay visible.")
 	_assert(overworld.get_node("TileMapLayer").modulate == Color(0.55, 0.75, 0.45, 1), "Overworld ground should be brightened for outdoor contrast.")
 	_assert(main.player.z_index == 1, "Player should render above the building layer.")
+
+	main.queue_free()
+	await process_frame
+
+
+func test_menu_close_restores_player_movement_flag() -> void:
+	var main = MAIN_SCENE.instantiate()
+	root.add_child(main)
+	await process_frame
+
+	var hud = main.hud
+	var player = main.player
+	hud._on_crafting_requested(null)
+	_assert(player.in_menu, "Opening a menu should mark the player as being in a menu.")
+	hud.crafting_menu.close_menu()
+	await process_frame
+	_assert(not player.in_menu, "Closing a menu should immediately restore movement.")
 
 	main.queue_free()
 	await process_frame
