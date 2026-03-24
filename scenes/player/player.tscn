@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_h17s1"]
 [ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f0.png" id="2_je7p5"]
@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f3.png" id="9_uf5tr"]
 [ext_resource type="Script" path="res://scripts/player/player_camera.gd" id="10_lgqa7"]
 [ext_resource type="Script" path="res://scripts/inventory/inventory.gd" id="11_4y0mk"]
+[ext_resource type="Script" path="res://scripts/building/building_system.gd" id="12_vkgtg"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_8ydkj"]
 animations = [{
@@ -81,3 +82,6 @@ shape = SubResource("CircleShape2D_g3g7t")
 
 [node name="Inventory" type="Node" parent="."]
 script = ExtResource("11_4y0mk")
+
+[node name="BuildingSystem" type="Node" parent="."]
+script = ExtResource("12_vkgtg")

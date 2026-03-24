@@ -7,21 +7,25 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 signal interaction_prompt_changed(prompt_text: String)
 signal interaction_prompt_cleared
 signal portal_requested(target_level_id: String)
+signal build_mode_changed(active: bool)
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interaction_area: Area2D = $InteractionArea
 @onready var inventory = $Inventory
+@onready var building_system = $BuildingSystem
 
 const FLOATING_TEXT_SCENE := preload("res://scenes/ui/floating_text.tscn")
 
 var nearby_resource = null
 var nearby_portal = null
 var last_interacted_resource = null
+var build_mode: bool = false
 
 
 func _ready() -> void:
 	interaction_area.area_entered.connect(_on_interaction_area_entered)
 	interaction_area.area_exited.connect(_on_interaction_area_exited)
+	building_system.build_state_changed.connect(_on_build_state_changed)
 
 
 static func compute_input_vector(left_strength: float, right_strength: float, up_strength: float, down_strength: float) -> Vector2:
@@ -72,6 +76,16 @@ func _physics_process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_build"):
+		if building_system.toggle_build_mode():
+			get_viewport().set_input_as_handled()
+		return
+
+	if build_mode:
+		if building_system.handle_input(event):
+			get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("interact"):
 		_try_gather()
 		get_viewport().set_input_as_handled()
@@ -179,6 +193,10 @@ func _show_floating_text(world_position: Vector2, text_value: String, color: Col
 
 
 func _update_prompt() -> void:
+	if build_mode:
+		interaction_prompt_cleared.emit()
+		return
+
 	if nearby_resource != null and not nearby_resource.is_depleted:
 		interaction_prompt_changed.emit(nearby_resource.get_interaction_prompt())
 		return
@@ -188,3 +206,9 @@ func _update_prompt() -> void:
 		return
 
 	interaction_prompt_cleared.emit()
+
+
+func _on_build_state_changed() -> void:
+	build_mode = building_system.is_build_mode_active()
+	build_mode_changed.emit(build_mode)
+	_update_prompt()

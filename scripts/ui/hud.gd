@@ -5,6 +5,7 @@ extends Control
 @onready var inventory_panel: PanelContainer = $InventoryPanel
 @onready var inventory_grid: GridContainer = $InventoryPanel/MarginContainer/VBoxContainer/ScrollContainer/GridContainer
 @onready var interaction_prompt: Label = $InteractionPrompt
+@onready var build_hud: Control = $BuildHUD
 
 var player = null
 var inventory = null
@@ -34,6 +35,8 @@ func bind_player(new_player) -> void:
 	player.interaction_prompt_changed.connect(show_interaction_prompt)
 	player.interaction_prompt_cleared.connect(hide_interaction_prompt)
 	inventory.inventory_changed.connect(_on_inventory_changed)
+	if build_hud.has_method("bind_system"):
+		build_hud.bind_system(player.building_system, inventory)
 	_on_inventory_changed()
 
 

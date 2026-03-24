@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/building/home_core.gd" id="1_3ihd2"]
+[ext_resource type="Texture2D" path="res://assets/chest_golden_closed.png" id="2_4eopp"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_2bpqi"]
+size = Vector2(14, 14)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_qa2s8"]
+radius = 80.0
+
+[node name="HomeCore" type="StaticBody2D"]
+script = ExtResource("1_3ihd2")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_4eopp")
+texture_filter = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_2bpqi")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("CircleShape2D_qa2s8")
+
+[node name="PointLight2D" type="PointLight2D" parent="."]
+color = Color(1, 0.82, 0.5, 0.35)
+energy = 0.6
+texture_scale = 3.0
+range_z_min = -1
+range_z_max = 1

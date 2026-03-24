@@ -41,6 +41,9 @@ func change_level(level_id: String) -> void:
 	else:
 		player.reparent(level_root)
 
+	if player.building_system.has_method("set_active_level"):
+		player.building_system.set_active_level(current_level_id, current_level)
+
 	player.process_mode = Node.PROCESS_MODE_INHERIT
 	player.set_physics_process(true)
 	player.set_process_unhandled_input(true)

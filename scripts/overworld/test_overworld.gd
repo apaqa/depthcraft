@@ -6,6 +6,7 @@ const SOURCE_FLOOR_2 := 1
 const SOURCE_FLOOR_3 := 2
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
+@onready var building_layer: TileMapLayer = $BuildingLayer
 @onready var player_spawn: Marker2D = $PlayerSpawn
 
 
