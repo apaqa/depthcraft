@@ -1,0 +1,71 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/player/player.gd" id="1_h17s1"]
+[ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f0.png" id="2_je7p5"]
+[ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f1.png" id="3_fm80t"]
+[ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f2.png" id="4_gx1jg"]
+[ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f3.png" id="5_ugbui"]
+[ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f0.png" id="6_fcs02"]
+[ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f1.png" id="7_myrg7"]
+[ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f2.png" id="8_kvlxm"]
+[ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f3.png" id="9_uf5tr"]
+[ext_resource type="Script" path="res://scripts/player/player_camera.gd" id="10_lgqa7"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_8ydkj"]
+animations = [{
+"frames": [],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_je7p5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_fm80t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_gx1jg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_ugbui")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_fcs02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_myrg7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_kvlxm")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_uf5tr")
+}],
+"loop": true,
+"name": &"run",
+"speed": 10.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3j4b4"]
+size = Vector2(12, 14)
+
+[node name="Player" type="CharacterBody2D" unique_id=679822307]
+script = ExtResource("1_h17s1")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=464455966]
+position = Vector2(0, -1)
+sprite_frames = SubResource("SpriteFrames_8ydkj")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=61282265]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_3j4b4")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1655665250]
+script = ExtResource("10_lgqa7")

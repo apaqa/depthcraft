@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_jyhfs"]
+[ext_resource type="PackedScene" path="res://scenes/dungeon/dungeon_level.tscn" id="2_tbgi4"]
+[ext_resource type="Script" path="res://scripts/dungeon/dungeon_level.gd" id="3_tefeu"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_o6xl0"]
+
+[node name="Main" type="Node2D" unique_id=302079095]
+script = ExtResource("1_jyhfs")
+
+[node name="DungeonLevel" type="Node2D" parent="." unique_id=1744020074 instance=ExtResource("2_tbgi4")]
+script = ExtResource("3_tefeu")
+
+[node name="HUDCanvas" type="CanvasLayer" parent="." unique_id=1278126834 instance=ExtResource("4_o6xl0")]
