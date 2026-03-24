@@ -9,9 +9,11 @@ var _failures: PackedStringArray = []
 func _initialize() -> void:
 	test_initial_position()
 	test_default_speed()
+	test_default_sprint_speed()
 	test_diagonal_normalization()
 	test_zero_input_returns_zero_vector()
 	test_velocity_zero_when_idle()
+	test_velocity_uses_custom_speed()
 	test_sprite_flips_left()
 	_report_results()
 
@@ -24,6 +26,11 @@ func test_initial_position() -> void:
 func test_default_speed() -> void:
 	var player := PLAYER_SCENE.instantiate()
 	_assert(is_equal_approx(player.speed, 80.0), "Player speed should default to 80.0.")
+
+
+func test_default_sprint_speed() -> void:
+	var player := PLAYER_SCENE.instantiate()
+	_assert(is_equal_approx(player.sprint_speed, 140.0), "Player sprint speed should default to 140.0.")
 
 
 func test_diagonal_normalization() -> void:
@@ -40,6 +47,12 @@ func test_velocity_zero_when_idle() -> void:
 	var player := PLAYER_SCENE.instantiate()
 	player.apply_input_direction(Vector2.ZERO)
 	_assert(player.velocity == Vector2.ZERO, "Player velocity should be zero with no input.")
+
+
+func test_velocity_uses_custom_speed() -> void:
+	var player := PLAYER_SCENE.instantiate()
+	player.apply_input_direction(Vector2.RIGHT, player.sprint_speed)
+	_assert(player.velocity == Vector2.RIGHT * player.sprint_speed, "Player velocity should use the provided sprint speed.")
 
 
 func test_sprite_flips_left() -> void:

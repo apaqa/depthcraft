@@ -6,6 +6,7 @@ extends Control
 @onready var inventory_grid: GridContainer = $InventoryPanel/MarginContainer/VBoxContainer/ScrollContainer/GridContainer
 @onready var interaction_prompt: Label = $InteractionPrompt
 @onready var build_hud: Control = $BuildHUD
+@onready var debug_label: Label = $DebugLabel
 
 var player = null
 var inventory = null
@@ -29,15 +30,19 @@ func bind_player(new_player) -> void:
 			player.interaction_prompt_cleared.disconnect(hide_interaction_prompt)
 		if player.inventory.inventory_changed.is_connected(_on_inventory_changed):
 			player.inventory.inventory_changed.disconnect(_on_inventory_changed)
+		if player.building_system.build_state_changed.is_connected(_refresh_debug_label):
+			player.building_system.build_state_changed.disconnect(_refresh_debug_label)
 
 	player = new_player
 	inventory = player.inventory
 	player.interaction_prompt_changed.connect(show_interaction_prompt)
 	player.interaction_prompt_cleared.connect(hide_interaction_prompt)
 	inventory.inventory_changed.connect(_on_inventory_changed)
+	player.building_system.build_state_changed.connect(_refresh_debug_label)
 	if build_hud.has_method("bind_system"):
 		build_hud.bind_system(player.building_system, inventory)
 	_on_inventory_changed()
+	_refresh_debug_label()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -81,6 +86,14 @@ func _on_inventory_changed() -> void:
 
 func update_bag_label(used_slots: int, max_slots: int) -> void:
 	bag_label.text = "Bag: %d/%d slots" % [used_slots, max_slots]
+
+
+func _refresh_debug_label() -> void:
+	if player == null:
+		debug_label.visible = false
+		return
+
+	debug_label.visible = player.building_system.is_debug_mode_enabled()
 
 
 func rebuild_inventory_grid() -> void:

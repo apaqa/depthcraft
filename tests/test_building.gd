@@ -13,7 +13,9 @@ func _initialize() -> void:
 	await test_building_data_cost()
 	await test_building_data_list()
 	await test_place_building_deducts_resources()
+	await test_place_building_only_consumes_costed_resource()
 	await test_place_building_fails_without_resources()
+	await test_debug_mode_skips_resource_costs()
 	await test_remove_building_returns_partial_resources()
 	await test_cannot_place_on_occupied_tile()
 	await test_invalid_for_player_position()
@@ -44,9 +46,31 @@ func test_place_building_deducts_resources() -> void:
 	await _cleanup_setup(setup)
 
 
+func test_place_building_only_consumes_costed_resource() -> void:
+	var setup := await _create_overworld_setup()
+	setup.player.inventory.add_item("wood", 10)
+	setup.player.inventory.add_item("stone", 5)
+	var result: bool = setup.building_system.place_building(Vector2i(2, 2), "wood_wall")
+	_assert(result, "Placing a wood wall with mixed inventory resources should succeed.")
+	_assert(setup.player.inventory.get_item_count("wood") == 8, "Placing a wood wall should only remove 2 wood.")
+	_assert(setup.player.inventory.get_item_count("stone") == 5, "Placing a wood wall should not affect stone.")
+	await _cleanup_setup(setup)
+
+
 func test_place_building_fails_without_resources() -> void:
 	var setup := await _create_overworld_setup()
 	_assert(not setup.building_system.place_building(Vector2i(2, 2), "wood_wall"), "Placement should fail without enough resources.")
+	await _cleanup_setup(setup)
+
+
+func test_debug_mode_skips_resource_costs() -> void:
+	var setup := await _create_overworld_setup()
+	setup.player.inventory.add_item("wood", 1)
+	setup.building_system.toggle_debug_mode()
+	var result: bool = setup.building_system.place_building(Vector2i(2, 2), "wood_wall")
+	_assert(result, "Debug mode should allow building without enough resources.")
+	_assert(setup.player.inventory.get_item_count("wood") == 1, "Debug mode should not consume resources.")
+	setup.building_system.toggle_debug_mode()
 	await _cleanup_setup(setup)
 
 

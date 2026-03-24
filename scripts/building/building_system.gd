@@ -27,6 +27,7 @@ var selected_building_index: int = 0
 var preview = null
 var home_core_position: Vector2 = Vector2.ZERO
 var home_core_instance = null
+var debug_mode: bool = false
 var _loaded_from_save: bool = false
 
 
@@ -113,6 +114,16 @@ func handle_input(event: InputEvent) -> bool:
 			return true
 
 	return false
+
+
+func toggle_debug_mode() -> void:
+	debug_mode = not debug_mode
+	print("Debug mode %s" % ("ON" if debug_mode else "OFF"))
+	build_state_changed.emit()
+
+
+func is_debug_mode_enabled() -> bool:
+	return debug_mode
 
 
 func is_build_mode_active() -> bool:
@@ -267,6 +278,7 @@ func place_home_core(tile_pos: Vector2i) -> bool:
 
 	home_core_position = _tile_to_world_center(tile_pos)
 	_spawn_home_core()
+	print("Home Core placed at position (%d, %d)" % [int(home_core_position.x), int(home_core_position.y)])
 	_auto_save()
 	build_state_changed.emit()
 	return true
@@ -284,10 +296,14 @@ func get_ui_state() -> Dictionary:
 		"building": building,
 		"can_afford": _has_cost(building.get("cost", {})),
 		"has_core": has_home_core(),
+		"debug_mode": debug_mode,
 	}
 
 
 func _has_cost(cost: Dictionary) -> bool:
+	if debug_mode:
+		return true
+
 	for resource_id in cost.keys():
 		if player.inventory.get_item_count(resource_id) < int(cost[resource_id]):
 			return false
@@ -295,6 +311,9 @@ func _has_cost(cost: Dictionary) -> bool:
 
 
 func _consume_cost(cost: Dictionary) -> bool:
+	if debug_mode:
+		return true
+
 	if not _has_cost(cost):
 		return false
 

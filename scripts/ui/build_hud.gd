@@ -43,11 +43,20 @@ func refresh() -> void:
 	else:
 		var building: Dictionary = state.get("building", {})
 		title_label.text = str(building.get("name", "Build"))
-		cost_label.text = _format_costs(building.get("cost", {}))
-		cost_label.modulate = Color(0.45, 1.0, 0.45, 1.0) if bool(state.get("can_afford", false)) else Color(1.0, 0.45, 0.45, 1.0)
+		if bool(state.get("debug_mode", false)):
+			cost_label.text = "Cost: FREE [DEBUG]"
+			cost_label.modulate = Color(1.0, 0.9, 0.25, 1.0)
+		else:
+			cost_label.text = _format_costs(building.get("cost", {}))
+			cost_label.modulate = Color(0.45, 1.0, 0.45, 1.0) if bool(state.get("can_afford", false)) else Color(1.0, 0.45, 0.45, 1.0)
 
-	core_label.text = "Core: placed" if bool(state.get("has_core", false)) else "Core: press C (10 Wood, 5 Stone)"
-	help_label.text = "[LMB] Place  [RMB] Remove  [Scroll] Switch  [B] Exit"
+	if bool(state.get("has_core", false)):
+		core_label.text = "Core: placed"
+	elif bool(state.get("debug_mode", false)):
+		core_label.text = "Core: press C (FREE in debug)"
+	else:
+		core_label.text = "Core: press C (10 Wood, 5 Stone)"
+	help_label.text = "[LMB] Place  [RMB] Remove  [Scroll] Switch  [B] Exit  [F9] Debug"
 
 
 func _format_costs(costs: Dictionary) -> String:

@@ -14,6 +14,7 @@ func _initialize() -> void:
 	test_add_item_returns_false_when_full()
 	test_remove_item_decreases_quantity()
 	test_remove_item_clears_slot_at_zero()
+	test_remove_item_leaves_other_items_untouched()
 	test_has_item_checks_quantity()
 	test_get_item_count_reports_total()
 	test_get_free_slots_updates()
@@ -61,6 +62,15 @@ func test_remove_item_clears_slot_at_zero() -> void:
 	inventory.add_item("wood", 1)
 	inventory.remove_item("wood", 1)
 	_assert(inventory.items.is_empty(), "Removing the last item should clear the slot.")
+
+
+func test_remove_item_leaves_other_items_untouched() -> void:
+	var inventory := INVENTORY_SCRIPT.new()
+	inventory.add_item("wood", 10)
+	inventory.add_item("stone", 5)
+	_assert(inventory.remove_item("wood", 2), "Removing one resource type should succeed when enough is present.")
+	_assert(inventory.get_item_count("wood") == 8, "Removing wood should only reduce the wood quantity.")
+	_assert(inventory.get_item_count("stone") == 5, "Removing wood should not affect stone.")
 
 
 func test_has_item_checks_quantity() -> void:

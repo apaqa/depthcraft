@@ -1,6 +1,7 @@
 extends CharacterBody2D
 
 @export var speed: float = 80.0
+@export var sprint_speed: float = 140.0
 
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
@@ -23,6 +24,7 @@ var build_mode: bool = false
 
 
 func _ready() -> void:
+	_configure_input_actions()
 	interaction_area.area_entered.connect(_on_interaction_area_entered)
 	interaction_area.area_exited.connect(_on_interaction_area_exited)
 	building_system.build_state_changed.connect(_on_build_state_changed)
@@ -44,12 +46,14 @@ func get_input_vector() -> Vector2:
 	)
 
 
-func apply_input_direction(input_direction: Vector2) -> void:
-	velocity = input_direction * speed
-	update_sprite_state(input_direction)
+func apply_input_direction(input_direction: Vector2, move_speed: float = -1.0) -> void:
+	if move_speed < 0.0:
+		move_speed = speed
+	velocity = input_direction * move_speed
+	update_sprite_state(input_direction, move_speed > speed)
 
 
-func update_sprite_state(input_direction: Vector2) -> void:
+func update_sprite_state(input_direction: Vector2, is_sprinting: bool = false) -> void:
 	var sprite := get_animated_sprite()
 	if sprite == null:
 		return
@@ -58,8 +62,10 @@ func update_sprite_state(input_direction: Vector2) -> void:
 		sprite.flip_h = input_direction.x < 0.0
 
 	if input_direction.is_zero_approx():
+		sprite.speed_scale = 1.0
 		sprite.play("idle")
 	else:
+		sprite.speed_scale = 1.5 if is_sprinting else 1.0
 		sprite.play("run")
 
 
@@ -71,11 +77,17 @@ func get_animated_sprite() -> AnimatedSprite2D:
 
 func _physics_process(_delta: float) -> void:
 	var input_direction := get_input_vector()
-	apply_input_direction(input_direction)
+	var move_speed := sprint_speed if Input.is_action_pressed("sprint") else speed
+	apply_input_direction(input_direction, move_speed)
 	move_and_slide()
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("debug_toggle"):
+		building_system.toggle_debug_mode()
+		get_viewport().set_input_as_handled()
+		return
+
 	if event.is_action_pressed("toggle_build"):
 		if building_system.toggle_build_mode():
 			get_viewport().set_input_as_handled()
@@ -212,3 +224,22 @@ func _on_build_state_changed() -> void:
 	build_mode = building_system.is_build_mode_active()
 	build_mode_changed.emit(build_mode)
 	_update_prompt()
+
+
+func _configure_input_actions() -> void:
+	_set_key_action("sprint", KEY_SPACE)
+	_set_key_action("debug_toggle", KEY_F9)
+	_set_key_action("dodge", KEY_SHIFT)
+
+
+func _set_key_action(action_name: String, keycode: int) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name)
+
+	for event in InputMap.action_get_events(action_name):
+		InputMap.action_erase_event(action_name, event)
+
+	var key_event := InputEventKey.new()
+	key_event.keycode = keycode
+	key_event.physical_keycode = keycode
+	InputMap.action_add_event(action_name, key_event)
