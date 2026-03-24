@@ -1,0 +1,43 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/overworld/test_overworld.gd" id="1_tn6a4"]
+[ext_resource type="TileSet" path="res://resources/tilesets/dungeon_tileset.tres" id="2_fba6m"]
+[ext_resource type="PackedScene" path="res://scenes/world/tree_node.tscn" id="3_xv330"]
+[ext_resource type="PackedScene" path="res://scenes/world/rock_node.tscn" id="4_1j6ux"]
+[ext_resource type="PackedScene" path="res://scenes/world/iron_node.tscn" id="5_y6hvp"]
+[ext_resource type="PackedScene" path="res://scenes/world/portal.tscn" id="6_yx4j8"]
+
+[node name="TestOverworld" type="Node2D"]
+script = ExtResource("1_tn6a4")
+
+[node name="TileMapLayer" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_fba6m")
+
+[node name="PlayerSpawn" type="Marker2D" parent="."]
+position = Vector2(224, 144)
+
+[node name="TreeA" parent="." instance=ExtResource("3_xv330")]
+position = Vector2(96, 96)
+
+[node name="TreeB" parent="." instance=ExtResource("3_xv330")]
+position = Vector2(144, 80)
+
+[node name="TreeC" parent="." instance=ExtResource("3_xv330")]
+position = Vector2(320, 96)
+
+[node name="TreeD" parent="." instance=ExtResource("3_xv330")]
+position = Vector2(384, 160)
+
+[node name="RockA" parent="." instance=ExtResource("4_1j6ux")]
+position = Vector2(128, 208)
+
+[node name="RockB" parent="." instance=ExtResource("4_1j6ux")]
+position = Vector2(288, 224)
+
+[node name="IronDeposit" parent="." instance=ExtResource("5_y6hvp")]
+position = Vector2(400, 96)
+
+[node name="ReturnPortal" parent="." instance=ExtResource("6_yx4j8")]
+position = Vector2(448, 144)
+target_level_id = "dungeon"
+prompt_text = "[F] Return to Dungeon"

@@ -1,7 +1,8 @@
-[gd_scene format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/dungeon/dungeon_level.gd" id="1_cjnbm"]
 [ext_resource type="TileSet" path="res://resources/tilesets/dungeon_tileset.tres" id="2_ur5pq"]
+[ext_resource type="PackedScene" path="res://scenes/world/portal.tscn" id="3_q4k0m"]
 
 [node name="DungeonLevel" type="Node2D" unique_id=1744020074]
 script = ExtResource("1_cjnbm")
@@ -11,3 +12,8 @@ tile_set = ExtResource("2_ur5pq")
 
 [node name="PlayerSpawn" type="Marker2D" parent="." unique_id=1451849558]
 position = Vector2(112, 80)
+
+[node name="ExitPortal" parent="." instance=ExtResource("3_q4k0m")]
+position = Vector2(208, 80)
+target_level_id = "overworld"
+prompt_text = "[F] Go Outside"

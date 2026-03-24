@@ -12,15 +12,12 @@ const SOURCE_WALL_RIGHT := 104
 const SOURCE_WALL_MID := 105
 const DOORWAY_Y := 5
 
-@export var player_scene: PackedScene = preload("res://scenes/player/player.tscn")
-
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
 @onready var player_spawn: Marker2D = $PlayerSpawn
 
 
 func _ready() -> void:
 	build_test_room()
-	spawn_player()
 
 
 func build_test_room() -> void:
@@ -46,12 +43,9 @@ func build_test_room() -> void:
 	tile_map_layer.update_internals()
 
 
-func spawn_player() -> void:
-	var player := get_node_or_null("Player")
-	if player == null:
-		player = player_scene.instantiate()
-		player.name = "Player"
-		add_child(player)
+func place_player(player: Node2D) -> void:
+	if player.get_parent() != self:
+		player.reparent(self)
 
 	player.global_position = player_spawn.global_position
 
