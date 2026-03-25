@@ -46,23 +46,28 @@ func _refresh() -> void:
 	for branch_id in TALENT_DATA.get_branch_ids():
 		var panel := PanelContainer.new()
 		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		panel.mouse_filter = Control.MOUSE_FILTER_PASS
 		var branch_box := VBoxContainer.new()
 		branch_box.add_theme_constant_override("separation", 6)
+		branch_box.mouse_filter = Control.MOUSE_FILTER_PASS
 		panel.add_child(branch_box)
 		var title := Label.new()
 		title.text = TALENT_DATA.get_branch_label(branch_id)
+		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		branch_box.add_child(title)
 		for talent in TALENT_DATA.get_branch_talents(branch_id):
 			var button := Button.new()
 			button.text = _build_talent_text(talent)
-			button.disabled = player.has_talent(str(talent.get("id", ""))) or not TALENT_DATA.can_unlock(player.get_unlocked_talents(), player.inventory.get_item_count("talent_shard"), str(talent.get("id", "")))
-			if player.has_talent(str(talent.get("id", ""))):
+			button.mouse_filter = Control.MOUSE_FILTER_STOP
+			button.focus_mode = Control.FOCUS_ALL
+			var talent_id := str(talent.get("id", ""))
+			if player.has_talent(talent_id):
 				button.modulate = Color(0.95, 0.9, 0.45, 1.0)
-			elif TALENT_DATA.can_unlock(player.get_unlocked_talents(), player.inventory.get_item_count("talent_shard"), str(talent.get("id", ""))):
+			elif TALENT_DATA.can_unlock(player.get_unlocked_talents(), player.inventory.get_item_count("talent_shard"), talent_id):
 				button.modulate = Color(0.6, 0.95, 0.6, 1.0)
 			else:
 				button.modulate = Color(0.65, 0.65, 0.65, 1.0)
-			button.pressed.connect(_on_talent_pressed.bind(String(talent.get("id", ""))))
+			button.pressed.connect(_on_talent_pressed.bind(talent_id))
 			branch_box.add_child(button)
 		branch_row.add_child(panel)
 
@@ -81,5 +86,18 @@ func _build_talent_text(talent: Dictionary) -> String:
 func _on_talent_pressed(talent_id: String) -> void:
 	if player == null:
 		return
+	var data: Dictionary = TALENT_DATA.get_talent(talent_id)
+	var shards: int = player.inventory.get_item_count("talent_shard")
+	if player.has_talent(talent_id):
+		print("Talent already unlocked: ", talent_id)
+		return
+	if shards < int(data.get("cost", 0)):
+		print("Not enough shards: have ", shards, " need ", int(data.get("cost", 0)))
+		return
+	var prerequisite := str(data.get("prerequisite", ""))
+	if prerequisite != "" and not player.has_talent(prerequisite):
+		print("Prerequisite not met for ", talent_id)
+		return
 	if player.unlock_talent(talent_id):
+		print("Unlocked talent: ", talent_id)
 		_refresh()

@@ -67,7 +67,7 @@ const BANDAGE_COOLDOWN := 1.0
 
 func _ready() -> void:
 	add_to_group("player")
-	safe_margin = 0.01
+	safe_margin = 0.001
 	_configure_input_actions()
 	interaction_area.area_entered.connect(_on_interaction_area_entered)
 	interaction_area.area_exited.connect(_on_interaction_area_exited)

@@ -4,21 +4,14 @@ class_name Enemy
 signal died(enemy_position: Vector2)
 signal damaged(amount: int)
 
-enum State {
-	IDLE,
-	CHASE,
-	ATTACK,
-	DEAD,
-}
-
 const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 const PROJECTILE_SCENE := preload("res://scenes/enemies/projectile.tscn")
 
 @export var max_hp: int = 30
-@export var damage: int = 10
-@export var speed: float = 40.0
-@export var detection_range: float = 150.0
-@export var attack_range: float = 20.0
+@export var damage: int = 8
+@export var speed: float = 45.0
+@export var detection_range: float = 200.0
+@export var attack_range: float = 18.0
 @export var attack_cooldown: float = 1.0
 @export var keeps_distance: bool = false
 @export var preferred_distance: float = 60.0
@@ -26,37 +19,38 @@ const PROJECTILE_SCENE := preload("res://scenes/enemies/projectile.tscn")
 
 var current_hp: int = 0
 var target: CharacterBody2D = null
-var state: int = State.IDLE
-var wander_direction: Vector2 = Vector2.ZERO
+var attack_timer_left: float = 0.0
 var difficulty_multiplier: float = 1.0
 var loot_parent: Node = null
 var ai_paused: bool = false
 var base_max_hp: int = 0
 var base_damage: int = 0
 var base_speed: float = 0.0
+var is_dead: bool = false
+var debug_state: String = "idle"
 var hp_bar_root: Node2D = null
 var hp_bar_bg: Polygon2D = null
 var hp_bar_fill: Polygon2D = null
-var seeking_target: bool = false
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
-@onready var attack_timer: Timer = $AttackTimer
-@onready var wander_timer: Timer = $WanderTimer
 
 
 func _ready() -> void:
+	add_to_group("enemies")
 	base_max_hp = max_hp
 	base_damage = damage
 	base_speed = speed
 	current_hp = max_hp
-	set_physics_process(true)
-	if not attack_timer.timeout.is_connected(_on_attack_timer_timeout):
-		attack_timer.timeout.connect(_on_attack_timer_timeout)
-	if not wander_timer.timeout.is_connected(_pick_wander_direction):
-		wander_timer.timeout.connect(_pick_wander_direction)
+	print("ENEMY SPAWNED at ", global_position)
+	var players := get_tree().get_nodes_in_group("player")
+	print("ENEMY: Found ", players.size(), " players in group")
+	if players.size() > 0:
+		target = players[0]
+		print("ENEMY: Target set to ", target.name, " at ", target.global_position)
+	else:
+		print("ENEMY: NO PLAYER FOUND IN GROUP!")
 	_setup_hp_bar()
-	_pick_wander_direction()
-	call_deferred("_ensure_target")
+	call_deferred("_find_player")
 
 
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
@@ -70,98 +64,108 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	_update_hp_bar()
 
 
-func _physics_process(_delta: float) -> void:
-	if ai_paused:
+func _find_player() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		target = players[0]
+		print("ENEMY: Deferred target set to ", target.name, " at ", target.global_position)
+
+
+func _physics_process(delta: float) -> void:
+	if ai_paused or is_dead:
 		velocity = Vector2.ZERO
-		animated_sprite.play("idle")
-		move_and_slide()
-		return
-	if state == State.DEAD:
-		velocity = Vector2.ZERO
+		_update_animation(Vector2.ZERO)
 		move_and_slide()
 		return
 
 	if target == null or not is_instance_valid(target):
-		_ensure_target()
-		velocity = Vector2.ZERO
-		state = State.IDLE
-		move_and_slide()
-		return
-
-	var to_target := target.global_position - global_position
-	var distance := to_target.length()
-	if distance <= attack_range:
-		state = State.ATTACK
-	elif distance <= detection_range:
-		state = State.CHASE
-	elif distance > detection_range * 1.5:
-		state = State.IDLE
-
-	match state:
-		State.IDLE:
-			velocity = wander_direction * speed * 0.2
-		State.CHASE:
-			var chase_direction := (target.global_position - global_position).normalized()
-			if keeps_distance and global_position.distance_to(target.global_position) < preferred_distance:
-				chase_direction = -chase_direction
-			velocity = chase_direction * speed
-		State.ATTACK:
+		var players := get_tree().get_nodes_in_group("player")
+		if players.size() > 0:
+			target = players[0]
+			print("ENEMY: Reacquired target ", target.name, " at ", target.global_position)
+		else:
+			if Engine.get_physics_frames() % 60 == 0:
+				print("ENEMY: No player found in 'player' group!")
 			velocity = Vector2.ZERO
-			_attack_target()
+			debug_state = "idle"
+			_update_animation(Vector2.ZERO)
+			move_and_slide()
+			return
+
+	attack_timer_left = max(attack_timer_left - delta, 0.0)
+
+	var distance: float = global_position.distance_to(target.global_position)
+	if Engine.get_physics_frames() % 60 == 0:
+		print("ENEMY at ", global_position, " | state=", debug_state, " | dist=", int(distance), " | detect_range=", detection_range, " | target=", target.global_position)
+
+	if distance <= attack_range:
+		debug_state = "attack"
+		velocity = Vector2.ZERO
+		if attack_timer_left <= 0.0:
+			_do_attack()
+	elif distance <= detection_range:
+		debug_state = "chase"
+		var direction := (target.global_position - global_position).normalized()
+		if keeps_distance and distance < preferred_distance:
+			direction = -direction
+		velocity = direction * speed
+	else:
+		debug_state = "idle"
+		velocity = Vector2.ZERO
 
 	if velocity.x != 0.0:
 		animated_sprite.flip_h = velocity.x < 0.0
-	animated_sprite.play("run" if velocity.length() > 0.1 else "idle")
+	_update_animation(velocity)
 	move_and_slide()
 
 
+func _do_attack() -> void:
+	_perform_attack()
+	attack_timer_left = attack_cooldown
+
+
+func _perform_attack() -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if is_ranged:
+		var projectile = PROJECTILE_SCENE.instantiate()
+		projectile.setup(global_position, target.global_position - global_position, damage)
+		get_parent().add_child(projectile)
+		return
+	if target.has_method("take_damage"):
+		target.take_damage(damage)
+
+
 func take_damage(amount: int) -> void:
-	if state == State.DEAD:
+	if is_dead:
 		return
 	current_hp -= amount
 	damaged.emit(amount)
 	_update_hp_bar()
+	modulate = Color(1, 0.3, 0.3, 1)
 	var tween := create_tween()
-	tween.tween_property(animated_sprite, "modulate", Color(1, 0.45, 0.45, 1), 0.05)
-	tween.tween_property(animated_sprite, "modulate", Color(1, 1, 1, 1), 0.1)
+	tween.tween_property(self, "modulate", Color.WHITE, 0.2)
 	if current_hp <= 0:
 		die()
 
 
 func die() -> void:
-	if state == State.DEAD:
+	if is_dead:
 		return
-	state = State.DEAD
+	is_dead = true
+	debug_state = "dead"
+	velocity = Vector2.ZERO
 	if hp_bar_root != null:
 		hp_bar_root.visible = false
 	died.emit(global_position)
 	_drop_loot()
-	queue_free()
+	var tween := create_tween()
+	tween.tween_property(self, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(queue_free)
 
 
 func set_ai_paused(paused: bool) -> void:
 	ai_paused = paused
-
-
-func _attack_target() -> void:
-	if attack_timer.time_left > 0.0 or target == null or not is_instance_valid(target):
-		return
-	attack_timer.start(attack_cooldown)
-	if is_ranged:
-		var projectile = PROJECTILE_SCENE.instantiate()
-		projectile.setup(global_position, target.global_position - global_position, damage)
-		get_parent().add_child(projectile)
-	else:
-		target.take_damage(damage)
-
-
-func _on_attack_timer_timeout() -> void:
-	pass
-
-
-func _pick_wander_direction() -> void:
-	wander_direction = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
-	wander_timer.start(randf_range(0.6, 1.4))
 
 
 func _drop_loot() -> void:
@@ -211,14 +215,8 @@ func _update_hp_bar() -> void:
 	hp_bar_root.visible = current_hp < max_hp and current_hp > 0
 
 
-func _ensure_target() -> void:
-	if seeking_target:
-		return
-	if target != null and is_instance_valid(target):
-		return
-	seeking_target = true
-	await get_tree().process_frame
-	var players: Array = get_tree().get_nodes_in_group("player")
-	if not players.is_empty():
-		target = players[0]
-	seeking_target = false
+func _update_animation(direction: Vector2) -> void:
+	if direction.length() > 0.1:
+		animated_sprite.play("run")
+	else:
+		animated_sprite.play("idle")

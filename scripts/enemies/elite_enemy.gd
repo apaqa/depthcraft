@@ -24,10 +24,9 @@ func is_elite_enemy() -> bool:
 	return true
 
 
-func _attack_target() -> void:
-	if attack_timer.time_left > 0.0 or target == null or not is_instance_valid(target):
+func _perform_attack() -> void:
+	if target == null or not is_instance_valid(target):
 		return
-	attack_timer.start(attack_cooldown)
 	if use_charge_attack:
 		use_charge_attack = false
 		call_deferred("_perform_charge_attack")
@@ -42,7 +41,7 @@ func _perform_charge_attack() -> void:
 	ai_paused = true
 	velocity = Vector2.ZERO
 	await get_tree().create_timer(0.5).timeout
-	if state == State.DEAD or target == null or not is_instance_valid(target):
+	if is_dead or target == null or not is_instance_valid(target):
 		ai_paused = false
 		return
 	var dash_target := global_position + (target.global_position - global_position).normalized() * 42.0

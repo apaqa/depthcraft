@@ -36,7 +36,7 @@ func test_enemy_dies_at_zero_hp() -> void:
 	root.add_child(enemy)
 	await process_frame
 	enemy.take_damage(enemy.current_hp)
-	_assert(enemy.state == enemy.State.DEAD, "Enemy should enter the DEAD state at zero HP.")
+	_assert(enemy.is_dead, "Enemy should be marked dead at zero HP.")
 	await process_frame
 
 
