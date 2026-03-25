@@ -5,8 +5,16 @@ signal border_flash_requested(color: Color)
 signal raid_started
 
 const GROUND_SIZE := Vector2i(60, 40)
-const SOURCE_OUTDOOR_GROUND := 5
+const SOURCE_GRASS := 0
+const SOURCE_GRASS_ALT := 1
+const SOURCE_ROAD := 3
+const SOURCE_WATER := 5
+const SOURCE_WATER_ALT := 6
 const BASE_CLEAR_RADIUS := 128.0
+# Dungeon portal tile position (pixel 480,320 → tile 30,20)
+const PORTAL_TILE := Vector2i(30, 20)
+# Water border thickness
+const WATER_BORDER := 2
 const TREE_SCENE := preload("res://scenes/world/tree_node.tscn")
 const ROCK_SCENE := preload("res://scenes/world/rock_node.tscn")
 const IRON_SCENE := preload("res://scenes/world/iron_node.tscn")
@@ -21,7 +29,6 @@ const MERCHANT_SCENE := preload("res://scenes/world/merchant.tscn")
 
 
 func _ready() -> void:
-	tile_map_layer.modulate = Color(0.6, 0.8, 0.45, 1.0)
 	build_ground()
 	_spawn_resource_layout()
 	_spawn_merchant()
@@ -45,7 +52,19 @@ func build_ground() -> void:
 	for y in range(GROUND_SIZE.y):
 		for x in range(GROUND_SIZE.x):
 			var coords := Vector2i(x, y)
-			tile_map_layer.set_cell(coords, SOURCE_OUTDOOR_GROUND, Vector2i.ZERO)
+			# Water border around the map edges
+			if x < WATER_BORDER or x >= GROUND_SIZE.x - WATER_BORDER \
+					or y < WATER_BORDER or y >= GROUND_SIZE.y - WATER_BORDER:
+				var src := SOURCE_WATER if (x + y) % 2 == 0 else SOURCE_WATER_ALT
+				tile_map_layer.set_cell(coords, src, Vector2i.ZERO)
+			# Dirt road leading south from portal to water border
+			elif x >= PORTAL_TILE.x - 1 and x <= PORTAL_TILE.x \
+					and y >= PORTAL_TILE.y and y < GROUND_SIZE.y - WATER_BORDER:
+				tile_map_layer.set_cell(coords, SOURCE_ROAD, Vector2i.ZERO)
+			else:
+				# Grass with slight variation for visual interest
+				var src := SOURCE_GRASS_ALT if (x * 3 + y * 7) % 11 == 0 else SOURCE_GRASS
+				tile_map_layer.set_cell(coords, src, Vector2i.ZERO)
 
 	tile_map_layer.update_internals()
 

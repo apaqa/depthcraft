@@ -1,7 +1,7 @@
 [gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/overworld/test_overworld.gd" id="1_tn6a4"]
-[ext_resource type="TileSet" path="res://resources/tilesets/dungeon_tileset.tres" id="2_fba6m"]
+[ext_resource type="TileSet" path="res://resources/tilesets/outdoor_tileset.tres" id="2_fba6m"]
 [ext_resource type="PackedScene" path="res://scenes/world/tree_node.tscn" id="3_xv330"]
 [ext_resource type="PackedScene" path="res://scenes/world/rock_node.tscn" id="4_1j6ux"]
 [ext_resource type="PackedScene" path="res://scenes/world/iron_node.tscn" id="5_y6hvp"]
@@ -15,7 +15,6 @@ script = ExtResource("1_tn6a4")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 tile_set = ExtResource("2_fba6m")
-modulate = Color(0.7, 0.85, 0.55, 1)
 
 [node name="BuildingLayer" type="TileMapLayer" parent="."]
 tile_set = ExtResource("2_fba6m")
