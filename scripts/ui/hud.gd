@@ -205,6 +205,8 @@ func _refresh_debug_label() -> void:
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
 	debug_label.text = "[除錯模式]\n[8] 除錯  [9] 重置+清除  [0] 重置" if debug_label.visible else "[除錯模式]"
+	debug_label.modulate.a = 0.5
+	debug_label.add_theme_font_size_override("font_size", 10)
 
 
 func set_connection_info(message: String) -> void:
