@@ -20,16 +20,14 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	target = player_target
 	loot_parent = loot_root
 	floor_value = floor_number
-	max_hp = 120 + floor_number * 25
+	max_hp = 200 + floor_number * 30
 	current_hp = max_hp
 	damage = 18 + floor_number * 4
 	speed = 35.0
 	detection_range = 140.0
 	attack_range = 28.0
 	attack_cooldown = 1.2
-	drop_table = [
-		{"id": "talent_shard", "chance": 1.0, "quantity": 3},
-	]
+	drop_table = []
 
 
 func _physics_process(delta: float) -> void:
@@ -79,12 +77,21 @@ func _perform_charge_attack() -> void:
 	ai_paused = false
 
 
+func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
+	super.apply_knockback(direction, force * 0.1)
+
+
 func die() -> void:
-	if loot_parent != null and randf() <= 0.3:
-		var equipment_drop = LOOT_DROP_SCENE.instantiate()
-		equipment_drop.setup_stack(DUNGEON_LOOT.generate_dungeon_equipment(floor_value))
-		equipment_drop.global_position = global_position + Vector2(10, -4)
-		loot_parent.add_child(equipment_drop)
+	if loot_parent != null:
+		var shard_drop = LOOT_DROP_SCENE.instantiate()
+		shard_drop.setup("talent_shard", 3)
+		shard_drop.global_position = global_position
+		loot_parent.add_child(shard_drop)
+		if randf() <= 0.5:
+			var equipment_drop = LOOT_DROP_SCENE.instantiate()
+			equipment_drop.setup_stack(DUNGEON_LOOT.generate_dungeon_equipment(floor_value))
+			equipment_drop.global_position = global_position + Vector2(10, -4)
+			loot_parent.add_child(equipment_drop)
 	super.die()
 
 

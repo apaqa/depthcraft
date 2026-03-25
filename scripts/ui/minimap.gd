@@ -20,8 +20,6 @@ func _draw() -> void:
 	for enemy_pos: Vector2 in snapshot.get("enemy_positions", []):
 		var enemy_tile := Vector2(enemy_pos.x / 16.0, enemy_pos.y / 16.0)
 		draw_circle(Vector2(enemy_tile.x * scale_x, enemy_tile.y * scale_y), 2.5, Color(0.95, 0.24, 0.24, 1.0))
-	var stair_tile: Vector2 = snapshot.get("stair_tile", Vector2.ZERO)
-	draw_circle(Vector2(stair_tile.x * scale_x, stair_tile.y * scale_y), 3.0, Color(0.35, 1.0, 0.45, 1.0))
 	var spawn_tile: Vector2 = snapshot.get("spawn_tile", Vector2.ZERO)
 	draw_circle(Vector2(spawn_tile.x * scale_x, spawn_tile.y * scale_y), 3.0, Color(0.35, 0.7, 1.0, 1.0))
 	var player_tile: Vector2 = snapshot.get("player_tile", Vector2.ZERO)

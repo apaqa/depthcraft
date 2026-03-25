@@ -5,7 +5,7 @@ signal stats_changed
 
 const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
 
-var base_attack: int = 15
+var base_attack: int = 8
 var base_defense: int = 0
 var base_max_hp: int = 100
 var base_speed: float = 80.0

@@ -28,6 +28,7 @@ func setup(start_position: Vector2, travel_direction: Vector2, projectile_damage
 	global_position = start_position
 	direction = travel_direction.normalized()
 	damage = projectile_damage
+	rotation = direction.angle()
 
 
 func _on_body_entered(body: Node) -> void:
