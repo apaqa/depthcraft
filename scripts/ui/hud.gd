@@ -1,6 +1,7 @@
 extends Control
 
 const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
 @onready var hp_label: Label = $HPLabel
 @onready var hp_bar_fill: ColorRect = $HPBarBG/HPBarFill
@@ -283,7 +284,8 @@ func rebuild_inventory_grid() -> void:
 		header.modulate = Color(0.95, 0.9, 0.7, 1.0)
 		inventory_list.add_child(header)
 		for stack in section_items:
-			inventory_list.add_child(_build_item_row(stack, (groups[type_id] as Dictionary).get("color", Color.WHITE)))
+			var item_color := ITEM_DATABASE.get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))
+			inventory_list.add_child(_build_item_row(stack, item_color))
 
 
 func _build_item_row(stack: Dictionary, swatch_color: Color) -> Control:

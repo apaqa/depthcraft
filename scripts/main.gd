@@ -116,6 +116,10 @@ func _get_level_scene(level_id: String) -> PackedScene:
 func _on_player_portal_requested(target_level_id: String) -> void:
 	if current_level_id == "overworld" and target_level_id == "dungeon" and current_level != null and current_level.has_method("get_dungeon_entrance_position"):
 		overworld_return_position = current_level.get_dungeon_entrance_position()
+	if current_level_id == "overworld" and target_level_id == "dungeon" and hud.has_method("play_transition"):
+		await hud.play_transition("Entering Dungeon...", Color(0, 0, 0, 1), 0.3, 0.1)
+		change_level(target_level_id)
+		return
 	call_deferred("change_level", target_level_id)
 
 

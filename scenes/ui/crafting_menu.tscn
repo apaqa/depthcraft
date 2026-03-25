@@ -62,6 +62,9 @@ bbcode_enabled = true
 fit_content = true
 scroll_active = false
 
+[node name="MaterialsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
+theme_override_constants/separation = 4
+
 [node name="CraftButton" type="Button" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
 text = "Craft"
 

@@ -2,6 +2,8 @@ extends Control
 
 signal close_requested
 
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+
 @onready var player_grid: GridContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer/PlayerGrid
 @onready var chest_grid: GridContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ChestPanel/VBoxContainer/ChestGrid
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
@@ -68,21 +70,30 @@ func _rebuild_grid(grid: GridContainer, source_inventory, target_inventory, from
 		return
 
 	for index in range(source_inventory.max_slots):
+		var row := HBoxContainer.new()
+		row.custom_minimum_size = Vector2(120, 28)
+		row.add_theme_constant_override("separation", 6)
+		var swatch := ColorRect.new()
+		swatch.custom_minimum_size = Vector2(10, 10)
+		row.add_child(swatch)
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(96, 28)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if index < source_inventory.items.size():
 			var stack: Dictionary = source_inventory.items[index]
 			button.text = "%s x%d" % [str(stack.get("name", stack["id"])), int(stack["quantity"])]
+			swatch.color = ITEM_DATABASE.get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))
 			button.pressed.connect(_on_transfer_pressed.bind(source_inventory, target_inventory, index))
 		else:
 			button.text = "--"
 			button.disabled = true
+			swatch.color = Color(0.28, 0.28, 0.32, 0.55)
 		if from_player:
 			button.modulate = Color(0.92, 1.0, 0.92, 1.0)
 		else:
 			button.modulate = Color(0.92, 0.95, 1.0, 1.0)
-		grid.add_child(button)
+		row.add_child(button)
+		grid.add_child(row)
 
 
 func _on_transfer_pressed(source_inventory, target_inventory, stack_index: int) -> void:

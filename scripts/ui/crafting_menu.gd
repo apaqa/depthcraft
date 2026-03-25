@@ -1,12 +1,14 @@
 extends Control
 
 const CRAFTING_SYSTEM := preload("res://scripts/crafting/crafting_system.gd")
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
 signal close_requested
 
 @onready var recipe_list_container: VBoxContainer = $PanelContainer/MarginContainer/HBoxContainer/RecipePanel/RecipeScroll/RecipeListContainer
 @onready var title_label: Label = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/TitleLabel
 @onready var detail_text: RichTextLabel = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/DetailText
+@onready var materials_container: VBoxContainer = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/MaterialsContainer
 @onready var craft_button: Button = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/CraftButton
 @onready var flash_rect: ColorRect = $FlashRect
 
@@ -91,6 +93,7 @@ func _on_recipe_button_pressed(recipe_id: String) -> void:
 func _refresh_details() -> void:
 	if selected_recipe_id == "" or player_inventory == null:
 		detail_text.text = ""
+		_clear_material_rows()
 		craft_button.disabled = true
 		return
 
@@ -114,12 +117,11 @@ func _refresh_details() -> void:
 	for resource_id in cost.keys():
 		var required: int = int(cost[resource_id])
 		var owned: int = player_inventory.get_item_count(resource_id)
-		var color_tag := "green" if owned >= required else "red"
-		var suffix := " [color=green]OK[/color]" if owned >= required else ""
-		lines.append("[color=%s]%s: %d/%d%s[/color]" % [color_tag, _pretty_name(resource_id), owned, required, suffix])
+		lines.append("%s" % _pretty_name(resource_id))
 
 	detail_text.bbcode_enabled = true
 	detail_text.text = "\n".join(lines)
+	_rebuild_material_rows(cost)
 	craft_button.disabled = not CRAFTING_SYSTEM.can_craft(selected_recipe_id, player_inventory, cost_multiplier)
 	craft_button.modulate = Color(0.45, 0.95, 0.45, 1.0) if not craft_button.disabled else Color(0.55, 0.55, 0.55, 1.0)
 	_refresh_recipe_button_states()
@@ -160,3 +162,26 @@ func _refresh_recipe_button_states() -> void:
 		button.modulate = Color(0.45, 1.0, 0.45, 1.0) if can_make else Color(0.7, 0.7, 0.7, 1.0)
 		if str(recipe_id) == selected_recipe_id:
 			button.modulate = Color(1.0, 0.95, 0.55, 1.0)
+
+
+func _rebuild_material_rows(cost: Dictionary) -> void:
+	_clear_material_rows()
+	for resource_id in cost.keys():
+		var required: int = int(cost[resource_id])
+		var owned: int = player_inventory.get_item_count(str(resource_id))
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		var swatch := ColorRect.new()
+		swatch.custom_minimum_size = Vector2(10, 10)
+		swatch.color = ITEM_DATABASE.get_item_color(str(resource_id), "resource")
+		row.add_child(swatch)
+		var label := Label.new()
+		label.text = "%s: %d/%d%s" % [_pretty_name(str(resource_id)), owned, required, " OK" if owned >= required else ""]
+		label.modulate = Color(0.45, 1.0, 0.45, 1.0) if owned >= required else Color(1.0, 0.45, 0.45, 1.0)
+		row.add_child(label)
+		materials_container.add_child(row)
+
+
+func _clear_material_rows() -> void:
+	for child in materials_container.get_children():
+		child.queue_free()

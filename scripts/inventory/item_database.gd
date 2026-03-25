@@ -179,3 +179,30 @@ static func get_item(item_id: String) -> Dictionary:
 		return {}
 
 	return ITEMS[item_id].duplicate(true)
+
+
+static func get_item_color(item_id: String, item_type: String = "") -> Color:
+	match item_id:
+		"wood":
+			return Color(0.6, 0.4, 0.2, 1.0)
+		"stone":
+			return Color(0.5, 0.5, 0.5, 1.0)
+		"iron_ore":
+			return Color(0.7, 0.7, 0.8, 1.0)
+		"fiber":
+			return Color(0.3, 0.7, 0.3, 1.0)
+		"talent_shard":
+			return Color(0.6, 0.3, 0.9, 1.0)
+		"seed":
+			return Color(0.8, 0.7, 0.2, 1.0)
+		"wheat":
+			return Color(0.9, 0.8, 0.3, 1.0)
+	if item_type == "":
+		item_type = str(get_item(item_id).get("type", "resource"))
+	match item_type:
+		"equipment":
+			return Color(0.3, 0.55, 0.95, 1.0)
+		"consumable":
+			return Color(0.32, 0.78, 0.42, 1.0)
+		_:
+			return Color(0.62, 0.42, 0.22, 1.0)

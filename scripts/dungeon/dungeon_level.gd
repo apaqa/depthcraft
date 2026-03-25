@@ -134,16 +134,6 @@ func _spawn_enemies() -> void:
 		elite.configure_for_floor(player, current_floor, loot_root)
 		elite.died.connect(_on_enemy_died.bind(elite))
 		enemy_root.add_child(elite)
-	var spawn_room_idx := int(floor_data.get("spawn_room_index", 0))
-	if spawn_room_idx < rooms.size():
-		var spawn_room: Rect2i = rooms[spawn_room_idx]
-		for _si in range(randi_range(1, 2)):
-			var se = MELEE_ENEMY_SCENE.instantiate()
-			se.global_position = _random_edge_point_in_room(spawn_room)
-			se.configure_for_floor(player, current_floor, loot_root)
-			se.died.connect(_on_enemy_died.bind(se))
-			enemy_root.add_child(se)
-
 	set_gameplay_paused(gameplay_paused)
 
 
