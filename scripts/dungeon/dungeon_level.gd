@@ -129,6 +129,16 @@ func _spawn_enemies() -> void:
 		elite.configure_for_floor(player, current_floor, loot_root)
 		elite.died.connect(_on_enemy_died.bind(elite))
 		enemy_root.add_child(elite)
+	var spawn_room_idx := int(floor_data.get("spawn_room_index", 0))
+	if spawn_room_idx < rooms.size():
+		var spawn_room: Rect2i = rooms[spawn_room_idx]
+		for _si in range(randi_range(1, 2)):
+			var se = MELEE_ENEMY_SCENE.instantiate()
+			se.global_position = _random_edge_point_in_room(spawn_room)
+			se.configure_for_floor(player, current_floor, loot_root)
+			se.died.connect(_on_enemy_died.bind(se))
+			enemy_root.add_child(se)
+
 	set_gameplay_paused(gameplay_paused)
 
 
@@ -180,6 +190,26 @@ func _random_point_in_room(room: Rect2i) -> Vector2:
 		randi_range(room.position.x + 1, room.end.x - 2) * 16 + 8,
 		randi_range(room.position.y + 1, room.end.y - 2) * 16 + 8
 	)
+
+
+func _random_edge_point_in_room(room: Rect2i) -> Vector2:
+	var side := randi() % 4
+	var x: int
+	var y: int
+	match side:
+		0:
+			x = randi_range(room.position.x + 1, room.end.x - 2)
+			y = room.position.y + 1
+		1:
+			x = randi_range(room.position.x + 1, room.end.x - 2)
+			y = room.end.y - 2
+		2:
+			x = room.position.x + 1
+			y = randi_range(room.position.y + 1, room.end.y - 2)
+		_:
+			x = room.end.x - 2
+			y = randi_range(room.position.y + 1, room.end.y - 2)
+	return Vector2(x * 16 + 8, y * 16 + 8)
 
 
 func _spawn_wall_blocker(tile_pos: Vector2i) -> void:

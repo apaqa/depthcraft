@@ -10,7 +10,7 @@ const PROJECTILE_SCENE := preload("res://scenes/enemies/projectile.tscn")
 @export var max_hp: int = 30
 @export var damage: int = 8
 @export var speed: float = 45.0
-@export var detection_range: float = 400.0
+@export var detection_range: float = 9999.0
 @export var attack_range: float = 18.0
 @export var attack_cooldown: float = 1.0
 @export var keeps_distance: bool = false
@@ -29,6 +29,8 @@ var base_speed: float = 0.0
 var is_dead: bool = false
 var is_alerted: bool = false
 var debug_state: String = "idle"
+var _stuck_timer: float = 0.0
+var _last_position: Vector2 = Vector2.ZERO
 var hp_bar_root: Node2D = null
 var hp_bar_bg: Polygon2D = null
 var hp_bar_fill: Polygon2D = null
@@ -111,7 +113,17 @@ func _physics_process(delta: float) -> void:
 		var direction := (target.global_position - global_position).normalized()
 		if keeps_distance and distance < preferred_distance:
 			direction = -direction
-		velocity = direction * speed
+		if global_position.distance_to(_last_position) < 1.0:
+			_stuck_timer += delta
+			if _stuck_timer > 0.5:
+				var random_offset := Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
+				velocity = (direction + random_offset).normalized() * speed
+				_stuck_timer = 0.0
+			else:
+				velocity = direction * speed
+		else:
+			_stuck_timer = 0.0
+			velocity = direction * speed
 	else:
 		is_alerted = false
 		debug_state = "idle"
@@ -121,6 +133,7 @@ func _physics_process(delta: float) -> void:
 		animated_sprite.flip_h = velocity.x < 0.0
 	_update_animation(velocity)
 	move_and_slide()
+	_last_position = global_position
 
 
 func _do_attack() -> void:
