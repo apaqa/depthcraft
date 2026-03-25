@@ -60,10 +60,10 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	target = player_target
 	loot_parent = loot_root
 	difficulty_multiplier = 1.0 + float(floor_number) * 0.15
-	max_hp = int(round(base_max_hp * difficulty_multiplier))
+	max_hp = int(round(max_hp * difficulty_multiplier))
 	current_hp = max_hp
-	damage = int(round(base_damage * (1.0 + float(floor_number) * 0.1)))
-	speed = base_speed * (1.0 + float(floor_number) * 0.05)
+	damage = int(round(damage * (1.0 + float(floor_number) * 0.1)))
+	speed = speed * (1.0 + float(floor_number) * 0.05)
 	_update_hp_bar()
 
 
@@ -101,6 +101,7 @@ func _physics_process(delta: float) -> void:
 	if Engine.get_physics_frames() % 60 == 0:
 		print("ENEMY at ", global_position, " | state=", debug_state, " | dist=", int(distance), " | detect_range=", detection_range, " | target=", target.global_position)
 
+	print("STATE=", debug_state, " TARGET=", target, " DIST=", int(global_position.distance_to(target.global_position)) if target else "null")
 	if distance <= attack_range:
 		is_alerted = true
 		debug_state = "attack"
@@ -132,7 +133,9 @@ func _physics_process(delta: float) -> void:
 	if velocity.x != 0.0:
 		animated_sprite.flip_h = velocity.x < 0.0
 	_update_animation(velocity)
+	print("VELOCITY=", velocity)
 	move_and_slide()
+	print("POSITION=", global_position)
 	_last_position = global_position
 
 
