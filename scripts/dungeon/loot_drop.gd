@@ -74,8 +74,6 @@ func _get_rarity() -> String:
 
 
 func _setup_equipment_visuals() -> void:
-	if sprite != null:
-		sprite.scale = Vector2(1.5, 1.5)
 	var pillar_color := DUNGEON_LOOT.get_rarity_color(_get_rarity())
 	var pillar := Polygon2D.new()
 	pillar.polygon = PackedVector2Array([
@@ -101,7 +99,9 @@ func _update_icon() -> void:
 	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item_data)
 	if icon != null:
 		sprite.texture = icon
-		sprite.scale = Vector2.ONE
+		sprite.scale = Vector2(1, 1)
+		if icon.get_width() > 16 or icon.get_height() > 16:
+			sprite.scale = Vector2(16.0 / icon.get_width(), 16.0 / icon.get_height())
 		sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data) if str(item_data.get("type", "")) == "equipment" else Color.WHITE
 		return
 	sprite.texture = null
