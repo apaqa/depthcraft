@@ -41,10 +41,17 @@ var player = null
 var floor_data: Dictionary = {}
 var total_kills: int = 0
 var gameplay_paused: bool = false
+var treasure_reveal_time_left: float = 0.0
 
 
 func _ready() -> void:
 	_generate_floor()
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	if treasure_reveal_time_left > 0.0:
+		treasure_reveal_time_left = max(treasure_reveal_time_left - delta, 0.0)
 
 
 func place_player(new_player: Node2D, _spawn_override: Variant = null) -> void:
@@ -325,12 +332,19 @@ func set_gameplay_paused(paused: bool) -> void:
 
 func get_minimap_snapshot() -> Dictionary:
 	var enemy_positions: Array[Vector2] = []
+	var chest_positions: Array[Vector2] = []
 	for enemy in enemy_root.get_children():
 		enemy_positions.append(enemy.global_position)
+	if treasure_reveal_time_left > 0.0:
+		for child in feature_root.get_children():
+			if child != null and is_instance_valid(child) and child.has_method("get_interaction_prompt") and child.has_method("get"):
+				if str(child.get_interaction_prompt()) == "[E] Open Chest":
+					chest_positions.append(child.global_position)
 	return {
 		"map_size": DUNGEON_GENERATOR.MAP_SIZE,
 		"floor_tiles": floor_data.get("floor_tiles", []),
 		"enemy_positions": enemy_positions,
+		"chest_positions": chest_positions,
 		"stair_tile": Vector2(floor_data.get("exit_point", Vector2.ZERO).x / 16.0, floor_data.get("exit_point", Vector2.ZERO).y / 16.0),
 		"spawn_tile": Vector2(floor_data.get("spawn_point", Vector2.ZERO).x / 16.0, floor_data.get("spawn_point", Vector2.ZERO).y / 16.0),
 		"player_tile": Vector2(player.global_position.x / 16.0, player.global_position.y / 16.0) if player != null else Vector2.ZERO,
@@ -363,3 +377,7 @@ func _shuffle_with_rng(values: Array[int], rng: RandomNumberGenerator) -> void:
 		var current_value := values[index]
 		values[index] = values[swap_index]
 		values[swap_index] = current_value
+
+
+func reveal_treasure_hunter(duration: float) -> void:
+	treasure_reveal_time_left = max(treasure_reveal_time_left, duration)

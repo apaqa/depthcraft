@@ -69,6 +69,10 @@ var iframes_flash_accumulator: float = 0.0
 var equipment_lifesteal_ratio: float = 0.0
 var torch_light_time_left: float = 0.0
 var last_attack_direction: Vector2 = Vector2.RIGHT
+var execute_skill_armed: bool = false
+var sprint_skill_time_left: float = 0.0
+var sprint_skill_multiplier: float = 1.0
+var sprint_afterimage_timer: float = 0.0
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
@@ -157,6 +161,15 @@ func _physics_process(delta: float) -> void:
 		torch_light.visible = true
 	else:
 		torch_light.visible = false
+	if sprint_skill_time_left > 0.0:
+		sprint_skill_time_left = max(sprint_skill_time_left - delta, 0.0)
+		sprint_afterimage_timer += delta
+		if sprint_afterimage_timer >= 0.1:
+			sprint_afterimage_timer = 0.0
+			_spawn_afterimage()
+	else:
+		sprint_skill_multiplier = 1.0
+		sprint_afterimage_timer = 0.0
 	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
 		return
 
@@ -182,7 +195,7 @@ func _physics_process(delta: float) -> void:
 
 	var input_direction: Vector2 = get_input_vector()
 	var base_speed_value: float = player_stats.get_total_speed()
-	var move_speed_value: float = (sprint_speed if Input.is_action_pressed("sprint") else base_speed_value) * move_speed_multiplier
+	var move_speed_value: float = (sprint_speed if Input.is_action_pressed("sprint") else base_speed_value) * move_speed_multiplier * sprint_skill_multiplier
 	velocity = knockback_velocity.move_toward(Vector2.ZERO, 600.0 * delta)
 	apply_input_direction(input_direction, move_speed_value)
 	velocity += knockback_velocity
@@ -234,6 +247,24 @@ func _input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("use_consumable_2") and not build_mode and not ui_blocked and not is_dead:
 		use_second_consumable()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("skill_slot_1") and not build_mode and not ui_blocked and not is_dead:
+		var skill_system = _skill_system()
+		if skill_system != null:
+			skill_system.use_skill_slot(0)
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("skill_slot_2") and not build_mode and not ui_blocked and not is_dead:
+		var skill_system = _skill_system()
+		if skill_system != null:
+			skill_system.use_skill_slot(1)
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("skill_slot_3") and not build_mode and not ui_blocked and not is_dead:
+		var skill_system = _skill_system()
+		if skill_system != null:
+			skill_system.use_skill_slot(2)
 		get_viewport().set_input_as_handled()
 		return
 
@@ -480,6 +511,12 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 		if collider == null or not collider.has_method("take_damage") or collider == self:
 			continue
 		var attack_damage := get_attack_damage()
+		if execute_skill_armed:
+			var execute_enemy_hp := int(collider.get("current_hp"))
+			var execute_enemy_max_hp := int(collider.get("max_hp"))
+			if execute_enemy_max_hp > 0 and float(execute_enemy_hp) / float(execute_enemy_max_hp) <= 0.3:
+				attack_damage *= 3
+			execute_skill_armed = false
 		if player_stats.get_total_crit_chance() + crit_chance_bonus > 0.0 and randf() < (player_stats.get_total_crit_chance() + crit_chance_bonus):
 			attack_damage *= 2
 		if player_stats.get_execute_bonus() > 0.0:
@@ -536,6 +573,9 @@ func _configure_input_actions() -> void:
 	_set_key_action("use_consumable", KEY_Q)
 	_set_key_action("use_consumable_2", KEY_R)
 	_set_key_action("toggle_equipment", KEY_C)
+	_set_key_action("skill_slot_1", KEY_Z)
+	_set_key_action("skill_slot_2", KEY_X)
+	_set_key_action("skill_slot_3", KEY_V)
 
 
 func _set_key_action(action_name: String, keycode: int) -> void:
@@ -616,6 +656,9 @@ func unlock_talent(talent_id: String) -> bool:
 	player_stats.rebuild_talent_bonuses(unlocked_talents)
 	if str(talent.get("skill_unlock", "")) != "":
 		print("SKILL UNLOCKED: %s" % str(talent.get("skill_unlock", "")))
+		var skill_system = _skill_system()
+		if skill_system != null:
+			skill_system.unlock_skill_from_talent(talent_id)
 	_refresh_all_stats()
 	_save_persistent_state()
 	return true
@@ -629,6 +672,12 @@ func start_dungeon_run() -> void:
 	dungeon_run_loot.clear()
 	clear_dungeon_buffs()
 	undying_will_available = player_stats.has_undying_will()
+	execute_skill_armed = false
+	sprint_skill_time_left = 0.0
+	sprint_skill_multiplier = 1.0
+	var skill_system = _skill_system()
+	if skill_system != null:
+		skill_system.clear_dungeon_cooldowns()
 
 
 func finish_dungeon_run(safe_return: bool) -> void:
@@ -637,6 +686,9 @@ func finish_dungeon_run(safe_return: bool) -> void:
 		equipment_system.apply_death_penalty()
 	dungeon_run_loot.clear()
 	clear_dungeon_buffs()
+	execute_skill_armed = false
+	sprint_skill_time_left = 0.0
+	sprint_skill_multiplier = 1.0
 	_save_persistent_state()
 
 
@@ -840,3 +892,44 @@ func _setup_torch_light() -> void:
 	torch_light.visible = false
 	torch_light.position = Vector2(0, -2)
 	add_child(torch_light)
+
+
+func _skill_system():
+	return get_node_or_null("/root/SkillSystem")
+
+
+func arm_execute_skill() -> void:
+	execute_skill_armed = true
+
+
+func activate_sprint_skill(duration: float, multiplier: float) -> void:
+	sprint_skill_time_left = max(duration, 0.0)
+	sprint_skill_multiplier = max(multiplier, 1.0)
+	sprint_afterimage_timer = 0.0
+	show_status_message("Sprint active", Color(0.75, 0.9, 1.0, 1.0))
+
+
+func _spawn_afterimage() -> void:
+	if animated_sprite == null or animated_sprite.sprite_frames == null:
+		return
+	var animation_name := animated_sprite.animation
+	if animation_name == StringName():
+		return
+	var texture := animated_sprite.sprite_frames.get_frame_texture(animation_name, animated_sprite.frame)
+	if texture == null:
+		return
+	var afterimage := Sprite2D.new()
+	afterimage.texture = texture
+	afterimage.global_position = animated_sprite.global_position
+	afterimage.scale = animated_sprite.scale
+	afterimage.flip_h = animated_sprite.flip_h
+	afterimage.modulate = Color(0.75, 0.95, 1.0, 0.45)
+	var parent_node := get_parent()
+	if parent_node == null:
+		parent_node = get_tree().current_scene
+	if parent_node == null:
+		return
+	parent_node.add_child(afterimage)
+	var tween := afterimage.create_tween()
+	tween.tween_property(afterimage, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(afterimage.queue_free)

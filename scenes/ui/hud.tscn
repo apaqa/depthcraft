@@ -257,6 +257,18 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 2
 text = "[Q] Empty | [R] Empty"
 
+[node name="SkillSlotRow" type="HBoxContainer" parent="HUD"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -72.0
+offset_right = 180.0
+offset_bottom = -48.0
+theme_override_constants/separation = 10
+
 [node name="TransitionOverlay" type="ColorRect" parent="HUD"]
 visible = false
 layout_mode = 1

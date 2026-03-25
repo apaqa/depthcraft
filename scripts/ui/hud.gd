@@ -31,6 +31,7 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var transition_overlay: ColorRect = $TransitionOverlay
 @onready var transition_label: Label = $TransitionOverlay/TransitionLabel
 @onready var consumable_bar: Label = $ConsumableBar
+@onready var skill_slot_row: HBoxContainer = $SkillSlotRow
 
 var player = null
 var inventory = null
@@ -89,6 +90,9 @@ func bind_player(new_player) -> void:
 			player.buffs_changed.disconnect(_refresh_buff_icons)
 		if player.status_message_requested.is_connected(show_status_message):
 			player.status_message_requested.disconnect(show_status_message)
+	var skill_system = get_node_or_null("/root/SkillSystem")
+	if skill_system != null and skill_system.skills_changed.is_connected(_refresh_skill_slots):
+		skill_system.skills_changed.disconnect(_refresh_skill_slots)
 
 	player = new_player
 	inventory = player.inventory
@@ -104,11 +108,15 @@ func bind_player(new_player) -> void:
 	player.equipment_panel_requested.connect(_on_equipment_requested)
 	player.buffs_changed.connect(_refresh_buff_icons)
 	player.status_message_requested.connect(show_status_message)
+	skill_system = get_node_or_null("/root/SkillSystem")
+	if skill_system != null and not skill_system.skills_changed.is_connected(_refresh_skill_slots):
+		skill_system.skills_changed.connect(_refresh_skill_slots)
 	if build_hud.has_method("bind_system"):
 		build_hud.bind_system(player.building_system, inventory)
 	_on_inventory_changed()
 	_refresh_debug_label()
 	_refresh_buff_icons(player.get_active_buffs())
+	_refresh_skill_slots()
 
 
 func bind_level(level, level_id: String) -> void:
@@ -272,6 +280,7 @@ func _process(_delta: float) -> void:
 		minimap.set_snapshot(current_level.get_minimap_snapshot())
 	else:
 		minimap.visible = false
+	_refresh_skill_slots()
 
 
 func rebuild_inventory_grid() -> void:
@@ -408,6 +417,35 @@ func update_consumable_bar(slots: Array) -> void:
 			continue
 		labels.append("[%s] %s x%d" % [key_name, str(slot.get("name", "Item")), int(slot.get("quantity", 0))])
 	consumable_bar.text = " | ".join(labels)
+
+
+func _refresh_skill_slots() -> void:
+	if skill_slot_row == null:
+		return
+	for child in skill_slot_row.get_children():
+		child.queue_free()
+	var skill_system = get_node_or_null("/root/SkillSystem")
+	if skill_system == null:
+		return
+	var snapshots := skill_system.get_equipped_skill_snapshots()
+	for slot_index in range(3):
+		var slot: Dictionary = snapshots[slot_index] if slot_index < snapshots.size() else {}
+		var label := Label.new()
+		label.custom_minimum_size = Vector2(96, 22)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_constant_override("outline_size", 2)
+		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		var key_name := ["Z", "X", "V"][slot_index]
+		if slot.is_empty():
+			label.text = "[%s] Empty" % key_name
+			label.self_modulate = Color(0.6, 0.6, 0.6, 1.0)
+		else:
+			var cooldown := float(slot.get("current_cooldown", 0.0))
+			var short_name := str(slot.get("short_name", "SK"))
+			label.text = "[%s] %s %s" % [key_name, short_name, ("%.1f" % cooldown) if cooldown > 0.0 else "Ready"]
+			label.self_modulate = Color(0.55, 0.55, 0.55, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
+			label.tooltip_text = str(slot.get("name", "Skill"))
+		skill_slot_row.add_child(label)
 
 
 func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.25, hold_duration: float = 0.0) -> void:

@@ -42,6 +42,8 @@ var hp_bar_bg: Polygon2D = null
 var hp_bar_fill: Polygon2D = null
 var knockback_velocity: Vector2 = Vector2.ZERO
 var facing_direction: Vector2 = Vector2.RIGHT
+var slow_time_left: float = 0.0
+var slow_multiplier: float = 1.0
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -102,8 +104,13 @@ func _physics_process(delta: float) -> void:
 
 	attack_timer_left = max(attack_timer_left - delta, 0.0)
 	knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 520.0 * delta)
+	if slow_time_left > 0.0:
+		slow_time_left = max(slow_time_left - delta, 0.0)
+	else:
+		slow_multiplier = 1.0
 
 	var distance: float = global_position.distance_to(target.global_position)
+	var effective_speed := speed * slow_multiplier
 	if distance <= attack_range:
 		is_alerted = true
 		debug_state = "attack"
@@ -125,13 +132,13 @@ func _physics_process(delta: float) -> void:
 			_stuck_timer += delta
 			if _stuck_timer > 0.5:
 				var random_offset := Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
-				velocity = (direction + random_offset).normalized() * speed
+				velocity = (direction + random_offset).normalized() * effective_speed
 				_stuck_timer = 0.0
 			else:
-				velocity = direction * speed
+				velocity = direction * effective_speed
 		else:
 			_stuck_timer = 0.0
-			velocity = direction * speed
+			velocity = direction * effective_speed
 	else:
 		is_alerted = false
 		debug_state = "idle"
@@ -279,3 +286,8 @@ func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
 	if direction.length_squared() <= 0.0:
 		return
 	knockback_velocity += direction.normalized() * force
+
+
+func apply_slow(multiplier: float, duration: float) -> void:
+	slow_multiplier = clampf(multiplier, 0.1, 1.0)
+	slow_time_left = max(duration, 0.0)

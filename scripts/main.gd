@@ -113,6 +113,9 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 
 	if hud.has_method("bind_level"):
 		hud.bind_level(current_level, current_level_id)
+	var skill_system = get_node_or_null("/root/SkillSystem")
+	if skill_system != null:
+		skill_system.bind_level(current_level, current_level_id)
 	if hud.has_method("update_day_label"):
 		hud.update_day_label(current_day)
 
@@ -313,6 +316,9 @@ func _bind_local_player() -> void:
 		player.died.connect(_on_player_died)
 	if hud.has_method("bind_player"):
 		hud.bind_player(player)
+	var skill_system = get_node_or_null("/root/SkillSystem")
+	if skill_system != null:
+		skill_system.bind_player(player)
 
 
 func _place_players_in_current_level(spawn_override: Variant = null) -> void:
