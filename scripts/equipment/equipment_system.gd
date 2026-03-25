@@ -3,7 +3,9 @@ class_name EquipmentSystem
 
 signal equipment_changed
 
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 const SLOT_ORDER := ["weapon", "helmet", "chest_armor", "boots", "accessory", "offhand", "tool"]
+const DISPLAY_STATS := ["attack", "defense", "max_hp", "speed"]
 
 var _equipped := {}
 
@@ -79,20 +81,80 @@ func get_total_equipment_bonus(stat_name: String) -> float:
 
 
 func get_total_bonus_map() -> Dictionary:
-	var totals := {}
-	for slot_name in SLOT_ORDER:
-		var item: Dictionary = _equipped.get(slot_name, {})
-		for stat_name in (item.get("stats", {}) as Dictionary).keys():
-			totals[stat_name] = float(totals.get(stat_name, 0.0)) + _get_item_stat_bonus(item, stat_name)
-	return totals
+	return _build_total_bonus_map(_equipped)
+
+
+func get_preview_bonus_map(item_data: Dictionary, slot_name: String = "") -> Dictionary:
+	var resolved_slot := slot_name if slot_name != "" else str(item_data.get("slot", ""))
+	var preview_equipped := _equipped.duplicate(true)
+	if resolved_slot != "" and preview_equipped.has(resolved_slot):
+		preview_equipped[resolved_slot] = item_data.duplicate(true)
+	return _build_total_bonus_map(preview_equipped)
+
+
+func get_item_display_name(item: Dictionary) -> String:
+	if item.is_empty():
+		return ""
+	var base_name := str(item.get("name", item.get("id", "")))
+	return "(Broken) %s" % base_name if _is_item_broken(item) else base_name
+
+
+func get_item_display_color(item: Dictionary) -> Color:
+	if item.is_empty():
+		return Color.WHITE
+	if _is_item_broken(item):
+		return Color(1.0, 0.3, 0.3, 1.0)
+	return ITEM_DATABASE.get_stack_color(item)
+
+
+func get_effective_item_stats(item: Dictionary) -> Dictionary:
+	var effective_stats: Dictionary = {}
+	var stats: Dictionary = item.get("stats", {})
+	var multiplier := 0.5 if _is_item_broken(item) else 1.0
+	for stat_name in stats.keys():
+		effective_stats[stat_name] = float(stats.get(stat_name, 0.0)) * multiplier
+	return effective_stats
+
+
+func get_comparison_lines(current_summary: Dictionary, preview_summary: Dictionary) -> PackedStringArray:
+	var labels := {
+		"attack": "ATK",
+		"defense": "DEF",
+		"max_hp": "HP",
+		"speed": "SPD",
+	}
+	var lines: PackedStringArray = []
+	for stat_name in DISPLAY_STATS:
+		var before_value := float(current_summary.get(stat_name, 0.0))
+		var after_value := float(preview_summary.get(stat_name, 0.0))
+		var delta := after_value - before_value
+		var before_text := str(int(round(before_value)))
+		var after_text := str(int(round(after_value)))
+		var delta_text := "%+d" % int(round(delta))
+		lines.append("%s: %s -> %s (%s)" % [str(labels.get(stat_name, stat_name)), before_text, after_text, delta_text])
+	return lines
+
+
+func get_repair_material(slot_name: String, item: Dictionary = {}) -> String:
+	var target_item: Dictionary = item if not item.is_empty() else _equipped.get(slot_name, {})
+	if target_item.is_empty():
+		return ""
+	var resolved_slot := slot_name if slot_name != "" else str(target_item.get("slot", ""))
+	match resolved_slot:
+		"weapon", "tool":
+			return "iron_ore"
+		"helmet", "chest_armor", "boots", "offhand", "accessory":
+			return "fiber"
+		_:
+			return str(target_item.get("repair_material", "fiber"))
 
 
 func consume_attack_durability() -> void:
-	_reduce_durability(["weapon"], 1)
+	_reduce_durability(["weapon"], 1, false)
 
 
 func consume_damage_durability() -> void:
-	_reduce_durability(["helmet", "chest_armor", "boots", "offhand", "accessory"], 1)
+	_reduce_durability(["helmet", "chest_armor", "boots", "offhand", "accessory"], 1, true)
 
 
 func apply_death_penalty() -> void:
@@ -112,7 +174,7 @@ func is_broken(slot_name: String) -> bool:
 	var item: Dictionary = _equipped.get(slot_name, {})
 	if item.is_empty():
 		return false
-	return int(item.get("durability", 1)) <= 0
+	return _is_item_broken(item)
 
 
 func get_repairable_slots() -> Array[String]:
@@ -137,7 +199,7 @@ func get_repair_cost(slot_name: String) -> Dictionary:
 	var lost: int = max(max_durability - durability, 0)
 	if lost <= 0:
 		return {}
-	var material := str(item.get("repair_material", "wood"))
+	var material := get_repair_material(slot_name, item)
 	return {material: max(int(ceil(float(lost) / 10.0)), 1)}
 
 
@@ -173,20 +235,37 @@ func load_state(data: Dictionary) -> void:
 	equipment_changed.emit()
 
 
-func _reduce_durability(slot_names: Array[String], amount: int) -> void:
-	var changed := false
+func _build_total_bonus_map(equipped_map: Dictionary) -> Dictionary:
+	var totals := {}
+	for slot_name in SLOT_ORDER:
+		var item: Dictionary = equipped_map.get(slot_name, {})
+		for stat_name in (item.get("stats", {}) as Dictionary).keys():
+			totals[stat_name] = float(totals.get(stat_name, 0.0)) + _get_item_stat_bonus(item, stat_name)
+	return totals
+
+
+func _reduce_durability(slot_names: Array[String], amount: int, random_pick: bool = false) -> void:
+	var eligible_slots: Array[String] = []
 	for slot_name in slot_names:
 		var item: Dictionary = _equipped.get(slot_name, {})
-		if item.is_empty():
+		if item.is_empty() or not item.has("durability"):
 			continue
-		if not item.has("durability"):
-			continue
-		item["durability"] = max(int(item.get("durability", 0)) - amount, 0)
-		_equipped[slot_name] = item
-		changed = true
-		break
-	if changed:
-		equipment_changed.emit()
+		eligible_slots.append(slot_name)
+	if eligible_slots.is_empty():
+		return
+	var target_slot := eligible_slots[randi_range(0, eligible_slots.size() - 1)] if random_pick else eligible_slots[0]
+	var target_item: Dictionary = _equipped.get(target_slot, {})
+	target_item["durability"] = max(int(target_item.get("durability", 0)) - amount, 0)
+	_equipped[target_slot] = target_item
+	equipment_changed.emit()
+
+
+func _is_item_broken(item: Dictionary) -> bool:
+	if item.is_empty():
+		return false
+	var max_durability := int(item.get("max_durability", item.get("durability_max", 0)))
+	var durability := int(item.get("durability", item.get("durability_current", max_durability)))
+	return max_durability > 0 and durability <= 0
 
 
 func _get_item_stat_bonus(item: Dictionary, stat_name: String) -> float:
@@ -196,7 +275,15 @@ func _get_item_stat_bonus(item: Dictionary, stat_name: String) -> float:
 	if not stats.has(stat_name):
 		return 0.0
 	var bonus := float(stats[stat_name])
-	var max_durability := int(item.get("max_durability", 0))
-	if max_durability > 0 and int(item.get("durability", max_durability)) <= 0:
+	if _is_item_broken(item):
 		bonus *= 0.5
 	return bonus
+
+
+func get_display_stat_summary(base_summary: Dictionary) -> Dictionary:
+	return {
+		"attack": int(round(float(base_summary.get("attack", 0.0)))),
+		"defense": int(round(float(base_summary.get("defense", 0.0)))),
+		"max_hp": int(round(float(base_summary.get("max_hp", 0.0)))),
+		"speed": int(round(float(base_summary.get("speed", 0.0)))),
+	}

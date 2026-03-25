@@ -64,3 +64,8 @@ custom_minimum_size = Vector2(200, 200)
 
 [node name="StatLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 text = "ATK: 0   DEF: 0   HP: 0   SPD: 0"
+
+[node name="ComparisonLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 76)
+autowrap_mode = 2
+text = "Hover bag gear to compare."

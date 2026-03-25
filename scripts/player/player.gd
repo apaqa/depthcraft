@@ -641,6 +641,23 @@ func get_stats_summary() -> Dictionary:
 	}
 
 
+func get_stats_summary_for_item(item: Dictionary) -> Dictionary:
+	var current_summary: Dictionary = get_stats_summary()
+	var current_bonuses: Dictionary = equipment_system.get_total_bonus_map()
+	var preview_bonuses: Dictionary = equipment_system.get_preview_bonus_map(item)
+	var attack_delta: float = float(preview_bonuses.get("attack", 0.0)) - float(current_bonuses.get("attack", 0.0))
+	var defense_delta: float = float(preview_bonuses.get("defense", 0.0)) - float(current_bonuses.get("defense", 0.0))
+	var hp_delta: float = float(preview_bonuses.get("max_hp", 0.0)) - float(current_bonuses.get("max_hp", 0.0))
+	var preview_speed_bonus: float = player_stats.base_speed * float(preview_bonuses.get("speed_multiplier", 0.0)) + float(preview_bonuses.get("speed", 0.0))
+	var equipment_speed_delta: float = preview_speed_bonus - (float(current_bonuses.get("speed", 0.0)) + player_stats.base_speed * float(current_bonuses.get("speed_multiplier", 0.0)))
+	return {
+		"attack": int(round(float(current_summary.get("attack", 0.0)) + attack_delta)),
+		"defense": int(round(float(current_summary.get("defense", 0.0)) + defense_delta)),
+		"max_hp": int(round(float(current_summary.get("max_hp", 0.0)) + hp_delta)),
+		"speed": int(round(float(current_summary.get("speed", 0.0)) + equipment_speed_delta)),
+	}
+
+
 func get_unlocked_talents() -> Array[String]:
 	return unlocked_talents.duplicate()
 

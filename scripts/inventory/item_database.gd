@@ -217,6 +217,10 @@ static func get_item_color(item_id: String, item_type: String = "") -> Color:
 
 
 static func get_stack_color(stack: Dictionary) -> Color:
+	var max_durability := int(stack.get("max_durability", stack.get("durability_max", 0)))
+	var durability := int(stack.get("durability", stack.get("durability_current", max_durability)))
+	if max_durability > 0 and durability <= 0:
+		return Color(1.0, 0.3, 0.3, 1.0)
 	if str(stack.get("source", "")) == "dungeon":
 		var rarity := str(stack.get("rarity", "Common"))
 		match rarity:

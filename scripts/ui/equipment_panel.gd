@@ -7,15 +7,18 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var slot_list: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel/VBoxContainer/SlotList
 @onready var inventory_list: ItemList = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryList
 @onready var stat_label: Label = $PanelContainer/MarginContainer/VBoxContainer/StatLabel
+@onready var comparison_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ComparisonLabel
 
 var player = null
 var _inventory_indices: Array[int] = []
+var _hovered_inventory_index: int = -1
 
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	inventory_list.item_selected.connect(_on_inventory_selected)
+	set_process(true)
 
 
 func open_for_player(target_player) -> void:
@@ -45,6 +48,7 @@ func _refresh() -> void:
 		child.queue_free()
 	inventory_list.clear()
 	_inventory_indices.clear()
+	_hovered_inventory_index = -1
 	if player == null:
 		return
 	for slot_name in player.equipment_system.get_slot_order():
@@ -52,13 +56,16 @@ func _refresh() -> void:
 		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
 		button.text = _build_slot_text(slot_name, item)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		if not item.is_empty():
+			button.modulate = player.equipment_system.get_item_display_color(item)
 		button.pressed.connect(_on_slot_pressed.bind(String(slot_name)))
 		slot_list.add_child(button)
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
 		if str(stack.get("type", "")) != "equipment":
 			continue
-		inventory_list.add_item("%s [%s]" % [str(stack.get("name", stack.get("id", ""))), str(stack.get("slot", ""))])
+		var display_name = player.equipment_system.get_item_display_name(stack)
+		inventory_list.add_item("%s [%s]" % [display_name, str(stack.get("slot", ""))])
 		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, ITEM_DATABASE.get_stack_color(stack))
 		_inventory_indices.append(index)
 	var summary: Dictionary = player.get_stats_summary()
@@ -68,6 +75,7 @@ func _refresh() -> void:
 		int(summary.get("max_hp", 0)),
 		int(summary.get("speed", 0)),
 	]
+	comparison_label.text = "Hover bag gear to compare."
 
 
 func _build_slot_text(slot_name: String, item: Dictionary) -> String:
@@ -76,8 +84,7 @@ func _build_slot_text(slot_name: String, item: Dictionary) -> String:
 		return label + "Empty"
 	var durability := int(item.get("durability", 0))
 	var max_durability := int(item.get("max_durability", 0))
-	var broken_suffix := " (Broken)" if max_durability > 0 and durability <= 0 else ""
-	return "%s%s%s  Dur: %d/%d" % [label, str(item.get("name", item.get("id", ""))), broken_suffix, durability, max_durability]
+	return "%s%s  Dur: %d/%d" % [label, player.equipment_system.get_item_display_name(item), durability, max_durability]
 
 
 func _on_inventory_selected(index: int) -> void:
@@ -92,3 +99,30 @@ func _on_slot_pressed(slot_name: String) -> void:
 		return
 	player.equipment_system.unequip(slot_name, player.inventory)
 	_refresh()
+
+
+func _process(_delta: float) -> void:
+	if not visible or player == null:
+		return
+	var local_position := inventory_list.get_local_mouse_position()
+	var hovered := inventory_list.get_item_at_position(local_position, true)
+	if hovered == _hovered_inventory_index:
+		return
+	_hovered_inventory_index = hovered
+	_update_comparison_label()
+
+
+func _update_comparison_label() -> void:
+	if comparison_label == null or player == null:
+		return
+	if _hovered_inventory_index < 0 or _hovered_inventory_index >= _inventory_indices.size():
+		comparison_label.text = "Hover bag gear to compare."
+		return
+	var stack_index: int = _inventory_indices[_hovered_inventory_index]
+	if stack_index < 0 or stack_index >= player.inventory.items.size():
+		comparison_label.text = "Hover bag gear to compare."
+		return
+	var item: Dictionary = player.inventory.items[stack_index]
+	var current_summary: Dictionary = player.get_stats_summary()
+	var preview_summary: Dictionary = player.get_stats_summary_for_item(item)
+	comparison_label.text = "\n".join(player.equipment_system.get_comparison_lines(current_summary, preview_summary))

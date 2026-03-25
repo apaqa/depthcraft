@@ -53,14 +53,15 @@ func _refresh() -> void:
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		var title := Label.new()
-		title.text = "%s (%s)" % [str(item.get("name", slot_name)), slot_name.replace("_", " ").capitalize()]
+		title.text = "%s (%s)" % [player.equipment_system.get_item_display_name(item), slot_name.replace("_", " ").capitalize()]
+		title.self_modulate = player.equipment_system.get_item_display_color(item)
 		row.add_child(title)
 		var bar_bg := ColorRect.new()
 		bar_bg.custom_minimum_size = Vector2(280, 10)
 		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
 		var bar_fill := ColorRect.new()
 		bar_fill.custom_minimum_size = Vector2(280.0 * clampf(float(durability) / float(max(max_durability, 1)), 0.0, 1.0), 10)
-		bar_fill.color = Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0)
+		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if durability <= 0 else (Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0))
 		bar_bg.add_child(bar_fill)
 		row.add_child(bar_bg)
 		var info := Label.new()
@@ -75,8 +76,11 @@ func _refresh() -> void:
 				cost_parts.append("%d %s" % [int(cost[resource_id]), resource_id.replace("_", " ").capitalize()])
 				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
 					can_afford = false
+			var cost_label := Label.new()
+			cost_label.text = "Cost: %s" % ", ".join(cost_parts)
+			row.add_child(cost_label)
 			var button := Button.new()
-			button.text = "Repair (%s)" % ", ".join(cost_parts)
+			button.text = "[Repair]"
 			button.disabled = not can_afford
 			button.pressed.connect(_on_repair_pressed.bind(slot_name))
 			row.add_child(button)
