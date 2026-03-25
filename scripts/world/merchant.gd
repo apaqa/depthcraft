@@ -17,7 +17,7 @@ var _gold_label: Label = null
 
 
 func get_interaction_prompt() -> String:
-	return "[E] Trade"
+	return "[E] 交易"
 
 
 func interact(player) -> void:
@@ -66,7 +66,7 @@ func _open_shop() -> void:
 	margin.add_child(vbox)
 
 	var title := Label.new()
-	title.text = "Merchant"
+	title.text = "商人"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
@@ -77,7 +77,7 @@ func _open_shop() -> void:
 		_add_shop_row(vbox, str(item["label"]), int(item["price"]),
 				_on_buy_item.bind(str(item["id"]), int(item["quantity"]), int(item["price"])))
 
-	_add_shop_row(vbox, "Mystery Equipment", 50, _on_buy_equipment)
+	_add_shop_row(vbox, "神秘裝備", 50, _on_buy_equipment)
 
 	vbox.add_child(HSeparator.new())
 
@@ -87,7 +87,7 @@ func _open_shop() -> void:
 	_update_gold_label()
 	footer.add_child(_gold_label)
 	var close_btn := Button.new()
-	close_btn.text = "Close [Esc]"
+	close_btn.text = "關閉 [Esc]"
 	close_btn.pressed.connect(_close_shop)
 	footer.add_child(close_btn)
 	vbox.add_child(footer)
@@ -96,11 +96,11 @@ func _open_shop() -> void:
 func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable) -> void:
 	var row := HBoxContainer.new()
 	var lbl := Label.new()
-	lbl.text = "%s  —  %d gold" % [label_text, price]
+	lbl.text = "%s  —  %d 金幣" % [label_text, price]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var btn := Button.new()
-	btn.text = "Buy"
+	btn.text = "購買"
 	btn.pressed.connect(callback)
 	row.add_child(btn)
 	parent.add_child(row)
@@ -136,7 +136,7 @@ func _update_gold_label() -> void:
 	var gold_count := 0
 	if inv != null:
 		gold_count = inv.get_item_count("gold")
-	_gold_label.text = "Gold: %d" % gold_count
+	_gold_label.text = "金幣: %d" % gold_count
 
 
 func _close_shop() -> void:

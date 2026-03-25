@@ -3,7 +3,7 @@ class_name RepairBenchFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] Repair"
+	return "[E] 修理"
 
 
 func interact(player) -> void:

@@ -3,7 +3,7 @@ class_name WorkbenchFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] Craft"
+	return "[E] 製作"
 
 
 func interact(player) -> void:

@@ -42,7 +42,7 @@ theme_override_constants/separation = 12
 [node name="TitleLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "DEPTHCRAFT"
+text = "深淵工坊 DepthCraft"
 
 [node name="SpacerTop" type="Control" parent="Panel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 6)
@@ -51,17 +51,17 @@ layout_mode = 2
 [node name="SinglePlayerButton" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
-text = "Single Player"
+text = "單人遊戲"
 
 [node name="HostGameButton" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
-text = "Host Game"
+text = "建立房間"
 
 [node name="JoinGameButton" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
-text = "Join Game"
+text = "加入房間"
 
 [node name="JoinPanel" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
 visible = false
@@ -89,4 +89,4 @@ text = ""
 [node name="QuitButton" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
-text = "Quit"
+text = "退出"

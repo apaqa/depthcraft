@@ -65,9 +65,8 @@ func build_ground() -> void:
 					and y >= PORTAL_TILE.y and y < GROUND_SIZE.y - WATER_BORDER:
 				tile_map_layer.set_cell(coords, SOURCE_ROAD, Vector2i.ZERO)
 			else:
-				# Grass with slight variation for visual interest
-				var src := SOURCE_GRASS_ALT if (x * 3 + y * 7) % 11 == 0 else SOURCE_GRASS
-				tile_map_layer.set_cell(coords, src, Vector2i.ZERO)
+				# Solid grass tile - no transition tiles in main ground area
+				tile_map_layer.set_cell(coords, SOURCE_GRASS, Vector2i.ZERO)
 
 	tile_map_layer.update_internals()
 

@@ -10,16 +10,16 @@ const COOKING_BENCH_SCENE_PATH := "res://scenes/building/facilities/cooking_benc
 const FULL_TILE_ATLAS := Vector2i.ZERO
 const CATEGORY_ORDER := ["structure", "door_window", "facility", "defense"]
 const CATEGORY_DATA := {
-	"structure": {"name": "Structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
-	"door_window": {"name": "Door/Window", "items": ["wood_door"]},
-	"facility": {"name": "Facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot"]},
-	"defense": {"name": "Defense", "items": []},
+	"structure": {"name": "建築", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
+	"door_window": {"name": "門窗", "items": ["wood_door"]},
+	"facility": {"name": "設施", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot"]},
+	"defense": {"name": "防禦", "items": []},
 }
 
 const BUILDINGS := {
 	"wood_wall": {
 		"id": "wood_wall",
-		"name": "Wood Wall",
+		"name": "木牆",
 		"category": "structure",
 		"kind": "tile",
 		"cost": {"wood": 2},
@@ -30,7 +30,7 @@ const BUILDINGS := {
 	},
 	"wood_floor": {
 		"id": "wood_floor",
-		"name": "Wood Floor",
+		"name": "木地板",
 		"category": "structure",
 		"kind": "tile",
 		"cost": {"wood": 1},
@@ -41,7 +41,7 @@ const BUILDINGS := {
 	},
 	"stone_wall": {
 		"id": "stone_wall",
-		"name": "Stone Wall",
+		"name": "石牆",
 		"category": "structure",
 		"kind": "tile",
 		"cost": {"stone": 3},
@@ -52,7 +52,7 @@ const BUILDINGS := {
 	},
 	"stone_floor": {
 		"id": "stone_floor",
-		"name": "Stone Floor",
+		"name": "石地板",
 		"category": "structure",
 		"kind": "tile",
 		"cost": {"stone": 2},
@@ -63,7 +63,7 @@ const BUILDINGS := {
 	},
 	"wood_door": {
 		"id": "wood_door",
-		"name": "Wood Door",
+		"name": "木門",
 		"category": "door_window",
 		"kind": "facility",
 		"cost": {"wood": 3},
@@ -74,7 +74,7 @@ const BUILDINGS := {
 	},
 	"workbench": {
 		"id": "workbench",
-		"name": "Workbench",
+		"name": "工作台",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"wood": 5},
@@ -83,7 +83,7 @@ const BUILDINGS := {
 	},
 	"storage_chest": {
 		"id": "storage_chest",
-		"name": "Storage Chest",
+		"name": "儲物箱",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"wood": 3},
@@ -92,7 +92,7 @@ const BUILDINGS := {
 	},
 	"repair_bench": {
 		"id": "repair_bench",
-		"name": "Repair Bench",
+		"name": "修理台",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"stone": 5, "iron_ore": 3},
@@ -101,7 +101,7 @@ const BUILDINGS := {
 	},
 	"talent_altar": {
 		"id": "talent_altar",
-		"name": "Talent Altar",
+		"name": "天賦祭壇",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"stone": 10, "iron_ore": 5},
@@ -110,7 +110,7 @@ const BUILDINGS := {
 	},
 	"farm_plot": {
 		"id": "farm_plot",
-		"name": "Farm Plot",
+		"name": "農田",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"wood": 2, "stone": 2},
@@ -119,7 +119,7 @@ const BUILDINGS := {
 	},
 	"cooking_bench": {
 		"id": "cooking_bench",
-		"name": "Cooking Bench",
+		"name": "烹飪台",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"stone": 3, "wood": 2},

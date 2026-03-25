@@ -19,7 +19,7 @@ func _ready() -> void:
 func open_with_options(options: Array[Dictionary]) -> void:
 	active_options = options.duplicate(true)
 	visible = true
-	title_label.text = "Choose 1 of 3 Buffs"
+	title_label.text = "選擇強化 (3選1)"
 	_rebuild_cards()
 	auto_timer.start(30.0)
 

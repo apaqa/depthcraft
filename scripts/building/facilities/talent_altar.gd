@@ -3,7 +3,7 @@ class_name TalentAltarFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] Talent Tree"
+	return "[E] 天賦樹"
 
 
 func interact(player) -> void:

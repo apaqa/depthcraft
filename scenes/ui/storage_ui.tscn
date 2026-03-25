@@ -46,7 +46,7 @@ size_flags_horizontal = 3
 [node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel"]
 
 [node name="PlayerLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer"]
-text = "Your Bag"
+text = "你的背包"
 
 [node name="PlayerGrid" type="GridContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer"]
 columns = 2

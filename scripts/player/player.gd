@@ -296,7 +296,7 @@ func _try_interact() -> void:
 	if interactable == null or not interactable.has_method("interact"):
 		return
 	if _interaction_requires_core(interactable):
-		show_status_message("Needs an active Home Core", Color(1.0, 0.65, 0.4, 1.0))
+		show_status_message("需要有效的家園核心", Color(1.0, 0.65, 0.4, 1.0))
 		return
 	if interactable.has_method("hit"):
 		last_interacted_resource = interactable

@@ -63,7 +63,7 @@ func _ready() -> void:
 
 
 func update_hp(current: int, max_hp: int) -> void:
-	hp_label.text = "HP"
+	hp_label.text = "血量"
 	hp_bar_fill.size.x = 120.0 * clampf(float(current) / float(max(max_hp, 1)), 0.0, 1.0)
 
 
@@ -186,16 +186,16 @@ func _on_inventory_changed() -> void:
 
 
 func update_bag_label(used_slots: int, max_slots: int) -> void:
-	bag_label.text = "Bag: %d/%d slots" % [used_slots, max_slots]
+	bag_label.text = "背包: %d/%d" % [used_slots, max_slots]
 
 
 func update_floor_label(current_floor: int) -> void:
-	floor_label.text = "Floor: %d" % current_floor if current_floor > 0 else ""
+	floor_label.text = "層數: %d" % current_floor if current_floor > 0 else ""
 	day_label.visible = current_floor <= 0
 
 
 func update_kills_label(kills: int) -> void:
-	kills_label.text = "Kills: %d" % kills if kills > 0 else ""
+	kills_label.text = "擊殺: %d" % kills if kills > 0 else ""
 
 
 func _refresh_debug_label() -> void:
@@ -204,7 +204,7 @@ func _refresh_debug_label() -> void:
 		return
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
-	debug_label.text = "[DEBUG MODE]\n[8] Debug  [9] Reset+Clear  [0] Reset" if debug_label.visible else "[DEBUG MODE]"
+	debug_label.text = "[除錯模式]\n[8] 除錯  [9] 重置+清除  [0] 重置" if debug_label.visible else "[除錯模式]"
 
 
 func set_connection_info(message: String) -> void:
@@ -215,7 +215,7 @@ func set_connection_info(message: String) -> void:
 func _on_crafting_requested(_facility) -> void:
 	_close_all_menus()
 	var recipe_filter := PackedStringArray()
-	var menu_title := "Crafting"
+	var menu_title := "製作"
 	if _facility != null and _facility.has_method("get_recipe_ids"):
 		recipe_filter = _facility.get_recipe_ids()
 	if _facility != null and _facility.has_method("get_menu_title"):
@@ -416,7 +416,7 @@ func show_status_message(message: String, color: Color = Color.WHITE, duration: 
 
 
 func update_day_label(day_number: int) -> void:
-	day_label.text = "Day: %d" % max(day_number, 1)
+	day_label.text = "天數: %d" % max(day_number, 1)
 	day_label.visible = true
 
 
@@ -426,7 +426,7 @@ func update_consumable_bar(slots: Array) -> void:
 		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
 		var key_name = "Q" if slot_index == 0 else "R"
 		if slot.is_empty():
-			labels.append("[%s] Empty" % key_name)
+			labels.append("[%s] 空" % key_name)
 			continue
 		labels.append("[%s] %s x%d" % [key_name, str(slot.get("name", "Item")), int(slot.get("quantity", 0))])
 	consumable_bar.text = " | ".join(labels)
@@ -450,15 +450,28 @@ func _refresh_skill_slots() -> void:
 		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		var key_name = ["Z", "X", "V"][slot_index]
 		if slot.is_empty():
-			label.text = "[%s] Empty" % key_name
+			label.text = "[%s] 空" % key_name
 			label.self_modulate = Color(0.6, 0.6, 0.6, 1.0)
 		else:
 			var cooldown = float(slot.get("current_cooldown", 0.0))
 			var short_name = str(slot.get("short_name", "SK"))
-			label.text = "[%s] %s %s" % [key_name, short_name, ("%.1f" % cooldown) if cooldown > 0.0 else "Ready"]
+			label.text = "[%s] %s %s" % [key_name, short_name, ("%.1f" % cooldown) if cooldown > 0.0 else "就緒"]
 			label.self_modulate = Color(0.55, 0.55, 0.55, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
 			label.tooltip_text = str(slot.get("name", "Skill"))
 		skill_slot_row.add_child(label)
+	var has_unequipped := false
+	for skill_id in skill_system.unlocked_skill_ids:
+		var is_passive := bool((skill_system.skills.get(skill_id, {}) as Dictionary).get("passive", false))
+		if not is_passive and not skill_system.equipped_skill_ids.has(skill_id):
+			has_unequipped = true
+			break
+	if has_unequipped:
+		var hint := Label.new()
+		hint.text = "  ← 在天賦祭壇裝備技能"
+		hint.self_modulate = Color(1.0, 0.9, 0.4, 1.0)
+		hint.add_theme_constant_override("outline_size", 2)
+		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		skill_slot_row.add_child(hint)
 
 
 func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.25, hold_duration: float = 0.0) -> void:

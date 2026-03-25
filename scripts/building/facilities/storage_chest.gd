@@ -13,7 +13,7 @@ func _ready() -> void:
 
 
 func get_interaction_prompt() -> String:
-	return "[E] Storage"
+	return "[E] 倉庫"
 
 
 func interact(player) -> void:

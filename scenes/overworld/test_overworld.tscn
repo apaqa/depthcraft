@@ -50,7 +50,7 @@ position = Vector2(400, 96)
 [node name="ReturnPortal" parent="." instance=ExtResource("6_yx4j8")]
 position = Vector2(480, 320)
 target_level_id = "dungeon"
-prompt_text = "[E] Enter Dungeon"
+prompt_text = "[E] 進入地牢"
 
 [node name="Sprite2D" parent="ReturnPortal" index="0"]
 texture = ExtResource("9_stairs")

@@ -54,7 +54,7 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
 [node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
-text = "Crafting"
+text = "製作"
 
 [node name="DetailText" type="RichTextLabel" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
 custom_minimum_size = Vector2(250, 80)
@@ -67,7 +67,7 @@ scroll_active = true
 theme_override_constants/separation = 4
 
 [node name="CraftButton" type="Button" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
-text = "Craft"
+text = "製作"
 
 [node name="FlashRect" type="ColorRect" parent="."]
 layout_mode = 1

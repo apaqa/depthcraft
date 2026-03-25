@@ -35,7 +35,7 @@ theme_override_constants/margin_bottom = 12
 theme_override_constants/separation = 10
 
 [node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
-text = "Equipment"
+text = "裝備"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
 theme_override_constants/separation = 12
@@ -46,7 +46,7 @@ size_flags_horizontal = 3
 [node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel"]
 
 [node name="SlotTitle" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel/VBoxContainer"]
-text = "Gear"
+text = "穿戴"
 
 [node name="SlotList" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel/VBoxContainer"]
 theme_override_constants/separation = 6
@@ -57,7 +57,7 @@ size_flags_horizontal = 3
 [node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel"]
 
 [node name="InventoryTitle" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer"]
-text = "Bag Gear"
+text = "背包裝備"
 
 [node name="InventoryList" type="ItemList" parent="PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer"]
 custom_minimum_size = Vector2(200, 200)
@@ -68,4 +68,4 @@ text = "ATK: 0   DEF: 0   HP: 0   SPD: 0"
 [node name="ComparisonLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 76)
 autowrap_mode = 2
-text = "Hover bag gear to compare."
+text = "滑鼠移至背包裝備可比較。"

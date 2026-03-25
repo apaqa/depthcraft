@@ -57,7 +57,7 @@ func _unbind_inventory_signals() -> void:
 
 
 func _rebuild() -> void:
-	title_label.text = "Storage Chest"
+	title_label.text = "儲物箱"
 	_rebuild_grid(player_grid, player_inventory, chest_inventory, true)
 	_rebuild_grid(chest_grid, chest_inventory, player_inventory, false)
 

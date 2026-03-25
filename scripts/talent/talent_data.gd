@@ -3,9 +3,9 @@ extends Node
 const BRANCH_ORDER := ["offense", "defense", "support"]
 
 const BRANCH_LABELS := {
-	"offense": "Offense",
-	"defense": "Defense",
-	"support": "Support",
+	"offense": "攻擊",
+	"defense": "防禦",
+	"support": "輔助",
 }
 
 const TALENTS := {
