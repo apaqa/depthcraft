@@ -59,9 +59,9 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	player_aggro_time_left = 5.0
-	super.take_damage(amount)
+	super.take_damage(amount, hit_direction)
 
 
 func _do_attack_on_target(active_target) -> void:
