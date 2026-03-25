@@ -12,6 +12,7 @@ const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
 
 var stack_data: Dictionary = {}
 var _player_ref: Node = null
+var _spawn_delay: float = 0.0
 
 
 func _ready() -> void:
@@ -33,6 +34,9 @@ func _find_player() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _spawn_delay > 0:
+		_spawn_delay -= delta
+		return
 	if _player_ref == null or not is_instance_valid(_player_ref):
 		return
 	var dist := global_position.distance_to(_player_ref.global_position)
@@ -49,6 +53,7 @@ func setup(drop_item_id: String, drop_quantity: int) -> void:
 	quantity = drop_quantity
 	stack_data.clear()
 	_update_icon()
+	_spawn_delay = 0.5
 
 
 func setup_stack(drop_stack: Dictionary) -> void:

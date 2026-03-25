@@ -41,15 +41,15 @@ func _drop_loot() -> void:
 	var roll_count := randi_range(resource_rolls_min, resource_rolls_max)
 	for _idx in range(roll_count):
 		var drop = LOOT_DROP_SCENE.instantiate()
-		drop.global_position = global_position + Vector2(randf_range(-8.0, 8.0), randf_range(-6.0, 6.0))
+		drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
 		drop.setup(resources.pick_random(), randi_range(1, 2))
 		loot_root.add_child(drop)
 	if randf() <= equipment_drop_chance:
 		var equip_drop = LOOT_DROP_SCENE.instantiate()
-		equip_drop.global_position = global_position + Vector2(0, -8)
+		equip_drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
 		equip_drop.setup_stack(DUNGEON_LOOT.generate_dungeon_equipment(floor_number))
 		loot_root.add_child(equip_drop)
 	var gold_drop = LOOT_DROP_SCENE.instantiate()
-	gold_drop.global_position = global_position + Vector2(-8, 6)
+	gold_drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
 	gold_drop.setup("gold", randi_range(5, 15))
 	loot_root.add_child(gold_drop)

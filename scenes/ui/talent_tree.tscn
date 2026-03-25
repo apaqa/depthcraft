@@ -20,14 +20,18 @@ color = Color(0, 0, 0, 0.55)
 mouse_filter = 1
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
-layout_mode = 0
-offset_left = 28.0
-offset_top = 30.0
-offset_right = 612.0
-offset_bottom = 330.0
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.05
+anchor_top = 0.05
+anchor_right = 0.95
+anchor_bottom = 0.95
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 1
 
 [node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
@@ -35,19 +39,22 @@ theme_override_constants/margin_bottom = 12
 mouse_filter = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+layout_mode = 2
 theme_override_constants/separation = 8
 mouse_filter = 1
 
 [node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
 text = "Choose a Power"
 mouse_filter = 2
 
 [node name="ShardLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
 text = "Talent Shards: 0"
 mouse_filter = 2
 
 [node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 mouse_filter = 1

@@ -63,9 +63,10 @@ func _refresh() -> void:
 			button.focus_mode = Control.FOCUS_ALL
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			button.custom_minimum_size = Vector2(220, 72)
+			button.custom_minimum_size = Vector2(120, 60)
 			if bool(talent.get("is_milestone", false)):
-				button.custom_minimum_size = Vector2(220, 100)
+				button.modulate = Color(1, 0.85, 0.3)
+				button.custom_minimum_size = Vector2(140, 80)
 				var milestone_style := StyleBoxFlat.new()
 				milestone_style.bg_color = Color(0.18, 0.14, 0.06, 1.0)
 				milestone_style.border_width_left = 3
@@ -82,11 +83,14 @@ func _refresh() -> void:
 				button.add_theme_stylebox_override("pressed", milestone_style)
 			var talent_id := str(talent.get("id", ""))
 			if player.has_talent(talent_id):
-				button.modulate = Color(0.95, 0.9, 0.45, 1.0)
+				if not bool(talent.get("is_milestone", false)):
+					button.modulate = Color(0.95, 0.9, 0.45, 1.0)
 			elif TALENT_DATA.can_unlock(player.get_unlocked_talents(), player.inventory.get_item_count("talent_shard"), talent_id):
-				button.modulate = Color(0.6, 0.95, 0.6, 1.0)
+				if not bool(talent.get("is_milestone", false)):
+					button.modulate = Color(0.6, 0.95, 0.6, 1.0)
 			else:
-				button.modulate = Color(0.65, 0.65, 0.65, 1.0)
+				if not bool(talent.get("is_milestone", false)):
+					button.modulate = Color(0.65, 0.65, 0.65, 1.0)
 			button.pressed.connect(_on_talent_pressed.bind(talent_id))
 			branch_box.add_child(button)
 		branch_row.add_child(panel)
