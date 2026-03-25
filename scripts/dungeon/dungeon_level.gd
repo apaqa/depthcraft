@@ -32,6 +32,7 @@ const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 @export var level_seed: int = 1
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
+@onready var wall_tile_map_layer: TileMapLayer = $WallTileMapLayer
 @onready var wall_collision_root: Node2D = $WallCollisionRoot
 @onready var feature_root: Node2D = $FeatureRoot
 @onready var enemy_root: Node2D = $EnemyRoot
@@ -59,6 +60,7 @@ func place_player(new_player: Node2D, _spawn_override: Variant = null) -> void:
 	if player.get_parent() != self:
 		player.reparent(self)
 	player.global_position = get_spawn_position(_spawn_override)
+	_update_player_ambient_light()
 	_spawn_enemies()
 
 
@@ -81,20 +83,61 @@ func _generate_floor() -> void:
 
 func _draw_floor() -> void:
 	tile_map_layer.clear()
+	wall_tile_map_layer.clear()
 	for child in wall_collision_root.get_children():
 		child.queue_free()
 	for floor_tile: Vector2i in floor_data.get("floor_tiles", []):
 		tile_map_layer.set_cell(floor_tile, _get_floor_source(floor_tile), Vector2i.ZERO)
 	for wall_tile: Vector2i in floor_data.get("wall_tiles", []):
-		tile_map_layer.set_cell(wall_tile, _get_wall_source(wall_tile), Vector2i.ZERO)
+		wall_tile_map_layer.set_cell(wall_tile, _get_wall_source(wall_tile), Vector2i.ZERO)
 		_spawn_wall_blocker(wall_tile)
 	tile_map_layer.update_internals()
-	var floor_modulate := Color(1, 1, 1, 1)
-	if current_floor >= 8:
-		floor_modulate = Color(0.78, 0.48, 0.48, 1.0)
+	wall_tile_map_layer.update_internals()
+	_apply_biome_colors()
+	_update_player_ambient_light()
+
+
+func _apply_biome_colors() -> void:
+	if current_floor >= 13:
+		# Abyss: everything dark and desaturated
+		tile_map_layer.modulate = Color(0.5, 0.5, 0.6)
+		wall_tile_map_layer.modulate = Color(0.5, 0.5, 0.6)
+	elif current_floor >= 9:
+		# Lava dungeon: floor warm orange-red, walls dark crimson
+		tile_map_layer.modulate = Color(0.9, 0.7, 0.6)
+		wall_tile_map_layer.modulate = Color(0.7, 0.4, 0.4)
 	elif current_floor >= 5:
-		floor_modulate = Color(0.72, 0.72, 0.8, 1.0)
-	tile_map_layer.modulate = floor_modulate
+		# Dark dungeon: floor neutral, walls cold blue
+		tile_map_layer.modulate = Color(1.0, 1.0, 1.0)
+		wall_tile_map_layer.modulate = Color(0.7, 0.7, 0.9)
+	else:
+		# Stone dungeon: natural colours
+		tile_map_layer.modulate = Color(1.0, 1.0, 1.0)
+		wall_tile_map_layer.modulate = Color(1.0, 1.0, 1.0)
+
+
+func _update_player_ambient_light() -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	var existing := player.get_node_or_null("DungeonAmbientLight")
+	if existing != null:
+		existing.queue_free()
+	if current_floor >= 13:
+		var gradient := Gradient.new()
+		gradient.colors = PackedColorArray([Color(1.0, 1.0, 1.0, 1.0), Color(1.0, 1.0, 1.0, 0.0)])
+		gradient.offsets = PackedFloat32Array([0.0, 1.0])
+		var grad_tex := GradientTexture2D.new()
+		grad_tex.gradient = gradient
+		grad_tex.width = 128
+		grad_tex.height = 128
+		grad_tex.fill = GradientTexture2D.FILL_RADIAL
+		var light := PointLight2D.new()
+		light.name = "DungeonAmbientLight"
+		light.texture = grad_tex
+		light.energy = 0.6
+		light.texture_scale = 3.0
+		light.color = Color(0.8, 0.7, 1.0)
+		player.add_child(light)
 
 
 func _spawn_features() -> void:
@@ -265,16 +308,43 @@ func get_floor_spawn_config(floor_number: int, rng: RandomNumberGenerator = null
 		return {"enemy_min": 3, "enemy_max": 4, "allow_ranged": true, "ranged_ratio": 0.3, "elite_count": elite_count}
 	if floor_number <= 10:
 		return {"enemy_min": 4, "enemy_max": 5, "allow_ranged": true, "ranged_ratio": 0.45, "elite_count": 1}
-	return {"enemy_min": 5, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": _rng_range(rng, 1, 2)}
+	if floor_number <= 12:
+		return {"enemy_min": 5, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": _rng_range(rng, 1, 2)}
+	# Abyss (13+): more enemies, more elites
+	return {"enemy_min": 5, "enemy_max": 7, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": _rng_range(rng, 2, 3)}
 
 
 func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedScene:
 	var roll := _rng_randf(rng)
-	if floor_number >= 4 and roll <= 0.25:
-		return SHIELD_ORC_SCENE
-	if floor_number >= 2 and roll <= 0.50:
-		return RANGED_ENEMY_SCENE
-	if floor_number >= 3 and roll <= 0.72:
+	if floor_number >= 13:
+		# Abyss: all types mixed evenly
+		if roll <= 0.30:
+			return SHIELD_ORC_SCENE
+		if roll <= 0.55:
+			return RANGED_ENEMY_SCENE
+		if roll <= 0.75:
+			return BAT_SWARM_SCENE
+		return MELEE_ENEMY_SCENE
+	if floor_number >= 9:
+		# Lava dungeon: orc dominant
+		if roll <= 0.50:
+			return SHIELD_ORC_SCENE
+		if roll <= 0.65:
+			return RANGED_ENEMY_SCENE
+		if roll <= 0.75:
+			return BAT_SWARM_SCENE
+		return MELEE_ENEMY_SCENE
+	if floor_number >= 5:
+		# Dark dungeon: skeleton (ranged) dominant
+		if roll <= 0.55:
+			return RANGED_ENEMY_SCENE
+		if roll <= 0.70:
+			return BAT_SWARM_SCENE
+		if roll <= 0.85:
+			return SHIELD_ORC_SCENE
+		return MELEE_ENEMY_SCENE
+	# Stone dungeon (1-4): goblin dominant, occasional bats
+	if floor_number >= 3 and roll <= 0.20:
 		return BAT_SWARM_SCENE
 	return MELEE_ENEMY_SCENE
 

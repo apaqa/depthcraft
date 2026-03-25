@@ -9,6 +9,10 @@ const CORRIDOR_HALF_WIDTH := 1
 
 func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var room_count := clampi(4 + floor_number, 5, 8)
+	# Rooms grow slightly larger with depth: +1 tile per 4 floors, capped at +3
+	var size_bonus := mini(floor_number / 4, 3)
+	var min_room_size := MIN_ROOM_SIZE + Vector2i(size_bonus, size_bonus)
+	var max_room_size := MAX_ROOM_SIZE + Vector2i(size_bonus, size_bonus)
 	var rooms: Array[Rect2i] = []
 	var floor_tiles: Dictionary = {}
 	var corridors: Array = []
@@ -17,8 +21,8 @@ func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dic
 	while rooms.size() < room_count and attempts < room_count * 20:
 		attempts += 1
 		var room_size := Vector2i(
-			_rng_range(rng, MIN_ROOM_SIZE.x, MAX_ROOM_SIZE.x),
-			_rng_range(rng, MIN_ROOM_SIZE.y, MAX_ROOM_SIZE.y)
+			_rng_range(rng, min_room_size.x, max_room_size.x),
+			_rng_range(rng, min_room_size.y, max_room_size.y)
 		)
 		var room_pos := Vector2i(
 			_rng_range(rng, 2, MAP_SIZE.x - room_size.x - 3),
