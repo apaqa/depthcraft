@@ -21,6 +21,7 @@ func _initialize() -> void:
 	await test_left_click_input_places_building()
 	await test_remove_building_returns_partial_resources()
 	await test_cannot_place_on_occupied_tile()
+	await test_multi_tile_door_blocks_all_occupied_tiles()
 	await test_invalid_for_player_position()
 	await test_home_core_only_once()
 	await test_save_and_load_preserves_data()
@@ -58,6 +59,7 @@ func test_building_tiles_use_distinct_visual_sources() -> void:
 	_assert(stone_wall["tile_atlas_coords"] == Vector2i.ZERO, "Stone wall should use the full tile cell origin.")
 	_assert(str(wood_door["kind"]) == "facility", "Wood door should be facility-based so the full sprite can render.")
 	_assert(str(wood_door["scene_path"]) == "res://scenes/building/facilities/wood_door.tscn", "Wood door should use the scene-based placement path.")
+	_assert(wood_door.get("tile_size", Vector2i.ONE) == Vector2i(2, 2), "Wood door should reserve a 2x2 footprint.")
 
 
 func test_place_building_deducts_resources() -> void:
@@ -148,6 +150,20 @@ func test_cannot_place_on_occupied_tile() -> void:
 	setup.building_system.place_building(Vector2i(2, 2), "wood_wall")
 	_assert(not setup.building_system.place_building(Vector2i(2, 2), "wood_floor"), "Cannot place on an occupied tile.")
 	_assert(not setup.building_system.place_building(Vector2i(2, 2), "wood_door"), "Cannot place a facility on an occupied tile.")
+	await _cleanup_setup(setup)
+
+
+func test_multi_tile_door_blocks_all_occupied_tiles() -> void:
+	var setup := await _create_overworld_setup()
+	setup.player.inventory.add_item("wood", 12)
+	var origin := Vector2i(4, 4)
+	_assert(setup.building_system.place_building(origin, "wood_door"), "Wood door should place successfully with enough resources.")
+	for occupy_tile in [origin, origin + Vector2i.RIGHT, origin + Vector2i.DOWN, origin + Vector2i.ONE]:
+		_assert(setup.building_system.occupied_positions.has(occupy_tile), "Door should reserve every tile in its 2x2 footprint.")
+		_assert(not setup.building_system.is_valid_placement(occupy_tile, "wood_wall"), "Door footprint tiles should reject overlapping buildings.")
+	_assert(setup.building_system.remove_building(origin + Vector2i.ONE), "Removing from any occupied door tile should remove the full door.")
+	for freed_tile in [origin, origin + Vector2i.RIGHT, origin + Vector2i.DOWN, origin + Vector2i.ONE]:
+		_assert(not setup.building_system.occupied_positions.has(freed_tile), "Removing a door should free every tile in its footprint.")
 	await _cleanup_setup(setup)
 
 

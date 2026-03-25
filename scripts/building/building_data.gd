@@ -52,6 +52,7 @@ const BUILDINGS := {
 		"name": "Wood Door",
 		"kind": "facility",
 		"cost": {"wood": 3},
+		"tile_size": Vector2i(2, 2),
 		"has_collision": false,
 		"scene_path": WOOD_DOOR_SCENE_PATH,
 		"preview_texture": preload("res://assets/door_closed.png"),

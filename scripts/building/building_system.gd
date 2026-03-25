@@ -31,6 +31,7 @@ var home_core_position: Vector2 = Vector2.ZERO
 var home_core_instance = null
 var facility_instances: Dictionary = {}
 var building_instances: Dictionary = {}
+var occupied_positions: Dictionary = {}
 var debug_mode: bool = false
 var _loaded_from_save: bool = false
 
@@ -176,7 +177,7 @@ func get_hovered_tile_pos() -> Vector2i:
 
 func get_preview_modulate(tile_pos: Vector2i) -> Color:
 	if state == BuildState.REMOVING:
-		if placed_buildings.has(tile_pos) or placed_facilities.has(tile_pos):
+		if occupied_positions.has(tile_pos):
 			return Color(1.0, 0.75, 0.35, 0.5)
 		return Color(1.0, 0.3, 0.3, 0.5)
 
@@ -230,35 +231,41 @@ func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 			_refund_full_cost(building["cost"])
 			return false
 		placed_buildings[tile_pos] = building_id
+	_rebuild_occupied_positions()
 	_auto_save()
 	build_state_changed.emit()
 	return true
 
 
 func remove_building(tile_pos: Vector2i) -> bool:
-	if placed_buildings.has(tile_pos):
-		var building_id := str(placed_buildings[tile_pos])
+	var occupied_data: Dictionary = occupied_positions.get(tile_pos, {})
+	var origin_tile: Vector2i = tile_pos if occupied_data.is_empty() else occupied_data.get("origin", tile_pos)
+
+	if placed_buildings.has(origin_tile):
+		var building_id := str(placed_buildings[origin_tile])
 		var building: Dictionary = BUILDING_DATA.get_building(building_id)
-		if building_instances.has(tile_pos):
-			var placed_instance = building_instances[tile_pos]
+		if building_instances.has(origin_tile):
+			var placed_instance = building_instances[origin_tile]
 			if is_instance_valid(placed_instance):
 				placed_instance.queue_free()
-			building_instances.erase(tile_pos)
-		placed_buildings.erase(tile_pos)
+			building_instances.erase(origin_tile)
+		placed_buildings.erase(origin_tile)
+		_rebuild_occupied_positions()
 		_refund_partial_cost(building.get("cost", {}))
 		_auto_save()
 		build_state_changed.emit()
 		return true
 
-	if placed_facilities.has(tile_pos):
-		var facility_id := str(placed_facilities[tile_pos]["id"])
+	if placed_facilities.has(origin_tile):
+		var facility_id := str(placed_facilities[origin_tile]["id"])
 		var facility_building: Dictionary = BUILDING_DATA.get_building(facility_id)
-		if facility_instances.has(tile_pos):
-			var instance = facility_instances[tile_pos]
+		if facility_instances.has(origin_tile):
+			var instance = facility_instances[origin_tile]
 			if is_instance_valid(instance):
 				instance.queue_free()
-			facility_instances.erase(tile_pos)
-		placed_facilities.erase(tile_pos)
+			facility_instances.erase(origin_tile)
+		placed_facilities.erase(origin_tile)
+		_rebuild_occupied_positions()
 		_refund_partial_cost(facility_building.get("cost", {}))
 		_auto_save()
 		build_state_changed.emit()
@@ -271,21 +278,22 @@ func is_valid_placement(tile_pos: Vector2i, building_id: String = "") -> bool:
 	if not can_use_build_mode():
 		return false
 
-	if _is_position_occupied(tile_pos):
-		return false
-
-	if tile_pos == _get_player_tile_pos():
-		return false
-
-	if _has_blocking_world_object(tile_pos):
-		return false
-
 	var target_building_id := building_id
 	if target_building_id == "":
 		target_building_id = get_selected_building_id()
 
 	var building: Dictionary = BUILDING_DATA.get_building(target_building_id)
 	if building.is_empty():
+		return false
+
+	var tile_size := _get_building_tile_size(building)
+	if not _is_area_clear(tile_pos, tile_size):
+		return false
+
+	if tile_pos == _get_player_tile_pos():
+		return false
+
+	if not _is_area_free_of_world_objects(tile_pos, tile_size):
 		return false
 
 	return _has_cost(building["cost"])
@@ -298,10 +306,10 @@ func can_place_home_core(tile_pos: Vector2i) -> bool:
 	if tile_pos == _get_player_tile_pos():
 		return false
 
-	if _is_position_occupied(tile_pos):
+	if not _is_area_clear(tile_pos, Vector2i.ONE):
 		return false
 
-	if _has_blocking_world_object(tile_pos):
+	if not _is_area_free_of_world_objects(tile_pos, Vector2i.ONE):
 		return false
 
 	return _has_cost(HOME_CORE_COST)
@@ -316,6 +324,7 @@ func place_home_core(tile_pos: Vector2i) -> bool:
 
 	home_core_position = _tile_to_world_center(tile_pos)
 	_spawn_home_core()
+	_rebuild_occupied_positions()
 	print("Home Core placed at position (%d, %d)" % [int(home_core_position.x), int(home_core_position.y)])
 	_auto_save()
 	build_state_changed.emit()
@@ -422,6 +431,7 @@ func _apply_saved_state_to_level() -> void:
 		if is_instance_valid(building_instance):
 			building_instance.queue_free()
 	building_instances.clear()
+	occupied_positions.clear()
 
 	for tile_pos in placed_buildings.keys():
 		var building_id := str(placed_buildings[tile_pos])
@@ -437,6 +447,7 @@ func _apply_saved_state_to_level() -> void:
 			continue
 		_spawn_facility_instance(tile_pos, facility_building, facility_data.get("data", {}))
 
+	_rebuild_occupied_positions()
 	_spawn_home_core()
 
 
@@ -498,7 +509,7 @@ func _spawn_facility_instance(tile_pos: Vector2i, building: Dictionary, data: Di
 			existing.queue_free()
 
 	var instance = scene.instantiate()
-	instance.global_position = _tile_to_world_center(tile_pos)
+	instance.global_position = _tile_to_world_center_for_size(tile_pos, _get_building_tile_size(building))
 	active_level.add_child(instance)
 	if instance.has_method("load_from_data"):
 		instance.load_from_data(data)
@@ -580,10 +591,71 @@ func _normalize_facility_save_data(saved_facilities: Array) -> Dictionary:
 
 
 func _is_position_occupied(tile_pos: Vector2i) -> bool:
-	if placed_buildings.has(tile_pos):
-		return true
-	if placed_facilities.has(tile_pos):
-		return true
-	if home_core_position != Vector2.ZERO and _world_to_tile(home_core_position) == tile_pos:
-		return true
-	return false
+	return occupied_positions.has(tile_pos)
+
+
+func _get_building_tile_size(building: Dictionary) -> Vector2i:
+	return building.get("tile_size", Vector2i.ONE)
+
+
+func _is_area_clear(origin_tile: Vector2i, tile_size: Vector2i) -> bool:
+	for occupy_tile: Vector2i in _get_occupied_tiles(origin_tile, tile_size):
+		if occupied_positions.has(occupy_tile):
+			return false
+	return true
+
+
+func _is_area_free_of_world_objects(origin_tile: Vector2i, tile_size: Vector2i) -> bool:
+	for occupy_tile: Vector2i in _get_occupied_tiles(origin_tile, tile_size):
+		if occupy_tile == _get_player_tile_pos():
+			return false
+		if _has_blocking_world_object(occupy_tile):
+			return false
+	return true
+
+
+func _get_occupied_tiles(origin_tile: Vector2i, tile_size: Vector2i) -> Array[Vector2i]:
+	var occupied_tiles: Array[Vector2i] = []
+	for x in range(tile_size.x):
+		for y in range(tile_size.y):
+			occupied_tiles.append(Vector2i(origin_tile.x + x, origin_tile.y + y))
+	return occupied_tiles
+
+
+func _tile_to_world_center_for_size(tile_pos: Vector2i, tile_size: Vector2i) -> Vector2:
+	return Vector2(
+		tile_pos.x * TILE_SIZE + float(tile_size.x * TILE_SIZE) * 0.5,
+		tile_pos.y * TILE_SIZE + float(tile_size.y * TILE_SIZE) * 0.5
+	)
+
+
+func _rebuild_occupied_positions() -> void:
+	occupied_positions.clear()
+	for tile_pos in placed_buildings.keys():
+		var building_id := str(placed_buildings[tile_pos])
+		var building := BUILDING_DATA.get_building(building_id)
+		if building.is_empty():
+			continue
+		_register_occupied_tiles(tile_pos, building_id, _get_building_tile_size(building), "tile")
+	for tile_pos in placed_facilities.keys():
+		var facility_id := str(placed_facilities[tile_pos].get("id", ""))
+		var facility_building := BUILDING_DATA.get_building(facility_id)
+		if facility_building.is_empty():
+			continue
+		_register_occupied_tiles(tile_pos, facility_id, _get_building_tile_size(facility_building), "facility")
+	if home_core_position != Vector2.ZERO:
+		var core_tile := _world_to_tile(home_core_position)
+		occupied_positions[core_tile] = {
+			"id": "home_core",
+			"origin": core_tile,
+			"kind": "core",
+		}
+
+
+func _register_occupied_tiles(origin_tile: Vector2i, building_id: String, tile_size: Vector2i, kind: String) -> void:
+	for occupy_tile: Vector2i in _get_occupied_tiles(origin_tile, tile_size):
+		occupied_positions[occupy_tile] = {
+			"id": building_id,
+			"origin": origin_tile,
+			"kind": kind,
+		}
