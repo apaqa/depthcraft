@@ -61,6 +61,7 @@ func setup_stack(drop_stack: Dictionary) -> void:
 	item_id = str(stack_data.get("id", ""))
 	quantity = int(stack_data.get("quantity", 1))
 	_update_icon()
+	_spawn_delay = 0.5
 
 
 func _is_equipment() -> bool:
