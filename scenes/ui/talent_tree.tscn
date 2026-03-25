@@ -46,6 +46,12 @@ mouse_filter = 2
 text = "Talent Shards: 0"
 mouse_filter = 2
 
-[node name="BranchRow" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 220)
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+mouse_filter = 1
+
+[node name="BranchRow" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/ScrollContainer"]
 theme_override_constants/separation = 10
 mouse_filter = 1

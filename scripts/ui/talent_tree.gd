@@ -5,7 +5,7 @@ const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
 signal close_requested
 
 @onready var shard_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ShardLabel
-@onready var branch_row: HBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/BranchRow
+@onready var branch_row: HBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/BranchRow
 
 var player = null
 
@@ -46,6 +46,7 @@ func _refresh() -> void:
 	for branch_id in TALENT_DATA.get_branch_ids():
 		var panel := PanelContainer.new()
 		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		panel.custom_minimum_size = Vector2(240, 0)
 		panel.mouse_filter = Control.MOUSE_FILTER_PASS
 		var branch_box := VBoxContainer.new()
 		branch_box.add_theme_constant_override("separation", 6)
@@ -60,6 +61,25 @@ func _refresh() -> void:
 			button.text = _build_talent_text(talent)
 			button.mouse_filter = Control.MOUSE_FILTER_STOP
 			button.focus_mode = Control.FOCUS_ALL
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			button.custom_minimum_size = Vector2(220, 72)
+			if bool(talent.get("is_milestone", false)):
+				button.custom_minimum_size = Vector2(220, 100)
+				var milestone_style := StyleBoxFlat.new()
+				milestone_style.bg_color = Color(0.18, 0.14, 0.06, 1.0)
+				milestone_style.border_width_left = 3
+				milestone_style.border_width_top = 3
+				milestone_style.border_width_right = 3
+				milestone_style.border_width_bottom = 3
+				milestone_style.border_color = Color(0.96, 0.82, 0.26, 1.0)
+				milestone_style.corner_radius_top_left = 8
+				milestone_style.corner_radius_top_right = 8
+				milestone_style.corner_radius_bottom_left = 8
+				milestone_style.corner_radius_bottom_right = 8
+				button.add_theme_stylebox_override("normal", milestone_style)
+				button.add_theme_stylebox_override("hover", milestone_style)
+				button.add_theme_stylebox_override("pressed", milestone_style)
 			var talent_id := str(talent.get("id", ""))
 			if player.has_talent(talent_id):
 				button.modulate = Color(0.95, 0.9, 0.45, 1.0)
@@ -74,9 +94,11 @@ func _refresh() -> void:
 
 func _build_talent_text(talent: Dictionary) -> String:
 	var talent_id := str(talent.get("id", ""))
+	var milestone_prefix := "[Milestone]\n" if bool(talent.get("is_milestone", false)) else ""
 	if player != null and player.has_talent(talent_id):
-		return "%s\nUnlocked" % str(talent.get("name", talent_id))
-	return "%s\n%s\nCost: %d" % [
+		return "%s%s\nUnlocked" % [milestone_prefix, str(talent.get("name", talent_id))]
+	return "%s%s\n%s\nCost: %d" % [
+		milestone_prefix,
 		str(talent.get("name", talent_id)),
 		str(talent.get("description", "")),
 		int(talent.get("cost", 0)),

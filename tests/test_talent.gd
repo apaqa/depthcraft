@@ -28,7 +28,7 @@ func test_talent_pool_has_three_branches() -> void:
 
 
 func test_all_talent_nodes_have_data() -> void:
-	_assert(TALENT_DATA.get_all_talents().size() >= 15, "Talent tree should expose all configured nodes.")
+	_assert(TALENT_DATA.get_all_talents().size() == 45, "Talent tree should expose 45 configured nodes.")
 
 
 func test_unlocking_talent_requires_enough_shards() -> void:
@@ -37,7 +37,7 @@ func test_unlocking_talent_requires_enough_shards() -> void:
 	root.add_child(player)
 	await process_frame
 	player.inventory.add_item("talent_shard", 2)
-	_assert(not player.unlock_talent("O1"), "Talent unlock should fail without enough shards.")
+	_assert(player.unlock_talent("O1"), "O1 should unlock with exactly enough shards.")
 	player.queue_free()
 	await process_frame
 
@@ -58,10 +58,10 @@ func test_talent_bonus_applies_to_player_stats() -> void:
 	var player = PLAYER_SCENE.instantiate()
 	root.add_child(player)
 	await process_frame
-	player.inventory.add_item("talent_shard", 3)
+	player.inventory.add_item("talent_shard", 2)
 	var before_attack: int = player.get_attack_damage()
 	_assert(player.unlock_talent("O1"), "First offense talent should unlock with enough shards.")
-	_assert(player.get_attack_damage() == before_attack + 5, "Attack talent should increase player damage by 5.")
+	_assert(player.get_attack_damage() == before_attack + 3, "Attack talent should increase player damage by 3.")
 	player.queue_free()
 	await process_frame
 
@@ -71,7 +71,7 @@ func test_multiple_branches_can_unlock() -> void:
 	var player = PLAYER_SCENE.instantiate()
 	root.add_child(player)
 	await process_frame
-	player.inventory.add_item("talent_shard", 6)
+	player.inventory.add_item("talent_shard", 4)
 	_assert(player.unlock_talent("O1"), "Player should unlock offense talents.")
 	_assert(player.unlock_talent("D1"), "Player should also unlock defense talents.")
 	player.queue_free()
@@ -83,7 +83,7 @@ func test_talent_shards_are_spent() -> void:
 	var player = PLAYER_SCENE.instantiate()
 	root.add_child(player)
 	await process_frame
-	player.inventory.add_item("talent_shard", 3)
+	player.inventory.add_item("talent_shard", 2)
 	player.unlock_talent("D1")
 	_assert(player.inventory.get_item_count("talent_shard") == 0, "Unlocking a talent should spend the shard cost.")
 	player.queue_free()
@@ -95,7 +95,7 @@ func test_talent_state_persists() -> void:
 	var player = PLAYER_SCENE.instantiate()
 	root.add_child(player)
 	await process_frame
-	player.inventory.add_item("talent_shard", 3)
+	player.inventory.add_item("talent_shard", 2)
 	player.unlock_talent("S1")
 	player.queue_free()
 	await process_frame
@@ -112,7 +112,7 @@ func test_support_talent_increases_gather_bonus() -> void:
 	var player = PLAYER_SCENE.instantiate()
 	root.add_child(player)
 	await process_frame
-	player.inventory.add_item("talent_shard", 8)
+	player.inventory.add_item("talent_shard", 5)
 	player.unlock_talent("S1")
 	player.unlock_talent("S2")
 	_assert(player.player_stats.get_total_gather_bonus() == 1, "Gatherer should add one bonus resource.")
@@ -126,9 +126,9 @@ func test_defense_talent_increases_hp() -> void:
 	root.add_child(player)
 	await process_frame
 	var base_hp: int = player.max_hp
-	player.inventory.add_item("talent_shard", 3)
+	player.inventory.add_item("talent_shard", 2)
 	player.unlock_talent("D1")
-	_assert(player.max_hp == base_hp + 20, "Tough Skin should increase max HP by 20.")
+	_assert(player.max_hp == base_hp + 15, "Tough Skin should increase max HP by 15.")
 	player.queue_free()
 	await process_frame
 

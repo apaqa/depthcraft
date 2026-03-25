@@ -614,6 +614,8 @@ func unlock_talent(talent_id: String) -> bool:
 	unlocked_talents.append(talent_id)
 	unlocked_talents.sort()
 	player_stats.rebuild_talent_bonuses(unlocked_talents)
+	if str(talent.get("skill_unlock", "")) != "":
+		print("SKILL UNLOCKED: %s" % str(talent.get("skill_unlock", "")))
 	_refresh_all_stats()
 	_save_persistent_state()
 	return true

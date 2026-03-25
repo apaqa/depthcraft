@@ -9,150 +9,53 @@ const BRANCH_LABELS := {
 }
 
 const TALENTS := {
-	"O1": {
-		"id": "O1",
-		"name": "Sharp Edge",
-		"branch": "offense",
-		"cost": 3,
-		"prerequisite": "",
-		"description": "Attack +5",
-		"effects": {"attack": 5},
-	},
-	"O2": {
-		"id": "O2",
-		"name": "Power Strike",
-		"branch": "offense",
-		"cost": 5,
-		"prerequisite": "O1",
-		"description": "Attack +10",
-		"effects": {"attack": 10},
-	},
-	"O3": {
-		"id": "O3",
-		"name": "Critical Eye",
-		"branch": "offense",
-		"cost": 8,
-		"prerequisite": "O2",
-		"description": "Critical chance +10%",
-		"effects": {"crit_chance": 0.1},
-	},
-	"O4": {
-		"id": "O4",
-		"name": "Berserker",
-		"branch": "offense",
-		"cost": 12,
-		"prerequisite": "O3",
-		"description": "Attack +20, Defense -5",
-		"effects": {"attack": 20, "defense": -5},
-	},
-	"O5": {
-		"id": "O5",
-		"name": "Executioner",
-		"branch": "offense",
-		"cost": 15,
-		"prerequisite": "O4",
-		"description": "+50% damage to enemies below 30% HP",
-		"effects": {"execute_bonus": 0.5},
-	},
-	"D1": {
-		"id": "D1",
-		"name": "Tough Skin",
-		"branch": "defense",
-		"cost": 3,
-		"prerequisite": "",
-		"description": "Max HP +20",
-		"effects": {"max_hp": 20},
-	},
-	"D2": {
-		"id": "D2",
-		"name": "Iron Body",
-		"branch": "defense",
-		"cost": 5,
-		"prerequisite": "D1",
-		"description": "Defense +5",
-		"effects": {"defense": 5},
-	},
-	"D3": {
-		"id": "D3",
-		"name": "Shield Wall",
-		"branch": "defense",
-		"cost": 8,
-		"prerequisite": "D2",
-		"description": "Block 15% damage",
-		"effects": {"block_chance": 0.15},
-	},
-	"D4": {
-		"id": "D4",
-		"name": "Regeneration",
-		"branch": "defense",
-		"cost": 12,
-		"prerequisite": "D3",
-		"description": "Regenerate 1 HP every 5 seconds",
-		"effects": {"regen_amount": 1, "regen_interval": 5.0},
-	},
-	"D5": {
-		"id": "D5",
-		"name": "Undying Will",
-		"branch": "defense",
-		"cost": 15,
-		"prerequisite": "D4",
-		"description": "Survive one fatal hit per dungeon run",
-		"effects": {"undying_will": 1},
-	},
-	"S1": {
-		"id": "S1",
-		"name": "Quick Step",
-		"branch": "support",
-		"cost": 3,
-		"prerequisite": "",
-		"description": "Move speed +10%",
-		"effects": {"speed_multiplier": 0.1},
-	},
-	"S2": {
-		"id": "S2",
-		"name": "Gatherer",
-		"branch": "support",
-		"cost": 5,
-		"prerequisite": "S1",
-		"description": "+1 resource from gathering",
-		"effects": {"gather_bonus": 1},
-	},
-	"S3": {
-		"id": "S3",
-		"name": "Lucky Find",
-		"branch": "support",
-		"cost": 8,
-		"prerequisite": "S2",
-		"description": "Loot drop chance +15%",
-		"effects": {"loot_bonus": 0.15},
-	},
-	"S4": {
-		"id": "S4",
-		"name": "Efficient Craft",
-		"branch": "support",
-		"cost": 12,
-		"prerequisite": "S3",
-		"description": "Crafting costs -25%",
-		"effects": {"craft_cost_multiplier": -0.25},
-	},
-	"S5": {
-		"id": "S5",
-		"name": "Explorer",
-		"branch": "support",
-		"cost": 15,
-		"prerequisite": "S4",
-		"description": "Minimap reveals the full floor",
-		"effects": {"full_minimap": 1},
-	},
-	"S6": {
-		"id": "S6",
-		"name": "Loot Magnet",
-		"branch": "support",
-		"cost": 8,
-		"prerequisite": "S5",
-		"description": "Loot pickup range +50px",
-		"effects": {"loot_pickup_range": 50.0},
-	},
+	"O1": {"id": "O1", "name": "Sharp Edge", "branch": "offense", "cost": 2, "prerequisite": "", "description": "ATK +3", "effects": {"attack": 3}},
+	"O2": {"id": "O2", "name": "Power Strike", "branch": "offense", "cost": 3, "prerequisite": "O1", "description": "ATK +5", "effects": {"attack": 5}},
+	"O3": {"id": "O3", "name": "Quick Hands", "branch": "offense", "cost": 4, "prerequisite": "O2", "description": "Attack speed +10%", "effects": {"attack_speed": 0.1}},
+	"O4": {"id": "O4", "name": "Critical Eye", "branch": "offense", "cost": 5, "prerequisite": "O3", "description": "Crit chance +5%", "effects": {"crit_chance": 0.05}},
+	"O5": {"id": "O5", "name": "Whirlwind", "branch": "offense", "cost": 8, "prerequisite": "O4", "description": "Unlock skill: Whirlwind (AOE slash)", "effects": {"skill_whirlwind": 1}, "is_milestone": true, "skill_unlock": "Whirlwind"},
+	"O6": {"id": "O6", "name": "Sharper Edge", "branch": "offense", "cost": 6, "prerequisite": "O5", "description": "ATK +8", "effects": {"attack": 8}},
+	"O7": {"id": "O7", "name": "Deep Wounds", "branch": "offense", "cost": 7, "prerequisite": "O6", "description": "Apply 3s bleed on hit", "effects": {"bleed_on_hit": 1}},
+	"O8": {"id": "O8", "name": "Frenzy", "branch": "offense", "cost": 8, "prerequisite": "O7", "description": "Kill streak grants +20% attack speed for 5s", "effects": {"frenzy": 1}},
+	"O9": {"id": "O9", "name": "Critical Damage", "branch": "offense", "cost": 9, "prerequisite": "O8", "description": "Crit damage +50%", "effects": {"crit_damage": 0.5}},
+	"O10": {"id": "O10", "name": "Execute", "branch": "offense", "cost": 12, "prerequisite": "O9", "description": "Unlock skill: Execute (3x damage below 30% HP)", "effects": {"execute_bonus": 2.0, "skill_execute": 1}, "is_milestone": true, "skill_unlock": "Execute"},
+	"O11": {"id": "O11", "name": "Weapon Master", "branch": "offense", "cost": 10, "prerequisite": "O10", "description": "ATK +12", "effects": {"attack": 12}},
+	"O12": {"id": "O12", "name": "Armor Pierce", "branch": "offense", "cost": 11, "prerequisite": "O11", "description": "Ignore 20% enemy defense", "effects": {"armor_pierce": 0.2}},
+	"O13": {"id": "O13", "name": "Bloodlust", "branch": "offense", "cost": 12, "prerequisite": "O12", "description": "Heal 5% max HP on kill", "effects": {"kill_heal_ratio": 0.05}},
+	"O14": {"id": "O14", "name": "Berserker Rage", "branch": "offense", "cost": 13, "prerequisite": "O13", "description": "ATK +50% below 30% HP", "effects": {"low_hp_attack_bonus": 0.5}},
+	"O15": {"id": "O15", "name": "Blade Storm", "branch": "offense", "cost": 15, "prerequisite": "O14", "description": "Unlock skill: Blade Storm (large sustained AOE)", "effects": {"skill_blade_storm": 1}, "is_milestone": true, "skill_unlock": "Blade Storm"},
+
+	"D1": {"id": "D1", "name": "Tough Skin", "branch": "defense", "cost": 2, "prerequisite": "", "description": "Max HP +15", "effects": {"max_hp": 15}},
+	"D2": {"id": "D2", "name": "Iron Body", "branch": "defense", "cost": 3, "prerequisite": "D1", "description": "DEF +3", "effects": {"defense": 3}},
+	"D3": {"id": "D3", "name": "Shield Wall", "branch": "defense", "cost": 4, "prerequisite": "D2", "description": "Block 10% damage", "effects": {"block_chance": 0.10}},
+	"D4": {"id": "D4", "name": "Regeneration", "branch": "defense", "cost": 5, "prerequisite": "D3", "description": "Regenerate 1 HP every 5 seconds", "effects": {"regen_amount": 1, "regen_interval": 5.0}},
+	"D5": {"id": "D5", "name": "War Cry", "branch": "defense", "cost": 8, "prerequisite": "D4", "description": "Unlock skill: War Cry (slow nearby enemies)", "effects": {"skill_war_cry": 1}, "is_milestone": true, "skill_unlock": "War Cry"},
+	"D6": {"id": "D6", "name": "Thick Armor", "branch": "defense", "cost": 6, "prerequisite": "D5", "description": "DEF +6", "effects": {"defense": 6}},
+	"D7": {"id": "D7", "name": "Second Wind", "branch": "defense", "cost": 7, "prerequisite": "D6", "description": "Regenerate 3 HP/s below 25% HP", "effects": {"second_wind": 1}},
+	"D8": {"id": "D8", "name": "Fortify", "branch": "defense", "cost": 8, "prerequisite": "D7", "description": "DEF +30% while standing still", "effects": {"fortify": 1}},
+	"D9": {"id": "D9", "name": "Damage Reflect", "branch": "defense", "cost": 9, "prerequisite": "D8", "description": "Reflect 10% damage taken", "effects": {"damage_reflect": 0.1}},
+	"D10": {"id": "D10", "name": "Undying Will", "branch": "defense", "cost": 12, "prerequisite": "D9", "description": "Unlock skill: Undying Will (survive fatal damage once)", "effects": {"undying_will": 1, "skill_undying_will": 1}, "is_milestone": true, "skill_unlock": "Undying Will"},
+	"D11": {"id": "D11", "name": "Iron Fortress", "branch": "defense", "cost": 10, "prerequisite": "D10", "description": "Max HP +30", "effects": {"max_hp": 30}},
+	"D12": {"id": "D12", "name": "Thorns", "branch": "defense", "cost": 11, "prerequisite": "D11", "description": "Attackers take 5 damage", "effects": {"thorns_damage": 5}},
+	"D13": {"id": "D13", "name": "Life Shield", "branch": "defense", "cost": 12, "prerequisite": "D12", "description": "Gain a 20 damage shield every 30 seconds", "effects": {"life_shield": 1}},
+	"D14": {"id": "D14", "name": "Resilience", "branch": "defense", "cost": 13, "prerequisite": "D13", "description": "Control effect duration -50%", "effects": {"status_resist": 0.5}},
+	"D15": {"id": "D15", "name": "Invincible", "branch": "defense", "cost": 15, "prerequisite": "D14", "description": "Unlock skill: Invincible (3s invulnerability)", "effects": {"skill_invincible": 1}, "is_milestone": true, "skill_unlock": "Invincible"},
+
+	"S1": {"id": "S1", "name": "Quick Step", "branch": "support", "cost": 2, "prerequisite": "", "description": "Move speed +8%", "effects": {"speed_multiplier": 0.08}},
+	"S2": {"id": "S2", "name": "Gatherer", "branch": "support", "cost": 3, "prerequisite": "S1", "description": "Gather +1 extra resource", "effects": {"gather_bonus": 1}},
+	"S3": {"id": "S3", "name": "Lucky Find", "branch": "support", "cost": 4, "prerequisite": "S2", "description": "Loot drop chance +10%", "effects": {"loot_bonus": 0.10}},
+	"S4": {"id": "S4", "name": "Efficient Craft", "branch": "support", "cost": 5, "prerequisite": "S3", "description": "Crafting costs -15%", "effects": {"craft_cost_multiplier": -0.15}},
+	"S5": {"id": "S5", "name": "Treasure Hunter", "branch": "support", "cost": 8, "prerequisite": "S4", "description": "Unlock skill: Treasure Hunter (reveal chests)", "effects": {"skill_treasure_hunter": 1}, "is_milestone": true, "skill_unlock": "Treasure Hunter"},
+	"S6": {"id": "S6", "name": "Loot Magnet", "branch": "support", "cost": 6, "prerequisite": "S5", "description": "Pickup range +50px", "effects": {"loot_pickup_range": 50.0}},
+	"S7": {"id": "S7", "name": "Swift Boots", "branch": "support", "cost": 7, "prerequisite": "S6", "description": "Move speed +15%", "effects": {"speed_multiplier": 0.15}},
+	"S8": {"id": "S8", "name": "Bargain Hunter", "branch": "support", "cost": 8, "prerequisite": "S7", "description": "Merchant prices -20%", "effects": {"merchant_discount": 0.2}},
+	"S9": {"id": "S9", "name": "Explorer", "branch": "support", "cost": 9, "prerequisite": "S8", "description": "Full minimap reveal", "effects": {"full_minimap": 1}},
+	"S10": {"id": "S10", "name": "Sprint", "branch": "support", "cost": 12, "prerequisite": "S9", "description": "Unlock skill: Sprint (+100% speed for 3s)", "effects": {"skill_sprint": 1}, "is_milestone": true, "skill_unlock": "Sprint"},
+	"S11": {"id": "S11", "name": "Resource Expert", "branch": "support", "cost": 10, "prerequisite": "S10", "description": "Gather speed +30%", "effects": {"gather_speed": 0.3}},
+	"S12": {"id": "S12", "name": "Lucky Strike", "branch": "support", "cost": 11, "prerequisite": "S11", "description": "5% chance for double loot", "effects": {"double_loot_chance": 0.05}},
+	"S13": {"id": "S13", "name": "Survival Instinct", "branch": "support", "cost": 12, "prerequisite": "S12", "description": "Move speed +25% at low HP", "effects": {"low_hp_speed_bonus": 0.25}},
+	"S14": {"id": "S14", "name": "Second Chance", "branch": "support", "cost": 13, "prerequisite": "S13", "description": "30% chance to keep half loot on death", "effects": {"second_chance_loot": 0.3}},
+	"S15": {"id": "S15", "name": "Time Warp", "branch": "support", "cost": 15, "prerequisite": "S14", "description": "Unlock skill: Time Warp (freeze nearby enemies)", "effects": {"skill_time_warp": 1}, "is_milestone": true, "skill_unlock": "Time Warp"},
 }
 
 
@@ -160,7 +63,7 @@ static func get_all_talents() -> Array[Dictionary]:
 	var talents: Array[Dictionary] = []
 	for talent_id in TALENTS.keys():
 		talents.append(get_talent(talent_id))
-	talents.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["id"]) < str(b["id"]))
+	talents.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return _sort_value(str(a.get("id", ""))) < _sort_value(str(b.get("id", ""))))
 	return talents
 
 
@@ -196,3 +99,22 @@ static func can_unlock(unlocked_talents: Array[String], talent_shards: int, tale
 		return false
 	var prerequisite := str(talent.get("prerequisite", ""))
 	return prerequisite == "" or unlocked_talents.has(prerequisite)
+
+
+static func _sort_value(talent_id: String) -> int:
+	if talent_id.length() < 2:
+		return 999
+	var prefix := talent_id.substr(0, 1)
+	var branch_index := BRANCH_ORDER.find(_prefix_to_branch(prefix))
+	var numeric := int(talent_id.substr(1))
+	return branch_index * 100 + numeric
+
+
+static func _prefix_to_branch(prefix: String) -> String:
+	match prefix:
+		"O":
+			return "offense"
+		"D":
+			return "defense"
+		_:
+			return "support"
