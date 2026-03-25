@@ -4,16 +4,17 @@ class_name Merchant
 const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
 
 const SHOP_ITEMS := [
-	{"id": "bandage", "quantity": 1, "price": 5, "label": "Bandage"},
-	{"id": "bread", "quantity": 1, "price": 8, "label": "Bread"},
-	{"id": "seed", "quantity": 3, "price": 3, "label": "Seed x3"},
-	{"id": "iron_ore", "quantity": 5, "price": 15, "label": "Iron Ore x5"},
-	{"id": "torch", "quantity": 3, "price": 6, "label": "Torch x3"},
+	{"id": "bandage", "quantity": 1, "price": 5, "label": "繃帶"},
+	{"id": "bread", "quantity": 1, "price": 8, "label": "麵包"},
+	{"id": "seed", "quantity": 3, "price": 3, "label": "種子 x3"},
+	{"id": "iron_ore", "quantity": 5, "price": 15, "label": "鐵礦 x5"},
+	{"id": "torch", "quantity": 3, "price": 6, "label": "火把 x3"},
 ]
 
 var _shop_canvas: CanvasLayer = null
 var _current_player = null
 var _gold_label: Label = null
+var _message_label: Label = null
 
 
 func get_interaction_prompt() -> String:
@@ -81,13 +82,19 @@ func _open_shop() -> void:
 
 	vbox.add_child(HSeparator.new())
 
+	_message_label = Label.new()
+	_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_message_label.add_theme_color_override("font_color", Color(1, 0.4, 0.4))
+	_message_label.text = ""
+	vbox.add_child(_message_label)
+
 	var footer := HBoxContainer.new()
 	_gold_label = Label.new()
 	_gold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_update_gold_label()
 	footer.add_child(_gold_label)
 	var close_btn := Button.new()
-	close_btn.text = "關閉 [Esc]"
+	close_btn.text = "關閉"
 	close_btn.pressed.connect(_close_shop)
 	footer.add_child(close_btn)
 	vbox.add_child(footer)
@@ -110,23 +117,39 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	if _current_player == null:
 		return
 	var inv = _current_player.get("inventory")
-	if inv == null or not inv.has_item("gold", price):
+	if inv == null:
+		return
+	if not inv.has_item("gold", price):
+		_message_label.text = "金幣不足"
 		return
 	if inv.remove_item("gold", price):
-		inv.add_item(item_id, quantity)
-		_update_gold_label()
+		if inv.add_item(item_id, quantity):
+			_message_label.text = ""
+			_update_gold_label()
+		else:
+			# Refund gold if bag is full
+			inv.add_item("gold", price)
+			_message_label.text = "背包已滿"
 
 
 func _on_buy_equipment() -> void:
 	if _current_player == null:
 		return
 	var inv = _current_player.get("inventory")
-	if inv == null or not inv.has_item("gold", 50):
+	if inv == null:
+		return
+	if not inv.has_item("gold", 50):
+		_message_label.text = "金幣不足"
 		return
 	if inv.remove_item("gold", 50):
 		var equip := DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
-		inv.add_stack(equip)
-		_update_gold_label()
+		if inv.add_stack(equip):
+			_message_label.text = ""
+			_update_gold_label()
+		else:
+			# Refund gold if bag is full
+			inv.add_item("gold", 50)
+			_message_label.text = "背包已滿"
 
 
 func _update_gold_label() -> void:
