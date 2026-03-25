@@ -16,6 +16,8 @@ const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 @onready var crafting_menu: Control = $CraftingMenu
 @onready var storage_ui: Control = $StorageUI
 @onready var repair_ui: Control = $RepairUI
+@onready var talent_tree: Control = $TalentTree
+@onready var equipment_panel: Control = $EquipmentPanel
 @onready var minimap: Control = $Minimap
 @onready var buff_select: Control = $BuffSelect
 @onready var death_overlay: Control = $DeathOverlay
@@ -37,6 +39,10 @@ func _ready() -> void:
 		storage_ui.close_requested.connect(_on_menu_closed)
 	if repair_ui.has_signal("close_requested") and not repair_ui.close_requested.is_connected(_on_menu_closed):
 		repair_ui.close_requested.connect(_on_menu_closed)
+	if talent_tree.has_signal("close_requested") and not talent_tree.close_requested.is_connected(_on_menu_closed):
+		talent_tree.close_requested.connect(_on_menu_closed)
+	if equipment_panel.has_signal("close_requested") and not equipment_panel.close_requested.is_connected(_on_menu_closed):
+		equipment_panel.close_requested.connect(_on_menu_closed)
 	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
 		buff_select.buff_chosen.connect(_on_buff_chosen)
 	set_process(true)
@@ -63,6 +69,10 @@ func bind_player(new_player) -> void:
 			player.storage_requested.disconnect(_on_storage_requested)
 		if player.repair_requested.is_connected(_on_repair_requested):
 			player.repair_requested.disconnect(_on_repair_requested)
+		if player.talent_requested.is_connected(_on_talent_requested):
+			player.talent_requested.disconnect(_on_talent_requested)
+		if player.equipment_panel_requested.is_connected(_on_equipment_requested):
+			player.equipment_panel_requested.disconnect(_on_equipment_requested)
 		if player.buffs_changed.is_connected(_refresh_buff_icons):
 			player.buffs_changed.disconnect(_refresh_buff_icons)
 
@@ -76,6 +86,8 @@ func bind_player(new_player) -> void:
 	player.crafting_requested.connect(_on_crafting_requested)
 	player.storage_requested.connect(_on_storage_requested)
 	player.repair_requested.connect(_on_repair_requested)
+	player.talent_requested.connect(_on_talent_requested)
+	player.equipment_panel_requested.connect(_on_equipment_requested)
 	player.buffs_changed.connect(_refresh_buff_icons)
 	if build_hud.has_method("bind_system"):
 		build_hud.bind_system(player.building_system, inventory)
@@ -92,13 +104,16 @@ func bind_level(level, level_id: String) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _is_modal_open():
-		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact"):
+		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact") or event.is_action_pressed("toggle_equipment"):
 			_close_all_menus()
 			get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("toggle_inventory"):
 		toggle_inventory_panel()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("toggle_equipment") and player != null and not player.building_system.is_build_mode_active():
+		_toggle_equipment_panel()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel") and inventory_panel.visible:
 		inventory_panel.visible = false
@@ -165,7 +180,7 @@ func _refresh_debug_label() -> void:
 
 func _on_crafting_requested(_facility) -> void:
 	_close_all_menus()
-	crafting_menu.open_for_inventory(inventory)
+	crafting_menu.open_for_player(player)
 	player.set_ui_blocked(true)
 
 
@@ -177,7 +192,26 @@ func _on_storage_requested(facility) -> void:
 
 func _on_repair_requested(_facility) -> void:
 	_close_all_menus()
-	repair_ui.open_for_player(inventory)
+	repair_ui.open_for_player(player)
+	player.set_ui_blocked(true)
+
+
+func _on_talent_requested(_facility) -> void:
+	_close_all_menus()
+	talent_tree.open_for_player(player)
+	player.set_ui_blocked(true)
+
+
+func _on_equipment_requested() -> void:
+	_toggle_equipment_panel()
+
+
+func _toggle_equipment_panel() -> void:
+	if equipment_panel.visible:
+		equipment_panel.close_menu()
+		return
+	_close_all_menus()
+	equipment_panel.open_for_player(player)
 	player.set_ui_blocked(true)
 
 
@@ -186,6 +220,8 @@ func _close_all_menus() -> void:
 	crafting_menu.close_menu()
 	storage_ui.close_menu()
 	repair_ui.close_menu()
+	talent_tree.close_menu()
+	equipment_panel.close_menu()
 	buff_select.close_menu()
 	_on_menu_closed()
 
@@ -198,7 +234,7 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or buff_select.visible
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or buff_select.visible
 
 
 func _process(_delta: float) -> void:

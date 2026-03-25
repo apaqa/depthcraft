@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_h17s1"]
 [ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f0.png" id="2_je7p5"]
@@ -12,6 +12,8 @@
 [ext_resource type="Script" path="res://scripts/player/player_camera.gd" id="10_lgqa7"]
 [ext_resource type="Script" path="res://scripts/inventory/inventory.gd" id="11_4y0mk"]
 [ext_resource type="Script" path="res://scripts/building/building_system.gd" id="12_vkgtg"]
+[ext_resource type="Script" path="res://scripts/player/player_stats.gd" id="13_3jbmi"]
+[ext_resource type="Script" path="res://scripts/equipment/equipment_system.gd" id="14_e4tni"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_8ydkj"]
 animations = [{
@@ -56,7 +58,7 @@ animations = [{
 }]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3j4b4"]
-size = Vector2(6, 4)
+size = Vector2(8, 6)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_g3g7t"]
 radius = 18.0
@@ -72,7 +74,7 @@ position = Vector2(0, -1)
 sprite_frames = SubResource("SpriteFrames_8ydkj")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=61282265]
-position = Vector2(0, 6)
+position = Vector2(0, 4)
 shape = SubResource("RectangleShape2D_3j4b4")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1655665250]
@@ -88,3 +90,9 @@ script = ExtResource("11_4y0mk")
 
 [node name="BuildingSystem" type="Node" parent="."]
 script = ExtResource("12_vkgtg")
+
+[node name="PlayerStats" type="Node" parent="."]
+script = ExtResource("13_3jbmi")
+
+[node name="EquipmentSystem" type="Node" parent="."]
+script = ExtResource("14_e4tni")

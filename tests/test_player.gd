@@ -4,14 +4,17 @@ const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const PLAYER_SCRIPT := preload("res://scripts/player/player.gd")
 
 var _failures: PackedStringArray = []
+var _holders: Node = null
 
 
 func _initialize() -> void:
+	_holders = Node.new()
+	root.add_child(_holders)
 	test_initial_position()
 	test_default_speed()
 	test_default_sprint_speed()
 	test_collision_shape_uses_feet_box()
-	test_player_is_in_player_group()
+	await test_player_is_in_player_group()
 	test_diagonal_normalization()
 	test_zero_input_returns_zero_vector()
 	test_velocity_zero_when_idle()
@@ -39,14 +42,17 @@ func test_collision_shape_uses_feet_box() -> void:
 	var player := PLAYER_SCENE.instantiate()
 	var collision_shape: CollisionShape2D = player.get_node("CollisionShape2D")
 	var rectangle: RectangleShape2D = collision_shape.shape
-	_assert(collision_shape.position == Vector2(0, 6), "Player collision should sit exactly at the feet position.")
-	_assert(rectangle.size == Vector2(6, 4), "Player collision should use the tiny feet-only rectangle.")
+	_assert(collision_shape.position == Vector2(0, 4), "Player collision should sit slightly below center for tight wall contact.")
+	_assert(rectangle.size == Vector2(8, 6), "Player collision should use the compact feet rectangle.")
 
 
 func test_player_is_in_player_group() -> void:
 	var player := PLAYER_SCENE.instantiate()
-	player._ready()
+	_holders.add_child(player)
+	await process_frame
 	_assert(player.is_in_group("player"), "Player should register itself in the player group for enemy targeting.")
+	player.queue_free()
+	await process_frame
 
 
 func test_diagonal_normalization() -> void:

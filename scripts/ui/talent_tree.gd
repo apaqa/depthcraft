@@ -1,0 +1,85 @@
+extends Control
+
+const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
+
+signal close_requested
+
+@onready var shard_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ShardLabel
+@onready var branch_row: HBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/BranchRow
+
+var player = null
+
+
+func _ready() -> void:
+	visible = false
+	mouse_filter = Control.MOUSE_FILTER_STOP
+
+
+func open_for_player(target_player) -> void:
+	player = target_player
+	visible = true
+	_refresh()
+
+
+func close_menu() -> void:
+	if not visible:
+		return
+	visible = false
+	release_focus()
+	close_requested.emit()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible:
+		return
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact"):
+		close_menu()
+		get_viewport().set_input_as_handled()
+
+
+func _refresh() -> void:
+	for child in branch_row.get_children():
+		child.queue_free()
+	if player == null:
+		return
+	shard_label.text = "Talent Shards: %d" % player.inventory.get_item_count("talent_shard")
+	for branch_id in TALENT_DATA.get_branch_ids():
+		var panel := PanelContainer.new()
+		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var branch_box := VBoxContainer.new()
+		branch_box.add_theme_constant_override("separation", 6)
+		panel.add_child(branch_box)
+		var title := Label.new()
+		title.text = TALENT_DATA.get_branch_label(branch_id)
+		branch_box.add_child(title)
+		for talent in TALENT_DATA.get_branch_talents(branch_id):
+			var button := Button.new()
+			button.text = _build_talent_text(talent)
+			button.disabled = player.has_talent(str(talent.get("id", ""))) or not TALENT_DATA.can_unlock(player.get_unlocked_talents(), player.inventory.get_item_count("talent_shard"), str(talent.get("id", "")))
+			if player.has_talent(str(talent.get("id", ""))):
+				button.modulate = Color(0.95, 0.9, 0.45, 1.0)
+			elif TALENT_DATA.can_unlock(player.get_unlocked_talents(), player.inventory.get_item_count("talent_shard"), str(talent.get("id", ""))):
+				button.modulate = Color(0.6, 0.95, 0.6, 1.0)
+			else:
+				button.modulate = Color(0.65, 0.65, 0.65, 1.0)
+			button.pressed.connect(_on_talent_pressed.bind(String(talent.get("id", ""))))
+			branch_box.add_child(button)
+		branch_row.add_child(panel)
+
+
+func _build_talent_text(talent: Dictionary) -> String:
+	var talent_id := str(talent.get("id", ""))
+	if player != null and player.has_talent(talent_id):
+		return "%s\nUnlocked" % str(talent.get("name", talent_id))
+	return "%s\n%s\nCost: %d" % [
+		str(talent.get("name", talent_id)),
+		str(talent.get("description", "")),
+		int(talent.get("cost", 0)),
+	]
+
+
+func _on_talent_pressed(talent_id: String) -> void:
+	if player == null:
+		return
+	if player.unlock_talent(talent_id):
+		_refresh()

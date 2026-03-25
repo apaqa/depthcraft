@@ -47,6 +47,33 @@ const RECIPES := {
 		"effect": {"light": true},
 		"max_stack": 5,
 	},
+	"leather_cap": {
+		"id": "leather_cap",
+		"name": "Leather Cap",
+		"result_item_id": "leather_cap",
+		"result_type": "equipment",
+		"cost": {"fiber": 3},
+		"stats": {"defense": 2},
+		"slot": "helmet",
+	},
+	"leather_vest": {
+		"id": "leather_vest",
+		"name": "Leather Vest",
+		"result_item_id": "leather_vest",
+		"result_type": "equipment",
+		"cost": {"fiber": 5, "wood": 2},
+		"stats": {"defense": 4},
+		"slot": "chest_armor",
+	},
+	"iron_sword": {
+		"id": "iron_sword",
+		"name": "Iron Sword",
+		"result_item_id": "iron_sword",
+		"result_type": "equipment",
+		"cost": {"iron_ore": 5, "wood": 2},
+		"stats": {"attack": 10},
+		"slot": "weapon",
+	},
 }
 
 
@@ -64,7 +91,18 @@ static func get_recipe(recipe_id: String) -> Dictionary:
 	return RECIPES[recipe_id].duplicate(true)
 
 
-static func can_craft(recipe_id: String, inventory) -> bool:
+static func get_recipe_cost(recipe_id: String, cost_multiplier: float = 1.0) -> Dictionary:
+	var recipe := get_recipe(recipe_id)
+	if recipe.is_empty():
+		return {}
+	var adjusted_cost := {}
+	for resource_id in recipe.get("cost", {}).keys():
+		var base_cost := int(recipe["cost"][resource_id])
+		adjusted_cost[resource_id] = max(int(ceil(float(base_cost) * cost_multiplier)), 1)
+	return adjusted_cost
+
+
+static func can_craft(recipe_id: String, inventory, cost_multiplier: float = 1.0) -> bool:
 	if inventory == null:
 		return false
 
@@ -72,18 +110,18 @@ static func can_craft(recipe_id: String, inventory) -> bool:
 	if recipe.is_empty():
 		return false
 
-	for resource_id in recipe.get("cost", {}).keys():
-		if inventory.get_item_count(resource_id) < int(recipe["cost"][resource_id]):
+	for resource_id in get_recipe_cost(recipe_id, cost_multiplier).keys():
+		if inventory.get_item_count(resource_id) < int(get_recipe_cost(recipe_id, cost_multiplier)[resource_id]):
 			return false
 	return true
 
 
-static func craft(recipe_id: String, inventory) -> bool:
-	if not can_craft(recipe_id, inventory):
+static func craft(recipe_id: String, inventory, cost_multiplier: float = 1.0) -> bool:
+	if not can_craft(recipe_id, inventory, cost_multiplier):
 		return false
 
 	var recipe := get_recipe(recipe_id)
-	for resource_id in recipe["cost"].keys():
-		inventory.remove_item(resource_id, int(recipe["cost"][resource_id]))
+	for resource_id in get_recipe_cost(recipe_id, cost_multiplier).keys():
+		inventory.remove_item(resource_id, int(get_recipe_cost(recipe_id, cost_multiplier)[resource_id]))
 
 	return inventory.add_item(str(recipe["result_item_id"]), 1)

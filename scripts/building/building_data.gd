@@ -4,6 +4,7 @@ const WORKBENCH_SCENE_PATH := "res://scenes/building/facilities/workbench.tscn"
 const STORAGE_CHEST_SCENE_PATH := "res://scenes/building/facilities/storage_chest.tscn"
 const REPAIR_BENCH_SCENE_PATH := "res://scenes/building/facilities/repair_bench.tscn"
 const WOOD_DOOR_SCENE_PATH := "res://scenes/building/facilities/wood_door.tscn"
+const TALENT_ALTAR_SCENE_PATH := "res://scenes/building/facilities/talent_altar.tscn"
 const FULL_TILE_ATLAS := Vector2i.ZERO
 
 const BUILDINGS := {
@@ -81,9 +82,17 @@ const BUILDINGS := {
 		"scene_path": REPAIR_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/boxes_stacked.png"),
 	},
+	"talent_altar": {
+		"id": "talent_altar",
+		"name": "Talent Altar",
+		"kind": "facility",
+		"cost": {"stone": 10, "iron_ore": 5},
+		"scene_path": TALENT_ALTAR_SCENE_PATH,
+		"preview_texture": preload("res://assets/column.png"),
+	},
 }
 
-const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench"]
+const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar"]
 
 
 static func get_building(building_id: String) -> Dictionary:

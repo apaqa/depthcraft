@@ -6,6 +6,8 @@ extends CharacterBody2D
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 const ATTACK_EFFECT_SCENE := preload("res://scenes/player/attack_effect.tscn")
 const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
+const PLAYER_SAVE := preload("res://scripts/player/player_save.gd")
 
 signal interaction_prompt_changed(prompt_text: String)
 signal interaction_prompt_cleared
@@ -14,14 +16,19 @@ signal build_mode_changed(active: bool)
 signal crafting_requested(facility)
 signal storage_requested(facility)
 signal repair_requested(facility)
+signal talent_requested(facility)
+signal equipment_panel_requested
 signal hp_changed(current_hp: int, max_hp: int)
 signal buffs_changed(active_buffs: Array)
+signal stats_changed
 signal died
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interaction_area: Area2D = $InteractionArea
-@onready var inventory = $Inventory
-@onready var building_system = $BuildingSystem
+@onready var inventory: Inventory = $Inventory
+@onready var building_system: BuildingSystem = $BuildingSystem
+@onready var player_stats = $PlayerStats
+@onready var equipment_system = $EquipmentSystem
 
 const FLOATING_TEXT_SCENE := preload("res://scenes/ui/floating_text.tscn")
 
@@ -37,10 +44,11 @@ var attack_cooldown_left: float = 0.0
 var consumable_cooldown_left: float = 0.0
 var is_dead: bool = false
 var active_buff_ids: Array[String] = []
+var unlocked_talents: Array[String] = []
 var dungeon_run_loot: Array[Dictionary] = []
 var regen_tick_progress: float = 0.0
 var damage_multiplier: float = 1.0
-var crit_chance: float = 0.0
+var crit_chance_bonus: float = 0.0
 var attack_cooldown_multiplier: float = 1.0
 var lifesteal_ratio: float = 0.0
 var armor_reduction: float = 0.0
@@ -49,23 +57,26 @@ var move_speed_multiplier: float = 1.0
 var loot_drop_multiplier: float = 1.0
 var aoe_attack_multiplier: float = 1.0
 var bonus_max_hp: int = 0
-var regen_amount: int = 0
-var regen_interval: float = 3.0
+var buff_regen_amount: int = 0
+var buff_regen_interval: float = 3.0
+var undying_will_available: bool = false
 
-const BASE_MAX_HP := 100
-const BASE_ATTACK_DAMAGE := 15
 const BASE_ATTACK_COOLDOWN := 0.4
 const BANDAGE_COOLDOWN := 1.0
 
 
 func _ready() -> void:
 	add_to_group("player")
+	safe_margin = 0.01
 	_configure_input_actions()
 	interaction_area.area_entered.connect(_on_interaction_area_entered)
 	interaction_area.area_exited.connect(_on_interaction_area_exited)
 	building_system.build_state_changed.connect(_on_build_state_changed)
+	player_stats.stats_changed.connect(_on_player_stats_changed)
+	equipment_system.equipment_changed.connect(_on_equipment_changed)
+	_load_persistent_state()
 	_recalculate_buff_state()
-	hp_changed.emit(current_hp, max_hp)
+	_refresh_all_stats()
 
 
 static func compute_input_vector(left_strength: float, right_strength: float, up_strength: float, down_strength: float) -> Vector2:
@@ -113,13 +124,13 @@ func get_animated_sprite() -> AnimatedSprite2D:
 	return get_node_or_null("AnimatedSprite2D")
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if invincible_time_left > 0.0:
-		invincible_time_left = max(invincible_time_left - _delta, 0.0)
+		invincible_time_left = max(invincible_time_left - delta, 0.0)
 	if attack_cooldown_left > 0.0:
-		attack_cooldown_left = max(attack_cooldown_left - _delta, 0.0)
+		attack_cooldown_left = max(attack_cooldown_left - delta, 0.0)
 	if consumable_cooldown_left > 0.0:
-		consumable_cooldown_left = max(consumable_cooldown_left - _delta, 0.0)
+		consumable_cooldown_left = max(consumable_cooldown_left - delta, 0.0)
 
 	if is_dead:
 		velocity = Vector2.ZERO
@@ -133,15 +144,18 @@ func _physics_process(_delta: float) -> void:
 		move_and_slide()
 		return
 
-	if regen_amount > 0:
-		regen_tick_progress += _delta
-		if regen_tick_progress >= regen_interval:
+	var total_regen: int = player_stats.get_regen_amount() + buff_regen_amount
+	var total_regen_interval: float = min(player_stats.get_regen_interval(), buff_regen_interval)
+	if total_regen > 0:
+		regen_tick_progress += delta
+		if regen_tick_progress >= total_regen_interval:
 			regen_tick_progress = 0.0
-			heal(regen_amount)
+			heal(total_regen)
 
-	var input_direction := get_input_vector()
-	var move_speed := (sprint_speed if Input.is_action_pressed("sprint") else speed) * move_speed_multiplier
-	apply_input_direction(input_direction, move_speed)
+	var input_direction: Vector2 = get_input_vector()
+	var base_speed_value: float = player_stats.get_total_speed()
+	var move_speed_value: float = (sprint_speed if Input.is_action_pressed("sprint") else base_speed_value) * move_speed_multiplier
+	apply_input_direction(input_direction, move_speed_value)
 	move_and_slide()
 
 
@@ -157,6 +171,11 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_build"):
 		if building_system.toggle_build_mode():
 			get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("toggle_equipment") and not build_mode and not is_dead:
+		equipment_panel_requested.emit()
+		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("attack") and not build_mode and not ui_blocked and not is_dead:
@@ -194,7 +213,6 @@ func _try_interact() -> void:
 	var interactable = _get_closest_interactable()
 	if interactable == null or not interactable.has_method("interact"):
 		return
-
 	if interactable.has_method("hit"):
 		last_interacted_resource = interactable
 	interactable.interact(self)
@@ -211,10 +229,8 @@ func _on_interaction_area_entered(area: Area2D) -> void:
 	var owner = area.get_parent()
 	if owner == null or not owner.has_method("get_interaction_prompt"):
 		return
-
 	if not nearby_interactables.has(owner):
 		nearby_interactables.append(owner)
-
 	if owner.has_signal("gathered") and not owner.gathered.is_connected(_on_resource_gathered):
 		owner.gathered.connect(_on_resource_gathered)
 	if owner.has_signal("depleted") and not owner.depleted.is_connected(_on_resource_depleted):
@@ -246,14 +262,14 @@ func _disconnect_resource_signals(resource) -> void:
 
 
 func _on_resource_gathered(resource_id: String, quantity: int) -> void:
+	var total_quantity: int = quantity + player_stats.get_total_gather_bonus()
 	var item_data: Dictionary = ITEM_DATABASE.get_item(resource_id)
 	var display_name: String = str(item_data.get("name", resource_id.capitalize()))
 	var source_position := global_position
 	if last_interacted_resource != null:
 		source_position = last_interacted_resource.global_position
-
-	if inventory.add_item(resource_id, quantity):
-		_show_floating_text(source_position, "+%d %s" % [quantity, display_name], Color(0.75, 1.0, 0.75, 1.0))
+	if inventory.add_item(resource_id, total_quantity):
+		_show_floating_text(source_position, "+%d %s" % [total_quantity, display_name], Color(0.75, 1.0, 0.75, 1.0))
 	else:
 		_show_floating_text(source_position, "Bag Full", Color(1.0, 0.6, 0.6, 1.0))
 
@@ -281,7 +297,6 @@ func _update_prompt() -> void:
 	if build_mode or ui_blocked:
 		interaction_prompt_cleared.emit()
 		return
-
 	var interactable = _get_closest_interactable()
 	if interactable != null:
 		if interactable.has_method("get") and interactable.get("is_depleted") == true:
@@ -289,7 +304,6 @@ func _update_prompt() -> void:
 			return
 		interaction_prompt_changed.emit(interactable.get_interaction_prompt())
 		return
-
 	interaction_prompt_cleared.emit()
 
 
@@ -318,20 +332,35 @@ func request_repair_menu(facility) -> void:
 	repair_requested.emit(facility)
 
 
+func request_talent_menu(facility) -> void:
+	talent_requested.emit(facility)
+
+
 func take_damage(amount: int) -> void:
 	if is_dead or invincible_time_left > 0.0:
 		return
 	if dodge_chance > 0.0 and randf() < dodge_chance:
 		_show_floating_text(global_position, "Dodge", Color(0.75, 1.0, 1.0, 1.0))
 		return
-	var reduced_amount: int = max(int(round(float(amount) * (1.0 - armor_reduction))), 1)
+	if player_stats.get_block_chance() > 0.0 and randf() < player_stats.get_block_chance():
+		_show_floating_text(global_position, "Block", Color(0.7, 0.85, 1.0, 1.0))
+		return
+	var defense_value: int = player_stats.get_total_defense()
+	var reduced_amount: int = max(int(round(float(max(amount - defense_value, 1)) * (1.0 - armor_reduction))), 1)
 	current_hp = max(current_hp - reduced_amount, 0)
+	equipment_system.consume_damage_durability()
 	hp_changed.emit(current_hp, max_hp)
 	invincible_time_left = 0.5
 	var tween := create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color(1, 0.45, 0.45, 1), 0.05)
 	tween.tween_property(animated_sprite, "modulate", Color(1, 1, 1, 1), 0.1)
 	if current_hp <= 0:
+		if undying_will_available and player_stats.has_undying_will():
+			undying_will_available = false
+			current_hp = 1
+			hp_changed.emit(current_hp, max_hp)
+			_show_floating_text(global_position, "Undying Will", Color(1.0, 0.95, 0.35, 1.0))
+			return
 		die()
 
 
@@ -363,6 +392,7 @@ func perform_attack() -> void:
 		return
 	attack_cooldown_left = get_attack_cooldown_duration()
 	_spawn_attack_effect()
+	equipment_system.consume_attack_durability()
 	var attack_shape := RectangleShape2D.new()
 	attack_shape.size = Vector2(24, 20) * aoe_attack_multiplier
 	var query := PhysicsShapeQueryParameters2D.new()
@@ -373,12 +403,18 @@ func perform_attack() -> void:
 	var total_damage_dealt := 0
 	for result in results:
 		var collider = result.get("collider", null)
-		if collider != null and collider.has_method("take_damage") and collider != self:
-			var attack_damage := get_attack_damage()
-			if crit_chance > 0.0 and randf() < crit_chance:
-				attack_damage *= 2
-			collider.take_damage(attack_damage)
-			total_damage_dealt += attack_damage
+		if collider == null or not collider.has_method("take_damage") or collider == self:
+			continue
+		var attack_damage := get_attack_damage()
+		if player_stats.get_total_crit_chance() + crit_chance_bonus > 0.0 and randf() < (player_stats.get_total_crit_chance() + crit_chance_bonus):
+			attack_damage *= 2
+		if player_stats.get_execute_bonus() > 0.0:
+			var enemy_hp := int(collider.get("current_hp"))
+			var enemy_max_hp := int(collider.get("max_hp"))
+			if enemy_max_hp > 0 and float(enemy_hp) / float(enemy_max_hp) <= 0.3:
+				attack_damage = int(round(float(attack_damage) * (1.0 + player_stats.get_execute_bonus())))
+		collider.take_damage(attack_damage)
+		total_damage_dealt += attack_damage
 	if lifesteal_ratio > 0.0 and total_damage_dealt > 0:
 		heal(int(max(round(total_damage_dealt * lifesteal_ratio), 1.0)))
 
@@ -420,15 +456,14 @@ func _configure_input_actions() -> void:
 	_set_key_action("dev_reset_save", KEY_9)
 	_set_key_action("dodge", KEY_SHIFT)
 	_set_key_action("use_consumable", KEY_Q)
+	_set_key_action("toggle_equipment", KEY_C)
 
 
 func _set_key_action(action_name: String, keycode: int) -> void:
 	if not InputMap.has_action(action_name):
 		InputMap.add_action(action_name)
-
 	for event in InputMap.action_get_events(action_name):
 		InputMap.action_erase_event(action_name, event)
-
 	var key_event := InputEventKey.new()
 	key_event.keycode = keycode
 	key_event.physical_keycode = keycode
@@ -459,7 +494,7 @@ func get_active_buffs() -> Array[Dictionary]:
 
 
 func get_attack_damage() -> int:
-	return int(round(BASE_ATTACK_DAMAGE * damage_multiplier))
+	return int(round(float(player_stats.get_total_attack()) * damage_multiplier))
 
 
 func get_attack_cooldown_duration() -> float:
@@ -467,20 +502,57 @@ func get_attack_cooldown_duration() -> float:
 
 
 func get_loot_drop_multiplier() -> float:
-	return loot_drop_multiplier
+	return loot_drop_multiplier * (1.0 + player_stats.get_total_loot_bonus())
+
+
+func get_crafting_cost_multiplier() -> float:
+	return player_stats.get_crafting_cost_multiplier()
+
+
+func get_stats_summary() -> Dictionary:
+	return {
+		"attack": get_attack_damage(),
+		"defense": player_stats.get_total_defense(),
+		"max_hp": max_hp,
+		"speed": int(round(player_stats.get_total_speed())),
+	}
+
+
+func get_unlocked_talents() -> Array[String]:
+	return unlocked_talents.duplicate()
+
+
+func unlock_talent(talent_id: String) -> bool:
+	if not TALENT_DATA.can_unlock(unlocked_talents, inventory.get_item_count("talent_shard"), talent_id):
+		return false
+	var talent := TALENT_DATA.get_talent(talent_id)
+	if not inventory.remove_item("talent_shard", int(talent.get("cost", 0))):
+		return false
+	unlocked_talents.append(talent_id)
+	unlocked_talents.sort()
+	player_stats.rebuild_talent_bonuses(unlocked_talents)
+	_refresh_all_stats()
+	_save_persistent_state()
+	return true
+
+
+func has_talent(talent_id: String) -> bool:
+	return unlocked_talents.has(talent_id)
 
 
 func start_dungeon_run() -> void:
 	dungeon_run_loot.clear()
 	clear_dungeon_buffs()
+	undying_will_available = player_stats.has_undying_will()
 
 
 func finish_dungeon_run(safe_return: bool) -> void:
 	if not safe_return:
 		lose_dungeon_run_loot()
-		apply_equipment_durability_penalty()
+		equipment_system.apply_death_penalty()
 	dungeon_run_loot.clear()
 	clear_dungeon_buffs()
+	_save_persistent_state()
 
 
 func record_dungeon_loot(item_id: String, quantity: int) -> void:
@@ -488,10 +560,7 @@ func record_dungeon_loot(item_id: String, quantity: int) -> void:
 		if str(entry.get("id", "")) == item_id:
 			entry["quantity"] = int(entry.get("quantity", 0)) + quantity
 			return
-	dungeon_run_loot.append({
-		"id": item_id,
-		"quantity": quantity,
-	})
+	dungeon_run_loot.append({"id": item_id, "quantity": quantity})
 
 
 func lose_dungeon_run_loot() -> void:
@@ -499,33 +568,28 @@ func lose_dungeon_run_loot() -> void:
 		inventory.remove_item(str(entry.get("id", "")), int(entry.get("quantity", 0)))
 
 
-func apply_equipment_durability_penalty() -> void:
-	for stack in inventory.items:
-		if str(stack.get("type", "")) != "equipment":
-			continue
-		if not stack.has("durability") or not stack.has("max_durability"):
-			continue
-		stack["durability"] = max(int(round(float(stack["durability"]) * 0.8)), 0)
-	inventory.inventory_changed.emit()
-
-
 func use_first_consumable() -> bool:
 	if consumable_cooldown_left > 0.0:
 		return false
 	for stack in inventory.items:
-		if str(stack.get("id", "")) != "bandage":
+		if str(stack.get("type", "")) != "consumable":
 			continue
-		if inventory.remove_item("bandage", 1):
-			heal(20)
-			consumable_cooldown_left = BANDAGE_COOLDOWN
-			_show_floating_text(global_position, "+20 HP", Color(0.45, 1.0, 0.45, 1.0))
-			return true
+		var item_id := str(stack.get("id", ""))
+		var item_data := ITEM_DATABASE.get_item(item_id)
+		var heal_amount := int((item_data.get("effect", {}) as Dictionary).get("heal", 0))
+		if not inventory.remove_item(item_id, 1):
+			return false
+		if heal_amount > 0:
+			heal(heal_amount)
+			_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.45, 1.0, 0.45, 1.0))
+		consumable_cooldown_left = BANDAGE_COOLDOWN
+		return true
 	return false
 
 
 func _recalculate_buff_state() -> void:
 	damage_multiplier = 1.0
-	crit_chance = 0.0
+	crit_chance_bonus = 0.0
 	attack_cooldown_multiplier = 1.0
 	lifesteal_ratio = 0.0
 	armor_reduction = 0.0
@@ -534,8 +598,8 @@ func _recalculate_buff_state() -> void:
 	loot_drop_multiplier = 1.0
 	aoe_attack_multiplier = 1.0
 	bonus_max_hp = 0
-	regen_amount = 0
-	regen_interval = 3.0
+	buff_regen_amount = 0
+	buff_regen_interval = 3.0
 	for buff_id in active_buff_ids:
 		match buff_id:
 			"atk_up_1":
@@ -544,7 +608,7 @@ func _recalculate_buff_state() -> void:
 				damage_multiplier *= 1.25
 				move_speed_multiplier *= 0.9
 			"crit_chance":
-				crit_chance += 0.15
+				crit_chance_bonus += 0.15
 			"atk_speed":
 				attack_cooldown_multiplier *= 0.7
 			"lifesteal":
@@ -556,14 +620,47 @@ func _recalculate_buff_state() -> void:
 			"dodge_chance":
 				dodge_chance += 0.15
 			"regen":
-				regen_amount += 1
-				regen_interval = 3.0
+				buff_regen_amount += 1
+				buff_regen_interval = 3.0
 			"speed_up":
 				move_speed_multiplier *= 1.25
 			"loot_up":
 				loot_drop_multiplier *= 2.0
 			"aoe_attack":
 				aoe_attack_multiplier *= 1.5
-	max_hp = BASE_MAX_HP + bonus_max_hp
-	current_hp = min(current_hp, max_hp)
+	_refresh_all_stats()
+
+
+func _on_player_stats_changed() -> void:
+	_refresh_all_stats()
+
+
+func _on_equipment_changed() -> void:
+	player_stats.set_equipment_bonuses(equipment_system.get_total_bonus_map())
+	_save_persistent_state()
+
+
+func _refresh_all_stats() -> void:
+	speed = player_stats.get_total_speed()
+	max_hp = player_stats.get_total_max_hp() + bonus_max_hp
+	current_hp = clamp(current_hp, 0, max_hp)
+	stats_changed.emit()
 	hp_changed.emit(current_hp, max_hp)
+
+
+func _load_persistent_state() -> void:
+	var payload: Dictionary = PLAYER_SAVE.load_state()
+	unlocked_talents.clear()
+	for talent_id in payload.get("unlocked_talents", []):
+		unlocked_talents.append(str(talent_id))
+	equipment_system.load_state(payload.get("equipment", {}))
+	player_stats.rebuild_talent_bonuses(unlocked_talents)
+	player_stats.set_equipment_bonuses(equipment_system.get_total_bonus_map())
+	undying_will_available = player_stats.has_undying_will()
+
+
+func _save_persistent_state() -> void:
+	PLAYER_SAVE.save_state({
+		"unlocked_talents": unlocked_talents,
+		"equipment": equipment_system.serialize_state(),
+	})

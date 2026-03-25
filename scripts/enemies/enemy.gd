@@ -17,7 +17,7 @@ const PROJECTILE_SCENE := preload("res://scenes/enemies/projectile.tscn")
 @export var max_hp: int = 30
 @export var damage: int = 10
 @export var speed: float = 40.0
-@export var detection_range: float = 100.0
+@export var detection_range: float = 150.0
 @export var attack_range: float = 20.0
 @export var attack_cooldown: float = 1.0
 @export var keeps_distance: bool = false
@@ -37,6 +37,7 @@ var base_speed: float = 0.0
 var hp_bar_root: Node2D = null
 var hp_bar_bg: Polygon2D = null
 var hp_bar_fill: Polygon2D = null
+var seeking_target: bool = false
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var attack_timer: Timer = $AttackTimer
@@ -81,6 +82,7 @@ func _physics_process(_delta: float) -> void:
 		return
 
 	if target == null or not is_instance_valid(target):
+		_ensure_target()
 		velocity = Vector2.ZERO
 		state = State.IDLE
 		move_and_slide()
@@ -210,9 +212,13 @@ func _update_hp_bar() -> void:
 
 
 func _ensure_target() -> void:
+	if seeking_target:
+		return
 	if target != null and is_instance_valid(target):
 		return
+	seeking_target = true
 	await get_tree().process_frame
 	var players: Array = get_tree().get_nodes_in_group("player")
 	if not players.is_empty():
 		target = players[0]
+	seeking_target = false

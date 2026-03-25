@@ -17,11 +17,26 @@ func add_item(item_id: String, quantity: int = 1) -> bool:
 	if item_data.is_empty():
 		return false
 
+	return add_stack_data(item_data, quantity)
+
+
+func add_stack(stack_data: Dictionary) -> bool:
+	if stack_data.is_empty():
+		return false
+	return add_stack_data(stack_data, int(stack_data.get("quantity", 1)))
+
+
+func add_stack_data(stack_template: Dictionary, quantity: int = 1) -> bool:
+	if quantity <= 0:
+		return true
+
 	var working_items: Array[Dictionary] = _duplicate_items(items)
 	var remaining := quantity
 
 	for stack in working_items:
-		if stack["id"] != item_id:
+		if stack["id"] != stack_template["id"]:
+			continue
+		if int(stack.get("max_stack", 1)) <= 1:
 			continue
 
 		var free_space: int = int(stack["max_stack"]) - int(stack["quantity"])
@@ -38,8 +53,8 @@ func add_item(item_id: String, quantity: int = 1) -> bool:
 		if working_items.size() >= max_slots:
 			return false
 
-		var stack_quantity: int = min(remaining, int(item_data["max_stack"]))
-		var new_stack: Dictionary = item_data.duplicate(true)
+		var stack_quantity: int = min(remaining, int(stack_template["max_stack"]))
+		var new_stack: Dictionary = stack_template.duplicate(true)
 		new_stack["quantity"] = stack_quantity
 		working_items.append(new_stack)
 		remaining -= stack_quantity
@@ -106,7 +121,7 @@ func move_stack_to(target_inventory: Inventory, stack_index: int) -> bool:
 		return false
 
 	var stack: Dictionary = items[stack_index].duplicate(true)
-	if not target_inventory.add_item(str(stack["id"]), int(stack["quantity"])):
+	if not target_inventory.add_stack(stack):
 		return false
 
 	items.remove_at(stack_index)

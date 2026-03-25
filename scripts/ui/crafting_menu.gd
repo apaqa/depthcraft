@@ -10,6 +10,7 @@ signal close_requested
 @onready var flash_rect: ColorRect = $FlashRect
 
 var player_inventory = null
+var player = null
 var recipe_ids: PackedStringArray = []
 var selected_recipe_id: String = ""
 
@@ -21,8 +22,9 @@ func _ready() -> void:
 	craft_button.pressed.connect(_on_craft_pressed)
 
 
-func open_for_inventory(inventory) -> void:
-	player_inventory = inventory
+func open_for_player(target_player) -> void:
+	player = target_player
+	player_inventory = player.inventory if player != null else null
 	visible = true
 	_rebuild_recipe_list()
 	if not recipe_ids.is_empty():
@@ -68,12 +70,14 @@ func _refresh_details() -> void:
 		return
 
 	var recipe: Dictionary = CRAFTING_SYSTEM.get_recipe(selected_recipe_id)
+	var cost_multiplier: float = player.get_crafting_cost_multiplier() if player != null and player.has_method("get_crafting_cost_multiplier") else 1.0
+	var cost := CRAFTING_SYSTEM.get_recipe_cost(selected_recipe_id, cost_multiplier)
 	var lines: PackedStringArray = []
 	lines.append(str(recipe.get("name", selected_recipe_id)))
 	lines.append("")
 	lines.append("Materials:")
-	for resource_id in recipe.get("cost", {}).keys():
-		var required: int = int(recipe["cost"][resource_id])
+	for resource_id in cost.keys():
+		var required: int = int(cost[resource_id])
 		var owned: int = player_inventory.get_item_count(resource_id)
 		var marker := "[OK]" if owned >= required else "[X]"
 		lines.append("%s %d/%d %s" % [marker, owned, required, _pretty_name(resource_id)])
@@ -89,13 +93,14 @@ func _refresh_details() -> void:
 			lines.append("%s: %s" % [_pretty_name(effect_id), str(recipe["effect"][effect_id])])
 
 	detail_label.text = "\n".join(lines)
-	craft_button.disabled = not CRAFTING_SYSTEM.can_craft(selected_recipe_id, player_inventory)
+	craft_button.disabled = not CRAFTING_SYSTEM.can_craft(selected_recipe_id, player_inventory, cost_multiplier)
 
 
 func _on_craft_pressed() -> void:
 	if selected_recipe_id == "" or player_inventory == null:
 		return
-	if CRAFTING_SYSTEM.craft(selected_recipe_id, player_inventory):
+	var cost_multiplier: float = player.get_crafting_cost_multiplier() if player != null and player.has_method("get_crafting_cost_multiplier") else 1.0
+	if CRAFTING_SYSTEM.craft(selected_recipe_id, player_inventory, cost_multiplier):
 		_refresh_details()
 		_play_flash()
 

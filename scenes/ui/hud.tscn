@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_0mwgc"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_panel.tscn" id="2_qof7f"]
@@ -9,6 +9,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/repair_ui.tscn" id="7_m65e5"]
 [ext_resource type="PackedScene" path="res://scenes/ui/buff_select.tscn" id="8_hxv8m"]
 [ext_resource type="Script" path="res://scripts/ui/minimap.gd" id="9_1e1c6"]
+[ext_resource type="PackedScene" path="res://scenes/ui/talent_tree.tscn" id="10_talent"]
+[ext_resource type="PackedScene" path="res://scenes/ui/equipment_panel.tscn" id="11_equip"]
 
 [node name="HUDCanvas" type="CanvasLayer" unique_id=1278126834]
 
@@ -110,6 +112,10 @@ script = ExtResource("3_ysik2")
 [node name="StorageUI" parent="HUD" instance=ExtResource("6_0wa9s")]
 
 [node name="RepairUI" parent="HUD" instance=ExtResource("7_m65e5")]
+
+[node name="TalentTree" parent="HUD" instance=ExtResource("10_talent")]
+
+[node name="EquipmentPanel" parent="HUD" instance=ExtResource("11_equip")]
 
 [node name="Minimap" type="Control" parent="HUD"]
 visible = false
