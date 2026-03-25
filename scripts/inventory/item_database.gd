@@ -189,6 +189,36 @@ static func get_item(item_id: String) -> Dictionary:
 	return ITEMS[item_id].duplicate(true)
 
 
+static func get_item_icon(item_id: String) -> Texture2D:
+	var item: Dictionary = get_item(item_id)
+	return get_stack_icon(item)
+
+
+static func get_stack_icon(stack: Dictionary) -> Texture2D:
+	if stack.is_empty():
+		return null
+	var icon = stack.get("icon", null)
+	return icon if icon is Texture2D else null
+
+
+static func get_default_equipment_icon(slot_name: String) -> Texture2D:
+	match slot_name:
+		"weapon":
+			return preload("res://assets/icons/kyrise/sword_01a.png")
+		"helmet":
+			return preload("res://assets/icons/kyrise/helmet_01a.png")
+		"chest_armor", "offhand":
+			return preload("res://assets/icons/kyrise/armor_01a.png")
+		"boots":
+			return preload("res://assets/icons/kyrise/boots_01a.png")
+		"accessory":
+			return preload("res://assets/icons/ring_01a.png")
+		"tool":
+			return preload("res://assets/icons/kyrise/ingot_01b.png")
+		_:
+			return null
+
+
 static func get_item_color(item_id: String, item_type: String = "") -> Color:
 	match item_id:
 		"wood":

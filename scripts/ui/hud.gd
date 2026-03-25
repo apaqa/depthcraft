@@ -318,12 +318,7 @@ func _build_item_row(stack: Dictionary, _swatch_color: Color) -> Control:
 	var row := HBoxContainer.new()
 	row.custom_minimum_size = Vector2(200, 24)
 	row.add_theme_constant_override("separation", 8)
-	var icon_data := ITEM_DATABASE.get_item(str(stack.get("id", "")))
-	var icon_tex := TextureRect.new()
-	icon_tex.custom_minimum_size = Vector2(16, 16)
-	icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon_tex.texture = icon_data.get("icon", null)
-	row.add_child(icon_tex)
+	row.add_child(_build_item_icon_holder(stack))
 	var name_label := Label.new()
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.text = str(stack.get("name", stack.get("id", "")))
@@ -334,6 +329,22 @@ func _build_item_row(stack: Dictionary, _swatch_color: Color) -> Control:
 	quantity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(quantity_label)
 	return row
+
+
+func _build_item_icon_holder(stack: Dictionary) -> Control:
+	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+	if icon != null:
+		var icon_tex := TextureRect.new()
+		icon_tex.custom_minimum_size = Vector2(16, 16)
+		icon_tex.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_tex.texture = icon
+		return icon_tex
+	var swatch := ColorRect.new()
+	swatch.custom_minimum_size = Vector2(16, 16)
+	swatch.color = ITEM_DATABASE.get_stack_color(stack)
+	return swatch
 
 
 func open_buff_selection(options: Array, level) -> void:

@@ -29,6 +29,7 @@ const QUALITY_MULTIPLIERS := {
 const QUALITY_AFFIX_COUNT := {
 	"Common": 0, "Uncommon": 1, "Rare": 2, "Epic": 3, "Legendary": 3,
 }
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
 
 static func generate_dungeon_equipment(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
@@ -44,6 +45,7 @@ static func generate_dungeon_equipment(floor_number: int, rng: RandomNumberGener
 		"slot": slot,
 		"type": "equipment",
 		"max_stack": 1,
+		"icon": ITEM_DATABASE.get_default_equipment_icon(slot),
 		"stats": _generate_base_stats(slot, base_power),
 		"affixes": _generate_affixes(num_affixes, floor_number, rng),
 		"durability": durability,

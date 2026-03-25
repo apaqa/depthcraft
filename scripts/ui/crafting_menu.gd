@@ -77,12 +77,18 @@ func _rebuild_recipe_list() -> void:
 		for recipe in grouped[category_name]:
 			var recipe_id := str(recipe["id"])
 			recipe_ids.append(recipe_id)
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			var icon_holder := _build_item_icon_holder(ITEM_DATABASE.get_item(str(recipe.get("result_item_id", ""))))
+			row.add_child(icon_holder)
 			var button := Button.new()
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.text = "%s (%s)" % [str(recipe["name"]), _format_cost_summary(recipe_id)]
 			button.pressed.connect(_on_recipe_button_pressed.bind(recipe_id))
 			recipe_buttons[recipe_id] = button
-			recipe_list_container.add_child(button)
+			row.add_child(button)
+			recipe_list_container.add_child(row)
 
 
 func _on_recipe_button_pressed(recipe_id: String) -> void:
@@ -171,12 +177,8 @@ func _rebuild_material_rows(cost: Dictionary) -> void:
 		var owned: int = player_inventory.get_item_count(str(resource_id))
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
-		var icon_tex := TextureRect.new()
-		icon_tex.custom_minimum_size = Vector2(16, 16)
-		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		var mat_data := ITEM_DATABASE.get_item(str(resource_id))
-		icon_tex.texture = mat_data.get("icon", null)
-		row.add_child(icon_tex)
+		row.add_child(_build_item_icon_holder(mat_data))
 		var label := Label.new()
 		label.text = "%s: %d/%d%s" % [_pretty_name(str(resource_id)), owned, required, " OK" if owned >= required else ""]
 		label.modulate = Color(0.45, 1.0, 0.45, 1.0) if owned >= required else Color(1.0, 0.45, 0.45, 1.0)
@@ -187,3 +189,19 @@ func _rebuild_material_rows(cost: Dictionary) -> void:
 func _clear_material_rows() -> void:
 	for child in materials_container.get_children():
 		child.queue_free()
+
+
+func _build_item_icon_holder(stack: Dictionary) -> Control:
+	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+	if icon != null:
+		var icon_tex := TextureRect.new()
+		icon_tex.custom_minimum_size = Vector2(16, 16)
+		icon_tex.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_tex.texture = icon
+		return icon_tex
+	var swatch := ColorRect.new()
+	swatch.custom_minimum_size = Vector2(16, 16)
+	swatch.color = ITEM_DATABASE.get_stack_color(stack) if not stack.is_empty() else Color(0.22, 0.22, 0.22, 1.0)
+	return swatch

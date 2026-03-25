@@ -6,7 +6,7 @@ signal raid_started
 signal raid_countdown_changed(message: String, color: Color, visible: bool)
 
 const GROUND_SIZE := Vector2i(60, 40)
-const SOURCE_GRASS := 0
+const SOURCE_GRASS := 1
 const SOURCE_GRASS_ALT := 1
 const SOURCE_ROAD := 3
 const SOURCE_WATER := 5

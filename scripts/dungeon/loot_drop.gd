@@ -87,11 +87,19 @@ func _update_icon() -> void:
 	if sprite == null:
 		return
 	var item_data: Dictionary = stack_data if not stack_data.is_empty() else ITEM_DATABASE.get_item(item_id)
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if item_data.is_empty():
+		sprite.texture = null
 		sprite.modulate = DUNGEON_LOOT.get_item_display_color(stack_data)
 		return
-	sprite.texture = item_data.get("icon", null)
-	sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data) if str(item_data.get("type", "")) == "equipment" else Color.WHITE
+	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item_data)
+	if icon != null:
+		sprite.texture = icon
+		sprite.scale = Vector2.ONE
+		sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data) if str(item_data.get("type", "")) == "equipment" else Color.WHITE
+		return
+	sprite.texture = null
+	sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data)
 
 
 func _on_body_entered(body: Node) -> void:

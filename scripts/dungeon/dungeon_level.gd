@@ -119,7 +119,7 @@ func _apply_biome_colors() -> void:
 func _update_player_ambient_light() -> void:
 	if player == null or not is_instance_valid(player):
 		return
-	var existing := player.get_node_or_null("DungeonAmbientLight")
+	var existing = player.get_node_or_null("DungeonAmbientLight")
 	if existing != null:
 		existing.queue_free()
 	if current_floor >= 13:

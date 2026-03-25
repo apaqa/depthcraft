@@ -73,18 +73,18 @@ func _rebuild_grid(grid: GridContainer, source_inventory, target_inventory, from
 		var row := HBoxContainer.new()
 		row.custom_minimum_size = Vector2(120, 28)
 		row.add_theme_constant_override("separation", 6)
-		var icon_tex := TextureRect.new()
-		icon_tex.custom_minimum_size = Vector2(16, 16)
-		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		row.add_child(icon_tex)
+		var icon_holder := _build_item_icon_holder({})
+		row.add_child(icon_holder)
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(96, 28)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if index < source_inventory.items.size():
 			var stack: Dictionary = source_inventory.items[index]
 			button.text = "%s x%d" % [str(stack.get("name", stack["id"])), int(stack["quantity"])]
-			var item_data := ITEM_DATABASE.get_item(str(stack.get("id", "")))
-			icon_tex.texture = item_data.get("icon", null)
+			row.remove_child(icon_holder)
+			icon_holder.queue_free()
+			icon_holder = _build_item_icon_holder(stack)
+			row.add_child(icon_holder)
 			button.pressed.connect(_on_transfer_pressed.bind(source_inventory, target_inventory, index))
 		else:
 			button.text = "--"
@@ -101,3 +101,19 @@ func _on_transfer_pressed(source_inventory, target_inventory, stack_index: int) 
 	if source_inventory == null or target_inventory == null:
 		return
 	source_inventory.move_stack_to(target_inventory, stack_index)
+
+
+func _build_item_icon_holder(stack: Dictionary) -> Control:
+	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+	if icon != null:
+		var icon_tex := TextureRect.new()
+		icon_tex.custom_minimum_size = Vector2(16, 16)
+		icon_tex.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_tex.texture = icon
+		return icon_tex
+	var swatch := ColorRect.new()
+	swatch.custom_minimum_size = Vector2(16, 16)
+	swatch.color = ITEM_DATABASE.get_stack_color(stack) if not stack.is_empty() else Color(0.18, 0.18, 0.2, 1.0)
+	return swatch
