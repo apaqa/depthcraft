@@ -1,20 +1,20 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://c5ge8v8ooc2ih"]
 
-[ext_resource type="Texture2D" path="res://assets/floor_1.png" id="1_b5nin"]
-[ext_resource type="Texture2D" path="res://assets/floor_2.png" id="2_iru37"]
-[ext_resource type="Texture2D" path="res://assets/wall_top_left.png" id="3_o28ac"]
-[ext_resource type="Texture2D" path="res://assets/wall_top_mid.png" id="4_js47a"]
-[ext_resource type="Texture2D" path="res://assets/wall_top_right.png" id="5_yvdns"]
-[ext_resource type="Texture2D" path="res://assets/wall_left.png" id="6_4fu3l"]
-[ext_resource type="Texture2D" path="res://assets/wall_right.png" id="7_0cot3"]
-[ext_resource type="Texture2D" path="res://assets/wall_mid.png" id="8_hec18"]
-[ext_resource type="Texture2D" path="res://assets/floor_3.png" id="9_n4e7y"]
-[ext_resource type="Texture2D" path="res://assets/floor_5.png" id="10_rsq7u"]
-[ext_resource type="Texture2D" path="res://assets/floor_8.png" id="11_hv41s"]
-[ext_resource type="Texture2D" path="res://assets/floor_mud_mid_1.png" id="12_kx3lq"]
-[ext_resource type="Texture2D" path="res://assets/crate.png" id="13_n6w9v"]
-[ext_resource type="Texture2D" path="res://assets/wall_missing_brick_1.png" id="14_t4j2m"]
-[ext_resource type="Texture2D" path="res://assets/door_closed.png" id="15_g8f5n"]
+[ext_resource type="Texture2D" uid="uid://20u1yh6syt74" path="res://assets/floor_1.png" id="1_b5nin"]
+[ext_resource type="Texture2D" uid="uid://dmwevm4eyijwn" path="res://assets/floor_2.png" id="2_iru37"]
+[ext_resource type="Texture2D" uid="uid://bpwevsc1hep40" path="res://assets/wall_top_left.png" id="3_o28ac"]
+[ext_resource type="Texture2D" uid="uid://ba6og2h7mmjvi" path="res://assets/wall_top_mid.png" id="4_js47a"]
+[ext_resource type="Texture2D" uid="uid://cxj2uf7sf6yh8" path="res://assets/wall_top_right.png" id="5_yvdns"]
+[ext_resource type="Texture2D" uid="uid://yuhq23r6se1x" path="res://assets/wall_left.png" id="6_4fu3l"]
+[ext_resource type="Texture2D" uid="uid://dj5tnyaceo0bg" path="res://assets/wall_right.png" id="7_0cot3"]
+[ext_resource type="Texture2D" uid="uid://cqpqouqeee6sx" path="res://assets/wall_mid.png" id="8_hec18"]
+[ext_resource type="Texture2D" uid="uid://4frfpr0p44w4" path="res://assets/floor_3.png" id="9_n4e7y"]
+[ext_resource type="Texture2D" uid="uid://b4ymdtffiv1lh" path="res://assets/floor_5.png" id="10_rsq7u"]
+[ext_resource type="Texture2D" uid="uid://ogye0l8kik8o" path="res://assets/floor_8.png" id="11_hv41s"]
+[ext_resource type="Texture2D" uid="uid://d1c7bh7vymx87" path="res://assets/floor_mud_mid_1.png" id="12_kx3lq"]
+[ext_resource type="Texture2D" uid="uid://bufuv0pvdbdc4" path="res://assets/crate.png" id="13_n6w9v"]
+[ext_resource type="Texture2D" uid="uid://cjpqhiajoesib" path="res://assets/wall_missing_brick_1.png" id="14_t4j2m"]
+[ext_resource type="Texture2D" uid="uid://e170y0ufayyx" path="res://assets/door_closed.png" id="15_g8f5n"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_4n1rg"]
 texture = ExtResource("1_b5nin")
@@ -54,6 +54,20 @@ texture = ExtResource("8_hec18")
 0:0/0 = 0
 0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(0, 0, 16, 0, 16, 16, 0, 16)
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_b8v6p"]
+texture = ExtResource("13_n6w9v")
+0:0/0 = 0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(0, 0, 16, 0, 16, 16, 0, 16)
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_c4n1x"]
+texture = ExtResource("14_t4j2m")
+0:0/0 = 0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(0, 0, 16, 0, 16, 16, 0, 16)
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_p7d3r"]
+texture = ExtResource("15_g8f5n")
+0:0/0 = 0
+
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_d4t2n"]
 texture = ExtResource("9_n4e7y")
 0:0/0 = 0
@@ -68,20 +82,6 @@ texture = ExtResource("11_hv41s")
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_q2l7c"]
 texture = ExtResource("12_kx3lq")
-0:0/0 = 0
-
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_b8v6p"]
-texture = ExtResource("13_n6w9v")
-0:0/0 = 0
-0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(0, 0, 16, 0, 16, 16, 0, 16)
-
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_c4n1x"]
-texture = ExtResource("14_t4j2m")
-0:0/0 = 0
-0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(0, 0, 16, 0, 16, 16, 0, 16)
-
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_p7d3r"]
-texture = ExtResource("15_g8f5n")
 0:0/0 = 0
 
 [resource]
