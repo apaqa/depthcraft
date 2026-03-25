@@ -48,12 +48,14 @@ func _ready() -> void:
 	base_damage = damage
 	base_speed = speed
 	current_hp = max_hp
+	set_physics_process(true)
 	if not attack_timer.timeout.is_connected(_on_attack_timer_timeout):
 		attack_timer.timeout.connect(_on_attack_timer_timeout)
 	if not wander_timer.timeout.is_connected(_pick_wander_direction):
 		wander_timer.timeout.connect(_pick_wander_direction)
 	_setup_hp_bar()
 	_pick_wander_direction()
+	call_deferred("_ensure_target")
 
 
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
@@ -79,20 +81,23 @@ func _physics_process(_delta: float) -> void:
 		return
 
 	if target == null or not is_instance_valid(target):
+		velocity = Vector2.ZERO
 		state = State.IDLE
-	else:
-		var to_target := target.global_position - global_position
-		var distance := to_target.length()
-		if distance <= attack_range:
-			state = State.ATTACK
-		elif distance <= detection_range:
-			state = State.CHASE
-		else:
-			state = State.IDLE
+		move_and_slide()
+		return
+
+	var to_target := target.global_position - global_position
+	var distance := to_target.length()
+	if distance <= attack_range:
+		state = State.ATTACK
+	elif distance <= detection_range:
+		state = State.CHASE
+	elif distance > detection_range * 1.5:
+		state = State.IDLE
 
 	match state:
 		State.IDLE:
-			velocity = wander_direction * speed * 0.45
+			velocity = wander_direction * speed * 0.2
 		State.CHASE:
 			var chase_direction := (target.global_position - global_position).normalized()
 			if keeps_distance and global_position.distance_to(target.global_position) < preferred_distance:
@@ -202,3 +207,12 @@ func _update_hp_bar() -> void:
 	var ratio := clampf(float(current_hp) / float(max(max_hp, 1)), 0.0, 1.0)
 	hp_bar_fill.polygon = PackedVector2Array([Vector2.ZERO, Vector2(24.0 * ratio, 0), Vector2(24.0 * ratio, 4), Vector2(0, 4)])
 	hp_bar_root.visible = current_hp < max_hp and current_hp > 0
+
+
+func _ensure_target() -> void:
+	if target != null and is_instance_valid(target):
+		return
+	await get_tree().process_frame
+	var players: Array = get_tree().get_nodes_in_group("player")
+	if not players.is_empty():
+		target = players[0]

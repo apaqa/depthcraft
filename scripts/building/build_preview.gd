@@ -20,7 +20,8 @@ func _process(_delta: float) -> void:
 		return
 
 	var tile_pos: Vector2i = building_system.get_hovered_tile_pos()
-	global_position = Vector2(tile_pos.x * 16 + 8, tile_pos.y * 16 + 8)
+	var tile_size: Vector2i = building_system.get_selected_building_tile_size()
+	global_position = building_system.get_preview_world_position(tile_pos, tile_size)
 	sprite.texture = texture
 	sprite.modulate = building_system.get_preview_modulate(tile_pos)
 	visible = true

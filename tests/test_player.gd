@@ -11,6 +11,7 @@ func _initialize() -> void:
 	test_default_speed()
 	test_default_sprint_speed()
 	test_collision_shape_uses_feet_box()
+	test_player_is_in_player_group()
 	test_diagonal_normalization()
 	test_zero_input_returns_zero_vector()
 	test_velocity_zero_when_idle()
@@ -40,6 +41,12 @@ func test_collision_shape_uses_feet_box() -> void:
 	var rectangle: RectangleShape2D = collision_shape.shape
 	_assert(collision_shape.position == Vector2(0, 6), "Player collision should sit exactly at the feet position.")
 	_assert(rectangle.size == Vector2(6, 4), "Player collision should use the tiny feet-only rectangle.")
+
+
+func test_player_is_in_player_group() -> void:
+	var player := PLAYER_SCENE.instantiate()
+	player._ready()
+	_assert(player.is_in_group("player"), "Player should register itself in the player group for enemy targeting.")
 
 
 func test_diagonal_normalization() -> void:

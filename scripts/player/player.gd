@@ -59,6 +59,7 @@ const BANDAGE_COOLDOWN := 1.0
 
 
 func _ready() -> void:
+	add_to_group("player")
 	_configure_input_actions()
 	interaction_area.area_entered.connect(_on_interaction_area_entered)
 	interaction_area.area_exited.connect(_on_interaction_area_exited)
@@ -367,7 +368,7 @@ func perform_attack() -> void:
 	var query := PhysicsShapeQueryParameters2D.new()
 	query.shape = attack_shape
 	query.transform = Transform2D(0.0, global_position + _get_attack_offset())
-	query.collision_mask = 1
+	query.collision_mask = 4
 	var results := get_world_2d().direct_space_state.intersect_shape(query)
 	var total_damage_dealt := 0
 	for result in results:

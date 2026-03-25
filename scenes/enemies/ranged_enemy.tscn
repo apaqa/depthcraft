@@ -29,6 +29,8 @@ size = Vector2(12, 14)
 radius = 18.0
 
 [node name="RangedEnemy" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 1
 script = ExtResource("1_03d5y")
 max_hp = 20
 damage = 12

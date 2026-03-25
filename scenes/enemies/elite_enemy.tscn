@@ -54,6 +54,8 @@ size = Vector2(18, 18)
 radius = 22.0
 
 [node name="EliteEnemy" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 1
 script = ExtResource("1_4a5n2")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]

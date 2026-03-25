@@ -203,6 +203,17 @@ func get_selected_building_texture() -> Texture2D:
 	return source.texture
 
 
+func get_selected_building_tile_size() -> Vector2i:
+	var building := get_selected_building()
+	if building.is_empty():
+		return Vector2i.ONE
+	return _get_building_tile_size(building)
+
+
+func get_preview_world_position(tile_pos: Vector2i, tile_size: Vector2i = Vector2i.ONE) -> Vector2:
+	return _tile_to_world_center_for_size(tile_pos, tile_size)
+
+
 func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 	var building: Dictionary = BUILDING_DATA.get_building(building_id)
 	if building.is_empty():
