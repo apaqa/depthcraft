@@ -1,14 +1,22 @@
 extends StaticBody2D
-class_name WorkbenchFacility
+class_name CookingBenchFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] Craft"
+	return "[E] Cook"
 
 
 func interact(player) -> void:
 	if player != null and player.has_method("request_crafting_menu"):
 		player.request_crafting_menu(self)
+
+
+func get_recipe_ids() -> PackedStringArray:
+	return PackedStringArray(["bread", "stew"])
+
+
+func get_menu_title() -> String:
+	return "Cooking"
 
 
 func requires_home_core() -> bool:

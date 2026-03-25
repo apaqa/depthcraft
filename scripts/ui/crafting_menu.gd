@@ -5,6 +5,7 @@ const CRAFTING_SYSTEM := preload("res://scripts/crafting/crafting_system.gd")
 signal close_requested
 
 @onready var recipe_list: ItemList = $PanelContainer/MarginContainer/HBoxContainer/RecipeList
+@onready var title_label: Label = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/TitleLabel
 @onready var detail_label: Label = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/DetailLabel
 @onready var craft_button: Button = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/CraftButton
 @onready var flash_rect: ColorRect = $FlashRect
@@ -13,6 +14,8 @@ var player_inventory = null
 var player = null
 var recipe_ids: PackedStringArray = []
 var selected_recipe_id: String = ""
+var filtered_recipe_ids: PackedStringArray = []
+var menu_title: String = "Crafting"
 
 
 func _ready() -> void:
@@ -22,9 +25,11 @@ func _ready() -> void:
 	craft_button.pressed.connect(_on_craft_pressed)
 
 
-func open_for_player(target_player) -> void:
+func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "Crafting") -> void:
 	player = target_player
 	player_inventory = player.inventory if player != null else null
+	filtered_recipe_ids = available_recipe_ids
+	menu_title = title
 	visible = true
 	_rebuild_recipe_list()
 	if not recipe_ids.is_empty():
@@ -51,7 +56,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _rebuild_recipe_list() -> void:
 	recipe_list.clear()
 	recipe_ids.clear()
-	for recipe in CRAFTING_SYSTEM.get_available_recipes():
+	title_label.text = menu_title
+	var recipes: Array[Dictionary] = CRAFTING_SYSTEM.get_available_recipes_for_ids(filtered_recipe_ids) if not filtered_recipe_ids.is_empty() else CRAFTING_SYSTEM.get_available_recipes()
+	for recipe in recipes:
 		recipe_ids.append(str(recipe["id"]))
 		recipe_list.add_item(str(recipe["name"]))
 

@@ -164,9 +164,54 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 horizontal_alignment = 1
-text = "You Died"
+text = "YOU DIED"
 
 [node name="SummaryLabel" type="Label" parent="HUD/DeathOverlay/VBoxContainer"]
 layout_mode = 2
 horizontal_alignment = 1
+text = ""
+
+[node name="EventBanner" type="Label" parent="HUD"]
+visible = false
+layout_mode = 0
+anchors_preset = 10
+anchor_left = 0.5
+anchor_top = 0.35
+anchor_right = 0.5
+anchor_bottom = 0.35
+offset_left = -240.0
+offset_top = -24.0
+offset_right = 240.0
+offset_bottom = 24.0
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+text = ""
+
+[node name="RaidBorder" type="ColorRect" parent="HUD"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(1, 0, 0, 0)
+
+[node name="StatusLabel" type="Label" parent="HUD"]
+visible = false
+layout_mode = 0
+anchors_preset = 10
+anchor_left = 0.5
+anchor_top = 0.92
+anchor_right = 0.5
+anchor_bottom = 0.92
+offset_left = -220.0
+offset_top = -16.0
+offset_right = 220.0
+offset_bottom = 16.0
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
 text = ""

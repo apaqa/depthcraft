@@ -10,6 +10,10 @@ hits_to_gather = 1
 drop_quantity_min = 1
 drop_quantity_max = 2
 respawn_time = 30.0
+bonus_drop_id = "seed"
+bonus_drop_chance = 0.3
+bonus_drop_min = 1
+bonus_drop_max = 1
 
 [node name="Sprite2D" parent="." index="0"]
 texture = ExtResource("2_2a01t")

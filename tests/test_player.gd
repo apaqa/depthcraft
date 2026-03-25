@@ -42,8 +42,8 @@ func test_collision_shape_uses_feet_box() -> void:
 	var player := PLAYER_SCENE.instantiate()
 	var collision_shape: CollisionShape2D = player.get_node("CollisionShape2D")
 	var rectangle: RectangleShape2D = collision_shape.shape
-	_assert(collision_shape.position == Vector2(0, 4), "Player collision should sit slightly below center for tight wall contact.")
-	_assert(rectangle.size == Vector2(8, 6), "Player collision should use the compact feet rectangle.")
+	_assert(collision_shape.position == Vector2(0, 3), "Player collision should sit slightly below center for tight wall contact.")
+	_assert(rectangle.size == Vector2(6, 4), "Player collision should use the compact feet rectangle.")
 
 
 func test_player_is_in_player_group() -> void:

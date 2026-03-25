@@ -12,6 +12,8 @@ var player
 var current_level = null
 var current_level_id: String = "dungeon"
 var dungeon_run_snapshot: Array = []
+var total_dungeon_runs_completed: int = 0
+var dungeon_returns_since_raid: int = 0
 
 
 func _ready() -> void:
@@ -52,13 +54,12 @@ func change_level(level_id: String) -> void:
 	current_level = next_scene.instantiate()
 	current_level_id = level_id
 	level_root.add_child(current_level)
+	if player.building_system.has_method("set_active_level"):
+		player.building_system.set_active_level(current_level_id, current_level)
 	if current_level.has_method("place_player"):
 		current_level.place_player(player)
 	else:
 		player.reparent(level_root)
-
-	if player.building_system.has_method("set_active_level"):
-		player.building_system.set_active_level(current_level_id, current_level)
 
 	if current_level.has_signal("floor_changed") and not current_level.floor_changed.is_connected(_on_floor_changed):
 		current_level.floor_changed.connect(_on_floor_changed)
@@ -68,6 +69,12 @@ func change_level(level_id: String) -> void:
 		current_level.return_to_surface_requested.connect(_on_return_to_surface_requested)
 	if current_level.has_signal("buff_selection_requested") and not current_level.buff_selection_requested.is_connected(_on_buff_selection_requested):
 		current_level.buff_selection_requested.connect(_on_buff_selection_requested)
+	if current_level.has_signal("banner_requested") and not current_level.banner_requested.is_connected(_on_level_banner_requested):
+		current_level.banner_requested.connect(_on_level_banner_requested)
+	if current_level.has_signal("border_flash_requested") and not current_level.border_flash_requested.is_connected(_on_level_border_flash_requested):
+		current_level.border_flash_requested.connect(_on_level_border_flash_requested)
+	if current_level.has_signal("raid_started") and not current_level.raid_started.is_connected(_on_raid_started):
+		current_level.raid_started.connect(_on_raid_started)
 
 	if hud.has_method("bind_level"):
 		hud.bind_level(current_level, current_level_id)
@@ -83,6 +90,8 @@ func change_level(level_id: String) -> void:
 	else:
 		_on_floor_changed(0)
 		_on_kills_changed(0)
+		if current_level.has_method("set_total_dungeon_runs"):
+			current_level.set_total_dungeon_runs(total_dungeon_runs_completed)
 
 	player.process_mode = Node.PROCESS_MODE_INHERIT
 	player.set_process_input(true)
@@ -117,7 +126,11 @@ func _on_kills_changed(kills: int) -> void:
 
 func _on_return_to_surface_requested() -> void:
 	player.finish_dungeon_run(true)
+	total_dungeon_runs_completed += 1
+	dungeon_returns_since_raid += 1
 	change_level("overworld")
+	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
+		current_level.trigger_progress_raid()
 
 
 func _on_player_died() -> void:
@@ -132,7 +145,12 @@ func _on_player_died() -> void:
 			})
 		await get_tree().create_timer(3.0).timeout
 		player.finish_dungeon_run(false)
+		total_dungeon_runs_completed += 1
+		dungeon_returns_since_raid += 1
 		change_level("overworld")
+		player.show_status_message("You lost all dungeon loot. Equipment damaged.", Color(1.0, 0.75, 0.45, 1.0), 3.0)
+		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
+			current_level.trigger_progress_raid()
 		if hud.has_method("hide_death_screen"):
 			hud.hide_death_screen()
 
@@ -140,3 +158,17 @@ func _on_player_died() -> void:
 func _on_buff_selection_requested(options: Array) -> void:
 	if hud.has_method("open_buff_selection"):
 		hud.open_buff_selection(options, current_level)
+
+
+func _on_level_banner_requested(message: String, color: Color, duration: float) -> void:
+	if hud.has_method("show_event_banner"):
+		hud.show_event_banner(message, color, duration)
+
+
+func _on_level_border_flash_requested(color: Color) -> void:
+	if hud.has_method("flash_border"):
+		hud.flash_border(color)
+
+
+func _on_raid_started() -> void:
+	dungeon_returns_since_raid = 0

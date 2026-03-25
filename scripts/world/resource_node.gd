@@ -11,6 +11,10 @@ signal respawned
 @export var drop_quantity_min: int = 1
 @export var drop_quantity_max: int = 3
 @export var respawn_time: float = 60.0
+@export var bonus_drop_id: String = ""
+@export var bonus_drop_chance: float = 0.0
+@export var bonus_drop_min: int = 1
+@export var bonus_drop_max: int = 1
 
 var current_hits: int = 0
 var is_depleted: bool = false
@@ -56,6 +60,8 @@ func gather() -> void:
 	if area_collision != null:
 		area_collision.disabled = true
 	gathered.emit(resource_id, quantity)
+	if bonus_drop_id != "" and randf() <= bonus_drop_chance:
+		gathered.emit(bonus_drop_id, randi_range(bonus_drop_min, bonus_drop_max))
 	depleted.emit()
 
 	var timer := get_respawn_timer()

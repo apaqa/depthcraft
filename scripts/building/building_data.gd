@@ -5,6 +5,8 @@ const STORAGE_CHEST_SCENE_PATH := "res://scenes/building/facilities/storage_ches
 const REPAIR_BENCH_SCENE_PATH := "res://scenes/building/facilities/repair_bench.tscn"
 const WOOD_DOOR_SCENE_PATH := "res://scenes/building/facilities/wood_door.tscn"
 const TALENT_ALTAR_SCENE_PATH := "res://scenes/building/facilities/talent_altar.tscn"
+const FARM_PLOT_SCENE_PATH := "res://scenes/building/facilities/farm_plot.tscn"
+const COOKING_BENCH_SCENE_PATH := "res://scenes/building/facilities/cooking_bench.tscn"
 const FULL_TILE_ATLAS := Vector2i.ZERO
 
 const BUILDINGS := {
@@ -90,9 +92,25 @@ const BUILDINGS := {
 		"scene_path": TALENT_ALTAR_SCENE_PATH,
 		"preview_texture": preload("res://assets/column.png"),
 	},
+	"farm_plot": {
+		"id": "farm_plot",
+		"name": "Farm Plot",
+		"kind": "facility",
+		"cost": {"wood": 2, "stone": 2},
+		"scene_path": FARM_PLOT_SCENE_PATH,
+		"preview_texture": preload("res://assets/floor_mud_mid_1.png"),
+	},
+	"cooking_bench": {
+		"id": "cooking_bench",
+		"name": "Cooking Bench",
+		"kind": "facility",
+		"cost": {"stone": 3, "wood": 2},
+		"scene_path": COOKING_BENCH_SCENE_PATH,
+		"preview_texture": preload("res://assets/torch_no_flame.png"),
+	},
 }
 
-const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar"]
+const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench"]
 
 
 static func get_building(building_id: String) -> Dictionary:

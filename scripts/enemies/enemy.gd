@@ -44,14 +44,6 @@ func _ready() -> void:
 	base_damage = damage
 	base_speed = speed
 	current_hp = max_hp
-	print("ENEMY SPAWNED at ", global_position)
-	var players := get_tree().get_nodes_in_group("player")
-	print("ENEMY: Found ", players.size(), " players in group")
-	if players.size() > 0:
-		target = players[0]
-		print("ENEMY: Target set to ", target.name, " at ", target.global_position)
-	else:
-		print("ENEMY: NO PLAYER FOUND IN GROUP!")
 	_setup_hp_bar()
 	call_deferred("_find_player")
 
@@ -71,7 +63,6 @@ func _find_player() -> void:
 	var players := get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		target = players[0]
-		print("ENEMY: Deferred target set to ", target.name, " at ", target.global_position)
 
 
 func _physics_process(delta: float) -> void:
@@ -85,10 +76,7 @@ func _physics_process(delta: float) -> void:
 		var players := get_tree().get_nodes_in_group("player")
 		if players.size() > 0:
 			target = players[0]
-			print("ENEMY: Reacquired target ", target.name, " at ", target.global_position)
 		else:
-			if Engine.get_physics_frames() % 60 == 0:
-				print("ENEMY: No player found in 'player' group!")
 			velocity = Vector2.ZERO
 			debug_state = "idle"
 			_update_animation(Vector2.ZERO)
@@ -98,10 +86,6 @@ func _physics_process(delta: float) -> void:
 	attack_timer_left = max(attack_timer_left - delta, 0.0)
 
 	var distance: float = global_position.distance_to(target.global_position)
-	if Engine.get_physics_frames() % 60 == 0:
-		print("ENEMY at ", global_position, " | state=", debug_state, " | dist=", int(distance), " | detect_range=", detection_range, " | target=", target.global_position)
-
-	print("STATE=", debug_state, " TARGET=", target, " DIST=", int(global_position.distance_to(target.global_position)) if target else "null")
 	if distance <= attack_range:
 		is_alerted = true
 		debug_state = "attack"
@@ -133,9 +117,7 @@ func _physics_process(delta: float) -> void:
 	if velocity.x != 0.0:
 		animated_sprite.flip_h = velocity.x < 0.0
 	_update_animation(velocity)
-	print("VELOCITY=", velocity)
 	move_and_slide()
-	print("POSITION=", global_position)
 	_last_position = global_position
 
 

@@ -217,27 +217,20 @@ func get_preview_world_position(tile_pos: Vector2i, tile_size: Vector2i = Vector
 func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 	var building: Dictionary = BUILDING_DATA.get_building(building_id)
 	if building.is_empty():
-		print("BUILD: missing building data for ", building_id)
 		return false
 
 	var is_valid := is_valid_placement(tile_pos, building_id)
-	print("BUILD: validation result = ", is_valid)
 	if not is_valid:
-		print("BUILD: placement blocked for ", building_id, " at ", tile_pos)
 		return false
 
 	if not _consume_cost(building["cost"]):
-		print("BUILD: cost check failed for ", building_id, " at ", tile_pos)
 		return false
 
 	if str(building.get("kind", "tile")) == "facility":
-		print("BUILD: placing ", building_id, " at ", tile_pos)
 		if not _place_facility(tile_pos, building):
 			_refund_full_cost(building["cost"])
 			return false
 	else:
-		print("BUILD: placing ", building_id, " at ", tile_pos)
-		print("BUILD: sprite texture=", building.get("preview_texture", null), " source_id=", int(building["tile_source_id"]), " atlas=", building["tile_atlas_coords"])
 		if not _place_tile_building(tile_pos, building):
 			_refund_full_cost(building["cost"])
 			return false
@@ -336,7 +329,6 @@ func place_home_core(tile_pos: Vector2i) -> bool:
 	home_core_position = _tile_to_world_center(tile_pos)
 	_spawn_home_core()
 	_rebuild_occupied_positions()
-	print("Home Core placed at position (%d, %d)" % [int(home_core_position.x), int(home_core_position.y)])
 	_auto_save()
 	build_state_changed.emit()
 	return true
@@ -476,6 +468,8 @@ func _spawn_home_core() -> void:
 	home_core_instance = HOME_CORE_SCENE.instantiate()
 	active_level.add_child(home_core_instance)
 	home_core_instance.place_at(home_core_position)
+	if home_core_instance.has_signal("destroyed") and not home_core_instance.destroyed.is_connected(_on_home_core_destroyed):
+		home_core_instance.destroyed.connect(_on_home_core_destroyed)
 
 
 func _ensure_preview() -> void:
@@ -526,6 +520,8 @@ func _spawn_facility_instance(tile_pos: Vector2i, building: Dictionary, data: Di
 		instance.load_from_data(data)
 	if instance.has_signal("chest_changed") and not instance.chest_changed.is_connected(_on_facility_changed):
 		instance.chest_changed.connect(_on_facility_changed.bind(tile_pos))
+	if instance.has_signal("farm_changed") and not instance.farm_changed.is_connected(_on_facility_changed):
+		instance.farm_changed.connect(_on_facility_changed.bind(tile_pos))
 	facility_instances[tile_pos] = instance
 	return true
 
@@ -572,6 +568,24 @@ func _on_facility_changed(tile_pos: Vector2i) -> void:
 		record["data"] = instance.serialize_data()
 		placed_facilities[tile_pos] = record
 	_auto_save()
+
+
+func _on_home_core_destroyed() -> void:
+	home_core_position = Vector2.ZERO
+	home_core_instance = null
+	_rebuild_occupied_positions()
+	_auto_save()
+	build_state_changed.emit()
+
+
+func has_functional_core() -> bool:
+	return home_core_instance != null and is_instance_valid(home_core_instance) and home_core_position != Vector2.ZERO
+
+
+func get_home_core():
+	if has_functional_core():
+		return home_core_instance
+	return null
 
 
 func _serialize_facilities() -> Array:

@@ -22,6 +22,7 @@ signal hp_changed(current_hp: int, max_hp: int)
 signal buffs_changed(active_buffs: Array)
 signal stats_changed
 signal died
+signal status_message_requested(message: String, color: Color, duration: float)
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interaction_area: Area2D = $InteractionArea
@@ -157,6 +158,8 @@ func _physics_process(delta: float) -> void:
 	var move_speed_value: float = (sprint_speed if Input.is_action_pressed("sprint") else base_speed_value) * move_speed_multiplier
 	apply_input_direction(input_direction, move_speed_value)
 	move_and_slide()
+	if not nearby_interactables.is_empty():
+		_update_prompt()
 
 
 func _input(event: InputEvent) -> void:
@@ -216,6 +219,9 @@ func _try_interact() -> void:
 	var interactable = _get_closest_interactable()
 	if interactable == null or not interactable.has_method("interact"):
 		return
+	if _interaction_requires_core(interactable):
+		show_status_message("Needs an active Home Core", Color(1.0, 0.65, 0.4, 1.0))
+		return
 	if interactable.has_method("hit"):
 		last_interacted_resource = interactable
 	interactable.interact(self)
@@ -226,6 +232,14 @@ func _try_secondary_interact() -> void:
 	if interactable == null or not interactable.has_method("secondary_interact"):
 		return
 	interactable.secondary_interact(self)
+
+
+func _interaction_requires_core(interactable) -> bool:
+	if building_system == null or building_system.active_level_id != "overworld":
+		return false
+	if not interactable.has_method("requires_home_core"):
+		return false
+	return interactable.requires_home_core() and not building_system.has_functional_core()
 
 
 func _on_interaction_area_entered(area: Area2D) -> void:
@@ -371,12 +385,14 @@ func die() -> void:
 	if is_dead:
 		return
 	is_dead = true
+	set_physics_process(false)
 	_show_floating_text(global_position, "You Died", Color(1.0, 0.35, 0.35, 1.0))
 	died.emit()
 
 
 func heal_to_full() -> void:
 	is_dead = false
+	set_physics_process(true)
 	current_hp = max_hp
 	invincible_time_left = 0.0
 	regen_tick_progress = 0.0
@@ -588,6 +604,10 @@ func use_first_consumable() -> bool:
 		consumable_cooldown_left = BANDAGE_COOLDOWN
 		return true
 	return false
+
+
+func show_status_message(message: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
+	status_message_requested.emit(message, color, duration)
 
 
 func _recalculate_buff_state() -> void:

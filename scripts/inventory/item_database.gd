@@ -33,6 +33,22 @@ const ITEMS := {
 		"description": "Plant fiber for crafting",
 		"icon": preload("res://assets/monster_elemental_plant_small.png"),
 	},
+	"seed": {
+		"id": "seed",
+		"name": "Seed",
+		"max_stack": 99,
+		"type": "resource",
+		"description": "A small seed used for farming",
+		"icon": preload("res://assets/monster_elemental_plant_small.png"),
+	},
+	"wheat": {
+		"id": "wheat",
+		"name": "Wheat",
+		"max_stack": 99,
+		"type": "resource",
+		"description": "A harvested crop used for cooking",
+		"icon": preload("res://assets/floor_7.png"),
+	},
 	"talent_shard": {
 		"id": "talent_shard",
 		"name": "Talent Shard",
@@ -136,6 +152,24 @@ const ITEMS := {
 		"description": "A simple light source for dark spaces",
 		"effect": {"light": true},
 		"icon": preload("res://assets/torch_1.png"),
+	},
+	"bread": {
+		"id": "bread",
+		"name": "Bread",
+		"max_stack": 10,
+		"type": "consumable",
+		"description": "Freshly baked bread that restores health",
+		"effect": {"heal": 30},
+		"icon": preload("res://assets/floor_5.png"),
+	},
+	"stew": {
+		"id": "stew",
+		"name": "Stew",
+		"max_stack": 10,
+		"type": "consumable",
+		"description": "A hearty stew that restores a large chunk of health",
+		"effect": {"heal": 50},
+		"icon": preload("res://assets/flask_big_red.png"),
 	},
 }
 

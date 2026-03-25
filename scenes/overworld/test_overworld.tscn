@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/overworld/test_overworld.gd" id="1_tn6a4"]
 [ext_resource type="TileSet" path="res://resources/tilesets/dungeon_tileset.tres" id="2_fba6m"]
@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://scenes/world/iron_node.tscn" id="5_y6hvp"]
 [ext_resource type="PackedScene" path="res://scenes/world/portal.tscn" id="6_yx4j8"]
 [ext_resource type="PackedScene" path="res://scenes/world/grass_node.tscn" id="7_f1br0"]
+[ext_resource type="Script" path="res://scripts/world/raid_system.gd" id="8_raid"]
+[ext_resource type="Texture2D" path="res://assets/floor_stairs.png" id="9_stairs"]
 
 [node name="TestOverworld" type="Node2D"]
 script = ExtResource("1_tn6a4")
@@ -49,7 +51,13 @@ position = Vector2(400, 96)
 [node name="ReturnPortal" parent="." instance=ExtResource("6_yx4j8")]
 position = Vector2(448, 144)
 target_level_id = "dungeon"
-prompt_text = "[E] Return to Dungeon"
+prompt_text = "[E] Enter Dungeon"
+
+[node name="Sprite2D" parent="ReturnPortal" index="0"]
+texture = ExtResource("9_stairs")
+
+[node name="RaidSystem" type="Node" parent="."]
+script = ExtResource("8_raid")
 
 [node name="GrassA" parent="." instance=ExtResource("7_f1br0")]
 position = Vector2(80, 176)

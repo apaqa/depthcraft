@@ -11,6 +11,10 @@ func interact(player) -> void:
 		player.request_repair_menu(self)
 
 
+func requires_home_core() -> bool:
+	return true
+
+
 func serialize_data() -> Dictionary:
 	return {}
 

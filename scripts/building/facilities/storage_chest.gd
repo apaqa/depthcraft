@@ -21,6 +21,10 @@ func interact(player) -> void:
 		player.request_storage_menu(self)
 
 
+func requires_home_core() -> bool:
+	return true
+
+
 func serialize_data() -> Dictionary:
 	return {
 		"inventory_items": inventory.get_state(),

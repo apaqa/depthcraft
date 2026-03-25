@@ -89,7 +89,7 @@ func _spawn_features() -> void:
 
 	var return_exit = STAIRWAY_SCENE.instantiate()
 	return_exit.global_position = floor_data.get("spawn_point", Vector2.ZERO)
-	return_exit.prompt_text = "[F] Return to Surface"
+	return_exit.prompt_text = "[F] Return to Surface (Keep Loot)"
 	return_exit.uses_secondary_input = true
 	return_exit.return_surface_requested.connect(_on_return_surface_requested)
 	feature_root.add_child(return_exit)

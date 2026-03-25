@@ -47,6 +47,26 @@ const RECIPES := {
 		"effect": {"light": true},
 		"max_stack": 5,
 	},
+	"bread": {
+		"id": "bread",
+		"name": "Bread",
+		"result_item_id": "bread",
+		"result_type": "consumable",
+		"cost": {"wheat": 3},
+		"effect": {"heal": 30},
+		"max_stack": 10,
+		"station": "cooking",
+	},
+	"stew": {
+		"id": "stew",
+		"name": "Stew",
+		"result_item_id": "stew",
+		"result_type": "consumable",
+		"cost": {"wheat": 2, "fiber": 1},
+		"effect": {"heal": 50},
+		"max_stack": 10,
+		"station": "cooking",
+	},
 	"leather_cap": {
 		"id": "leather_cap",
 		"name": "Leather Cap",
@@ -81,6 +101,16 @@ static func get_available_recipes() -> Array[Dictionary]:
 	var recipes: Array[Dictionary] = []
 	for recipe_id in RECIPES.keys():
 		recipes.append(get_recipe(recipe_id))
+	recipes.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["name"]) < str(b["name"]))
+	return recipes
+
+
+static func get_available_recipes_for_ids(recipe_ids: PackedStringArray) -> Array[Dictionary]:
+	var recipes: Array[Dictionary] = []
+	for recipe_id in recipe_ids:
+		var recipe := get_recipe(recipe_id)
+		if not recipe.is_empty():
+			recipes.append(recipe)
 	recipes.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["name"]) < str(b["name"]))
 	return recipes
 

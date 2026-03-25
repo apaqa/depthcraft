@@ -22,6 +22,9 @@ const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 @onready var buff_select: Control = $BuffSelect
 @onready var death_overlay: Control = $DeathOverlay
 @onready var death_summary_label: Label = $DeathOverlay/VBoxContainer/SummaryLabel
+@onready var event_banner: Label = $EventBanner
+@onready var raid_border: ColorRect = $RaidBorder
+@onready var status_label: Label = $StatusLabel
 
 var player = null
 var inventory = null
@@ -75,6 +78,8 @@ func bind_player(new_player) -> void:
 			player.equipment_panel_requested.disconnect(_on_equipment_requested)
 		if player.buffs_changed.is_connected(_refresh_buff_icons):
 			player.buffs_changed.disconnect(_refresh_buff_icons)
+		if player.status_message_requested.is_connected(show_status_message):
+			player.status_message_requested.disconnect(show_status_message)
 
 	player = new_player
 	inventory = player.inventory
@@ -89,6 +94,7 @@ func bind_player(new_player) -> void:
 	player.talent_requested.connect(_on_talent_requested)
 	player.equipment_panel_requested.connect(_on_equipment_requested)
 	player.buffs_changed.connect(_refresh_buff_icons)
+	player.status_message_requested.connect(show_status_message)
 	if build_hud.has_method("bind_system"):
 		build_hud.bind_system(player.building_system, inventory)
 	_on_inventory_changed()
@@ -180,7 +186,13 @@ func _refresh_debug_label() -> void:
 
 func _on_crafting_requested(_facility) -> void:
 	_close_all_menus()
-	crafting_menu.open_for_player(player)
+	var recipe_filter := PackedStringArray()
+	var menu_title := "Crafting"
+	if _facility != null and _facility.has_method("get_recipe_ids"):
+		recipe_filter = _facility.get_recipe_ids()
+	if _facility != null and _facility.has_method("get_menu_title"):
+		menu_title = _facility.get_menu_title()
+	crafting_menu.open_for_player(player, recipe_filter, menu_title)
 	player.set_ui_blocked(true)
 
 
@@ -322,12 +334,42 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 
 func show_death_screen(summary: Dictionary) -> void:
 	death_overlay.visible = true
-	death_summary_label.text = "Floor %d\nKills %d\nLoot Lost %d" % [
+	death_summary_label.text = "Floor: %d | Kills: %d | Loot Lost!" % [
 		int(summary.get("floor", 0)),
 		int(summary.get("kills", 0)),
-		int(summary.get("loot_lost", 0)),
 	]
 
 
 func hide_death_screen() -> void:
 	death_overlay.visible = false
+
+
+func show_event_banner(message: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
+	event_banner.text = message
+	event_banner.modulate = Color(color.r, color.g, color.b, 0.0)
+	event_banner.visible = true
+	var tween := create_tween()
+	tween.tween_property(event_banner, "modulate", color, 0.08)
+	tween.tween_interval(duration)
+	tween.tween_property(event_banner, "modulate", Color(color.r, color.g, color.b, 0.0), 0.3)
+	tween.tween_callback(func() -> void: event_banner.visible = false)
+
+
+func flash_border(color: Color) -> void:
+	raid_border.color = Color(color.r, color.g, color.b, 0.0)
+	raid_border.visible = true
+	var tween := create_tween()
+	tween.tween_property(raid_border, "color", Color(color.r, color.g, color.b, 0.55), 0.08)
+	tween.tween_property(raid_border, "color", Color(color.r, color.g, color.b, 0.0), 0.25)
+	tween.tween_callback(func() -> void: raid_border.visible = false)
+
+
+func show_status_message(message: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
+	status_label.text = message
+	status_label.modulate = Color(color.r, color.g, color.b, 0.0)
+	status_label.visible = true
+	var tween := create_tween()
+	tween.tween_property(status_label, "modulate", color, 0.08)
+	tween.tween_interval(duration)
+	tween.tween_property(status_label, "modulate", Color(color.r, color.g, color.b, 0.0), 0.25)
+	tween.tween_callback(func() -> void: status_label.visible = false)
