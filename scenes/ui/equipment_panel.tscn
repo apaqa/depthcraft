@@ -63,7 +63,7 @@ text = "背包裝備"
 custom_minimum_size = Vector2(200, 200)
 
 [node name="StatLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
-text = "ATK: 0   DEF: 0   HP: 0   SPD: 0"
+text = "攻擊: 0   防禦: 0   血量: 0   速度: 0"
 
 [node name="ComparisonLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 76)

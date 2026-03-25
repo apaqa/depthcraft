@@ -65,26 +65,39 @@ func _refresh() -> void:
 		if str(stack.get("type", "")) != "equipment":
 			continue
 		var display_name = player.equipment_system.get_item_display_name(stack)
-		inventory_list.add_item("%s [%s]" % [display_name, str(stack.get("slot", ""))])
+		var slot_name := str(stack.get("slot", ""))
+		inventory_list.add_item("%s [%s]" % [display_name, _translate_slot(slot_name)])
 		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, ITEM_DATABASE.get_stack_color(stack))
 		_inventory_indices.append(index)
 	var summary: Dictionary = player.get_stats_summary()
-	stat_label.text = "ATK: %d   DEF: %d   HP: %d   SPD: %d" % [
+	stat_label.text = "攻擊: %d   防禦: %d   血量: %d   速度: %d" % [
 		int(summary.get("attack", 0)),
 		int(summary.get("defense", 0)),
 		int(summary.get("max_hp", 0)),
 		int(summary.get("speed", 0)),
 	]
-	comparison_label.text = "Hover bag gear to compare."
+	comparison_label.text = "滑鼠移至背包裝備可比較。"
 
 
 func _build_slot_text(slot_name: String, item: Dictionary) -> String:
-	var label := "[%s] " % slot_name.replace("_", " ").capitalize()
+	var label := "[%s] " % _translate_slot(slot_name)
 	if item.is_empty():
-		return label + "Empty"
+		return label + "空"
 	var durability := int(item.get("durability", 0))
 	var max_durability := int(item.get("max_durability", 0))
-	return "%s%s  Dur: %d/%d" % [label, player.equipment_system.get_item_display_name(item), durability, max_durability]
+	return "%s%s  耐久: %d/%d" % [label, player.equipment_system.get_item_display_name(item), durability, max_durability]
+
+
+func _translate_slot(slot_name: String) -> String:
+	match slot_name:
+		"weapon": return "武器"
+		"helmet": return "頭盔"
+		"chest_armor": return "胸甲"
+		"boots": return "鞋子"
+		"accessory": return "飾品"
+		"offhand": return "副手"
+		"tool": return "工具"
+	return slot_name.replace("_", " ").capitalize()
 
 
 func _on_inventory_selected(index: int) -> void:
@@ -116,13 +129,18 @@ func _update_comparison_label() -> void:
 	if comparison_label == null or player == null:
 		return
 	if _hovered_inventory_index < 0 or _hovered_inventory_index >= _inventory_indices.size():
-		comparison_label.text = "Hover bag gear to compare."
+		comparison_label.text = "滑鼠移至背包裝備可比較。"
 		return
 	var stack_index: int = _inventory_indices[_hovered_inventory_index]
 	if stack_index < 0 or stack_index >= player.inventory.items.size():
-		comparison_label.text = "Hover bag gear to compare."
+		comparison_label.text = "滑鼠移至背包裝備可比較。"
 		return
 	var item: Dictionary = player.inventory.items[stack_index]
 	var current_summary: Dictionary = player.get_stats_summary()
 	var preview_summary: Dictionary = player.get_stats_summary_for_item(item)
-	comparison_label.text = "\n".join(player.equipment_system.get_comparison_lines(current_summary, preview_summary))
+	var lines := player.equipment_system.get_comparison_lines(current_summary, preview_summary)
+	var chinese_lines: Array[String] = []
+	for line in lines:
+		var translated := line.replace("ATK", "攻擊").replace("DEF", "防禦").replace("HP", "血量").replace("SPD", "速度")
+		chinese_lines.append(translated)
+	comparison_label.text = "\n".join(chinese_lines)

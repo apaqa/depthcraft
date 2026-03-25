@@ -20,6 +20,26 @@ var filtered_recipe_ids: PackedStringArray = []
 var menu_title: String = "Crafting"
 var recipe_buttons: Dictionary = {}
 
+const CATEGORY_MAP = {
+	"Armor": "護甲",
+	"Weapons": "武器",
+	"Consumables": "消耗品",
+	"Cooking": "烹飪",
+	"Tools": "工具"
+}
+
+const STAT_MAP = {
+	"Defense": "防禦",
+	"Attack": "攻擊",
+	"Slot": "欄位",
+	"Head": "頭部",
+	"Body": "身體",
+	"Hands": "手部",
+	"Feet": "腳部",
+	"Main Hand": "主手",
+	"Off Hand": "副手"
+}
+
 
 func _ready() -> void:
 	visible = false
@@ -71,7 +91,8 @@ func _rebuild_recipe_list() -> void:
 	category_names.sort()
 	for category_name in category_names:
 		var header := Label.new()
-		header.text = "=== %s ===" % category_name
+		var translated_name = CATEGORY_MAP.get(category_name, category_name)
+		header.text = "=== %s ===" % translated_name
 		header.modulate = Color(0.95, 0.9, 0.65, 1.0)
 		recipe_list_container.add_child(header)
 		for recipe in grouped[category_name]:
@@ -150,7 +171,8 @@ func _play_flash() -> void:
 
 
 func _pretty_name(value: String) -> String:
-	return value.replace("_", " ").capitalize()
+	var name = value.replace("_", " ").capitalize()
+	return STAT_MAP.get(name, name)
 
 
 func _format_cost_summary(recipe_id: String) -> String:

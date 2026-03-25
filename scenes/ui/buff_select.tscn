@@ -43,7 +43,7 @@ theme_override_constants/separation = 12
 [node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "Choose a Power / 選擇強化"
+text = "選擇一個強化"
 
 [node name="CardContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
