@@ -9,6 +9,8 @@ script = ExtResource("1_4yo5j")
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 tile_set = ExtResource("2_43lbp")
 
+[node name="WallCollisionRoot" type="Node2D" parent="."]
+
 [node name="FeatureRoot" type="Node2D" parent="."]
 
 [node name="EnemyRoot" type="Node2D" parent="."]

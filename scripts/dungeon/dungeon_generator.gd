@@ -103,6 +103,12 @@ func _build_walls(floor_tiles: Dictionary) -> Dictionary:
 			if floor_tiles.has(wall_tile):
 				continue
 			walls[wall_tile] = true
+	for x in range(MAP_SIZE.x):
+		walls[Vector2i(x, 0)] = true
+		walls[Vector2i(x, MAP_SIZE.y - 1)] = true
+	for y in range(MAP_SIZE.y):
+		walls[Vector2i(0, y)] = true
+		walls[Vector2i(MAP_SIZE.x - 1, y)] = true
 	return walls
 
 

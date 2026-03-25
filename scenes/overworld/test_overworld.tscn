@@ -19,6 +19,9 @@ modulate = Color(0.55, 0.75, 0.45, 1)
 tile_set = ExtResource("2_fba6m")
 z_index = 0
 
+[node name="BuildingContainer" type="Node2D" parent="."]
+z_index = 0
+
 [node name="PlayerSpawn" type="Marker2D" parent="."]
 position = Vector2(224, 144)
 

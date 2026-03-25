@@ -22,6 +22,7 @@ const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
 @export var current_floor: int = 1
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
+@onready var wall_collision_root: Node2D = $WallCollisionRoot
 @onready var feature_root: Node2D = $FeatureRoot
 @onready var enemy_root: Node2D = $EnemyRoot
 @onready var loot_root: Node2D = $LootRoot
@@ -62,10 +63,13 @@ func _generate_floor() -> void:
 
 func _draw_floor() -> void:
 	tile_map_layer.clear()
+	for child in wall_collision_root.get_children():
+		child.queue_free()
 	for floor_tile: Vector2i in floor_data.get("floor_tiles", []):
 		tile_map_layer.set_cell(floor_tile, _get_floor_source(floor_tile), Vector2i.ZERO)
 	for wall_tile: Vector2i in floor_data.get("wall_tiles", []):
 		tile_map_layer.set_cell(wall_tile, _get_wall_source(wall_tile), Vector2i.ZERO)
+		_spawn_wall_blocker(wall_tile)
 	tile_map_layer.update_internals()
 
 
@@ -154,3 +158,14 @@ func _random_point_in_room(room: Rect2i) -> Vector2:
 		randi_range(room.position.x + 1, room.end.x - 2) * 16 + 8,
 		randi_range(room.position.y + 1, room.end.y - 2) * 16 + 8
 	)
+
+
+func _spawn_wall_blocker(tile_pos: Vector2i) -> void:
+	var blocker := StaticBody2D.new()
+	blocker.position = Vector2(tile_pos.x * 16 + 8, tile_pos.y * 16 + 8)
+	var collision := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(16, 16)
+	collision.shape = shape
+	blocker.add_child(collision)
+	wall_collision_root.add_child(blocker)

@@ -46,6 +46,8 @@ func test_building_tiles_use_distinct_visual_sources() -> void:
 	var wood_wall: Dictionary = BUILDING_DATA.get_building("wood_wall")
 	var stone_wall: Dictionary = BUILDING_DATA.get_building("stone_wall")
 	var wood_door: Dictionary = BUILDING_DATA.get_building("wood_door")
+	_assert(wood_floor.get("preview_texture", null) != null, "Wood floor should provide a direct preview texture for sprite-based placement.")
+	_assert(wood_wall.get("preview_texture", null) != null, "Wood wall should provide a direct preview texture for sprite-based placement.")
 	_assert(int(wood_floor["tile_source_id"]) == 3, "Wood floor should use the dedicated brighter build-floor tile.")
 	_assert(int(stone_floor["tile_source_id"]) == 4, "Stone floor should use the distinct stone build-floor tile.")
 	_assert(int(wood_wall["tile_source_id"]) == 106, "Wood wall should use the wooden barricade tile.")
@@ -63,6 +65,7 @@ func test_place_building_deducts_resources() -> void:
 	setup.player.inventory.add_item("wood", 5)
 	var result: bool = setup.building_system.place_building(Vector2i(2, 2), "wood_wall")
 	_assert(result, "Placing a wood wall with resources should succeed.")
+	_assert(setup.building_system.building_instances.has(Vector2i(2, 2)), "Placed tile buildings should spawn sprite instances.")
 	_assert(setup.player.inventory.get_item_count("wood") == 3, "Placing a wood wall should deduct 2 wood.")
 	await _cleanup_setup(setup)
 
@@ -144,6 +147,7 @@ func test_cannot_place_on_occupied_tile() -> void:
 	setup.player.inventory.add_item("wood", 10)
 	setup.building_system.place_building(Vector2i(2, 2), "wood_wall")
 	_assert(not setup.building_system.place_building(Vector2i(2, 2), "wood_floor"), "Cannot place on an occupied tile.")
+	_assert(not setup.building_system.place_building(Vector2i(2, 2), "wood_door"), "Cannot place a facility on an occupied tile.")
 	await _cleanup_setup(setup)
 
 

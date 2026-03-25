@@ -22,6 +22,7 @@ var state: int = BuildState.NONE
 var active_level_id: String = ""
 var active_level = null
 var building_layer: TileMapLayer = null
+var building_container: Node2D = null
 var placed_buildings: Dictionary = {}
 var placed_facilities: Dictionary = {}
 var selected_building_index: int = 0
@@ -29,6 +30,7 @@ var preview = null
 var home_core_position: Vector2 = Vector2.ZERO
 var home_core_instance = null
 var facility_instances: Dictionary = {}
+var building_instances: Dictionary = {}
 var debug_mode: bool = false
 var _loaded_from_save: bool = false
 
@@ -42,9 +44,11 @@ func set_active_level(level_id: String, level) -> void:
 	active_level_id = level_id
 	active_level = level
 	building_layer = null
+	building_container = null
 
 	if active_level != null:
 		building_layer = active_level.get_node_or_null("BuildingLayer")
+		building_container = active_level.get_node_or_null("BuildingContainer")
 
 	if active_level_id != "overworld":
 		exit_build_mode()
@@ -139,7 +143,7 @@ func is_remove_mode() -> bool:
 
 
 func can_use_build_mode() -> bool:
-	return active_level_id == "overworld" and building_layer != null
+	return active_level_id == "overworld" and building_container != null
 
 
 func get_selected_building() -> Dictionary:
@@ -186,7 +190,7 @@ func get_selected_building_texture() -> Texture2D:
 	if building.is_empty():
 		return null
 
-	if str(building.get("kind", "tile")) == "facility":
+	if building.has("preview_texture"):
 		return building.get("preview_texture", null)
 
 	if building_layer == null:
@@ -221,10 +225,10 @@ func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 			return false
 	else:
 		print("BUILD: placing ", building_id, " at ", tile_pos)
-		print("BUILD: layer=", building_layer, " source_id=", int(building["tile_source_id"]), " atlas=", building["tile_atlas_coords"])
-		building_layer.set_cell(tile_pos, int(building["tile_source_id"]), building["tile_atlas_coords"], 0)
-		print("BUILD: set_cell called on layer")
-		print("Cell set. Verify: source=", building_layer.get_cell_source_id(tile_pos), " atlas=", building_layer.get_cell_atlas_coords(tile_pos))
+		print("BUILD: sprite texture=", building.get("preview_texture", null), " source_id=", int(building["tile_source_id"]), " atlas=", building["tile_atlas_coords"])
+		if not _place_tile_building(tile_pos, building):
+			_refund_full_cost(building["cost"])
+			return false
 		placed_buildings[tile_pos] = building_id
 	_auto_save()
 	build_state_changed.emit()
@@ -235,7 +239,11 @@ func remove_building(tile_pos: Vector2i) -> bool:
 	if placed_buildings.has(tile_pos):
 		var building_id := str(placed_buildings[tile_pos])
 		var building: Dictionary = BUILDING_DATA.get_building(building_id)
-		building_layer.erase_cell(tile_pos)
+		if building_instances.has(tile_pos):
+			var placed_instance = building_instances[tile_pos]
+			if is_instance_valid(placed_instance):
+				placed_instance.queue_free()
+			building_instances.erase(tile_pos)
 		placed_buildings.erase(tile_pos)
 		_refund_partial_cost(building.get("cost", {}))
 		_auto_save()
@@ -263,13 +271,7 @@ func is_valid_placement(tile_pos: Vector2i, building_id: String = "") -> bool:
 	if not can_use_build_mode():
 		return false
 
-	if building_layer.get_cell_source_id(tile_pos) != -1:
-		return false
-
-	if placed_buildings.has(tile_pos):
-		return false
-
-	if placed_facilities.has(tile_pos):
+	if _is_position_occupied(tile_pos):
 		return false
 
 	if tile_pos == _get_player_tile_pos():
@@ -296,10 +298,7 @@ func can_place_home_core(tile_pos: Vector2i) -> bool:
 	if tile_pos == _get_player_tile_pos():
 		return false
 
-	if building_layer.get_cell_source_id(tile_pos) != -1:
-		return false
-
-	if placed_buildings.has(tile_pos):
+	if _is_position_occupied(tile_pos):
 		return false
 
 	if _has_blocking_world_object(tile_pos):
@@ -408,22 +407,28 @@ func _auto_save() -> void:
 
 
 func _apply_saved_state_to_level() -> void:
-	if building_layer == null:
+	if active_level == null:
 		return
 
-	building_layer.clear()
+	if building_layer != null:
+		building_layer.clear()
 	for tile_pos in facility_instances.keys():
 		var existing = facility_instances[tile_pos]
 		if is_instance_valid(existing):
 			existing.queue_free()
 	facility_instances.clear()
+	for tile_pos in building_instances.keys():
+		var building_instance = building_instances[tile_pos]
+		if is_instance_valid(building_instance):
+			building_instance.queue_free()
+	building_instances.clear()
 
 	for tile_pos in placed_buildings.keys():
 		var building_id := str(placed_buildings[tile_pos])
 		var building := BUILDING_DATA.get_building(building_id)
 		if building.is_empty():
 			continue
-		building_layer.set_cell(tile_pos, int(building["tile_source_id"]), building["tile_atlas_coords"], 0)
+		_place_tile_building(tile_pos, building)
 
 	for tile_pos in placed_facilities.keys():
 		var facility_data: Dictionary = placed_facilities[tile_pos]
@@ -503,6 +508,39 @@ func _spawn_facility_instance(tile_pos: Vector2i, building: Dictionary, data: Di
 	return true
 
 
+func _place_tile_building(tile_pos: Vector2i, building: Dictionary) -> bool:
+	if building_container == null:
+		return false
+
+	if building_instances.has(tile_pos):
+		var existing = building_instances[tile_pos]
+		if is_instance_valid(existing):
+			existing.queue_free()
+
+	var placed_root := Node2D.new()
+	placed_root.position = _tile_to_world_center(tile_pos)
+	placed_root.z_index = 0
+	placed_root.name = "%s_%d_%d" % [str(building.get("id", "building")), tile_pos.x, tile_pos.y]
+
+	var sprite := Sprite2D.new()
+	sprite.texture = building.get("preview_texture", null)
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	placed_root.add_child(sprite)
+
+	if bool(building.get("has_collision", false)):
+		var blocker := StaticBody2D.new()
+		var collision := CollisionShape2D.new()
+		var shape := RectangleShape2D.new()
+		shape.size = Vector2(16, 16)
+		collision.shape = shape
+		blocker.add_child(collision)
+		placed_root.add_child(blocker)
+
+	building_container.add_child(placed_root)
+	building_instances[tile_pos] = placed_root
+	return true
+
+
 func _on_facility_changed(tile_pos: Vector2i) -> void:
 	if not placed_facilities.has(tile_pos):
 		return
@@ -539,3 +577,13 @@ func _normalize_facility_save_data(saved_facilities: Array) -> Dictionary:
 				"data": facility.get("data", {}),
 			}
 	return normalized
+
+
+func _is_position_occupied(tile_pos: Vector2i) -> bool:
+	if placed_buildings.has(tile_pos):
+		return true
+	if placed_facilities.has(tile_pos):
+		return true
+	if home_core_position != Vector2.ZERO and _world_to_tile(home_core_position) == tile_pos:
+		return true
+	return false

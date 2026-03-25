@@ -46,6 +46,7 @@ func test_generated_dungeon_has_spawn_exit_and_tiles() -> void:
 	var wall_tiles: Array = dungeon.floor_data.get("wall_tiles", [])
 	_assert(not floor_tiles.is_empty(), "Generated dungeon should contain carved floor tiles.")
 	_assert(not wall_tiles.is_empty(), "Generated dungeon should contain wall tiles.")
+	_assert(dungeon.get_node("WallCollisionRoot").get_child_count() == wall_tiles.size(), "Each dungeon wall tile should spawn an explicit collision blocker.")
 
 	var spawn_point: Vector2 = dungeon.floor_data.get("spawn_point", Vector2.ZERO)
 	var exit_point: Vector2 = dungeon.floor_data.get("exit_point", Vector2.ZERO)
@@ -70,6 +71,7 @@ func test_overworld_visual_layers() -> void:
 
 	var overworld = main.current_level
 	_assert(overworld.get_node("BuildingLayer").z_index == 0, "Building layer should render at ground level so built tiles stay visible.")
+	_assert(overworld.get_node("BuildingContainer") != null, "Overworld should expose a building container for sprite-based placements.")
 	_assert(overworld.get_node("TileMapLayer").modulate == Color(0.55, 0.75, 0.45, 1), "Overworld ground should be brightened for outdoor contrast.")
 	_assert(main.player.z_index == 1, "Player should render above the building layer.")
 
