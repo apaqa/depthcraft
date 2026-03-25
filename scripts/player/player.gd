@@ -290,7 +290,10 @@ func _interaction_requires_core(interactable) -> bool:
 func _on_interaction_area_entered(area: Area2D) -> void:
 	var owner = area.get_parent()
 	if owner == null or not owner.has_method("get_interaction_prompt"):
-		return
+		if area.has_method("get_interaction_prompt"):
+			owner = area
+		else:
+			return
 	if not nearby_interactables.has(owner):
 		nearby_interactables.append(owner)
 	if owner.has_signal("gathered") and not owner.gathered.is_connected(_on_resource_gathered):
@@ -304,6 +307,9 @@ func _on_interaction_area_entered(area: Area2D) -> void:
 
 func _on_interaction_area_exited(area: Area2D) -> void:
 	var owner = area.get_parent()
+	if owner == null or not owner.has_method("get_interaction_prompt"):
+		if area.has_method("get_interaction_prompt"):
+			owner = area
 	if owner != null and nearby_interactables.has(owner):
 		nearby_interactables.erase(owner)
 	_disconnect_resource_signals(owner)

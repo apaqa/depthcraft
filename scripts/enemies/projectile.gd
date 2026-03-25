@@ -40,4 +40,4 @@ func _on_area_entered(area: Area2D) -> void:
 	var owner_node = area.get_parent()
 	if owner_node != null and owner_node.has_method("take_damage") and not owner_node.is_in_group("enemies"):
 		owner_node.take_damage(damage)
-	queue_free()
+		queue_free()

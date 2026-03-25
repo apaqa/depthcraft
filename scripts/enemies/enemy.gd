@@ -146,7 +146,8 @@ func _perform_attack() -> void:
 		return
 	if is_ranged:
 		var projectile = PROJECTILE_SCENE.instantiate()
-		projectile.setup(global_position, target.global_position - global_position, damage)
+		var fire_direction := (target.global_position - global_position).normalized()
+		projectile.setup(global_position + fire_direction * 20.0, fire_direction, damage)
 		get_parent().add_child(projectile)
 		return
 	if target.has_method("take_damage"):

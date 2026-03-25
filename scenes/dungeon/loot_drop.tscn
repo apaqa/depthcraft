@@ -15,6 +15,7 @@ width = 32
 height = 32
 
 [node name="LootDrop" type="Area2D"]
+collision_mask = 2
 script = ExtResource("1_x6j1s")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
