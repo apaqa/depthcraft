@@ -26,7 +26,7 @@ func interact(_player) -> void:
 
 
 func get_interaction_prompt() -> String:
-	return "" if is_open else "[E] Open Chest"
+	return "" if is_open else "[E] 開啟寶箱"
 
 
 func setup(target_loot_root: Node, target_floor_number: int) -> void:

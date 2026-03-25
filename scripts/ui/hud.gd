@@ -379,7 +379,7 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 
 func show_death_screen(summary: Dictionary) -> void:
 	death_overlay.visible = true
-	death_summary_label.text = "Floor: %d | Kills: %d | Loot Lost!" % [
+	death_summary_label.text = "第 %d 層 | 擊殺: %d | 戰利品已遺失！" % [
 		int(summary.get("floor", 0)),
 		int(summary.get("kills", 0)),
 	]

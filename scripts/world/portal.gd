@@ -17,14 +17,14 @@ func _ready() -> void:
 
 func get_interaction_prompt() -> String:
 	if target_level_id == "dungeon" and _is_dungeon_locked():
-		return "突襲中無法進入"
+		return "襲擊期間無法進入"
 	return prompt_text
 
 
 func interact(player) -> void:
 	if target_level_id == "dungeon" and _is_dungeon_locked():
 		if player != null and player.has_method("show_status_message"):
-			player.show_status_message("突襲中無法進入", Color(1.0, 0.35, 0.35, 1.0), 1.5)
+			player.show_status_message("襲擊期間無法進入", Color(1.0, 0.35, 0.35, 1.0), 1.5)
 		return
 	if player != null:
 		player.portal_requested.emit(target_level_id)

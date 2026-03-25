@@ -146,7 +146,7 @@ func _spawn_features() -> void:
 
 	var stairway = STAIRWAY_SCENE.instantiate()
 	stairway.global_position = floor_data.get("exit_point", Vector2.ZERO)
-	stairway.prompt_text = "[E] Descend to Floor %d" % (current_floor + 1)
+	stairway.prompt_text = "[E] 前往第 %d 層" % (current_floor + 1)
 	if stairway.has_method("set_stair_variant"):
 		stairway.set_stair_variant("down")
 	stairway.descend_requested.connect(_on_descend_requested)
@@ -408,7 +408,7 @@ func get_minimap_snapshot() -> Dictionary:
 	if treasure_reveal_time_left > 0.0:
 		for child in feature_root.get_children():
 			if child != null and is_instance_valid(child) and child.has_method("get_interaction_prompt") and child.has_method("get"):
-				if str(child.get_interaction_prompt()) == "[E] Open Chest":
+				if str(child.get_interaction_prompt()) == "[E] 開啟寶箱":
 					chest_positions.append(child.global_position)
 	return {
 		"map_size": DUNGEON_GENERATOR.MAP_SIZE,

@@ -160,7 +160,7 @@ func is_countdown_active() -> bool:
 
 func _emit_countdown() -> void:
 	var seconds_left := int(ceil(raid_countdown_remaining))
-	var message := "⚠ RAID IN %d SECONDS ⚠" % max(seconds_left, 0)
+	var message := "⚠ %d 秒後襲擊 ⚠" % max(seconds_left, 0)
 	raid_countdown_changed.emit(message, Color(1.0, 0.15, 0.15, 1.0), true)
 
 
@@ -174,3 +174,5 @@ func _clear_enemy_root() -> void:
 	var enemy_root = get_parent().get_node_or_null("RaidEnemyRoot")
 	if enemy_root != null:
 		enemy_root.queue_free()
+()
+e()

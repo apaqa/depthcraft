@@ -196,7 +196,7 @@ func _on_return_to_surface_requested() -> void:
 		for entry in player.dungeon_run_loot:
 			item_count += int(entry.get("quantity", 0))
 	if hud.has_method("play_transition"):
-		await hud.play_transition("Returning to Surface...", Color(0, 0, 0, 1), 0.25, 0.15)
+		await hud.play_transition("返回地面中...", Color(0, 0, 0, 1), 0.25, 0.15)
 	if player != null:
 		player.finish_dungeon_run(true)
 	total_dungeon_runs_completed += 1
@@ -205,7 +205,7 @@ func _on_return_to_surface_requested() -> void:
 	deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, floor_reached)
 	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 	if player != null:
-		player.show_status_message("Floor %d reached | %d kills | %d items collected" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
+		player.show_status_message("已抵達第 %d 層 | %d 擊殺 | %d 物品收集" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
 	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 		current_level.trigger_progress_raid()
 
@@ -222,7 +222,7 @@ func _on_player_died() -> void:
 			})
 		await get_tree().create_timer(3.0).timeout
 		if hud.has_method("play_transition"):
-			await hud.play_transition("YOU DIED\nFloor %d | %d kills | All dungeon loot lost!" % [int(current_level.get("current_floor")), int(current_level.get("total_kills"))], Color(0.35, 0.0, 0.0, 1.0), 0.25, 0.15)
+			await hud.play_transition("你死了\n第 %d 層 | %d 擊殺 | 所有地牢戰利品已遺失！" % [int(current_level.get("current_floor")), int(current_level.get("total_kills"))], Color(0.35, 0.0, 0.0, 1.0), 0.25, 0.15)
 		if player != null:
 			player.finish_dungeon_run(false)
 		total_dungeon_runs_completed += 1
@@ -231,7 +231,7 @@ func _on_player_died() -> void:
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, int(current_level.get("current_floor")))
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if player != null:
-			player.show_status_message("You lost all dungeon loot. Equipment damaged.", Color(1.0, 0.75, 0.45, 1.0), 3.0)
+			player.show_status_message("你失去了所有戰利品，裝備已損壞。", Color(1.0, 0.75, 0.45, 1.0), 3.0)
 		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 			current_level.trigger_progress_raid()
 		if hud.has_method("hide_death_screen"):
@@ -267,7 +267,7 @@ func _on_floor_transition_requested(next_floor: int) -> void:
 		request_next_floor.rpc_id(1, next_floor)
 		return
 	if hud.has_method("play_transition"):
-		await hud.play_transition("Floor %d" % next_floor, Color(0, 0, 0, 1), 0.25, 0.05)
+		await hud.play_transition("第 %d 層" % next_floor, Color(0, 0, 0, 1), 0.25, 0.05)
 	_broadcast_scene_change("dungeon", next_floor, current_level_seed)
 
 
