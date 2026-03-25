@@ -21,7 +21,7 @@ const MERCHANT_SCENE := preload("res://scenes/world/merchant.tscn")
 
 
 func _ready() -> void:
-	tile_map_layer.modulate = Color(0.7, 0.85, 0.55, 1.0)
+	tile_map_layer.modulate = Color(0.6, 0.8, 0.45, 1.0)
 	build_ground()
 	_spawn_resource_layout()
 	_spawn_merchant()
