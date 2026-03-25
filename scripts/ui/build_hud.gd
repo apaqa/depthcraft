@@ -1,6 +1,7 @@
 extends Control
 
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
+@onready var category_label: RichTextLabel = $PanelContainer/MarginContainer/VBoxContainer/CategoryLabel
 @onready var cost_label: Label = $PanelContainer/MarginContainer/VBoxContainer/CostLabel
 @onready var help_label: Label = $PanelContainer/MarginContainer/VBoxContainer/HelpLabel
 @onready var core_label: Label = $PanelContainer/MarginContainer/VBoxContainer/CoreLabel
@@ -56,12 +57,14 @@ func refresh() -> void:
 		core_label.text = _format_category_items(state, str(building.get("name", "")))
 
 	if bool(state.get("has_core", false)):
-		core_label.text = "Core: placed"
+		core_label.text += "\nCore: placed"
 	elif bool(state.get("debug_mode", false)):
 		core_label.text += "\nCore: press C (FREE in debug)"
 	else:
 		core_label.text += "\nCore: press C (10 Wood, 5 Stone)"
 	help_label.text = "[1-4] Category  [Scroll] Item  [Q/E] Category  [LMB] Place  [RMB] Remove  [B] Exit"
+	category_label.bbcode_enabled = true
+	category_label.text = _format_categories(int(state.get("category_index", 0)))
 
 
 func _format_costs(costs: Dictionary) -> String:
@@ -88,3 +91,17 @@ func _format_category_items(state: Dictionary, selected_name: String = "") -> St
 	if parts.is_empty():
 		return "Defense items: Coming Soon"
 	return "Items: %s" % "  |  ".join(parts)
+
+
+func _format_categories(active_index: int) -> String:
+	var labels := [
+		"[1] Structure",
+		"[2] Door",
+		"[3] Facility",
+		"[4] Defense",
+	]
+	var parts: PackedStringArray = []
+	for index in range(labels.size()):
+		var color := "ffd86b" if index == active_index else "8a8f98"
+		parts.append("[color=#%s]%s[/color]" % [color, labels[index]])
+	return "  ".join(parts)

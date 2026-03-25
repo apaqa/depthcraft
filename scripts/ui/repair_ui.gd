@@ -2,20 +2,15 @@ extends Control
 
 signal close_requested
 
-@onready var equipment_list: ItemList = $PanelContainer/MarginContainer/VBoxContainer/EquipmentList
+@onready var list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/ListContainer
 @onready var detail_label: Label = $PanelContainer/MarginContainer/VBoxContainer/DetailLabel
-@onready var repair_button: Button = $PanelContainer/MarginContainer/VBoxContainer/RepairButton
 
 var player = null
-var _repairable_slots: Array[String] = []
-var _selected_slot: String = ""
 
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	equipment_list.item_selected.connect(_on_item_selected)
-	repair_button.pressed.connect(_on_repair_pressed)
 
 
 func open_for_player(target_player) -> void:
@@ -41,43 +36,62 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _refresh() -> void:
-	equipment_list.clear()
-	_repairable_slots.clear()
-	_selected_slot = ""
-	repair_button.disabled = true
+	for child in list_container.get_children():
+		child.queue_free()
 	if player == null:
 		detail_label.text = "No repair target."
 		return
-	for slot_name in player.equipment_system.get_repairable_slots():
+	var equipped_any := false
+	var repairable_any := false
+	for slot_name in player.equipment_system.get_slot_order():
 		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
-		equipment_list.add_item("%s (%d/%d)" % [
-			str(item.get("name", slot_name)),
-			int(item.get("durability", 0)),
-			int(item.get("max_durability", 0)),
-		])
-		_repairable_slots.append(slot_name)
-	if _repairable_slots.is_empty():
-		detail_label.text = "Everything is fully repaired."
+		if item.is_empty():
+			continue
+		equipped_any = true
+		var durability := int(item.get("durability", 0))
+		var max_durability := int(item.get("max_durability", 0))
+		var row := VBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		var title := Label.new()
+		title.text = "%s (%s)" % [str(item.get("name", slot_name)), slot_name.replace("_", " ").capitalize()]
+		row.add_child(title)
+		var bar_bg := ColorRect.new()
+		bar_bg.custom_minimum_size = Vector2(280, 10)
+		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
+		var bar_fill := ColorRect.new()
+		bar_fill.custom_minimum_size = Vector2(280.0 * clampf(float(durability) / float(max(max_durability, 1)), 0.0, 1.0), 10)
+		bar_fill.color = Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0)
+		bar_bg.add_child(bar_fill)
+		row.add_child(bar_bg)
+		var info := Label.new()
+		info.text = "Durability: %d/%d" % [durability, max_durability]
+		row.add_child(info)
+		var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name)
+		if not cost.is_empty():
+			repairable_any = true
+			var cost_parts: PackedStringArray = []
+			var can_afford := true
+			for resource_id in cost.keys():
+				cost_parts.append("%d %s" % [int(cost[resource_id]), resource_id.replace("_", " ").capitalize()])
+				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
+					can_afford = false
+			var button := Button.new()
+			button.text = "Repair (%s)" % ", ".join(cost_parts)
+			button.disabled = not can_afford
+			button.pressed.connect(_on_repair_pressed.bind(slot_name))
+			row.add_child(button)
+		list_container.add_child(row)
+	if not equipped_any:
+		detail_label.text = "No equipment to repair. Equip items first."
 		return
-	equipment_list.select(0)
-	_on_item_selected(0)
+	if not repairable_any:
+		detail_label.text = "All equipment is at full durability."
+	else:
+		detail_label.text = "Select Repair on any item that needs work."
 
 
-func _on_item_selected(index: int) -> void:
-	if player == null or index < 0 or index >= _repairable_slots.size():
+func _on_repair_pressed(slot_name: String) -> void:
+	if player == null:
 		return
-	_selected_slot = _repairable_slots[index]
-	var item: Dictionary = player.equipment_system.get_equipped(_selected_slot)
-	var cost: Dictionary = player.equipment_system.get_repair_cost(_selected_slot)
-	var cost_parts: PackedStringArray = []
-	for resource_id in cost.keys():
-		cost_parts.append("%d %s" % [int(cost[resource_id]), resource_id.replace("_", " ")])
-	detail_label.text = "%s\nRepair Cost: %s" % [str(item.get("name", _selected_slot)), ", ".join(cost_parts)]
-	repair_button.disabled = false
-
-
-func _on_repair_pressed() -> void:
-	if player == null or _selected_slot == "":
-		return
-	if player.equipment_system.repair_slot(_selected_slot, player.inventory):
+	if player.equipment_system.repair_slot(slot_name, player.inventory):
 		_refresh()

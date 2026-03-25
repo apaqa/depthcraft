@@ -24,6 +24,7 @@ offset_left = 72.0
 offset_top = 44.0
 offset_right = 568.0
 offset_bottom = 316.0
+self_modulate = Color(1, 1, 1, 0.96)
 
 [node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
 theme_override_constants/margin_left = 12

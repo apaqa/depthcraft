@@ -41,7 +41,7 @@ func _ready() -> void:
 	_generate_floor()
 
 
-func place_player(new_player: Node2D) -> void:
+func place_player(new_player: Node2D, _spawn_override: Variant = null) -> void:
 	player = new_player
 	if player.get_parent() != self:
 		player.reparent(self)
@@ -85,6 +85,8 @@ func _spawn_features() -> void:
 	var stairway = STAIRWAY_SCENE.instantiate()
 	stairway.global_position = floor_data.get("exit_point", Vector2.ZERO)
 	stairway.prompt_text = "[E] Descend to Floor %d" % (current_floor + 1)
+	if stairway.has_method("set_stair_variant"):
+		stairway.set_stair_variant("down")
 	stairway.descend_requested.connect(_on_descend_requested)
 	feature_root.add_child(stairway)
 
@@ -92,6 +94,8 @@ func _spawn_features() -> void:
 	return_exit.global_position = floor_data.get("spawn_point", Vector2.ZERO)
 	return_exit.prompt_text = "[F] Return to Surface (Keep Loot)"
 	return_exit.uses_secondary_input = true
+	if return_exit.has_method("set_stair_variant"):
+		return_exit.set_stair_variant("up")
 	return_exit.return_surface_requested.connect(_on_return_surface_requested)
 	feature_root.add_child(return_exit)
 

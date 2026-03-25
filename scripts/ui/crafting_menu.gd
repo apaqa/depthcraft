@@ -16,6 +16,7 @@ var recipe_ids: PackedStringArray = []
 var selected_recipe_id: String = ""
 var filtered_recipe_ids: PackedStringArray = []
 var menu_title: String = "Crafting"
+var recipe_buttons: Dictionary = {}
 
 
 func _ready() -> void:
@@ -55,6 +56,7 @@ func _rebuild_recipe_list() -> void:
 	for child in recipe_list_container.get_children():
 		child.queue_free()
 	recipe_ids.clear()
+	recipe_buttons.clear()
 	title_label.text = menu_title
 	var recipes: Array[Dictionary] = CRAFTING_SYSTEM.get_available_recipes_for_ids(filtered_recipe_ids) if not filtered_recipe_ids.is_empty() else CRAFTING_SYSTEM.get_available_recipes()
 	var grouped: Dictionary = {}
@@ -77,11 +79,13 @@ func _rebuild_recipe_list() -> void:
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.text = "%s (%s)" % [str(recipe["name"]), _format_cost_summary(recipe_id)]
 			button.pressed.connect(_on_recipe_button_pressed.bind(recipe_id))
+			recipe_buttons[recipe_id] = button
 			recipe_list_container.add_child(button)
 
 
 func _on_recipe_button_pressed(recipe_id: String) -> void:
 	selected_recipe_id = recipe_id
+	_refresh_recipe_button_states()
 	_refresh_details()
 
 func _refresh_details() -> void:
@@ -117,6 +121,8 @@ func _refresh_details() -> void:
 	detail_text.bbcode_enabled = true
 	detail_text.text = "\n".join(lines)
 	craft_button.disabled = not CRAFTING_SYSTEM.can_craft(selected_recipe_id, player_inventory, cost_multiplier)
+	craft_button.modulate = Color(0.45, 0.95, 0.45, 1.0) if not craft_button.disabled else Color(0.55, 0.55, 0.55, 1.0)
+	_refresh_recipe_button_states()
 
 
 func _on_craft_pressed() -> void:
@@ -145,3 +151,12 @@ func _format_cost_summary(recipe_id: String) -> String:
 	for resource_id in cost.keys():
 		parts.append("%d %s" % [int(cost[resource_id]), _pretty_name(str(resource_id))])
 	return ", ".join(parts)
+
+
+func _refresh_recipe_button_states() -> void:
+	for recipe_id in recipe_buttons.keys():
+		var button: Button = recipe_buttons[recipe_id]
+		var can_make := player_inventory != null and CRAFTING_SYSTEM.can_craft(str(recipe_id), player_inventory, player.get_crafting_cost_multiplier() if player != null and player.has_method("get_crafting_cost_multiplier") else 1.0)
+		button.modulate = Color(0.45, 1.0, 0.45, 1.0) if can_make else Color(0.7, 0.7, 0.7, 1.0)
+		if str(recipe_id) == selected_recipe_id:
+			button.modulate = Color(1.0, 0.95, 0.55, 1.0)

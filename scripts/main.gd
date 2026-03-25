@@ -14,6 +14,7 @@ var current_level_id: String = "dungeon"
 var dungeon_run_snapshot: Array = []
 var total_dungeon_runs_completed: int = 0
 var dungeon_returns_since_raid: int = 0
+var overworld_return_position: Variant = null
 
 
 func _ready() -> void:
@@ -40,7 +41,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func change_level(level_id: String) -> void:
+func change_level(level_id: String, spawn_override: Variant = null) -> void:
 	var previous_level_id := current_level_id
 	var next_scene := _get_level_scene(level_id)
 	if next_scene == null:
@@ -57,7 +58,7 @@ func change_level(level_id: String) -> void:
 	if player.building_system.has_method("set_active_level"):
 		player.building_system.set_active_level(current_level_id, current_level)
 	if current_level.has_method("place_player"):
-		current_level.place_player(player)
+		current_level.place_player(player, spawn_override)
 	else:
 		player.reparent(level_root)
 
@@ -113,6 +114,8 @@ func _get_level_scene(level_id: String) -> PackedScene:
 
 
 func _on_player_portal_requested(target_level_id: String) -> void:
+	if current_level_id == "overworld" and target_level_id == "dungeon" and current_level != null and current_level.has_method("get_dungeon_entrance_position"):
+		overworld_return_position = current_level.get_dungeon_entrance_position()
 	call_deferred("change_level", target_level_id)
 
 
@@ -137,7 +140,7 @@ func _on_return_to_surface_requested() -> void:
 	player.finish_dungeon_run(true)
 	total_dungeon_runs_completed += 1
 	dungeon_returns_since_raid += 1
-	change_level("overworld")
+	change_level("overworld", overworld_return_position)
 	player.show_status_message("Floor %d reached | %d kills | %d items collected" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
 	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 		current_level.trigger_progress_raid()
@@ -159,7 +162,7 @@ func _on_player_died() -> void:
 		player.finish_dungeon_run(false)
 		total_dungeon_runs_completed += 1
 		dungeon_returns_since_raid += 1
-		change_level("overworld")
+		change_level("overworld", overworld_return_position)
 		player.show_status_message("You lost all dungeon loot. Equipment damaged.", Color(1.0, 0.75, 0.45, 1.0), 3.0)
 		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 			current_level.trigger_progress_raid()

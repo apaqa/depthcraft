@@ -12,6 +12,7 @@ const BASE_CLEAR_RADIUS := 128.0
 @onready var building_layer: TileMapLayer = $BuildingLayer
 @onready var player_spawn: Marker2D = $PlayerSpawn
 @onready var raid_system = $RaidSystem
+@onready var dungeon_entrance = $ReturnPortal
 
 
 func _ready() -> void:
@@ -22,11 +23,13 @@ func _ready() -> void:
 		raid_system.raid_started.connect(func() -> void: raid_started.emit())
 
 
-func place_player(player: Node2D) -> void:
+func place_player(player: Node2D, spawn_override: Variant = null) -> void:
 	if player.get_parent() != self:
 		player.reparent(self)
-	var core = player.building_system.get_home_core() if player != null else null
-	player.global_position = core.global_position if core != null else player_spawn.global_position
+	var spawn_position: Vector2 = player_spawn.global_position
+	if spawn_override is Vector2:
+		spawn_position = spawn_override
+	player.global_position = spawn_position
 	if raid_system != null and raid_system.has_method("bind_player"):
 		raid_system.bind_player(player, player.building_system)
 
@@ -58,6 +61,10 @@ func _on_banner_requested(message: String, color: Color, duration: float) -> voi
 
 func _on_border_flash_requested(color: Color) -> void:
 	border_flash_requested.emit(color)
+
+
+func get_dungeon_entrance_position() -> Vector2:
+	return dungeon_entrance.global_position if dungeon_entrance != null else player_spawn.global_position
 
 
 func clear_base_area_around(world_position: Vector2) -> void:
