@@ -21,9 +21,9 @@ color = Color(0, 0, 0, 0.45)
 [node name="PanelContainer" type="PanelContainer" parent="."]
 layout_mode = 0
 offset_left = 72.0
-offset_top = 44.0
+offset_top = 28.0
 offset_right = 568.0
-offset_bottom = 316.0
+offset_bottom = 452.0
 self_modulate = Color(1, 1, 1, 0.96)
 
 [node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
@@ -57,10 +57,11 @@ theme_override_constants/separation = 8
 text = "Crafting"
 
 [node name="DetailText" type="RichTextLabel" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
-custom_minimum_size = Vector2(250, 180)
+custom_minimum_size = Vector2(250, 80)
 bbcode_enabled = true
-fit_content = true
-scroll_active = false
+fit_content = false
+size_flags_vertical = 3
+scroll_active = true
 
 [node name="MaterialsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
 theme_override_constants/separation = 4
