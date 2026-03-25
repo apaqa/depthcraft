@@ -58,7 +58,7 @@ animations = [{
 }]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3j4b4"]
-size = Vector2(6, 4)
+size = Vector2(5, 3)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_g3g7t"]
 radius = 18.0
@@ -74,7 +74,7 @@ position = Vector2(0, -1)
 sprite_frames = SubResource("SpriteFrames_8ydkj")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=61282265]
-position = Vector2(0, 3)
+position = Vector2(0, 2)
 shape = SubResource("RectangleShape2D_3j4b4")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1655665250]
