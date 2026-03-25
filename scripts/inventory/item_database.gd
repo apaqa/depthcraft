@@ -57,6 +57,14 @@ const ITEMS := {
 		"description": "Used at the Talent Altar",
 		"icon": preload("res://assets/monster_elemental_fire_small.png"),
 	},
+	"gold": {
+		"id": "gold",
+		"name": "Gold",
+		"max_stack": 9999,
+		"type": "resource",
+		"description": "Currency for trading with merchants",
+		"icon": preload("res://assets/monster_elemental_gold_short.png"),
+	},
 	"wood_sword": {
 		"id": "wood_sword",
 		"name": "Wood Sword",

@@ -12,6 +12,7 @@ const RARITY_COLORS := {
 	"Uncommon": Color(0.45, 0.95, 0.45, 1.0),
 	"Rare": Color(0.42, 0.68, 1.0, 1.0),
 	"Epic": Color(0.82, 0.45, 1.0, 1.0),
+	"Legendary": Color(1.0, 0.65, 0.1, 1.0),
 }
 const AFFIX_POOL := [
 	{"label": "ATK", "stat": "attack", "min": 3, "max": 8},
@@ -22,17 +23,24 @@ const AFFIX_POOL := [
 	{"label": "Lifesteal", "stat": "lifesteal_ratio", "min": 3, "max": 5, "scale": 0.01, "suffix": "%"},
 	{"label": "Gather Speed", "stat": "gather_bonus", "min": 1, "max": 3},
 ]
+const QUALITY_MULTIPLIERS := {
+	"Common": 1.0, "Uncommon": 1.3, "Rare": 1.6, "Epic": 2.0, "Legendary": 2.5,
+}
+const QUALITY_AFFIX_COUNT := {
+	"Common": 0, "Uncommon": 1, "Rare": 2, "Epic": 3, "Legendary": 3,
+}
 
 
 static func generate_dungeon_equipment(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var slot: String = _pick(["weapon", "helmet", "chest_armor", "boots", "accessory"], rng)
-	var base_power := 3 + floor_number * 2
-	var max_affixes := mini(3, int(floor_number / 3))
-	var num_affixes := _randi_range(rng, 0, max_affixes)
+	var quality: String = _pick_quality(floor_number, rng)
+	var quality_mult := float(QUALITY_MULTIPLIERS.get(quality, 1.0))
+	var base_power := int(round((3 + floor_number * 2) * quality_mult))
+	var num_affixes: int = QUALITY_AFFIX_COUNT.get(quality, 0)
 	var durability := 50 + floor_number * 5
 	var item := {
 		"id": "dungeon_%s_%d" % [slot, _randi(rng)],
-		"name": _generate_name(slot, rng),
+		"name": _generate_name(slot, quality, rng),
 		"slot": slot,
 		"type": "equipment",
 		"max_stack": 1,
@@ -42,7 +50,7 @@ static func generate_dungeon_equipment(floor_number: int, rng: RandomNumberGener
 		"max_durability": durability,
 		"durability_current": durability,
 		"durability_max": durability,
-		"rarity": _determine_rarity(num_affixes),
+		"rarity": quality,
 		"source": "dungeon",
 		"floor_found": floor_number,
 		"quantity": 1,
@@ -68,7 +76,34 @@ static func get_item_display_color(stack: Dictionary) -> Color:
 	return Color(0.3, 0.55, 0.95, 1.0)
 
 
-static func _generate_name(slot: String, rng: RandomNumberGenerator = null) -> String:
+static func _pick_quality(floor_number: int, rng: RandomNumberGenerator = null) -> String:
+	var tiers := ["Common", "Uncommon", "Rare", "Epic", "Legendary"]
+	var min_floors := [1, 3, 5, 8, 12]
+	var weights := [
+		max(70.0 - float(floor_number) * 4.0, 5.0),
+		25.0,
+		max(5.0 + float(floor_number) * 2.0, 0.0),
+		max(float(floor_number - 7) * 3.0, 0.0),
+		max(float(floor_number - 11) * 2.0, 0.0),
+	]
+	var total := 0.0
+	for i in range(tiers.size()):
+		if floor_number >= min_floors[i]:
+			total += weights[i]
+	if total <= 0.0:
+		return "Common"
+	var roll := _randf(rng) * total
+	var running := 0.0
+	for i in range(tiers.size()):
+		if floor_number < min_floors[i]:
+			continue
+		running += weights[i]
+		if roll <= running:
+			return tiers[i]
+	return "Common"
+
+
+static func _generate_name(slot: String, quality: String = "Common", rng: RandomNumberGenerator = null) -> String:
 	var prefix_a: String = _pick(PREFIXES, rng)
 	var prefix_b: String = _pick(PREFIXES, rng)
 	var noun: String
@@ -83,7 +118,10 @@ static func _generate_name(slot: String, rng: RandomNumberGenerator = null) -> S
 			noun = _pick(BOOT_NAMES, rng)
 		_:
 			noun = _pick(ACCESSORY_NAMES, rng)
-	return "%s %s %s" % [prefix_a, prefix_b, noun]
+	var base_name := "%s %s %s" % [prefix_a, prefix_b, noun]
+	if quality != "Common":
+		return "[%s] %s" % [quality, base_name]
+	return base_name
 
 
 static func _generate_base_stats(slot: String, base_power: int) -> Dictionary:
@@ -154,6 +192,10 @@ static func _shuffle(values: Array, rng: RandomNumberGenerator = null) -> void:
 
 static func _randi(rng: RandomNumberGenerator = null) -> int:
 	return rng.randi() if rng != null else randi()
+
+
+static func _randf(rng: RandomNumberGenerator = null) -> float:
+	return rng.randf() if rng != null else randf()
 
 
 static func _randi_range(rng: RandomNumberGenerator, min_value: int, max_value: int) -> int:

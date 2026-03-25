@@ -11,6 +11,7 @@ const TREE_SCENE := preload("res://scenes/world/tree_node.tscn")
 const ROCK_SCENE := preload("res://scenes/world/rock_node.tscn")
 const IRON_SCENE := preload("res://scenes/world/iron_node.tscn")
 const GRASS_SCENE := preload("res://scenes/world/grass_node.tscn")
+const MERCHANT_SCENE := preload("res://scenes/world/merchant.tscn")
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
 @onready var building_layer: TileMapLayer = $BuildingLayer
@@ -23,6 +24,7 @@ func _ready() -> void:
 	tile_map_layer.modulate = Color(0.7, 0.85, 0.55, 1.0)
 	build_ground()
 	_spawn_resource_layout()
+	_spawn_merchant()
 	if raid_system != null and raid_system.has_signal("banner_requested") and raid_system.has_signal("border_flash_requested") and raid_system.has_signal("raid_started"):
 		raid_system.banner_requested.connect(_on_banner_requested)
 		raid_system.border_flash_requested.connect(_on_border_flash_requested)
@@ -77,6 +79,16 @@ func _spawn_resource_layout() -> void:
 		node.position = placement["pos"]
 		add_child(node)
 		idx += 1
+
+
+func _spawn_merchant() -> void:
+	var existing := get_node_or_null("Merchant")
+	if existing != null:
+		return
+	var merchant = MERCHANT_SCENE.instantiate()
+	merchant.name = "Merchant"
+	merchant.position = Vector2(288, 320)
+	add_child(merchant)
 
 
 func set_total_dungeon_runs(run_count: int) -> void:

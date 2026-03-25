@@ -59,10 +59,19 @@ func _ready() -> void:
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
 	target = player_target
 	loot_parent = loot_root
-	difficulty_multiplier = 1.0 + float(floor_number) * 0.15
-	max_hp = int(round(max_hp * difficulty_multiplier))
+	if floor_number <= 3:
+		max_hp = 30
+		damage = 8
+	elif floor_number <= 6:
+		max_hp = 50
+		damage = 12
+	elif floor_number <= 10:
+		max_hp = 80
+		damage = 18
+	else:
+		max_hp = 100 + floor_number * 5
+		damage = 22 + floor_number * 2
 	current_hp = max_hp
-	damage = int(round(damage * (1.0 + float(floor_number) * 0.1)))
 	speed = speed * (1.0 + float(floor_number) * 0.05)
 	_update_hp_bar()
 
@@ -184,6 +193,7 @@ func die() -> void:
 		hp_bar_root.visible = false
 	died.emit(global_position)
 	_drop_loot()
+	_drop_gold_loot()
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(queue_free)
@@ -214,6 +224,19 @@ func _drop_loot() -> void:
 		drop.global_position = global_position
 		loot_parent.add_child(drop)
 		return
+
+
+func _drop_gold_loot() -> void:
+	_drop_gold(randi_range(1, 3))
+
+
+func _drop_gold(amount: int) -> void:
+	if loot_parent == null or amount <= 0:
+		return
+	var drop = LOOT_DROP_SCENE.instantiate()
+	drop.setup("gold", amount)
+	drop.global_position = global_position + Vector2(randf_range(-6.0, 6.0), randf_range(-6.0, 6.0))
+	loot_parent.add_child(drop)
 
 
 func is_elite_enemy() -> bool:

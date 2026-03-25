@@ -49,3 +49,7 @@ func _drop_loot() -> void:
 		equip_drop.global_position = global_position + Vector2(0, -8)
 		equip_drop.setup_stack(DUNGEON_LOOT.generate_dungeon_equipment(floor_number))
 		loot_root.add_child(equip_drop)
+	var gold_drop = LOOT_DROP_SCENE.instantiate()
+	gold_drop.global_position = global_position + Vector2(-8, 6)
+	gold_drop.setup("gold", randi_range(5, 15))
+	loot_root.add_child(gold_drop)

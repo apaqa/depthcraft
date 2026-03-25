@@ -144,6 +144,15 @@ const TALENTS := {
 		"description": "Minimap reveals the full floor",
 		"effects": {"full_minimap": 1},
 	},
+	"S6": {
+		"id": "S6",
+		"name": "Loot Magnet",
+		"branch": "support",
+		"cost": 8,
+		"prerequisite": "S5",
+		"description": "Loot pickup range +50px",
+		"effects": {"loot_pickup_range": 50.0},
+	},
 }
 
 

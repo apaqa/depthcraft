@@ -20,9 +20,9 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	target = player_target
 	loot_parent = loot_root
 	floor_value = floor_number
-	max_hp = 200 + floor_number * 30
+	max_hp = 300 + floor_number * 40
 	current_hp = max_hp
-	damage = 18 + floor_number * 4
+	damage = 25 + floor_number * 5
 	speed = 35.0
 	detection_range = 140.0
 	attack_range = 28.0
@@ -79,6 +79,10 @@ func _perform_charge_attack() -> void:
 
 func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
 	super.apply_knockback(direction, force * 0.1)
+
+
+func _drop_gold_loot() -> void:
+	_drop_gold(randi_range(10, 20))
 
 
 func die() -> void:

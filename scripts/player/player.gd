@@ -584,6 +584,10 @@ func get_loot_drop_multiplier() -> float:
 	return loot_drop_multiplier * (1.0 + player_stats.get_total_loot_bonus())
 
 
+func get_loot_pickup_range() -> float:
+	return player_stats.get_loot_pickup_range()
+
+
 func get_crafting_cost_multiplier() -> float:
 	return player_stats.get_crafting_cost_multiplier()
 

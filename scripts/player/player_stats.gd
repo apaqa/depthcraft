@@ -94,6 +94,10 @@ func has_full_minimap() -> bool:
 	return full_minimap or _get_effect("full_minimap") > 0.0
 
 
+func get_loot_pickup_range() -> float:
+	return 30.0 + _get_effect("loot_pickup_range")
+
+
 func _get_effect(effect_id: String) -> float:
 	return float(_talent_effects.get(effect_id, 0.0)) + float(_equipment_effects.get(effect_id, 0.0))
 
