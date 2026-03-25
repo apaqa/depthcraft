@@ -10,6 +10,12 @@ var summon_cooldown_left: float = 0.0
 var pulse_time: float = 0.0
 
 
+func _ready() -> void:
+	super._ready()
+	animated_sprite.modulate = Color(1.0, 0.45, 0.45, 1.0)
+	scale = Vector2(1.15, 1.15)
+
+
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
 	target = player_target
 	loot_parent = loot_root
@@ -21,8 +27,6 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	detection_range = 140.0
 	attack_range = 28.0
 	attack_cooldown = 1.2
-	animated_sprite.modulate = Color(1.0, 0.45, 0.45, 1.0)
-	scale = Vector2(1.15, 1.15)
 	drop_table = [
 		{"id": "talent_shard", "chance": 1.0, "quantity": 3},
 	]

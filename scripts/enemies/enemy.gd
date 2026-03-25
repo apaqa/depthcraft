@@ -64,8 +64,6 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	current_hp = max_hp
 	damage = int(round(damage * (1.0 + float(floor_number) * 0.1)))
 	speed = speed * (1.0 + float(floor_number) * 0.05)
-	if enemy_kind == "bat":
-		speed = base_speed
 	_update_hp_bar()
 
 

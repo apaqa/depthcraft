@@ -179,8 +179,6 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 
 func _on_descend_requested() -> void:
 	floor_transition_requested.emit(current_floor + 1)
-	await get_tree().create_timer(0.5).timeout
-	descend_floor()
 
 
 func _on_return_surface_requested() -> void:

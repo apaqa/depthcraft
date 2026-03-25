@@ -31,13 +31,13 @@ func setup(start_position: Vector2, travel_direction: Vector2, projectile_damage
 
 
 func _on_body_entered(body: Node) -> void:
-	if body != null and body.has_method("take_damage"):
+	if body != null and body.has_method("take_damage") and not body.is_in_group("enemies"):
 		body.take_damage(damage)
 	queue_free()
 
 
 func _on_area_entered(area: Area2D) -> void:
-	var owner = area.get_parent()
-	if owner != null and owner.has_method("take_damage"):
-		owner.take_damage(damage)
+	var owner_node = area.get_parent()
+	if owner_node != null and owner_node.has_method("take_damage") and not owner_node.is_in_group("enemies"):
+		owner_node.take_damage(damage)
 	queue_free()
