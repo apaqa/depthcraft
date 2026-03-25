@@ -40,7 +40,7 @@ func _physics_process(delta: float) -> void:
 	if _player_ref.has_method("get_loot_pickup_range"):
 		pickup_range = _player_ref.get_loot_pickup_range()
 	if dist < pickup_range and dist > 1.0:
-		var dir := (_player_ref.global_position - global_position).normalized()
+		var dir = (_player_ref.global_position - global_position).normalized()
 		global_position += dir * min(150.0 * delta, dist)
 
 
