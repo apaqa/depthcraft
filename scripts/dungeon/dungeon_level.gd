@@ -216,7 +216,7 @@ func _spawn_wall_blocker(tile_pos: Vector2i) -> void:
 	blocker.position = Vector2(tile_pos.x * 16 + 8, tile_pos.y * 16 + 8)
 	var collision := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(16, 16)
+	shape.size = Vector2(17, 17)
 	collision.shape = shape
 	blocker.add_child(collision)
 	wall_collision_root.add_child(blocker)
