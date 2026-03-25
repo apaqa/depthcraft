@@ -41,12 +41,25 @@ func _rebuild_cards() -> void:
 		button.custom_minimum_size = Vector2(170, 180)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var panel_style := StyleBoxFlat.new()
+		panel_style.bg_color = Color(0.14, 0.14, 0.18, 0.96)
+		panel_style.border_width_left = 3
+		panel_style.border_width_top = 3
+		panel_style.border_width_right = 3
+		panel_style.border_width_bottom = 3
+		panel_style.border_color = option.get("color", Color.WHITE)
+		panel_style.corner_radius_top_left = 8
+		panel_style.corner_radius_top_right = 8
+		panel_style.corner_radius_bottom_left = 8
+		panel_style.corner_radius_bottom_right = 8
+		button.add_theme_stylebox_override("normal", panel_style)
+		button.add_theme_stylebox_override("hover", panel_style)
+		button.add_theme_stylebox_override("pressed", panel_style)
 		button.text = "%s\n[%s]\n%s" % [
 			str(option.get("name", "")),
 			str(option.get("category", "")),
 			str(option.get("description", "")),
 		]
-		button.modulate = option.get("color", Color.WHITE)
 		button.pressed.connect(_choose_buff.bind(str(option.get("id", ""))))
 		card_container.add_child(button)
 

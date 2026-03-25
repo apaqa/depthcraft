@@ -16,6 +16,7 @@ var dungeon_run_snapshot: Array = []
 var total_dungeon_runs_completed: int = 0
 var dungeon_returns_since_raid: int = 0
 var overworld_return_position: Variant = null
+var current_day: int = 1
 
 
 func _ready() -> void:
@@ -112,6 +113,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 
 	if hud.has_method("bind_level"):
 		hud.bind_level(current_level, current_level_id)
+	if hud.has_method("update_day_label"):
+		hud.update_day_label(current_day)
 
 	if level_id == "dungeon":
 		if previous_level_id != "dungeon" and player != null:
@@ -126,6 +129,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		_on_kills_changed(0)
 		if current_level.has_method("set_total_dungeon_runs"):
 			current_level.set_total_dungeon_runs(total_dungeon_runs_completed)
+		if current_level.has_method("set_day_count"):
+			current_level.set_day_count(current_day)
 
 	for spawned_player in player_spawner.get_players():
 		spawned_player.process_mode = Node.PROCESS_MODE_INHERIT
@@ -188,6 +193,7 @@ func _on_return_to_surface_requested() -> void:
 		player.finish_dungeon_run(true)
 	total_dungeon_runs_completed += 1
 	dungeon_returns_since_raid += 1
+	current_day += 1
 	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 	if player != null:
 		player.show_status_message("Floor %d reached | %d kills | %d items collected" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
@@ -212,6 +218,7 @@ func _on_player_died() -> void:
 			player.finish_dungeon_run(false)
 		total_dungeon_runs_completed += 1
 		dungeon_returns_since_raid += 1
+		current_day += 1
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if player != null:
 			player.show_status_message("You lost all dungeon loot. Equipment damaged.", Color(1.0, 0.75, 0.45, 1.0), 3.0)

@@ -2,6 +2,8 @@ extends Control
 
 signal close_requested
 
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+
 @onready var slot_list: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel/VBoxContainer/SlotList
 @onready var inventory_list: ItemList = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryList
 @onready var stat_label: Label = $PanelContainer/MarginContainer/VBoxContainer/StatLabel
@@ -57,6 +59,7 @@ func _refresh() -> void:
 		if str(stack.get("type", "")) != "equipment":
 			continue
 		inventory_list.add_item("%s [%s]" % [str(stack.get("name", stack.get("id", ""))), str(stack.get("slot", ""))])
+		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, ITEM_DATABASE.get_stack_color(stack))
 		_inventory_indices.append(index)
 	var summary: Dictionary = player.get_stats_summary()
 	stat_label.text = "ATK: %d   DEF: %d   HP: %d   SPD: %d" % [

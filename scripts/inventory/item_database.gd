@@ -206,3 +206,18 @@ static func get_item_color(item_id: String, item_type: String = "") -> Color:
 			return Color(0.32, 0.78, 0.42, 1.0)
 		_:
 			return Color(0.62, 0.42, 0.22, 1.0)
+
+
+static func get_stack_color(stack: Dictionary) -> Color:
+	if str(stack.get("source", "")) == "dungeon":
+		var rarity := str(stack.get("rarity", "Common"))
+		match rarity:
+			"Uncommon":
+				return Color(0.45, 0.95, 0.45, 1.0)
+			"Rare":
+				return Color(0.42, 0.68, 1.0, 1.0)
+			"Epic":
+				return Color(0.82, 0.45, 1.0, 1.0)
+			_:
+				return Color.WHITE
+	return get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))

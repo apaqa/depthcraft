@@ -49,10 +49,6 @@ func gather() -> void:
 
 	var quantity := randi_range(drop_quantity_min, drop_quantity_max)
 	is_depleted = true
-	var current_sprite := get_sprite()
-	if current_sprite != null:
-		current_sprite.visible = false
-
 	var collision := get_body_collision()
 	if collision != null:
 		collision.disabled = true
@@ -64,6 +60,7 @@ func gather() -> void:
 	if bonus_drop_id != "" and randf() <= bonus_drop_chance:
 		gathered.emit(bonus_drop_id, randi_range(bonus_drop_min, bonus_drop_max))
 	depleted.emit()
+	_play_depleted_feedback()
 
 	var timer := get_respawn_timer()
 	if respawn_time > 0.0 and timer != null:
@@ -78,6 +75,7 @@ func respawn() -> void:
 	var current_sprite := get_sprite()
 	if current_sprite != null:
 		current_sprite.visible = true
+		current_sprite.scale = Vector2.ZERO
 
 	var collision := get_body_collision()
 	if collision != null:
@@ -86,6 +84,7 @@ func respawn() -> void:
 	var area_collision := get_interaction_collision()
 	if area_collision != null:
 		area_collision.disabled = false
+	_play_respawn_feedback()
 	respawned.emit()
 
 
@@ -136,9 +135,29 @@ func _play_hit_feedback() -> void:
 
 	current_sprite.position = Vector2.ZERO
 	var tween := create_tween()
-	tween.tween_property(current_sprite, "position", Vector2(3, 0), 0.05)
-	tween.tween_property(current_sprite, "position", Vector2(-3, 0), 0.05)
+	tween.tween_property(current_sprite, "position", Vector2(2, -1), 0.04)
+	tween.tween_property(current_sprite, "position", Vector2(-2, 1), 0.04)
 	tween.tween_property(current_sprite, "position", Vector2.ZERO, 0.05)
+
+
+func _play_depleted_feedback() -> void:
+	var current_sprite := get_sprite()
+	if current_sprite == null:
+		return
+	current_sprite.scale = Vector2.ONE
+	var tween := create_tween()
+	tween.tween_property(current_sprite, "scale", Vector2.ZERO, 0.3)
+	tween.tween_callback(func() -> void: current_sprite.visible = false)
+
+
+func _play_respawn_feedback() -> void:
+	var current_sprite := get_sprite()
+	if current_sprite == null:
+		return
+	current_sprite.visible = true
+	current_sprite.scale = Vector2.ZERO
+	var tween := create_tween()
+	tween.tween_property(current_sprite, "scale", Vector2.ONE, 0.5)
 
 
 func get_sprite() -> Sprite2D:

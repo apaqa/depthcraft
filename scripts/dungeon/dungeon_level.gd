@@ -21,7 +21,12 @@ const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 const STAIRWAY_SCENE := preload("res://scenes/dungeon/stairway.tscn")
 const MELEE_ENEMY_SCENE := preload("res://scenes/enemies/melee_enemy.tscn")
 const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
+const SHIELD_ORC_SCENE := preload("res://scenes/enemies/shield_orc_enemy.tscn")
+const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
 const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
+const DUNGEON_CHEST_SCENE := preload("res://scenes/dungeon/dungeon_chest.tscn")
+const SPIKE_TRAP_SCENE := preload("res://scenes/dungeon/spike_trap.tscn")
+const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 
 @export var current_floor: int = 1
 @export var level_seed: int = 1
@@ -77,6 +82,12 @@ func _draw_floor() -> void:
 		tile_map_layer.set_cell(wall_tile, _get_wall_source(wall_tile), Vector2i.ZERO)
 		_spawn_wall_blocker(wall_tile)
 	tile_map_layer.update_internals()
+	var floor_modulate := Color(1, 1, 1, 1)
+	if current_floor >= 8:
+		floor_modulate = Color(0.78, 0.48, 0.48, 1.0)
+	elif current_floor >= 5:
+		floor_modulate = Color(0.72, 0.72, 0.8, 1.0)
+	tile_map_layer.modulate = floor_modulate
 
 
 func _spawn_features() -> void:
@@ -100,6 +111,21 @@ func _spawn_features() -> void:
 	return_exit.return_surface_requested.connect(_on_return_surface_requested)
 	feature_root.add_child(return_exit)
 
+	var rooms: Array = floor_data.get("rooms", [])
+	var room_types: Array = floor_data.get("room_types", [])
+	for room_index in range(rooms.size()):
+		if room_index >= room_types.size():
+			continue
+		var room: Rect2i = rooms[room_index]
+		var room_type := str(room_types[room_index])
+		match room_type:
+			"treasure":
+				_spawn_treasure_room(room)
+			"trap":
+				_spawn_trap_room(room)
+			"empty":
+				_spawn_empty_room(room)
+
 
 func _spawn_enemies() -> void:
 	for child in enemy_root.get_children():
@@ -111,22 +137,26 @@ func _spawn_enemies() -> void:
 	var rng := _create_rng(41)
 	var config := get_floor_spawn_config(current_floor, rng)
 	var rooms: Array = floor_data.get("rooms", [])
+	var room_types: Array = floor_data.get("room_types", [])
 	var eligible_rooms: Array[int] = []
 	for room_index in range(rooms.size()):
 		if room_index == int(floor_data.get("spawn_room_index", 0)) or room_index == int(floor_data.get("exit_room_index", 0)):
 			continue
 		eligible_rooms.append(room_index)
 		var room: Rect2i = rooms[room_index]
+		var room_type := str(room_types[room_index]) if room_index < room_types.size() else "normal"
+		if room_type == "empty":
+			continue
 		var enemy_count := rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"]))
+		if room_type == "treasure":
+			enemy_count = max(1, enemy_count - 2)
+		elif room_type == "elite":
+			enemy_count = max(2, enemy_count - 1)
 		for _enemy_index in range(enemy_count):
-			var enemy_scene: PackedScene = MELEE_ENEMY_SCENE
-			if bool(config["allow_ranged"]):
-				enemy_scene = MELEE_ENEMY_SCENE if rng.randf() > float(config["ranged_ratio"]) else RANGED_ENEMY_SCENE
-			var enemy = enemy_scene.instantiate()
-			enemy.global_position = _random_point_in_room(room, rng)
-			enemy.configure_for_floor(player, current_floor, loot_root)
-			enemy.died.connect(_on_enemy_died.bind(enemy))
-			enemy_root.add_child(enemy)
+			var enemy_scene: PackedScene = _pick_enemy_scene(current_floor, rng)
+			if room_type == "elite":
+				enemy_scene = BAT_SWARM_SCENE if rng.randf() <= 0.4 else SHIELD_ORC_SCENE
+			_spawn_enemy_instance(enemy_scene, room, rng)
 	var elite_count: int = min(int(config["elite_count"]), eligible_rooms.size())
 	_shuffle_with_rng(eligible_rooms, rng)
 	for elite_index in range(elite_count):
@@ -231,6 +261,60 @@ func get_floor_spawn_config(floor_number: int, rng: RandomNumberGenerator = null
 	if floor_number <= 10:
 		return {"enemy_min": 4, "enemy_max": 5, "allow_ranged": true, "ranged_ratio": 0.45, "elite_count": 1}
 	return {"enemy_min": 5, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": _rng_range(rng, 1, 2)}
+
+
+func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedScene:
+	var roll := _rng_randf(rng)
+	if floor_number >= 4 and roll <= 0.25:
+		return SHIELD_ORC_SCENE
+	if floor_number >= 2 and roll <= 0.50:
+		return RANGED_ENEMY_SCENE
+	if floor_number >= 3 and roll <= 0.72:
+		return BAT_SWARM_SCENE
+	return MELEE_ENEMY_SCENE
+
+
+func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNumberGenerator) -> void:
+	var enemy: Enemy = enemy_scene.instantiate()
+	var min_group := int(enemy.get("group_spawn_min")) if enemy.get("group_spawn_min") != null else 1
+	var max_group := int(enemy.get("group_spawn_max")) if enemy.get("group_spawn_max") != null else 1
+	var group_count: int = max(1, min_group)
+	if max_group > group_count:
+		group_count = _rng_range(rng, min_group, max_group)
+	enemy.queue_free()
+	for index in range(group_count):
+		var spawned_enemy: Enemy = enemy_scene.instantiate()
+		var offset := Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0)) * float(index)
+		spawned_enemy.global_position = _random_point_in_room(room, rng) + offset
+		spawned_enemy.configure_for_floor(player, current_floor, loot_root)
+		spawned_enemy.died.connect(_on_enemy_died.bind(spawned_enemy))
+		enemy_root.add_child(spawned_enemy)
+
+
+func _spawn_treasure_room(room: Rect2i) -> void:
+	var chest_count := randi_range(1, 2)
+	for _idx in range(chest_count):
+		var chest = DUNGEON_CHEST_SCENE.instantiate()
+		chest.global_position = _random_point_in_room(room)
+		chest.setup(loot_root, current_floor)
+		feature_root.add_child(chest)
+
+
+func _spawn_empty_room(room: Rect2i) -> void:
+	var pickup_count := randi_range(1, 3)
+	var resources := ["wood", "stone", "fiber"]
+	for _idx in range(pickup_count):
+		var drop = LOOT_DROP_SCENE.instantiate()
+		drop.setup(resources.pick_random(), 1)
+		drop.global_position = _random_point_in_room(room)
+		loot_root.add_child(drop)
+
+
+func _spawn_trap_room(room: Rect2i) -> void:
+	for trap_index in range(randi_range(2, 4)):
+		var trap = SPIKE_TRAP_SCENE.instantiate()
+		trap.global_position = _random_point_in_room(room)
+		feature_root.add_child(trap)
 
 
 func set_gameplay_paused(paused: bool) -> void:

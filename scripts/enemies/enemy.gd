@@ -16,6 +16,12 @@ const PROJECTILE_SCENE := preload("res://scenes/enemies/projectile.tscn")
 @export var keeps_distance: bool = false
 @export var preferred_distance: float = 60.0
 @export var is_ranged: bool = false
+@export var enemy_kind: String = "goblin"
+@export var drop_table: Array[Dictionary] = []
+@export var front_guard_enabled: bool = false
+@export var zigzag_strength: float = 18.0
+@export var group_spawn_min: int = 1
+@export var group_spawn_max: int = 1
 
 var current_hp: int = 0
 var target: CharacterBody2D = null
@@ -34,6 +40,8 @@ var _last_position: Vector2 = Vector2.ZERO
 var hp_bar_root: Node2D = null
 var hp_bar_bg: Polygon2D = null
 var hp_bar_fill: Polygon2D = null
+var knockback_velocity: Vector2 = Vector2.ZERO
+var facing_direction: Vector2 = Vector2.RIGHT
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -56,6 +64,8 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	current_hp = max_hp
 	damage = int(round(damage * (1.0 + float(floor_number) * 0.1)))
 	speed = speed * (1.0 + float(floor_number) * 0.05)
+	if enemy_kind == "bat":
+		speed = base_speed
 	_update_hp_bar()
 
 
@@ -84,6 +94,7 @@ func _physics_process(delta: float) -> void:
 			return
 
 	attack_timer_left = max(attack_timer_left - delta, 0.0)
+	knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 520.0 * delta)
 
 	var distance: float = global_position.distance_to(target.global_position)
 	if distance <= attack_range:
@@ -98,6 +109,11 @@ func _physics_process(delta: float) -> void:
 		var direction := (target.global_position - global_position).normalized()
 		if keeps_distance and distance < preferred_distance:
 			direction = -direction
+		if enemy_kind == "bat":
+			var perp := Vector2(-direction.y, direction.x)
+			direction = (direction + perp * sin(Time.get_ticks_msec() / 130.0) * 0.55).normalized()
+		if direction.length_squared() > 0.0:
+			facing_direction = direction
 		if global_position.distance_to(_last_position) < 1.0:
 			_stuck_timer += delta
 			if _stuck_timer > 0.5:
@@ -116,6 +132,7 @@ func _physics_process(delta: float) -> void:
 
 	if velocity.x != 0.0:
 		animated_sprite.flip_h = velocity.x < 0.0
+	velocity += knockback_velocity
 	_update_animation(velocity)
 	move_and_slide()
 	_last_position = global_position
@@ -135,16 +152,23 @@ func _perform_attack() -> void:
 		get_parent().add_child(projectile)
 		return
 	if target.has_method("take_damage"):
-		target.take_damage(damage)
+		target.take_damage(damage, (target.global_position - global_position).normalized())
 
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	if is_dead:
 		return
-	current_hp -= amount
-	damaged.emit(amount)
+	var final_amount := amount
+	if front_guard_enabled and hit_direction.length_squared() > 0.0:
+		var incoming_from_attacker := -hit_direction.normalized()
+		if incoming_from_attacker.dot(facing_direction.normalized()) > 0.35:
+			final_amount = int(ceil(final_amount * 0.5))
+	current_hp -= final_amount
+	damaged.emit(final_amount)
 	_update_hp_bar()
 	modulate = Color(1, 0.3, 0.3, 1)
+	if hit_direction.length_squared() > 0.0:
+		apply_knockback(hit_direction, 120.0)
 	var tween := create_tween()
 	tween.tween_property(self, "modulate", Color.WHITE, 0.2)
 	if current_hp <= 0:
@@ -176,16 +200,21 @@ func _drop_loot() -> void:
 	var loot_multiplier := 1.0
 	if target != null and target.has_method("get_loot_drop_multiplier"):
 		loot_multiplier = float(target.get_loot_drop_multiplier())
-	if randf() <= min(0.5 * loot_multiplier, 1.0):
-		var shard = LOOT_DROP_SCENE.instantiate()
-		shard.setup("talent_shard", 1)
-		shard.global_position = global_position
-		loot_parent.add_child(shard)
-	elif randf() <= min(0.2 * loot_multiplier, 1.0):
-		var resource_drop = LOOT_DROP_SCENE.instantiate()
-		resource_drop.setup(["wood", "stone", "iron_ore"][randi() % 3], 1)
-		resource_drop.global_position = global_position
-		loot_parent.add_child(resource_drop)
+	var roll := randf()
+	var running_total := 0.0
+	for entry_variant in drop_table:
+		var entry := entry_variant as Dictionary
+		running_total += float(entry.get("chance", 0.0)) * loot_multiplier
+		if roll > min(running_total, 1.0):
+			continue
+		var item_id := str(entry.get("id", ""))
+		if item_id == "":
+			return
+		var drop = LOOT_DROP_SCENE.instantiate()
+		drop.setup(item_id, int(entry.get("quantity", 1)))
+		drop.global_position = global_position
+		loot_parent.add_child(drop)
+		return
 
 
 func is_elite_enemy() -> bool:
@@ -222,3 +251,9 @@ func _update_animation(direction: Vector2) -> void:
 		animated_sprite.play("run")
 	else:
 		animated_sprite.play("idle")
+
+
+func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
+	if direction.length_squared() <= 0.0:
+		return
+	knockback_velocity += direction.normalized() * force

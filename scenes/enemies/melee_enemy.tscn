@@ -32,9 +32,11 @@ radius = 18.0
 collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_13wyv")
-max_hp = 30
+max_hp = 25
 damage = 8
-speed = 45.0
+speed = 50.0
+enemy_kind = "goblin"
+drop_table = [{"id":"talent_shard","chance":0.4,"quantity":1}]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_o8dsh")

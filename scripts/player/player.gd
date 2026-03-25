@@ -64,6 +64,13 @@ var buff_regen_interval: float = 3.0
 var undying_will_available: bool = false
 var network_peer_id: int = 1
 var load_persistent_state_on_ready: bool = true
+var knockback_velocity: Vector2 = Vector2.ZERO
+var iframes_flash_accumulator: float = 0.0
+var equipment_lifesteal_ratio: float = 0.0
+var torch_light_time_left: float = 0.0
+var last_attack_direction: Vector2 = Vector2.RIGHT
+
+@onready var torch_light: PointLight2D = PointLight2D.new()
 
 const BASE_ATTACK_COOLDOWN := 0.4
 const BANDAGE_COOLDOWN := 1.0
@@ -82,6 +89,7 @@ func _ready() -> void:
 		_load_persistent_state()
 	_recalculate_buff_state()
 	_refresh_all_stats()
+	_setup_torch_light()
 	configure_for_network_role(load_persistent_state_on_ready)
 
 
@@ -133,10 +141,22 @@ func get_animated_sprite() -> AnimatedSprite2D:
 func _physics_process(delta: float) -> void:
 	if invincible_time_left > 0.0:
 		invincible_time_left = max(invincible_time_left - delta, 0.0)
+		iframes_flash_accumulator += delta
+		if iframes_flash_accumulator >= 0.1:
+			iframes_flash_accumulator = 0.0
+			animated_sprite.visible = not animated_sprite.visible
+	else:
+		animated_sprite.visible = true
+		iframes_flash_accumulator = 0.0
 	if attack_cooldown_left > 0.0:
 		attack_cooldown_left = max(attack_cooldown_left - delta, 0.0)
 	if consumable_cooldown_left > 0.0:
 		consumable_cooldown_left = max(consumable_cooldown_left - delta, 0.0)
+	if torch_light_time_left > 0.0:
+		torch_light_time_left = max(torch_light_time_left - delta, 0.0)
+		torch_light.visible = true
+	else:
+		torch_light.visible = false
 	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
 		return
 
@@ -163,8 +183,11 @@ func _physics_process(delta: float) -> void:
 	var input_direction: Vector2 = get_input_vector()
 	var base_speed_value: float = player_stats.get_total_speed()
 	var move_speed_value: float = (sprint_speed if Input.is_action_pressed("sprint") else base_speed_value) * move_speed_multiplier
+	velocity = knockback_velocity.move_toward(Vector2.ZERO, 600.0 * delta)
 	apply_input_direction(input_direction, move_speed_value)
+	velocity += knockback_velocity
 	move_and_slide()
+	knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 600.0 * delta)
 	_broadcast_state()
 	if not nearby_interactables.is_empty():
 		_update_prompt()
@@ -207,6 +230,10 @@ func _input(event: InputEvent) -> void:
 
 	if event.is_action_pressed("use_consumable") and not build_mode and not ui_blocked and not is_dead:
 		use_first_consumable()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("use_consumable_2") and not build_mode and not ui_blocked and not is_dead:
+		use_second_consumable()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -371,7 +398,7 @@ func request_talent_menu(facility) -> void:
 	talent_requested.emit(facility)
 
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	if is_dead or invincible_time_left > 0.0:
 		return
 	if dodge_chance > 0.0 and randf() < dodge_chance:
@@ -385,7 +412,8 @@ func take_damage(amount: int) -> void:
 	current_hp = max(current_hp - reduced_amount, 0)
 	equipment_system.consume_damage_durability()
 	hp_changed.emit(current_hp, max_hp)
-	invincible_time_left = 0.5
+	invincible_time_left = 0.8
+	apply_knockback(hit_direction, 110.0)
 	var tween := create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color(1, 0.45, 0.45, 1), 0.05)
 	tween.tween_property(animated_sprite, "modulate", Color(1, 1, 1, 1), 0.1)
@@ -415,6 +443,7 @@ func heal_to_full() -> void:
 	invincible_time_left = 0.0
 	regen_tick_progress = 0.0
 	hp_changed.emit(current_hp, max_hp)
+	animated_sprite.visible = true
 
 
 func heal(amount: int) -> void:
@@ -424,17 +453,19 @@ func heal(amount: int) -> void:
 	hp_changed.emit(current_hp, max_hp)
 
 
-func perform_attack() -> void:
+func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 	if attack_cooldown_left > 0.0:
 		return
+	var attack_direction := _get_attack_direction(override_direction)
+	last_attack_direction = attack_direction
 	attack_cooldown_left = get_attack_cooldown_duration()
-	_spawn_attack_effect()
+	_spawn_attack_effect(attack_direction)
 	equipment_system.consume_attack_durability()
 	var attack_shape := RectangleShape2D.new()
-	attack_shape.size = Vector2(24, 20) * aoe_attack_multiplier
+	attack_shape.size = Vector2(28, 20) * aoe_attack_multiplier
 	var query := PhysicsShapeQueryParameters2D.new()
 	query.shape = attack_shape
-	query.transform = Transform2D(0.0, global_position + _get_attack_offset())
+	query.transform = Transform2D(attack_direction.angle(), global_position + _get_attack_offset(attack_direction))
 	query.collision_mask = 4
 	var results := get_world_2d().direct_space_state.intersect_shape(query)
 	var total_damage_dealt := 0
@@ -450,13 +481,16 @@ func perform_attack() -> void:
 			var enemy_max_hp := int(collider.get("max_hp"))
 			if enemy_max_hp > 0 and float(enemy_hp) / float(enemy_max_hp) <= 0.3:
 				attack_damage = int(round(float(attack_damage) * (1.0 + player_stats.get_execute_bonus())))
-		collider.take_damage(attack_damage)
+		collider.take_damage(attack_damage, attack_direction)
+		if collider.has_method("apply_knockback"):
+			collider.apply_knockback(attack_direction, 120.0)
 		total_damage_dealt += attack_damage
-	if lifesteal_ratio > 0.0 and total_damage_dealt > 0:
-		heal(int(max(round(total_damage_dealt * lifesteal_ratio), 1.0)))
+	if (lifesteal_ratio + equipment_lifesteal_ratio) > 0.0 and total_damage_dealt > 0:
+		heal(int(max(round(total_damage_dealt * (lifesteal_ratio + equipment_lifesteal_ratio)), 1.0)))
+	_save_persistent_state()
 
 
-func _spawn_attack_effect() -> void:
+func _spawn_attack_effect(attack_direction: Vector2) -> void:
 	var attack_effect = ATTACK_EFFECT_SCENE.instantiate()
 	var attack_effect_parent = get_parent()
 	if attack_effect_parent == null:
@@ -464,13 +498,14 @@ func _spawn_attack_effect() -> void:
 	if attack_effect_parent == null:
 		attack_effect_parent = get_tree().root
 	attack_effect_parent.add_child(attack_effect)
-	attack_effect.global_position = global_position + _get_attack_offset()
+	attack_effect.global_position = global_position + _get_attack_offset(attack_direction)
 	if attack_effect.has_method("play_swing"):
-		attack_effect.play_swing(animated_sprite.flip_h)
+		attack_effect.play_swing(attack_direction)
 
 
-func _get_attack_offset() -> Vector2:
-	return Vector2(-16 if animated_sprite.flip_h else 16, 2)
+func _get_attack_offset(attack_direction: Vector2 = Vector2.RIGHT) -> Vector2:
+	var direction := attack_direction.normalized() if attack_direction.length_squared() > 0.0 else last_attack_direction
+	return direction * 18.0 + Vector2(0, 2)
 
 
 func _get_closest_interactable():
@@ -493,6 +528,7 @@ func _configure_input_actions() -> void:
 	_set_key_action("dev_reset_save", KEY_9)
 	_set_key_action("dodge", KEY_SHIFT)
 	_set_key_action("use_consumable", KEY_Q)
+	_set_key_action("use_consumable_2", KEY_R)
 	_set_key_action("toggle_equipment", KEY_C)
 
 
@@ -605,25 +641,6 @@ func lose_dungeon_run_loot() -> void:
 		inventory.remove_item(str(entry.get("id", "")), int(entry.get("quantity", 0)))
 
 
-func use_first_consumable() -> bool:
-	if consumable_cooldown_left > 0.0:
-		return false
-	for stack in inventory.items:
-		if str(stack.get("type", "")) != "consumable":
-			continue
-		var item_id := str(stack.get("id", ""))
-		var item_data := ITEM_DATABASE.get_item(item_id)
-		var heal_amount := int((item_data.get("effect", {}) as Dictionary).get("heal", 0))
-		if not inventory.remove_item(item_id, 1):
-			return false
-		if heal_amount > 0:
-			heal(heal_amount)
-			_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.45, 1.0, 0.45, 1.0))
-		consumable_cooldown_left = BANDAGE_COOLDOWN
-		return true
-	return false
-
-
 func show_status_message(message: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
 	status_message_requested.emit(message, color, duration)
 
@@ -708,6 +725,7 @@ func _on_player_stats_changed() -> void:
 
 func _on_equipment_changed() -> void:
 	player_stats.set_equipment_bonuses(equipment_system.get_total_bonus_map())
+	equipment_lifesteal_ratio = float(equipment_system.get_total_bonus_map().get("lifesteal_ratio", 0.0))
 	_save_persistent_state()
 
 
@@ -717,6 +735,21 @@ func _refresh_all_stats() -> void:
 	current_hp = clamp(current_hp, 0, max_hp)
 	stats_changed.emit()
 	hp_changed.emit(current_hp, max_hp)
+
+
+func get_consumable_slots() -> Array[Dictionary]:
+	var slots: Array[Dictionary] = []
+	for stack in inventory.items:
+		if str(stack.get("type", "")) != "consumable":
+			continue
+		slots.append(stack.duplicate(true))
+		if slots.size() >= 2:
+			break
+	return slots
+
+
+func use_second_consumable() -> bool:
+	return _use_consumable_at_slot(1)
 
 
 func _load_persistent_state() -> void:
@@ -735,3 +768,63 @@ func _save_persistent_state() -> void:
 		"unlocked_talents": unlocked_talents,
 		"equipment": equipment_system.serialize_state(),
 	})
+
+
+func use_first_consumable() -> bool:
+	return _use_consumable_at_slot(0)
+
+
+func _use_consumable_at_slot(slot_index: int) -> bool:
+	if consumable_cooldown_left > 0.0:
+		return false
+	var slots := get_consumable_slots()
+	if slot_index < 0 or slot_index >= slots.size():
+		show_status_message("Consumable slot empty", Color(0.7, 0.7, 0.7, 1.0))
+		return false
+	var stack := slots[slot_index]
+	var item_id := str(stack.get("id", ""))
+	var item_data := ITEM_DATABASE.get_item(item_id)
+	if not inventory.remove_item(item_id, 1):
+		return false
+	var effects := item_data.get("effect", {}) as Dictionary
+	var heal_amount := int(effects.get("heal", 0))
+	if heal_amount > 0:
+		heal(heal_amount)
+		_play_heal_feedback(heal_amount)
+	if bool(effects.get("light", false)):
+		torch_light_time_left = 30.0
+		show_status_message("Torch lit", Color(1.0, 0.85, 0.45, 1.0))
+	consumable_cooldown_left = BANDAGE_COOLDOWN
+	return true
+
+
+func _play_heal_feedback(heal_amount: int) -> void:
+	_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.45, 1.0, 0.45, 1.0))
+	var tween := create_tween()
+	tween.tween_property(animated_sprite, "modulate", Color(0.45, 1.0, 0.45, 1.0), 0.08)
+	tween.tween_property(animated_sprite, "modulate", Color.WHITE, 0.22)
+
+
+func apply_knockback(direction: Vector2, force: float = 110.0) -> void:
+	if direction.length_squared() <= 0.0:
+		return
+	knockback_velocity += direction.normalized() * force
+
+
+func _get_attack_direction(override_direction: Vector2 = Vector2.ZERO) -> Vector2:
+	if override_direction.length_squared() > 0.0:
+		return override_direction.normalized()
+	var mouse_position := get_global_mouse_position()
+	var direction := mouse_position - global_position
+	if direction.length_squared() <= 0.001:
+		return Vector2.LEFT if animated_sprite.flip_h else Vector2.RIGHT
+	return direction.normalized()
+
+
+func _setup_torch_light() -> void:
+	torch_light.texture_scale = 2.8
+	torch_light.energy = 1.2
+	torch_light.color = Color(1.0, 0.8, 0.45, 1.0)
+	torch_light.visible = false
+	torch_light.position = Vector2(0, -2)
+	add_child(torch_light)

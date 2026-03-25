@@ -12,6 +12,7 @@ const RAID_WARNING_TIME := 10.0
 var player = null
 var building_system = null
 var total_dungeon_runs: int = 0
+var current_day: int = 1
 var time_until_raid: float = RAID_INTERVAL
 var warning_shown: bool = false
 var raid_active: bool = false
@@ -45,6 +46,10 @@ func set_total_dungeon_runs(run_count: int) -> void:
 	total_dungeon_runs = run_count
 
 
+func set_day_count(day_count: int) -> void:
+	current_day = max(day_count, 1)
+
+
 func queue_progress_raid() -> void:
 	time_until_raid = min(time_until_raid, RAID_WARNING_TIME)
 
@@ -66,7 +71,8 @@ func _start_raid() -> void:
 
 func _spawn_raid_enemies(core) -> void:
 	_clear_enemy_refs()
-	var enemy_count: int = min(10, max(5, 5 + int(total_dungeon_runs / 2) + randi_range(0, 2)))
+	var day_bonus := int(current_day / 2)
+	var enemy_count: int = min(12, max(5, 5 + int(total_dungeon_runs / 2) + day_bonus + randi_range(0, 2)))
 	var enemy_root: Node2D = Node2D.new()
 	enemy_root.name = "RaidEnemyRoot"
 	get_parent().add_child(enemy_root)
@@ -75,7 +81,7 @@ func _spawn_raid_enemies(core) -> void:
 		var enemy = RAID_ENEMY_SCENE.instantiate()
 		enemy_root.add_child(enemy)
 		enemy.global_position = _get_spawn_position(viewport_size, core.global_position)
-		enemy.setup_raid(player, core, total_dungeon_runs, enemy_root)
+		enemy.setup_raid(player, core, total_dungeon_runs + day_bonus, enemy_root)
 		enemy.died.connect(_on_raid_enemy_died.bind(enemy))
 		raid_enemies.append(enemy)
 

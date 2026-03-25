@@ -9,6 +9,7 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var floor_label: Label = $FloorLabel
 @onready var kills_label: Label = $KillsLabel
 @onready var buff_row: HBoxContainer = $BuffRow
+@onready var day_label: Label = $DayLabel
 @onready var inventory_panel: PanelContainer = $InventoryPanel
 @onready var inventory_list: VBoxContainer = $InventoryPanel/MarginContainer/VBoxContainer/ScrollContainer/ItemListContainer
 @onready var interaction_prompt: Label = $InteractionPrompt
@@ -29,6 +30,7 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var status_label: Label = $StatusLabel
 @onready var transition_overlay: ColorRect = $TransitionOverlay
 @onready var transition_label: Label = $TransitionOverlay/TransitionLabel
+@onready var consumable_bar: Label = $ConsumableBar
 
 var player = null
 var inventory = null
@@ -39,6 +41,7 @@ var current_level_id: String = ""
 func _ready() -> void:
 	update_hp(100, 100)
 	update_bag_label(0, 20)
+	update_consumable_bar([])
 	var network_manager = get_node_or_null("/root/NetworkManager")
 	set_connection_info(network_manager.get_connection_status() if network_manager != null else "")
 	inventory_panel.visible = false
@@ -166,6 +169,8 @@ func _on_inventory_changed() -> void:
 		return
 
 	update_bag_label(inventory.items.size(), inventory.max_slots)
+	if player != null and player.has_method("get_consumable_slots"):
+		update_consumable_bar(player.get_consumable_slots())
 	rebuild_inventory_grid()
 
 
@@ -175,6 +180,7 @@ func update_bag_label(used_slots: int, max_slots: int) -> void:
 
 func update_floor_label(current_floor: int) -> void:
 	floor_label.text = "Floor: %d" % current_floor if current_floor > 0 else ""
+	day_label.visible = current_floor <= 0
 
 
 func update_kills_label(kills: int) -> void:
@@ -307,6 +313,7 @@ func _build_item_row(stack: Dictionary, swatch_color: Color) -> Control:
 	var name_label := Label.new()
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.text = str(stack.get("name", stack.get("id", "")))
+	name_label.self_modulate = ITEM_DATABASE.get_stack_color(stack)
 	row.add_child(name_label)
 	var quantity_label := Label.new()
 	quantity_label.text = "x%d" % int(stack.get("quantity", 0))
@@ -336,11 +343,11 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 	for child in buff_row.get_children():
 		child.queue_free()
 	for buff in active_buffs:
-		var label := Label.new()
-		label.text = str(buff.get("name", "Buff"))
-		label.tooltip_text = str(buff.get("description", ""))
-		label.self_modulate = buff.get("color", Color.WHITE)
-		buff_row.add_child(label)
+		var swatch := ColorRect.new()
+		swatch.custom_minimum_size = Vector2(8, 8)
+		swatch.color = buff.get("color", Color.WHITE)
+		swatch.tooltip_text = str(buff.get("name", "Buff"))
+		buff_row.add_child(swatch)
 
 
 func show_death_screen(summary: Dictionary) -> void:
@@ -384,6 +391,23 @@ func show_status_message(message: String, color: Color = Color.WHITE, duration: 
 	tween.tween_interval(duration)
 	tween.tween_property(status_label, "modulate", Color(color.r, color.g, color.b, 0.0), 0.25)
 	tween.tween_callback(func() -> void: status_label.visible = false)
+
+
+func update_day_label(day_number: int) -> void:
+	day_label.text = "Day: %d" % max(day_number, 1)
+	day_label.visible = true
+
+
+func update_consumable_bar(slots: Array) -> void:
+	var labels: Array[String] = []
+	for slot_index in range(2):
+		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
+		var key_name := "Q" if slot_index == 0 else "R"
+		if slot.is_empty():
+			labels.append("[%s] Empty" % key_name)
+			continue
+		labels.append("[%s] %s x%d" % [key_name, str(slot.get("name", "Item")), int(slot.get("quantity", 0))])
+	consumable_bar.text = " | ".join(labels)
 
 
 func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.25, hold_duration: float = 0.0) -> void:

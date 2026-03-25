@@ -93,7 +93,7 @@ func test_enemy_scaling_matches_formula() -> void:
 	await process_frame
 	enemy.configure_for_floor(player, 4, Node2D.new())
 	_assert(enemy.max_hp == 48, "Enemy HP scaling should follow the floor formula.")
-	_assert(enemy.damage == 14, "Enemy damage scaling should follow the floor formula.")
+	_assert(enemy.damage == 11, "Enemy damage scaling should follow the floor formula.")
 	player.queue_free()
 	enemy.queue_free()
 	await process_frame

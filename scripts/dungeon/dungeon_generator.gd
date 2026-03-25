@@ -47,6 +47,7 @@ func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dic
 	var elite_room_index := 0 if rooms.size() == 1 else _rng_range(rng, 1, rooms.size() - 1)
 	var spawn_point := _tile_to_world(_room_center(rooms[spawn_room_index]))
 	var exit_point := _tile_to_world(_room_center(rooms[exit_room_index]))
+	var room_types := _assign_room_types(rooms.size(), spawn_room_index, exit_room_index, elite_room_index, floor_number, rng)
 
 	return {
 		"rooms": rooms,
@@ -54,6 +55,7 @@ func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dic
 		"spawn_point": spawn_point,
 		"exit_point": exit_point,
 		"elite_room_index": elite_room_index,
+		"room_types": room_types,
 		"spawn_room_index": spawn_room_index,
 		"exit_room_index": exit_room_index,
 		"floor_tiles": floor_tiles.keys(),
@@ -122,3 +124,24 @@ func _tile_to_world(tile_pos: Vector2i) -> Vector2:
 
 func _rng_range(rng: RandomNumberGenerator, min_value: int, max_value: int) -> int:
 	return rng.randi_range(min_value, max_value) if rng != null else randi_range(min_value, max_value)
+
+
+func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index: int, elite_room_index: int, floor_number: int, rng: RandomNumberGenerator = null) -> Array[String]:
+	var room_types: Array[String] = []
+	for room_index in range(room_count):
+		if room_index == spawn_room_index or room_index == exit_room_index:
+			room_types.append("normal")
+			continue
+		if room_index == elite_room_index and floor_number >= 4:
+			room_types.append("elite")
+			continue
+		var roll := rng.randf() if rng != null else randf()
+		if floor_number >= 3 and roll <= 0.10:
+			room_types.append("trap")
+		elif roll <= 0.20:
+			room_types.append("treasure")
+		elif roll <= 0.35:
+			room_types.append("empty")
+		else:
+			room_types.append("normal")
+	return room_types

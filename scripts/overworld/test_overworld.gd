@@ -84,6 +84,11 @@ func set_total_dungeon_runs(run_count: int) -> void:
 		raid_system.set_total_dungeon_runs(run_count)
 
 
+func set_day_count(day_count: int) -> void:
+	if raid_system != null and raid_system.has_method("set_day_count"):
+		raid_system.set_day_count(day_count)
+
+
 func trigger_progress_raid() -> void:
 	if raid_system != null and raid_system.has_method("queue_progress_raid"):
 		raid_system.queue_progress_raid()

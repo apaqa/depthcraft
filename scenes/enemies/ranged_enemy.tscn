@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy.gd" id="1_03d5y"]
-[ext_resource type="Texture2D" path="res://assets/monster_wogol.png" id="2_3w3mx"]
+[ext_resource type="Texture2D" path="res://assets/monster_necromancer.png" id="2_3w3mx"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_hy2ru"]
 animations = [{
@@ -32,13 +32,16 @@ radius = 18.0
 collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_03d5y")
-max_hp = 20
+max_hp = 18
 damage = 12
 speed = 30.0
 is_ranged = true
 keeps_distance = true
-preferred_distance = 60.0
+preferred_distance = 80.0
 attack_range = 80.0
+attack_cooldown = 1.5
+enemy_kind = "skeleton"
+drop_table = [{"id":"talent_shard","chance":0.3,"quantity":1},{"id":"iron_ore","chance":0.2,"quantity":1}]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_hy2ru")
