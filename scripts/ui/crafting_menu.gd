@@ -133,14 +133,14 @@ func _refresh_details() -> void:
 		for stat_id in recipe.get("stats", {}).keys():
 			lines.append("%s: +%s" % [_pretty_name(stat_id), str(recipe["stats"][stat_id])])
 		if recipe.has("max_durability"):
-			lines.append("Durability: %d/%d" % [int(recipe.get("durability", recipe.get("max_durability", 0))), int(recipe.get("max_durability", 0))])
+			lines.append("耐久度: %d/%d" % [int(recipe.get("durability", recipe.get("max_durability", 0))), int(recipe.get("max_durability", 0))])
 		if recipe.has("slot"):
-			lines.append("Slot: %s" % _pretty_name(str(recipe.get("slot", ""))))
+			lines.append("欄位: %s" % _pretty_name(str(recipe.get("slot", ""))))
 	else:
 		for effect_id in recipe.get("effect", {}).keys():
 			lines.append("%s: %s" % [_pretty_name(effect_id), str(recipe["effect"][effect_id])])
 	lines.append("")
-	lines.append("[b]Materials:[/b]")
+	lines.append("[b]材料:[/b]")
 	for resource_id in cost.keys():
 		var required: int = int(cost[resource_id])
 		var owned: int = player_inventory.get_item_count(resource_id)
