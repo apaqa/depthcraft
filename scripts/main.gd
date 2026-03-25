@@ -39,6 +39,7 @@ func _input(event: InputEvent) -> void:
 
 
 func change_level(level_id: String) -> void:
+	var previous_level_id := current_level_id
 	var next_scene := _get_level_scene(level_id)
 	if next_scene == null:
 		return
@@ -65,11 +66,20 @@ func change_level(level_id: String) -> void:
 		current_level.kills_changed.connect(_on_kills_changed)
 	if current_level.has_signal("return_to_surface_requested") and not current_level.return_to_surface_requested.is_connected(_on_return_to_surface_requested):
 		current_level.return_to_surface_requested.connect(_on_return_to_surface_requested)
+	if current_level.has_signal("buff_selection_requested") and not current_level.buff_selection_requested.is_connected(_on_buff_selection_requested):
+		current_level.buff_selection_requested.connect(_on_buff_selection_requested)
+
+	if hud.has_method("bind_level"):
+		hud.bind_level(current_level, current_level_id)
 
 	if level_id == "dungeon":
+		if previous_level_id != "dungeon":
+			player.start_dungeon_run()
 		dungeon_run_snapshot = player.inventory.get_state()
-		_on_floor_changed(int(current_level.get("current_floor")))
-		_on_kills_changed(int(current_level.get("total_kills")))
+		var floor_value: Variant = current_level.get("current_floor")
+		var kills_value: Variant = current_level.get("total_kills")
+		_on_floor_changed(floor_value if floor_value != null else 0)
+		_on_kills_changed(kills_value if kills_value != null else 0)
 	else:
 		_on_floor_changed(0)
 		_on_kills_changed(0)
@@ -106,10 +116,27 @@ func _on_kills_changed(kills: int) -> void:
 
 
 func _on_return_to_surface_requested() -> void:
+	player.finish_dungeon_run(true)
 	change_level("overworld")
 
 
 func _on_player_died() -> void:
 	if current_level_id == "dungeon":
-		player.inventory.load_state(dungeon_run_snapshot)
+		if hud.has_method("show_death_screen"):
+			var death_floor: Variant = current_level.get("current_floor")
+			var death_kills: Variant = current_level.get("total_kills")
+			hud.show_death_screen({
+				"floor": death_floor if death_floor != null else 0,
+				"kills": death_kills if death_kills != null else 0,
+				"loot_lost": player.dungeon_run_loot.size(),
+			})
+		await get_tree().create_timer(3.0).timeout
+		player.finish_dungeon_run(false)
 		change_level("overworld")
+		if hud.has_method("hide_death_screen"):
+			hud.hide_death_screen()
+
+
+func _on_buff_selection_requested(options: Array) -> void:
+	if hud.has_method("open_buff_selection"):
+		hud.open_buff_selection(options, current_level)

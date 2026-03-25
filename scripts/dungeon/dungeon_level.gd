@@ -3,6 +3,7 @@ extends Node2D
 signal floor_changed(current_floor: int)
 signal kills_changed(total_kills: int)
 signal return_to_surface_requested
+signal buff_selection_requested(options: Array)
 
 const SOURCE_FLOOR_1 := 0
 const SOURCE_FLOOR_2 := 1
@@ -15,9 +16,11 @@ const SOURCE_WALL_RIGHT := 104
 const SOURCE_WALL_MID := 105
 
 const DUNGEON_GENERATOR := preload("res://scripts/dungeon/dungeon_generator.gd")
+const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 const STAIRWAY_SCENE := preload("res://scenes/dungeon/stairway.tscn")
 const MELEE_ENEMY_SCENE := preload("res://scenes/enemies/melee_enemy.tscn")
 const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
+const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
 
 @export var current_floor: int = 1
 
@@ -30,6 +33,7 @@ const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
 var player = null
 var floor_data: Dictionary = {}
 var total_kills: int = 0
+var gameplay_paused: bool = false
 
 
 func _ready() -> void:
@@ -98,24 +102,42 @@ func _spawn_enemies() -> void:
 	if player == null or not is_instance_valid(player):
 		return
 
+	var config := get_floor_spawn_config(current_floor)
 	var rooms: Array = floor_data.get("rooms", [])
+	var eligible_rooms: Array[int] = []
 	for room_index in range(rooms.size()):
 		if room_index == int(floor_data.get("spawn_room_index", 0)) or room_index == int(floor_data.get("exit_room_index", 0)):
 			continue
+		eligible_rooms.append(room_index)
 		var room: Rect2i = rooms[room_index]
-		var enemy_count := randi_range(2, 4) + int(floor(current_floor * 0.3))
+		var enemy_count := randi_range(int(config["enemy_min"]), int(config["enemy_max"]))
 		for _enemy_index in range(enemy_count):
-			var enemy_scene: PackedScene = MELEE_ENEMY_SCENE if randf() <= 0.7 else RANGED_ENEMY_SCENE
+			var enemy_scene: PackedScene = MELEE_ENEMY_SCENE
+			if bool(config["allow_ranged"]):
+				enemy_scene = MELEE_ENEMY_SCENE if randf() > float(config["ranged_ratio"]) else RANGED_ENEMY_SCENE
 			var enemy = enemy_scene.instantiate()
 			enemy.global_position = _random_point_in_room(room)
 			enemy.configure_for_floor(player, current_floor, loot_root)
-			enemy.died.connect(_on_enemy_died)
+			enemy.died.connect(_on_enemy_died.bind(enemy))
 			enemy_root.add_child(enemy)
+	var elite_count: int = min(int(config["elite_count"]), eligible_rooms.size())
+	eligible_rooms.shuffle()
+	for elite_index in range(elite_count):
+		var elite_room: Rect2i = rooms[int(eligible_rooms[elite_index])]
+		var elite: Enemy = ELITE_ENEMY_SCENE.instantiate()
+		elite.global_position = _random_point_in_room(elite_room)
+		elite.configure_for_floor(player, current_floor, loot_root)
+		elite.died.connect(_on_enemy_died.bind(elite))
+		enemy_root.add_child(elite)
+	set_gameplay_paused(gameplay_paused)
 
 
-func _on_enemy_died(_enemy_position: Vector2) -> void:
+func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	total_kills += 1
 	kills_changed.emit(total_kills)
+	if enemy_ref != null and enemy_ref.has_method("is_elite_enemy") and enemy_ref.is_elite_enemy():
+		set_gameplay_paused(true)
+		buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())
 
 
 func _on_descend_requested() -> void:
@@ -169,3 +191,34 @@ func _spawn_wall_blocker(tile_pos: Vector2i) -> void:
 	collision.shape = shape
 	blocker.add_child(collision)
 	wall_collision_root.add_child(blocker)
+
+
+func get_floor_spawn_config(floor_number: int) -> Dictionary:
+	if floor_number <= 3:
+		return {"enemy_min": 2, "enemy_max": 3, "allow_ranged": false, "ranged_ratio": 0.0, "elite_count": 0}
+	if floor_number <= 6:
+		return {"enemy_min": 3, "enemy_max": 4, "allow_ranged": true, "ranged_ratio": 0.3, "elite_count": 1 if randf() <= 0.5 else 0}
+	if floor_number <= 10:
+		return {"enemy_min": 4, "enemy_max": 5, "allow_ranged": true, "ranged_ratio": 0.45, "elite_count": 1}
+	return {"enemy_min": 5, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": randi_range(1, 2)}
+
+
+func set_gameplay_paused(paused: bool) -> void:
+	gameplay_paused = paused
+	for enemy in enemy_root.get_children():
+		if enemy.has_method("set_ai_paused"):
+			enemy.set_ai_paused(paused)
+
+
+func get_minimap_snapshot() -> Dictionary:
+	var enemy_positions: Array[Vector2] = []
+	for enemy in enemy_root.get_children():
+		enemy_positions.append(enemy.global_position)
+	return {
+		"map_size": DUNGEON_GENERATOR.MAP_SIZE,
+		"floor_tiles": floor_data.get("floor_tiles", []),
+		"enemy_positions": enemy_positions,
+		"stair_tile": Vector2(floor_data.get("exit_point", Vector2.ZERO).x / 16.0, floor_data.get("exit_point", Vector2.ZERO).y / 16.0),
+		"spawn_tile": Vector2(floor_data.get("spawn_point", Vector2.ZERO).x / 16.0, floor_data.get("spawn_point", Vector2.ZERO).y / 16.0),
+		"player_tile": Vector2(player.global_position.x / 16.0, player.global_position.y / 16.0) if player != null else Vector2.ZERO,
+	}

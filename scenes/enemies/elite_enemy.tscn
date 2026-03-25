@@ -1,0 +1,80 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/elite_enemy.gd" id="1_4a5n2"]
+[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f0.png" id="2_0f1yq"]
+[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f1.png" id="3_eha8y"]
+[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f2.png" id="4_l3i6y"]
+[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f3.png" id="5_7kjam"]
+[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f0.png" id="6_b23qj"]
+[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f1.png" id="7_4tkdb"]
+[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f2.png" id="8_2t0r7"]
+[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f3.png" id="9_9qtg5"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_gxaga"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_0f1yq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_eha8y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_l3i6y")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_7kjam")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_b23qj")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_4tkdb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_2t0r7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_9qtg5")
+}],
+"loop": true,
+"name": &"run",
+"speed": 8.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0h2g8"]
+size = Vector2(18, 18)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_qhm2r"]
+radius = 22.0
+
+[node name="EliteEnemy" type="CharacterBody2D"]
+script = ExtResource("1_4a5n2")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -4)
+sprite_frames = SubResource("SpriteFrames_gxaga")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_0h2g8")
+
+[node name="HitBox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitBox"]
+shape = SubResource("CircleShape2D_qhm2r")
+
+[node name="HurtBox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+shape = SubResource("CircleShape2D_qhm2r")
+
+[node name="AttackTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="WanderTimer" type="Timer" parent="."]
+one_shot = true

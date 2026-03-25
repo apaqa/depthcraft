@@ -39,6 +39,8 @@ func _on_body_entered(body: Node) -> void:
 	if inventory == null:
 		return
 	if inventory.add_item(item_id, quantity):
+		if body.has_method("record_dungeon_loot"):
+			body.record_dungeon_loot(item_id, quantity)
 		if body.has_method("_show_floating_text"):
 			body._show_floating_text(global_position, "+%d %s" % [quantity, str(ITEM_DATABASE.get_item(item_id).get("name", item_id))], Color(1.0, 0.95, 0.45, 1.0))
 		queue_free()

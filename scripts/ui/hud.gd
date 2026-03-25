@@ -1,10 +1,13 @@
 extends Control
 
+const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+
 @onready var hp_label: Label = $HPLabel
 @onready var hp_bar_fill: ColorRect = $HPBarBG/HPBarFill
 @onready var bag_label: Label = $BagLabel
 @onready var floor_label: Label = $FloorLabel
 @onready var kills_label: Label = $KillsLabel
+@onready var buff_row: HBoxContainer = $BuffRow
 @onready var inventory_panel: PanelContainer = $InventoryPanel
 @onready var inventory_grid: GridContainer = $InventoryPanel/MarginContainer/VBoxContainer/ScrollContainer/GridContainer
 @onready var interaction_prompt: Label = $InteractionPrompt
@@ -13,9 +16,15 @@ extends Control
 @onready var crafting_menu: Control = $CraftingMenu
 @onready var storage_ui: Control = $StorageUI
 @onready var repair_ui: Control = $RepairUI
+@onready var minimap: Control = $Minimap
+@onready var buff_select: Control = $BuffSelect
+@onready var death_overlay: Control = $DeathOverlay
+@onready var death_summary_label: Label = $DeathOverlay/VBoxContainer/SummaryLabel
 
 var player = null
 var inventory = null
+var current_level = null
+var current_level_id: String = ""
 
 
 func _ready() -> void:
@@ -28,6 +37,9 @@ func _ready() -> void:
 		storage_ui.close_requested.connect(_on_menu_closed)
 	if repair_ui.has_signal("close_requested") and not repair_ui.close_requested.is_connected(_on_menu_closed):
 		repair_ui.close_requested.connect(_on_menu_closed)
+	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
+		buff_select.buff_chosen.connect(_on_buff_chosen)
+	set_process(true)
 
 
 func update_hp(current: int, max_hp: int) -> void:
@@ -51,6 +63,8 @@ func bind_player(new_player) -> void:
 			player.storage_requested.disconnect(_on_storage_requested)
 		if player.repair_requested.is_connected(_on_repair_requested):
 			player.repair_requested.disconnect(_on_repair_requested)
+		if player.buffs_changed.is_connected(_refresh_buff_icons):
+			player.buffs_changed.disconnect(_refresh_buff_icons)
 
 	player = new_player
 	inventory = player.inventory
@@ -62,10 +76,18 @@ func bind_player(new_player) -> void:
 	player.crafting_requested.connect(_on_crafting_requested)
 	player.storage_requested.connect(_on_storage_requested)
 	player.repair_requested.connect(_on_repair_requested)
+	player.buffs_changed.connect(_refresh_buff_icons)
 	if build_hud.has_method("bind_system"):
 		build_hud.bind_system(player.building_system, inventory)
 	_on_inventory_changed()
 	_refresh_debug_label()
+	_refresh_buff_icons(player.get_active_buffs())
+
+
+func bind_level(level, level_id: String) -> void:
+	current_level = level
+	current_level_id = level_id
+	minimap.visible = level_id == "dungeon"
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -164,6 +186,7 @@ func _close_all_menus() -> void:
 	crafting_menu.close_menu()
 	storage_ui.close_menu()
 	repair_ui.close_menu()
+	buff_select.close_menu()
 	_on_menu_closed()
 
 
@@ -175,7 +198,15 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or buff_select.visible
+
+
+func _process(_delta: float) -> void:
+	if current_level_id == "dungeon" and current_level != null and current_level.has_method("get_minimap_snapshot"):
+		minimap.visible = true
+		minimap.set_snapshot(current_level.get_minimap_snapshot())
+	else:
+		minimap.visible = false
 
 
 func rebuild_inventory_grid() -> void:
@@ -223,3 +254,44 @@ func _build_slot(index: int) -> Control:
 		quantity_label.text = ""
 
 	return slot
+
+
+func open_buff_selection(options: Array, level) -> void:
+	current_level = level
+	buff_select.open_with_options(options)
+	if player != null:
+		player.set_ui_blocked(true)
+	if current_level != null and current_level.has_method("set_gameplay_paused"):
+		current_level.set_gameplay_paused(true)
+
+
+func _on_buff_chosen(buff_id: String) -> void:
+	if player != null:
+		player.apply_buff(buff_id)
+		player.set_ui_blocked(false)
+	if current_level != null and current_level.has_method("set_gameplay_paused"):
+		current_level.set_gameplay_paused(false)
+
+
+func _refresh_buff_icons(active_buffs: Array) -> void:
+	for child in buff_row.get_children():
+		child.queue_free()
+	for buff in active_buffs:
+		var label := Label.new()
+		label.text = str(buff.get("name", "Buff"))
+		label.tooltip_text = str(buff.get("description", ""))
+		label.self_modulate = buff.get("color", Color.WHITE)
+		buff_row.add_child(label)
+
+
+func show_death_screen(summary: Dictionary) -> void:
+	death_overlay.visible = true
+	death_summary_label.text = "Floor %d\nKills %d\nLoot Lost %d" % [
+		int(summary.get("floor", 0)),
+		int(summary.get("kills", 0)),
+		int(summary.get("loot_lost", 0)),
+	]
+
+
+func hide_death_screen() -> void:
+	death_overlay.visible = false

@@ -30,6 +30,13 @@ var state: int = State.IDLE
 var wander_direction: Vector2 = Vector2.ZERO
 var difficulty_multiplier: float = 1.0
 var loot_parent: Node = null
+var ai_paused: bool = false
+var base_max_hp: int = 0
+var base_damage: int = 0
+var base_speed: float = 0.0
+var hp_bar_root: Node2D = null
+var hp_bar_bg: Polygon2D = null
+var hp_bar_fill: Polygon2D = null
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var attack_timer: Timer = $AttackTimer
@@ -37,25 +44,35 @@ var loot_parent: Node = null
 
 
 func _ready() -> void:
+	base_max_hp = max_hp
+	base_damage = damage
+	base_speed = speed
 	current_hp = max_hp
 	if not attack_timer.timeout.is_connected(_on_attack_timer_timeout):
 		attack_timer.timeout.connect(_on_attack_timer_timeout)
 	if not wander_timer.timeout.is_connected(_pick_wander_direction):
 		wander_timer.timeout.connect(_pick_wander_direction)
+	_setup_hp_bar()
 	_pick_wander_direction()
 
 
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
 	target = player_target
 	loot_parent = loot_root
-	difficulty_multiplier = 1.0 + float(floor_number) * 0.1
-	max_hp = int(round(max_hp * difficulty_multiplier))
+	difficulty_multiplier = 1.0 + float(floor_number) * 0.15
+	max_hp = int(round(base_max_hp * difficulty_multiplier))
 	current_hp = max_hp
-	damage = int(round(damage * difficulty_multiplier))
-	speed *= difficulty_multiplier
+	damage = int(round(base_damage * (1.0 + float(floor_number) * 0.1)))
+	speed = base_speed * (1.0 + float(floor_number) * 0.05)
+	_update_hp_bar()
 
 
 func _physics_process(_delta: float) -> void:
+	if ai_paused:
+		velocity = Vector2.ZERO
+		animated_sprite.play("idle")
+		move_and_slide()
+		return
 	if state == State.DEAD:
 		velocity = Vector2.ZERO
 		move_and_slide()
@@ -96,6 +113,7 @@ func take_damage(amount: int) -> void:
 		return
 	current_hp -= amount
 	damaged.emit(amount)
+	_update_hp_bar()
 	var tween := create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color(1, 0.45, 0.45, 1), 0.05)
 	tween.tween_property(animated_sprite, "modulate", Color(1, 1, 1, 1), 0.1)
@@ -107,9 +125,15 @@ func die() -> void:
 	if state == State.DEAD:
 		return
 	state = State.DEAD
+	if hp_bar_root != null:
+		hp_bar_root.visible = false
 	died.emit(global_position)
 	_drop_loot()
 	queue_free()
+
+
+func set_ai_paused(paused: bool) -> void:
+	ai_paused = paused
 
 
 func _attack_target() -> void:
@@ -136,13 +160,45 @@ func _pick_wander_direction() -> void:
 func _drop_loot() -> void:
 	if loot_parent == null:
 		return
-	if randf() <= 0.5:
+	var loot_multiplier := 1.0
+	if target != null and target.has_method("get_loot_drop_multiplier"):
+		loot_multiplier = float(target.get_loot_drop_multiplier())
+	if randf() <= min(0.5 * loot_multiplier, 1.0):
 		var shard = LOOT_DROP_SCENE.instantiate()
 		shard.setup("talent_shard", 1)
 		shard.global_position = global_position
 		loot_parent.add_child(shard)
-	elif randf() <= 0.2:
+	elif randf() <= min(0.2 * loot_multiplier, 1.0):
 		var resource_drop = LOOT_DROP_SCENE.instantiate()
 		resource_drop.setup(["wood", "stone", "iron_ore"][randi() % 3], 1)
 		resource_drop.global_position = global_position
 		loot_parent.add_child(resource_drop)
+
+
+func is_elite_enemy() -> bool:
+	return false
+
+
+func _setup_hp_bar() -> void:
+	hp_bar_root = Node2D.new()
+	hp_bar_root.position = Vector2(-12, -20)
+	hp_bar_root.visible = false
+	add_child(hp_bar_root)
+
+	hp_bar_bg = Polygon2D.new()
+	hp_bar_bg.color = Color(0.12, 0.12, 0.16, 0.9)
+	hp_bar_bg.polygon = PackedVector2Array([Vector2.ZERO, Vector2(24, 0), Vector2(24, 4), Vector2(0, 4)])
+	hp_bar_root.add_child(hp_bar_bg)
+
+	hp_bar_fill = Polygon2D.new()
+	hp_bar_fill.color = Color(0.88, 0.18, 0.18, 1.0)
+	hp_bar_root.add_child(hp_bar_fill)
+	_update_hp_bar()
+
+
+func _update_hp_bar() -> void:
+	if hp_bar_root == null or hp_bar_fill == null:
+		return
+	var ratio := clampf(float(current_hp) / float(max(max_hp, 1)), 0.0, 1.0)
+	hp_bar_fill.polygon = PackedVector2Array([Vector2.ZERO, Vector2(24.0 * ratio, 0), Vector2(24.0 * ratio, 4), Vector2(0, 4)])
+	hp_bar_root.visible = current_hp < max_hp and current_hp > 0

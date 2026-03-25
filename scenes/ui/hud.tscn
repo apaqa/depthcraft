@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/crafting_menu.tscn" id="5_5ob6s"]
 [ext_resource type="PackedScene" path="res://scenes/ui/storage_ui.tscn" id="6_0wa9s"]
 [ext_resource type="PackedScene" path="res://scenes/ui/repair_ui.tscn" id="7_m65e5"]
+[ext_resource type="PackedScene" path="res://scenes/ui/buff_select.tscn" id="8_hxv8m"]
+[ext_resource type="Script" path="res://scripts/ui/minimap.gd" id="9_1e1c6"]
 
 [node name="HUDCanvas" type="CanvasLayer" unique_id=1278126834]
 
@@ -66,6 +68,14 @@ offset_bottom = 62.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = ""
 
+[node name="BuffRow" type="HBoxContainer" parent="HUD"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 84.0
+offset_right = 220.0
+offset_bottom = 108.0
+theme_override_constants/separation = 4
+
 [node name="DebugLabel" type="Label" parent="HUD"]
 layout_mode = 0
 anchor_left = 1.0
@@ -100,3 +110,57 @@ script = ExtResource("3_ysik2")
 [node name="StorageUI" parent="HUD" instance=ExtResource("6_0wa9s")]
 
 [node name="RepairUI" parent="HUD" instance=ExtResource("7_m65e5")]
+
+[node name="Minimap" type="Control" parent="HUD"]
+visible = false
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -112.0
+offset_top = -112.0
+offset_right = -12.0
+offset_bottom = -12.0
+script = ExtResource("9_1e1c6")
+
+[node name="BuffSelect" parent="HUD" instance=ExtResource("8_hxv8m")]
+
+[node name="DeathOverlay" type="Control" parent="HUD"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Backdrop" type="ColorRect" parent="HUD/DeathOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0, 0, 0.82)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD/DeathOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -60.0
+offset_right = 120.0
+offset_bottom = 60.0
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="HUD/DeathOverlay/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+horizontal_alignment = 1
+text = "You Died"
+
+[node name="SummaryLabel" type="Label" parent="HUD/DeathOverlay/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = ""
