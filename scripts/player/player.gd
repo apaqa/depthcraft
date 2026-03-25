@@ -469,7 +469,7 @@ func die() -> void:
 		return
 	is_dead = true
 	set_physics_process(false)
-	_show_floating_text(global_position, "You Died", Color(1.0, 0.35, 0.35, 1.0))
+	_show_floating_text(global_position, "你死了", Color(1.0, 0.35, 0.35, 1.0))
 	died.emit()
 
 
