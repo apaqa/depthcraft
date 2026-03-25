@@ -166,8 +166,14 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_toggle"):
 		building_system.toggle_debug_mode()
 		if building_system.is_debug_mode_enabled():
+			inventory.add_item("wood", 99)
+			inventory.add_item("stone", 99)
+			inventory.add_item("iron_ore", 99)
+			inventory.add_item("fiber", 99)
 			inventory.add_item("talent_shard", 99)
-			print("DEBUG: Added 99 talent shards")
+			inventory.add_item("seed", 99)
+			inventory.add_item("wheat", 99)
+			print("DEBUG: Added full test resources")
 		get_viewport().set_input_as_handled()
 		return
 

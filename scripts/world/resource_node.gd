@@ -18,6 +18,7 @@ signal respawned
 
 var current_hits: int = 0
 var is_depleted: bool = false
+var permanently_depleted: bool = false
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var body_collision: CollisionShape2D = $CollisionShape2D
@@ -32,7 +33,7 @@ func _ready() -> void:
 
 
 func hit() -> void:
-	if is_depleted:
+	if is_depleted or permanently_depleted:
 		return
 
 	current_hits += 1
@@ -43,7 +44,7 @@ func hit() -> void:
 
 
 func gather() -> void:
-	if is_depleted:
+	if is_depleted or permanently_depleted:
 		return
 
 	var quantity := randi_range(drop_quantity_min, drop_quantity_max)
@@ -70,6 +71,8 @@ func gather() -> void:
 
 
 func respawn() -> void:
+	if permanently_depleted:
+		return
 	current_hits = 0
 	is_depleted = false
 	var current_sprite := get_sprite()
@@ -87,11 +90,31 @@ func respawn() -> void:
 
 
 func get_interaction_prompt() -> String:
+	if permanently_depleted:
+		return ""
 	return "[E] %s %s" % [_get_action_verb(), resource_name]
 
 
 func interact(_player) -> void:
 	hit()
+
+
+func set_permanently_depleted() -> void:
+	permanently_depleted = true
+	is_depleted = true
+	current_hits = hits_to_gather
+	var current_sprite := get_sprite()
+	if current_sprite != null:
+		current_sprite.visible = false
+	var collision := get_body_collision()
+	if collision != null:
+		collision.disabled = true
+	var area_collision := get_interaction_collision()
+	if area_collision != null:
+		area_collision.disabled = true
+	var timer := get_respawn_timer()
+	if timer != null:
+		timer.stop()
 
 
 func _get_action_verb() -> String:

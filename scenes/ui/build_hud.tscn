@@ -16,7 +16,7 @@ visible = false
 offset_left = 56.0
 offset_top = 8.0
 offset_right = 584.0
-offset_bottom = 72.0
+offset_bottom = 108.0
 mouse_filter = 2
 self_modulate = Color(1, 1, 1, 0.95)
 

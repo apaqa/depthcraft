@@ -69,6 +69,8 @@ func change_level(level_id: String) -> void:
 		current_level.return_to_surface_requested.connect(_on_return_to_surface_requested)
 	if current_level.has_signal("buff_selection_requested") and not current_level.buff_selection_requested.is_connected(_on_buff_selection_requested):
 		current_level.buff_selection_requested.connect(_on_buff_selection_requested)
+	if current_level.has_signal("floor_transition_requested") and not current_level.floor_transition_requested.is_connected(_on_floor_transition_requested):
+		current_level.floor_transition_requested.connect(_on_floor_transition_requested)
 	if current_level.has_signal("banner_requested") and not current_level.banner_requested.is_connected(_on_level_banner_requested):
 		current_level.banner_requested.connect(_on_level_banner_requested)
 	if current_level.has_signal("border_flash_requested") and not current_level.border_flash_requested.is_connected(_on_level_border_flash_requested):
@@ -125,10 +127,18 @@ func _on_kills_changed(kills: int) -> void:
 
 
 func _on_return_to_surface_requested() -> void:
+	var floor_reached: int = int(current_level.get("current_floor")) if current_level != null else 0
+	var kill_count: int = int(current_level.get("total_kills")) if current_level != null else 0
+	var item_count: int = 0
+	for entry in player.dungeon_run_loot:
+		item_count += int(entry.get("quantity", 0))
+	if hud.has_method("play_transition"):
+		await hud.play_transition("Returning to Surface...", Color(0, 0, 0, 1), 0.25, 0.15)
 	player.finish_dungeon_run(true)
 	total_dungeon_runs_completed += 1
 	dungeon_returns_since_raid += 1
 	change_level("overworld")
+	player.show_status_message("Floor %d reached | %d kills | %d items collected" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
 	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 		current_level.trigger_progress_raid()
 
@@ -144,6 +154,8 @@ func _on_player_died() -> void:
 				"loot_lost": player.dungeon_run_loot.size(),
 			})
 		await get_tree().create_timer(3.0).timeout
+		if hud.has_method("play_transition"):
+			await hud.play_transition("YOU DIED\nFloor %d | %d kills | All dungeon loot lost!" % [int(current_level.get("current_floor")), int(current_level.get("total_kills"))], Color(0.35, 0.0, 0.0, 1.0), 0.25, 0.15)
 		player.finish_dungeon_run(false)
 		total_dungeon_runs_completed += 1
 		dungeon_returns_since_raid += 1
@@ -172,3 +184,8 @@ func _on_level_border_flash_requested(color: Color) -> void:
 
 func _on_raid_started() -> void:
 	dungeon_returns_since_raid = 0
+
+
+func _on_floor_transition_requested(next_floor: int) -> void:
+	if hud.has_method("play_transition"):
+		await hud.play_transition("Floor %d" % next_floor, Color(0, 0, 0, 1), 0.25, 0.05)

@@ -5,6 +5,7 @@ const RECIPES := {
 	"wood_sword": {
 		"id": "wood_sword",
 		"name": "Wood Sword",
+		"category": "Weapons",
 		"result_item_id": "wood_sword",
 		"result_type": "equipment",
 		"cost": {"wood": 5},
@@ -14,6 +15,7 @@ const RECIPES := {
 	"wood_shield": {
 		"id": "wood_shield",
 		"name": "Wood Shield",
+		"category": "Armor",
 		"result_item_id": "wood_shield",
 		"result_type": "equipment",
 		"cost": {"wood": 4, "fiber": 2},
@@ -23,6 +25,7 @@ const RECIPES := {
 	"stone_pickaxe": {
 		"id": "stone_pickaxe",
 		"name": "Stone Pickaxe",
+		"category": "Tools",
 		"result_item_id": "stone_pickaxe",
 		"result_type": "equipment",
 		"cost": {"stone": 3, "wood": 2},
@@ -32,6 +35,7 @@ const RECIPES := {
 	"bandage": {
 		"id": "bandage",
 		"name": "Bandage",
+		"category": "Consumables",
 		"result_item_id": "bandage",
 		"result_type": "consumable",
 		"cost": {"fiber": 3},
@@ -41,6 +45,7 @@ const RECIPES := {
 	"torch": {
 		"id": "torch",
 		"name": "Torch",
+		"category": "Consumables",
 		"result_item_id": "torch",
 		"result_type": "consumable",
 		"cost": {"wood": 1, "fiber": 1},
@@ -50,6 +55,7 @@ const RECIPES := {
 	"bread": {
 		"id": "bread",
 		"name": "Bread",
+		"category": "Cooking",
 		"result_item_id": "bread",
 		"result_type": "consumable",
 		"cost": {"wheat": 3},
@@ -60,6 +66,7 @@ const RECIPES := {
 	"stew": {
 		"id": "stew",
 		"name": "Stew",
+		"category": "Cooking",
 		"result_item_id": "stew",
 		"result_type": "consumable",
 		"cost": {"wheat": 2, "fiber": 1},
@@ -70,6 +77,7 @@ const RECIPES := {
 	"leather_cap": {
 		"id": "leather_cap",
 		"name": "Leather Cap",
+		"category": "Armor",
 		"result_item_id": "leather_cap",
 		"result_type": "equipment",
 		"cost": {"fiber": 3},
@@ -79,6 +87,7 @@ const RECIPES := {
 	"leather_vest": {
 		"id": "leather_vest",
 		"name": "Leather Vest",
+		"category": "Armor",
 		"result_item_id": "leather_vest",
 		"result_type": "equipment",
 		"cost": {"fiber": 5, "wood": 2},
@@ -88,6 +97,7 @@ const RECIPES := {
 	"iron_sword": {
 		"id": "iron_sword",
 		"name": "Iron Sword",
+		"category": "Weapons",
 		"result_item_id": "iron_sword",
 		"result_type": "equipment",
 		"cost": {"iron_ore": 5, "wood": 2},

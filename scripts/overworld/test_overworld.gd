@@ -6,6 +6,7 @@ signal raid_started
 
 const GROUND_SIZE := Vector2i(28, 18)
 const SOURCE_OUTDOOR_GROUND := 5
+const BASE_CLEAR_RADIUS := 128.0
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
 @onready var building_layer: TileMapLayer = $BuildingLayer
@@ -57,3 +58,13 @@ func _on_banner_requested(message: String, color: Color, duration: float) -> voi
 
 func _on_border_flash_requested(color: Color) -> void:
 	border_flash_requested.emit(color)
+
+
+func clear_base_area_around(world_position: Vector2) -> void:
+	for child in get_children():
+		if child == player_spawn or child == raid_system:
+			continue
+		if not child.has_method("set_permanently_depleted"):
+			continue
+		if child.global_position.distance_to(world_position) <= BASE_CLEAR_RADIUS:
+			child.set_permanently_depleted()

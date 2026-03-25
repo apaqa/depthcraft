@@ -25,7 +25,8 @@ var building_layer: TileMapLayer = null
 var building_container: Node2D = null
 var placed_buildings: Dictionary = {}
 var placed_facilities: Dictionary = {}
-var selected_building_index: int = 0
+var selected_category_index: int = 0
+var selected_building_indices: Dictionary = {}
 var preview = null
 var home_core_position: Vector2 = Vector2.ZERO
 var home_core_instance = null
@@ -37,6 +38,8 @@ var _loaded_from_save: bool = false
 
 
 func _ready() -> void:
+	for category_id in BUILDING_DATA.get_category_ids():
+		selected_building_indices[str(category_id)] = 0
 	_ensure_preview()
 	build_state_changed.emit()
 
@@ -101,6 +104,29 @@ func handle_input(event: InputEvent) -> bool:
 		cycle_selected_building(-1)
 		return true
 
+	if event.is_action_pressed("interact"):
+		cycle_category(1)
+		return true
+
+	if event.is_action_pressed("use_consumable"):
+		cycle_category(-1)
+		return true
+
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_1:
+				select_category(0)
+				return true
+			KEY_2:
+				select_category(1)
+				return true
+			KEY_3:
+				select_category(2)
+				return true
+			KEY_4:
+				select_category(3)
+				return true
+
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_C:
 		place_home_core(get_hovered_tile_pos())
 		return true
@@ -115,7 +141,6 @@ func handle_input(event: InputEvent) -> bool:
 			return true
 
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			print("BUILD: left click detected")
 			if state == BuildState.REMOVING:
 				remove_building(get_hovered_tile_pos())
 			else:
@@ -148,10 +173,12 @@ func can_use_build_mode() -> bool:
 
 
 func get_selected_building() -> Dictionary:
-	var buildings := BUILDING_DATA.get_all_buildings()
+	var buildings := BUILDING_DATA.get_buildings_for_category(get_selected_category_id())
 	if buildings.is_empty():
 		return {}
-	return buildings[selected_building_index]
+	var category_id := get_selected_category_id()
+	var selected_index: int = int(selected_building_indices.get(category_id, 0))
+	return buildings[clampi(selected_index, 0, buildings.size() - 1)]
 
 
 func get_selected_building_id() -> String:
@@ -160,14 +187,38 @@ func get_selected_building_id() -> String:
 
 
 func cycle_selected_building(direction: int) -> void:
-	var buildings := BUILDING_DATA.get_all_buildings()
+	var category_id := get_selected_category_id()
+	var buildings := BUILDING_DATA.get_buildings_for_category(category_id)
 	if buildings.is_empty():
 		return
 
-	selected_building_index = wrapi(selected_building_index + direction, 0, buildings.size())
+	selected_building_indices[category_id] = wrapi(int(selected_building_indices.get(category_id, 0)) + direction, 0, buildings.size())
 	if state == BuildState.REMOVING:
 		state = BuildState.PLACING
 	build_state_changed.emit()
+
+
+func cycle_category(direction: int) -> void:
+	var category_ids := BUILDING_DATA.get_category_ids()
+	selected_category_index = wrapi(selected_category_index + direction, 0, category_ids.size())
+	if state == BuildState.REMOVING:
+		state = BuildState.PLACING
+	build_state_changed.emit()
+
+
+func select_category(category_index: int) -> void:
+	var category_ids := BUILDING_DATA.get_category_ids()
+	if category_index < 0 or category_index >= category_ids.size():
+		return
+	selected_category_index = category_index
+	if state == BuildState.REMOVING:
+		state = BuildState.PLACING
+	build_state_changed.emit()
+
+
+func get_selected_category_id() -> String:
+	var category_ids := BUILDING_DATA.get_category_ids()
+	return str(category_ids[clampi(selected_category_index, 0, category_ids.size() - 1)])
 
 
 func get_hovered_tile_pos() -> Vector2i:
@@ -340,6 +391,11 @@ func has_home_core() -> bool:
 
 func get_ui_state() -> Dictionary:
 	var building := get_selected_building()
+	var category_id := get_selected_category_id()
+	var category_buildings: Array[Dictionary] = BUILDING_DATA.get_buildings_for_category(category_id)
+	var item_names: PackedStringArray = []
+	for category_building in category_buildings:
+		item_names.append(str(category_building.get("name", "")))
 	return {
 		"build_mode": is_build_mode_active(),
 		"remove_mode": is_remove_mode(),
@@ -347,6 +403,11 @@ func get_ui_state() -> Dictionary:
 		"can_afford": _has_cost(building.get("cost", {})),
 		"has_core": has_home_core(),
 		"debug_mode": debug_mode,
+		"category_id": category_id,
+		"category_name": BUILDING_DATA.get_category_name(category_id),
+		"category_index": selected_category_index,
+		"category_items": item_names,
+		"category_empty": category_buildings.is_empty(),
 	}
 
 
@@ -470,6 +531,8 @@ func _spawn_home_core() -> void:
 	home_core_instance.place_at(home_core_position)
 	if home_core_instance.has_signal("destroyed") and not home_core_instance.destroyed.is_connected(_on_home_core_destroyed):
 		home_core_instance.destroyed.connect(_on_home_core_destroyed)
+	if active_level != null and active_level.has_method("clear_base_area_around"):
+		active_level.clear_base_area_around(home_core_position)
 
 
 func _ensure_preview() -> void:

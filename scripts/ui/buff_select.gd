@@ -19,7 +19,7 @@ func _ready() -> void:
 func open_with_options(options: Array[Dictionary]) -> void:
 	active_options = options.duplicate(true)
 	visible = true
-	title_label.text = "Choose a Power / 選擇強化"
+	title_label.text = "Choose 1 of 3 Buffs"
 	_rebuild_cards()
 	auto_timer.start(30.0)
 
@@ -41,7 +41,6 @@ func _rebuild_cards() -> void:
 		button.custom_minimum_size = Vector2(170, 180)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
 		button.text = "%s\n[%s]\n%s" % [
 			str(option.get("name", "")),
 			str(option.get("category", "")),

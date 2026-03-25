@@ -9,7 +9,7 @@ const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 @onready var kills_label: Label = $KillsLabel
 @onready var buff_row: HBoxContainer = $BuffRow
 @onready var inventory_panel: PanelContainer = $InventoryPanel
-@onready var inventory_grid: GridContainer = $InventoryPanel/MarginContainer/VBoxContainer/ScrollContainer/GridContainer
+@onready var inventory_list: VBoxContainer = $InventoryPanel/MarginContainer/VBoxContainer/ScrollContainer/ItemListContainer
 @onready var interaction_prompt: Label = $InteractionPrompt
 @onready var build_hud: Control = $BuildHUD
 @onready var debug_label: Label = $DebugLabel
@@ -25,6 +25,8 @@ const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 @onready var event_banner: Label = $EventBanner
 @onready var raid_border: ColorRect = $RaidBorder
 @onready var status_label: Label = $StatusLabel
+@onready var transition_overlay: ColorRect = $TransitionOverlay
+@onready var transition_label: Label = $TransitionOverlay/TransitionLabel
 
 var player = null
 var inventory = null
@@ -258,50 +260,49 @@ func _process(_delta: float) -> void:
 
 
 func rebuild_inventory_grid() -> void:
-	for child in inventory_grid.get_children():
+	for child in inventory_list.get_children():
 		child.queue_free()
 
 	if inventory == null:
 		return
 
-	for index in range(inventory.max_slots):
-		var slot := _build_slot(index)
-		inventory_grid.add_child(slot)
+	var groups := {
+		"resource": {"title": "Resources", "color": Color(0.62, 0.42, 0.22, 1.0)},
+		"equipment": {"title": "Equipment", "color": Color(0.3, 0.55, 0.95, 1.0)},
+		"consumable": {"title": "Consumables", "color": Color(0.32, 0.78, 0.42, 1.0)},
+	}
+	for type_id in ["resource", "equipment", "consumable"]:
+		var section_items: Array[Dictionary] = []
+		for stack in inventory.items:
+			if str(stack.get("type", "")) == type_id:
+				section_items.append(stack)
+		if section_items.is_empty():
+			continue
+		var header := Label.new()
+		header.text = str((groups[type_id] as Dictionary).get("title", type_id.capitalize()))
+		header.modulate = Color(0.95, 0.9, 0.7, 1.0)
+		inventory_list.add_child(header)
+		for stack in section_items:
+			inventory_list.add_child(_build_item_row(stack, (groups[type_id] as Dictionary).get("color", Color.WHITE)))
 
 
-func _build_slot(index: int) -> Control:
-	var slot := Panel.new()
-	slot.custom_minimum_size = Vector2(48, 48)
-	slot.self_modulate = Color(0.18, 0.18, 0.22, 0.95)
-
-	var icon_rect := TextureRect.new()
-	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon_rect.position = Vector2(8, 6)
-	icon_rect.size = Vector2(32, 24)
-	slot.add_child(icon_rect)
-
+func _build_item_row(stack: Dictionary, swatch_color: Color) -> Control:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(200, 24)
+	row.add_theme_constant_override("separation", 8)
+	var swatch := ColorRect.new()
+	swatch.custom_minimum_size = Vector2(14, 14)
+	swatch.color = swatch_color
+	row.add_child(swatch)
+	var name_label := Label.new()
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.text = str(stack.get("name", stack.get("id", "")))
+	row.add_child(name_label)
 	var quantity_label := Label.new()
-	quantity_label.position = Vector2(6, 24)
-	quantity_label.size = Vector2(36, 20)
+	quantity_label.text = "x%d" % int(stack.get("quantity", 0))
 	quantity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	slot.add_child(quantity_label)
-
-	if index < inventory.items.size():
-		var stack: Dictionary = inventory.items[index]
-		icon_rect.texture = stack.get("icon", null)
-		quantity_label.text = "x%d" % stack["quantity"]
-		quantity_label.tooltip_text = stack["name"]
-	else:
-		var placeholder := ColorRect.new()
-		placeholder.color = Color(0.28, 0.28, 0.32, 0.55)
-		placeholder.position = Vector2(8, 8)
-		placeholder.size = Vector2(32, 20)
-		slot.add_child(placeholder)
-		slot.move_child(placeholder, 0)
-		quantity_label.text = ""
-
-	return slot
+	row.add_child(quantity_label)
+	return row
 
 
 func open_buff_selection(options: Array, level) -> void:
@@ -373,3 +374,19 @@ func show_status_message(message: String, color: Color = Color.WHITE, duration: 
 	tween.tween_interval(duration)
 	tween.tween_property(status_label, "modulate", Color(color.r, color.g, color.b, 0.0), 0.25)
 	tween.tween_callback(func() -> void: status_label.visible = false)
+
+
+func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.25, hold_duration: float = 0.0) -> void:
+	transition_label.text = message
+	transition_label.modulate = Color.WHITE
+	transition_overlay.color = Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0)
+	transition_overlay.visible = true
+	var fade_in := create_tween()
+	fade_in.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 1.0), fade_duration)
+	await fade_in.finished
+	if hold_duration > 0.0:
+		await get_tree().create_timer(hold_duration).timeout
+	var fade_out := create_tween()
+	fade_out.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0), fade_duration)
+	await fade_out.finished
+	transition_overlay.visible = false

@@ -37,26 +37,31 @@ func refresh() -> void:
 		return
 
 	if bool(state.get("remove_mode", false)):
-		title_label.text = "Remove Mode"
+		title_label.text = "[ %s ]" % str(state.get("category_name", "Build"))
 		cost_label.text = "Click a placed tile to reclaim 50% resources"
 		cost_label.modulate = Color(1.0, 0.7, 0.45, 1.0)
+		core_label.text = _format_category_items(state)
 	else:
 		var building: Dictionary = state.get("building", {})
-		title_label.text = str(building.get("name", "Build"))
-		if bool(state.get("debug_mode", false)):
+		title_label.text = "[ %s ]" % str(state.get("category_name", "Build"))
+		if bool(state.get("category_empty", false)):
+			cost_label.text = "Coming Soon"
+			cost_label.modulate = Color(0.75, 0.75, 0.8, 1.0)
+		elif bool(state.get("debug_mode", false)):
 			cost_label.text = "Cost: FREE [DEBUG]"
 			cost_label.modulate = Color(1.0, 0.9, 0.25, 1.0)
 		else:
-			cost_label.text = _format_costs(building.get("cost", {}))
+			cost_label.text = "%s  |  %s" % [str(building.get("name", "Build")), _format_costs(building.get("cost", {}))]
 			cost_label.modulate = Color(0.45, 1.0, 0.45, 1.0) if bool(state.get("can_afford", false)) else Color(1.0, 0.45, 0.45, 1.0)
+		core_label.text = _format_category_items(state, str(building.get("name", "")))
 
 	if bool(state.get("has_core", false)):
 		core_label.text = "Core: placed"
 	elif bool(state.get("debug_mode", false)):
-		core_label.text = "Core: press C (FREE in debug)"
+		core_label.text += "\nCore: press C (FREE in debug)"
 	else:
-		core_label.text = "Core: press C (10 Wood, 5 Stone)"
-	help_label.text = "[LMB] Place  [RMB] Remove  [Scroll] Switch  [B] Exit  [8] Debug"
+		core_label.text += "\nCore: press C (10 Wood, 5 Stone)"
+	help_label.text = "[1-4] Category  [Scroll] Item  [Q/E] Category  [LMB] Place  [RMB] Remove  [B] Exit"
 
 
 func _format_costs(costs: Dictionary) -> String:
@@ -73,3 +78,13 @@ func _format_costs(costs: Dictionary) -> String:
 
 func _pretty_name(resource_id: String) -> String:
 	return resource_id.replace("_", " ").capitalize()
+
+
+func _format_category_items(state: Dictionary, selected_name: String = "") -> String:
+	var parts: PackedStringArray = []
+	for item_name in state.get("category_items", []):
+		var name := str(item_name)
+		parts.append("> %s <" % name if name == selected_name else name)
+	if parts.is_empty():
+		return "Defense items: Coming Soon"
+	return "Items: %s" % "  |  ".join(parts)

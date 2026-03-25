@@ -4,6 +4,7 @@ signal floor_changed(current_floor: int)
 signal kills_changed(total_kills: int)
 signal return_to_surface_requested
 signal buff_selection_requested(options: Array)
+signal floor_transition_requested(next_floor: int)
 
 const SOURCE_FLOOR_1 := 0
 const SOURCE_FLOOR_2 := 1
@@ -151,6 +152,8 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 
 
 func _on_descend_requested() -> void:
+	floor_transition_requested.emit(current_floor + 1)
+	await get_tree().create_timer(0.5).timeout
 	descend_floor()
 
 
@@ -224,9 +227,9 @@ func _spawn_wall_blocker(tile_pos: Vector2i) -> void:
 
 
 func get_floor_spawn_config(floor_number: int) -> Dictionary:
-	if floor_number <= 3:
+	if floor_number <= 2:
 		return {"enemy_min": 2, "enemy_max": 3, "allow_ranged": false, "ranged_ratio": 0.0, "elite_count": 0}
-	if floor_number <= 6:
+	if floor_number <= 5:
 		return {"enemy_min": 3, "enemy_max": 4, "allow_ranged": true, "ranged_ratio": 0.3, "elite_count": 1 if randf() <= 0.5 else 0}
 	if floor_number <= 10:
 		return {"enemy_min": 4, "enemy_max": 5, "allow_ranged": true, "ranged_ratio": 0.45, "elite_count": 1}
@@ -238,6 +241,7 @@ func set_gameplay_paused(paused: bool) -> void:
 	for enemy in enemy_root.get_children():
 		if enemy.has_method("set_ai_paused"):
 			enemy.set_ai_paused(paused)
+		enemy.process_mode = Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
 
 
 func get_minimap_snapshot() -> Dictionary:
