@@ -10,7 +10,7 @@ const PROJECTILE_SCENE := preload("res://scenes/enemies/projectile.tscn")
 @export var max_hp: int = 30
 @export var damage: int = 8
 @export var speed: float = 45.0
-@export var detection_range: float = 200.0
+@export var detection_range: float = 400.0
 @export var attack_range: float = 18.0
 @export var attack_cooldown: float = 1.0
 @export var keeps_distance: bool = false
@@ -27,6 +27,7 @@ var base_max_hp: int = 0
 var base_damage: int = 0
 var base_speed: float = 0.0
 var is_dead: bool = false
+var is_alerted: bool = false
 var debug_state: String = "idle"
 var hp_bar_root: Node2D = null
 var hp_bar_bg: Polygon2D = null
@@ -99,17 +100,20 @@ func _physics_process(delta: float) -> void:
 		print("ENEMY at ", global_position, " | state=", debug_state, " | dist=", int(distance), " | detect_range=", detection_range, " | target=", target.global_position)
 
 	if distance <= attack_range:
+		is_alerted = true
 		debug_state = "attack"
 		velocity = Vector2.ZERO
 		if attack_timer_left <= 0.0:
 			_do_attack()
-	elif distance <= detection_range:
+	elif distance <= detection_range or (is_alerted and distance <= detection_range * 3.0):
+		is_alerted = true
 		debug_state = "chase"
 		var direction := (target.global_position - global_position).normalized()
 		if keeps_distance and distance < preferred_distance:
 			direction = -direction
 		velocity = direction * speed
 	else:
+		is_alerted = false
 		debug_state = "idle"
 		velocity = Vector2.ZERO
 

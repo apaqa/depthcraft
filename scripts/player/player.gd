@@ -162,6 +162,9 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_toggle"):
 		building_system.toggle_debug_mode()
+		if building_system.is_debug_mode_enabled():
+			inventory.add_item("talent_shard", 99)
+			print("DEBUG: Added 99 talent shards")
 		get_viewport().set_input_as_handled()
 		return
 
