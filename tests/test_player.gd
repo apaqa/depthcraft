@@ -10,6 +10,7 @@ func _initialize() -> void:
 	test_initial_position()
 	test_default_speed()
 	test_default_sprint_speed()
+	test_collision_shape_uses_feet_box()
 	test_diagonal_normalization()
 	test_zero_input_returns_zero_vector()
 	test_velocity_zero_when_idle()
@@ -31,6 +32,14 @@ func test_default_speed() -> void:
 func test_default_sprint_speed() -> void:
 	var player := PLAYER_SCENE.instantiate()
 	_assert(is_equal_approx(player.sprint_speed, 140.0), "Player sprint speed should default to 140.0.")
+
+
+func test_collision_shape_uses_feet_box() -> void:
+	var player := PLAYER_SCENE.instantiate()
+	var collision_shape: CollisionShape2D = player.get_node("CollisionShape2D")
+	var rectangle: RectangleShape2D = collision_shape.shape
+	_assert(collision_shape.position.y >= 4.0, "Player collision should be offset downward toward the feet.")
+	_assert(rectangle.size == Vector2(10, 8), "Player collision should use a compact feet-sized rectangle.")
 
 
 func test_diagonal_normalization() -> void:

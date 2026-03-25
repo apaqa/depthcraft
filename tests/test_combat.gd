@@ -14,6 +14,7 @@ func _initialize() -> void:
 	await test_enemy_dies_at_zero_hp()
 	await test_player_takes_damage()
 	await test_player_dies_at_zero_hp()
+	await test_player_attack_spawns_visual()
 	await test_projectile_deals_damage_on_hit()
 	await test_loot_drop_created_on_enemy_death()
 	_report_results()
@@ -59,6 +60,17 @@ func test_player_dies_at_zero_hp() -> void:
 	await process_frame
 
 
+func test_player_attack_spawns_visual() -> void:
+	var player = PLAYER_SCENE.instantiate()
+	root.add_child(player)
+	await process_frame
+	player.perform_attack()
+	await process_frame
+	_assert(_find_attack_effect() != null, "Player attack should spawn a visible attack effect.")
+	player.queue_free()
+	await process_frame
+
+
 func test_projectile_deals_damage_on_hit() -> void:
 	var player = PLAYER_SCENE.instantiate()
 	var projectile = PROJECTILE_SCENE.instantiate()
@@ -91,6 +103,13 @@ func test_loot_drop_created_on_enemy_death() -> void:
 	loot_root.queue_free()
 	player.queue_free()
 	await process_frame
+
+
+func _find_attack_effect() -> Node:
+	for child in root.get_children():
+		if child.name == "AttackEffect":
+			return child
+	return null
 
 
 func _assert(condition: bool, message: String) -> void:

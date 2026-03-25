@@ -4,6 +4,7 @@ class_name DungeonGenerator
 const MAP_SIZE := Vector2i(50, 50)
 const MIN_ROOM_SIZE := Vector2i(5, 5)
 const MAX_ROOM_SIZE := Vector2i(10, 10)
+const CORRIDOR_HALF_WIDTH := 1
 
 
 func generate_floor(floor_number: int) -> Dictionary:
@@ -78,14 +79,20 @@ func _carve_room(room: Rect2i, floor_tiles: Dictionary) -> void:
 func _carve_corridor(from_tile: Vector2i, to_tile: Vector2i, floor_tiles: Dictionary) -> void:
 	var current := from_tile
 	while current.x != to_tile.x:
-		floor_tiles[current] = true
+		_carve_corridor_brush(current, floor_tiles)
 		current.x += 1 if to_tile.x > current.x else -1
 
 	while current.y != to_tile.y:
-		floor_tiles[current] = true
+		_carve_corridor_brush(current, floor_tiles)
 		current.y += 1 if to_tile.y > current.y else -1
 
-	floor_tiles[to_tile] = true
+	_carve_corridor_brush(to_tile, floor_tiles)
+
+
+func _carve_corridor_brush(center_tile: Vector2i, floor_tiles: Dictionary) -> void:
+	for y in range(center_tile.y - CORRIDOR_HALF_WIDTH, center_tile.y + CORRIDOR_HALF_WIDTH + 1):
+		for x in range(center_tile.x - CORRIDOR_HALF_WIDTH, center_tile.x + CORRIDOR_HALF_WIDTH + 1):
+			floor_tiles[Vector2i(x, y)] = true
 
 
 func _build_walls(floor_tiles: Dictionary) -> Dictionary:

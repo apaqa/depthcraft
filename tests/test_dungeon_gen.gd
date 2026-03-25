@@ -10,6 +10,7 @@ func _initialize() -> void:
 	test_rooms_do_not_overlap()
 	test_spawn_and_exit_are_distinct()
 	test_spawn_and_exit_are_on_floor_tiles()
+	test_corridor_width_is_three_tiles()
 	test_all_rooms_are_connected_by_walkable_path()
 	test_deeper_floor_increases_enemy_hint()
 	_report_results()
@@ -44,6 +45,10 @@ func test_spawn_and_exit_are_on_floor_tiles() -> void:
 	var walkable := _to_tile_set(floor_data.get("floor_tiles", []))
 	_assert(walkable.has(_world_to_tile(floor_data.get("spawn_point", Vector2.ZERO))), "Spawn point should land on a walkable floor tile.")
 	_assert(walkable.has(_world_to_tile(floor_data.get("exit_point", Vector2.ZERO))), "Exit point should land on a walkable floor tile.")
+
+
+func test_corridor_width_is_three_tiles() -> void:
+	_assert(DUNGEON_GENERATOR.CORRIDOR_HALF_WIDTH == 1, "Corridors should carve with a 3-tile-wide brush.")
 
 
 func test_all_rooms_are_connected_by_walkable_path() -> void:

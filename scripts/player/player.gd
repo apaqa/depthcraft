@@ -4,6 +4,7 @@ extends CharacterBody2D
 @export var sprint_speed: float = 140.0
 
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+const ATTACK_EFFECT_SCENE := preload("res://scenes/player/attack_effect.tscn")
 
 signal interaction_prompt_changed(prompt_text: String)
 signal interaction_prompt_cleared
@@ -312,17 +313,35 @@ func perform_attack() -> void:
 	if attack_cooldown_left > 0.0:
 		return
 	attack_cooldown_left = 0.4
+	_spawn_attack_effect()
 	var attack_shape := RectangleShape2D.new()
 	attack_shape.size = Vector2(24, 20)
 	var query := PhysicsShapeQueryParameters2D.new()
 	query.shape = attack_shape
-	query.transform = Transform2D(0.0, global_position + Vector2(16 if not animated_sprite.flip_h else -16, 0))
+	query.transform = Transform2D(0.0, global_position + _get_attack_offset())
 	query.collision_mask = 1
 	var results := get_world_2d().direct_space_state.intersect_shape(query)
 	for result in results:
 		var collider = result.get("collider", null)
 		if collider != null and collider.has_method("take_damage") and collider != self:
 			collider.take_damage(15)
+
+
+func _spawn_attack_effect() -> void:
+	var attack_effect = ATTACK_EFFECT_SCENE.instantiate()
+	var attack_effect_parent = get_parent()
+	if attack_effect_parent == null:
+		attack_effect_parent = get_tree().current_scene
+	if attack_effect_parent == null:
+		attack_effect_parent = get_tree().root
+	attack_effect_parent.add_child(attack_effect)
+	attack_effect.global_position = global_position + _get_attack_offset()
+	if attack_effect.has_method("play_swing"):
+		attack_effect.play_swing(animated_sprite.flip_h)
+
+
+func _get_attack_offset() -> Vector2:
+	return Vector2(-16 if animated_sprite.flip_h else 16, 2)
 
 
 func _get_closest_interactable():

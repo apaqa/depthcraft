@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/attack_effect.gd" id="1_8o3d2"]
+[ext_resource type="Texture2D" path="res://assets/weapon_sword_small.png" id="2_h6m0v"]
+
+[node name="AttackEffect" type="Node2D"]
+z_index = 3
+script = ExtResource("1_8o3d2")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_h6m0v")
+texture_filter = 0
+modulate = Color(1, 1, 1, 0.95)
+position = Vector2(0, -2)
