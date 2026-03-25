@@ -41,15 +41,7 @@ const BUILDINGS := {
 		"tile_source_id": 4,
 		"tile_atlas_coords": Vector2i.ZERO,
 	},
-	"wood_door": {
-		"id": "wood_door",
-		"name": "Wood Door",
-		"kind": "tile",
-		"cost": {"wood": 3},
-		"has_collision": false,
-		"tile_source_id": 108,
-		"tile_atlas_coords": Vector2i.ZERO,
-	},
+	# TODO: wood_door is a multi-tile (32x32) sprite — implement as scene-based facility in a later phase
 	"workbench": {
 		"id": "workbench",
 		"name": "Workbench",
@@ -76,7 +68,7 @@ const BUILDINGS := {
 	},
 }
 
-const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench"]
+const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "workbench", "storage_chest", "repair_bench"]
 
 
 static func get_building(building_id: String) -> Dictionary:
