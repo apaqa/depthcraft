@@ -1,0 +1,54 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy.gd" id="1_nce0x"]
+[ext_resource type="Texture2D" path="res://assets/monster_goblin.png" id="2_j9h2f"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_4p2rv"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_j9h2f")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_j9h2f")
+}],
+"loop": true,
+"name": &"run",
+"speed": 8.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_qlpmb"]
+size = Vector2(12, 14)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_d80e4"]
+radius = 18.0
+
+[node name="Enemy" type="CharacterBody2D"]
+script = ExtResource("1_nce0x")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_4p2rv")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_qlpmb")
+
+[node name="HitBox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitBox"]
+shape = SubResource("CircleShape2D_d80e4")
+
+[node name="HurtBox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+shape = SubResource("CircleShape2D_d80e4")
+
+[node name="AttackTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="WanderTimer" type="Timer" parent="."]
+one_shot = true

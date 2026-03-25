@@ -12,6 +12,8 @@ signal build_mode_changed(active: bool)
 signal crafting_requested(facility)
 signal storage_requested(facility)
 signal repair_requested(facility)
+signal hp_changed(current_hp: int, max_hp: int)
+signal died
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interaction_area: Area2D = $InteractionArea
@@ -20,11 +22,16 @@ signal repair_requested(facility)
 
 const FLOATING_TEXT_SCENE := preload("res://scenes/ui/floating_text.tscn")
 
+var max_hp: int = 100
+var current_hp: int = 100
 var last_interacted_resource = null
 var build_mode: bool = false
 var nearby_interactables: Array = []
 var ui_blocked: bool = false
 var in_menu: bool = false
+var invincible_time_left: float = 0.0
+var attack_cooldown_left: float = 0.0
+var is_dead: bool = false
 
 
 func _ready() -> void:
@@ -32,6 +39,7 @@ func _ready() -> void:
 	interaction_area.area_entered.connect(_on_interaction_area_entered)
 	interaction_area.area_exited.connect(_on_interaction_area_exited)
 	building_system.build_state_changed.connect(_on_build_state_changed)
+	hp_changed.emit(current_hp, max_hp)
 
 
 static func compute_input_vector(left_strength: float, right_strength: float, up_strength: float, down_strength: float) -> Vector2:
@@ -80,6 +88,17 @@ func get_animated_sprite() -> AnimatedSprite2D:
 
 
 func _physics_process(_delta: float) -> void:
+	if invincible_time_left > 0.0:
+		invincible_time_left = max(invincible_time_left - _delta, 0.0)
+	if attack_cooldown_left > 0.0:
+		attack_cooldown_left = max(attack_cooldown_left - _delta, 0.0)
+
+	if is_dead:
+		velocity = Vector2.ZERO
+		update_sprite_state(Vector2.ZERO)
+		move_and_slide()
+		return
+
 	if in_menu:
 		velocity = Vector2.ZERO
 		update_sprite_state(Vector2.ZERO)
@@ -106,6 +125,11 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
+	if event.is_action_pressed("attack") and not build_mode and not ui_blocked and not is_dead:
+		perform_attack()
+		get_viewport().set_input_as_handled()
+		return
+
 	if build_mode:
 		if building_system.handle_input(event):
 			get_viewport().set_input_as_handled()
@@ -122,6 +146,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
 		_try_interact()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("enter"):
+		_try_secondary_interact()
+		get_viewport().set_input_as_handled()
 
 
 func _try_interact() -> void:
@@ -132,6 +159,13 @@ func _try_interact() -> void:
 	if interactable.has_method("hit"):
 		last_interacted_resource = interactable
 	interactable.interact(self)
+
+
+func _try_secondary_interact() -> void:
+	var interactable = _get_closest_interactable()
+	if interactable == null or not interactable.has_method("secondary_interact"):
+		return
+	interactable.secondary_interact(self)
 
 
 func _on_interaction_area_entered(area: Area2D) -> void:
@@ -198,7 +232,10 @@ func _show_floating_text(world_position: Vector2, text_value: String, color: Col
 	floating_text.position = world_position + Vector2(0, -12)
 	floating_text.display_text = text_value
 	floating_text.text_color = color
-	get_tree().current_scene.add_child(floating_text)
+	var floating_text_parent = get_tree().current_scene
+	if floating_text_parent == null:
+		floating_text_parent = get_tree().root
+	floating_text_parent.add_child(floating_text)
 
 
 func _update_prompt() -> void:
@@ -242,6 +279,52 @@ func request_repair_menu(facility) -> void:
 	repair_requested.emit(facility)
 
 
+func take_damage(amount: int) -> void:
+	if is_dead or invincible_time_left > 0.0:
+		return
+	current_hp = max(current_hp - amount, 0)
+	hp_changed.emit(current_hp, max_hp)
+	invincible_time_left = 0.5
+	var tween := create_tween()
+	tween.tween_property(animated_sprite, "modulate", Color(1, 0.45, 0.45, 1), 0.05)
+	tween.tween_property(animated_sprite, "modulate", Color(1, 1, 1, 1), 0.1)
+	if current_hp <= 0:
+		die()
+
+
+func die() -> void:
+	if is_dead:
+		return
+	is_dead = true
+	_show_floating_text(global_position, "You Died", Color(1.0, 0.35, 0.35, 1.0))
+	await get_tree().create_timer(2.0).timeout
+	died.emit()
+
+
+func heal_to_full() -> void:
+	is_dead = false
+	current_hp = max_hp
+	invincible_time_left = 0.0
+	hp_changed.emit(current_hp, max_hp)
+
+
+func perform_attack() -> void:
+	if attack_cooldown_left > 0.0:
+		return
+	attack_cooldown_left = 0.4
+	var attack_shape := RectangleShape2D.new()
+	attack_shape.size = Vector2(24, 20)
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = attack_shape
+	query.transform = Transform2D(0.0, global_position + Vector2(16 if not animated_sprite.flip_h else -16, 0))
+	query.collision_mask = 1
+	var results := get_world_2d().direct_space_state.intersect_shape(query)
+	for result in results:
+		var collider = result.get("collider", null)
+		if collider != null and collider.has_method("take_damage") and collider != self:
+			collider.take_damage(15)
+
+
 func _get_closest_interactable():
 	var closest = null
 	var closest_distance := INF
@@ -257,9 +340,9 @@ func _get_closest_interactable():
 
 func _configure_input_actions() -> void:
 	_set_key_action("sprint", KEY_SPACE)
-	_set_key_action("debug_toggle", KEY_F9)
-	_set_key_action("dev_reset", KEY_F10)
-	_set_key_action("dev_reset_save", KEY_F11)
+	_set_key_action("debug_toggle", KEY_8)
+	_set_key_action("dev_reset", KEY_0)
+	_set_key_action("dev_reset_save", KEY_9)
 	_set_key_action("dodge", KEY_SHIFT)
 
 

@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/loot_drop.gd" id="1_x6j1s"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_chh1a"]
+radius = 8.0
+
+[sub_resource type="Gradient" id="Gradient_1j6h4"]
+colors = PackedColorArray(1, 0.93, 0.39, 0.9, 1, 0.93, 0.39, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_bqhtw"]
+gradient = SubResource("Gradient_1j6h4")
+fill = 1
+width = 32
+height = 32
+
+[node name="LootDrop" type="Area2D"]
+script = ExtResource("1_x6j1s")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = SubResource("GradientTexture2D_bqhtw")
+texture_filter = 0
+scale = Vector2(0.5, 0.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_chh1a")
+
+[node name="LifetimeTimer" type="Timer" parent="."]
+wait_time = 30.0
+one_shot = true

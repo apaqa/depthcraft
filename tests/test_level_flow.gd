@@ -8,7 +8,7 @@ var _failures: PackedStringArray = []
 
 func _initialize() -> void:
 	await test_level_transition_keeps_player_and_inventory()
-	await test_dungeon_border_has_no_empty_cells()
+	await test_generated_dungeon_has_spawn_exit_and_tiles()
 	await test_overworld_visual_layers()
 	await test_menu_close_restores_player_movement_flag()
 	_report_results()
@@ -38,19 +38,23 @@ func test_level_transition_keeps_player_and_inventory() -> void:
 	await process_frame
 
 
-func test_dungeon_border_has_no_empty_cells() -> void:
+func test_generated_dungeon_has_spawn_exit_and_tiles() -> void:
 	var dungeon = DUNGEON_SCENE.instantiate()
 	root.add_child(dungeon)
 	await process_frame
-	dungeon.build_test_room()
+	var floor_tiles: Array = dungeon.floor_data.get("floor_tiles", [])
+	var wall_tiles: Array = dungeon.floor_data.get("wall_tiles", [])
+	_assert(not floor_tiles.is_empty(), "Generated dungeon should contain carved floor tiles.")
+	_assert(not wall_tiles.is_empty(), "Generated dungeon should contain wall tiles.")
 
-	for x in range(dungeon.ROOM_SIZE.x):
-		_assert(dungeon.tile_map_layer.get_cell_source_id(Vector2i(x, 0)) != -1, "Top border should be fully walled.")
-		_assert(dungeon.tile_map_layer.get_cell_source_id(Vector2i(x, dungeon.ROOM_SIZE.y - 1)) != -1, "Bottom border should be fully walled.")
-
-	for y in range(dungeon.ROOM_SIZE.y):
-		_assert(dungeon.tile_map_layer.get_cell_source_id(Vector2i(0, y)) != -1, "Left border should be fully walled.")
-		_assert(dungeon.tile_map_layer.get_cell_source_id(Vector2i(dungeon.ROOM_SIZE.x - 1, y)) != -1, "Right border should be fully walled.")
+	var spawn_point: Vector2 = dungeon.floor_data.get("spawn_point", Vector2.ZERO)
+	var exit_point: Vector2 = dungeon.floor_data.get("exit_point", Vector2.ZERO)
+	var spawn_tile := Vector2i(int(floor(spawn_point.x / 16.0)), int(floor(spawn_point.y / 16.0)))
+	var exit_tile := Vector2i(int(floor(exit_point.x / 16.0)), int(floor(exit_point.y / 16.0)))
+	_assert(spawn_point != Vector2.ZERO, "Generated dungeon should provide a spawn point.")
+	_assert(exit_point != Vector2.ZERO, "Generated dungeon should provide an exit point.")
+	_assert(dungeon.tile_map_layer.get_cell_source_id(spawn_tile) != -1, "Spawn tile should be rendered in the dungeon tilemap.")
+	_assert(dungeon.tile_map_layer.get_cell_source_id(exit_tile) != -1, "Exit tile should be rendered in the dungeon tilemap.")
 
 	dungeon.queue_free()
 	await process_frame

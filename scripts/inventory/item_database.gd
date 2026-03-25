@@ -33,6 +33,14 @@ const ITEMS := {
 		"description": "Plant fiber for crafting",
 		"icon": preload("res://assets/monster_elemental_plant_small.png"),
 	},
+	"talent_shard": {
+		"id": "talent_shard",
+		"name": "Talent Shard",
+		"max_stack": 99,
+		"type": "resource",
+		"description": "Used at the Talent Altar",
+		"icon": preload("res://assets/monster_elemental_fire_small.png"),
+	},
 	"wood_sword": {
 		"id": "wood_sword",
 		"name": "Wood Sword",

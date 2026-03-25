@@ -56,7 +56,7 @@ func refresh() -> void:
 		core_label.text = "Core: press C (FREE in debug)"
 	else:
 		core_label.text = "Core: press C (10 Wood, 5 Stone)"
-	help_label.text = "[LMB] Place  [RMB] Remove  [Scroll] Switch  [B] Exit  [F9] Debug"
+	help_label.text = "[LMB] Place  [RMB] Remove  [Scroll] Switch  [B] Exit  [8] Debug"
 
 
 func _format_costs(costs: Dictionary) -> String:

@@ -1,7 +1,10 @@
 extends Control
 
 @onready var hp_label: Label = $HPLabel
+@onready var hp_bar_fill: ColorRect = $HPBarBG/HPBarFill
 @onready var bag_label: Label = $BagLabel
+@onready var floor_label: Label = $FloorLabel
+@onready var kills_label: Label = $KillsLabel
 @onready var inventory_panel: PanelContainer = $InventoryPanel
 @onready var inventory_grid: GridContainer = $InventoryPanel/MarginContainer/VBoxContainer/ScrollContainer/GridContainer
 @onready var interaction_prompt: Label = $InteractionPrompt
@@ -28,7 +31,8 @@ func _ready() -> void:
 
 
 func update_hp(current: int, max_hp: int) -> void:
-	hp_label.text = "HP: %d/%d" % [current, max_hp]
+	hp_label.text = "HP"
+	hp_bar_fill.size.x = 120.0 * clampf(float(current) / float(max(max_hp, 1)), 0.0, 1.0)
 
 
 func bind_player(new_player) -> void:
@@ -52,6 +56,7 @@ func bind_player(new_player) -> void:
 	inventory = player.inventory
 	player.interaction_prompt_changed.connect(show_interaction_prompt)
 	player.interaction_prompt_cleared.connect(hide_interaction_prompt)
+	player.hp_changed.connect(update_hp)
 	inventory.inventory_changed.connect(_on_inventory_changed)
 	player.building_system.build_state_changed.connect(_refresh_debug_label)
 	player.crafting_requested.connect(_on_crafting_requested)
@@ -119,13 +124,21 @@ func update_bag_label(used_slots: int, max_slots: int) -> void:
 	bag_label.text = "Bag: %d/%d slots" % [used_slots, max_slots]
 
 
+func update_floor_label(current_floor: int) -> void:
+	floor_label.text = "Floor: %d" % current_floor if current_floor > 0 else ""
+
+
+func update_kills_label(kills: int) -> void:
+	kills_label.text = "Kills: %d" % kills if kills > 0 else ""
+
+
 func _refresh_debug_label() -> void:
 	if player == null:
 		debug_label.visible = false
 		return
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
-	debug_label.text = "[DEBUG MODE]\n[F10] Reset  [F11] Reset+Clear Save" if debug_label.visible else "[DEBUG MODE]"
+	debug_label.text = "[DEBUG MODE]\n[8] Debug  [9] Reset+Clear  [0] Reset" if debug_label.visible else "[DEBUG MODE]"
 
 
 func _on_crafting_requested(_facility) -> void:

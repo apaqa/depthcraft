@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/projectile.gd" id="1_jh8xs"]
+[ext_resource type="Texture2D" path="res://assets/weapon_arrow.png" id="2_g27hm"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_j28k9"]
+radius = 4.0
+
+[node name="Projectile" type="Area2D"]
+script = ExtResource("1_jh8xs")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_g27hm")
+texture_filter = 0
+scale = Vector2(0.75, 0.75)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_j28k9")
+
+[node name="LifetimeTimer" type="Timer" parent="."]
+one_shot = true

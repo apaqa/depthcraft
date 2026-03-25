@@ -50,7 +50,8 @@ func test_building_tiles_use_distinct_visual_sources() -> void:
 	_assert(int(stone_floor["tile_source_id"]) == 4, "Stone floor should use the distinct stone build-floor tile.")
 	_assert(int(wood_wall["tile_source_id"]) == 106, "Wood wall should use the wooden barricade tile.")
 	_assert(int(stone_wall["tile_source_id"]) == 107, "Stone wall should use the distinct stone wall tile.")
-	_assert(int(wood_door["tile_source_id"]) == 108, "Wood door should use the door tile.")
+	_assert(str(wood_door["kind"]) == "facility", "Wood door should be facility-based so the full sprite can render.")
+	_assert(str(wood_door["scene_path"]) == "res://scenes/building/facilities/wood_door.tscn", "Wood door should use the scene-based placement path.")
 
 
 func test_place_building_deducts_resources() -> void:
