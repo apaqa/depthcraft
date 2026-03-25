@@ -30,6 +30,7 @@ signal status_message_requested(message: String, color: Color, duration: float)
 @onready var building_system: BuildingSystem = $BuildingSystem
 @onready var player_stats = $PlayerStats
 @onready var equipment_system = $EquipmentSystem
+@onready var player_camera: Camera2D = $Camera2D
 
 const FLOATING_TEXT_SCENE := preload("res://scenes/ui/floating_text.tscn")
 
@@ -61,6 +62,8 @@ var bonus_max_hp: int = 0
 var buff_regen_amount: int = 0
 var buff_regen_interval: float = 3.0
 var undying_will_available: bool = false
+var network_peer_id: int = 1
+var load_persistent_state_on_ready: bool = true
 
 const BASE_ATTACK_COOLDOWN := 0.4
 const BANDAGE_COOLDOWN := 1.0
@@ -75,9 +78,11 @@ func _ready() -> void:
 	building_system.build_state_changed.connect(_on_build_state_changed)
 	player_stats.stats_changed.connect(_on_player_stats_changed)
 	equipment_system.equipment_changed.connect(_on_equipment_changed)
-	_load_persistent_state()
+	if load_persistent_state_on_ready:
+		_load_persistent_state()
 	_recalculate_buff_state()
 	_refresh_all_stats()
+	configure_for_network_role(load_persistent_state_on_ready)
 
 
 static func compute_input_vector(left_strength: float, right_strength: float, up_strength: float, down_strength: float) -> Vector2:
@@ -132,6 +137,8 @@ func _physics_process(delta: float) -> void:
 		attack_cooldown_left = max(attack_cooldown_left - delta, 0.0)
 	if consumable_cooldown_left > 0.0:
 		consumable_cooldown_left = max(consumable_cooldown_left - delta, 0.0)
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
 
 	if is_dead:
 		velocity = Vector2.ZERO
@@ -158,11 +165,14 @@ func _physics_process(delta: float) -> void:
 	var move_speed_value: float = (sprint_speed if Input.is_action_pressed("sprint") else base_speed_value) * move_speed_multiplier
 	apply_input_direction(input_direction, move_speed_value)
 	move_and_slide()
+	_broadcast_state()
 	if not nearby_interactables.is_empty():
 		_update_prompt()
 
 
 func _input(event: InputEvent) -> void:
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
 	if event.is_action_pressed("debug_toggle"):
 		building_system.toggle_debug_mode()
 		if building_system.is_debug_mode_enabled():
@@ -210,6 +220,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
 	if build_mode or ui_blocked:
 		return
 
@@ -614,6 +626,36 @@ func use_first_consumable() -> bool:
 
 func show_status_message(message: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
 	status_message_requested.emit(message, color, duration)
+
+
+func configure_for_network_role(is_local_player: bool) -> void:
+	load_persistent_state_on_ready = is_local_player
+	if player_camera != null:
+		player_camera.enabled = is_local_player
+	if not is_local_player:
+		ui_blocked = true
+		in_menu = false
+		nearby_interactables.clear()
+		interaction_prompt_cleared.emit()
+
+
+func _broadcast_state() -> void:
+	if not multiplayer.has_multiplayer_peer() or not is_multiplayer_authority():
+		return
+	var current_animation := animated_sprite.animation if animated_sprite != null else &"idle"
+	sync_state.rpc(global_position, velocity, str(current_animation), animated_sprite.flip_h if animated_sprite != null else false, animated_sprite.speed_scale if animated_sprite != null else 1.0)
+
+
+@rpc("authority", "call_remote", "unreliable")
+func sync_state(pos: Vector2, synced_velocity: Vector2, animation_name: String, flipped: bool, speed_scale_value: float) -> void:
+	global_position = pos
+	velocity = synced_velocity
+	if animated_sprite == null:
+		return
+	animated_sprite.flip_h = flipped
+	animated_sprite.speed_scale = speed_scale_value
+	if animated_sprite.sprite_frames != null and animated_sprite.sprite_frames.has_animation(StringName(animation_name)):
+		animated_sprite.play(animation_name)
 
 
 func _recalculate_buff_state() -> void:

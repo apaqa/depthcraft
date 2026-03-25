@@ -7,7 +7,7 @@ const MAX_ROOM_SIZE := Vector2i(10, 10)
 const CORRIDOR_HALF_WIDTH := 1
 
 
-func generate_floor(floor_number: int) -> Dictionary:
+func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var room_count := clampi(4 + floor_number, 5, 8)
 	var rooms: Array[Rect2i] = []
 	var floor_tiles: Dictionary = {}
@@ -17,12 +17,12 @@ func generate_floor(floor_number: int) -> Dictionary:
 	while rooms.size() < room_count and attempts < room_count * 20:
 		attempts += 1
 		var room_size := Vector2i(
-			randi_range(MIN_ROOM_SIZE.x, MAX_ROOM_SIZE.x),
-			randi_range(MIN_ROOM_SIZE.y, MAX_ROOM_SIZE.y)
+			_rng_range(rng, MIN_ROOM_SIZE.x, MAX_ROOM_SIZE.x),
+			_rng_range(rng, MIN_ROOM_SIZE.y, MAX_ROOM_SIZE.y)
 		)
 		var room_pos := Vector2i(
-			randi_range(2, MAP_SIZE.x - room_size.x - 3),
-			randi_range(2, MAP_SIZE.y - room_size.y - 3)
+			_rng_range(rng, 2, MAP_SIZE.x - room_size.x - 3),
+			_rng_range(rng, 2, MAP_SIZE.y - room_size.y - 3)
 		)
 		var room := Rect2i(room_pos, room_size)
 		if _overlaps_existing(room, rooms):
@@ -44,7 +44,7 @@ func generate_floor(floor_number: int) -> Dictionary:
 	var wall_tiles := _build_walls(floor_tiles)
 	var spawn_room_index := 0
 	var exit_room_index := rooms.size() - 1
-	var elite_room_index := 0 if rooms.size() == 1 else randi_range(1, rooms.size() - 1)
+	var elite_room_index := 0 if rooms.size() == 1 else _rng_range(rng, 1, rooms.size() - 1)
 	var spawn_point := _tile_to_world(_room_center(rooms[spawn_room_index]))
 	var exit_point := _tile_to_world(_room_center(rooms[exit_room_index]))
 
@@ -118,3 +118,7 @@ func _room_center(room: Rect2i) -> Vector2i:
 
 func _tile_to_world(tile_pos: Vector2i) -> Vector2:
 	return Vector2(tile_pos.x * 16 + 8, tile_pos.y * 16 + 8)
+
+
+func _rng_range(rng: RandomNumberGenerator, min_value: int, max_value: int) -> int:
+	return rng.randi_range(min_value, max_value) if rng != null else randi_range(min_value, max_value)

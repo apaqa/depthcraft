@@ -32,10 +32,7 @@ func _ready() -> void:
 func place_player(player: Node2D, spawn_override: Variant = null) -> void:
 	if player.get_parent() != self:
 		player.reparent(self)
-	var spawn_position: Vector2 = player_spawn.global_position
-	if spawn_override is Vector2:
-		spawn_position = spawn_override
-	player.global_position = spawn_position
+	player.global_position = get_spawn_position(spawn_override)
 	if raid_system != null and raid_system.has_method("bind_player"):
 		raid_system.bind_player(player, player.building_system)
 
@@ -102,6 +99,13 @@ func _on_border_flash_requested(color: Color) -> void:
 
 func get_dungeon_entrance_position() -> Vector2:
 	return dungeon_entrance.global_position if dungeon_entrance != null else player_spawn.global_position
+
+
+func get_spawn_position(spawn_override: Variant = null) -> Vector2:
+	var spawn_position: Vector2 = player_spawn.global_position
+	if spawn_override is Vector2:
+		spawn_position = spawn_override
+	return spawn_position
 
 
 func clear_base_area_around(world_position: Vector2) -> void:

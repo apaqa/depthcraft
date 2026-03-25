@@ -1,11 +1,15 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_jyhfs"]
+[ext_resource type="Script" path="res://scripts/network/player_spawner.gd" id="2_spawn"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_o6xl0"]
 
 [node name="Main" type="Node2D" unique_id=302079095]
 script = ExtResource("1_jyhfs")
 
 [node name="LevelRoot" type="Node2D" parent="."]
+
+[node name="PlayerSpawner" type="Node" parent="."]
+script = ExtResource("2_spawn")
 
 [node name="HUDCanvas" type="CanvasLayer" parent="." unique_id=1278126834 instance=ExtResource("4_o6xl0")]

@@ -14,6 +14,7 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var interaction_prompt: Label = $InteractionPrompt
 @onready var build_hud: Control = $BuildHUD
 @onready var debug_label: Label = $DebugLabel
+@onready var connection_label: Label = $ConnectionLabel
 @onready var crafting_menu: Control = $CraftingMenu
 @onready var storage_ui: Control = $StorageUI
 @onready var repair_ui: Control = $RepairUI
@@ -38,6 +39,8 @@ var current_level_id: String = ""
 func _ready() -> void:
 	update_hp(100, 100)
 	update_bag_label(0, 20)
+	var network_manager = get_node_or_null("/root/NetworkManager")
+	set_connection_info(network_manager.get_connection_status() if network_manager != null else "")
 	inventory_panel.visible = false
 	if crafting_menu.has_signal("close_requested") and not crafting_menu.close_requested.is_connected(_on_menu_closed):
 		crafting_menu.close_requested.connect(_on_menu_closed)
@@ -185,6 +188,11 @@ func _refresh_debug_label() -> void:
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
 	debug_label.text = "[DEBUG MODE]\n[8] Debug  [9] Reset+Clear  [0] Reset" if debug_label.visible else "[DEBUG MODE]"
+
+
+func set_connection_info(message: String) -> void:
+	connection_label.text = message
+	connection_label.visible = not message.is_empty()
 
 
 func _on_crafting_requested(_facility) -> void:
