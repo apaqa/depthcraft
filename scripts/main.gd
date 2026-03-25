@@ -17,6 +17,7 @@ var total_dungeon_runs_completed: int = 0
 var dungeon_returns_since_raid: int = 0
 var overworld_return_position: Variant = null
 var current_day: int = 1
+var deepest_dungeon_floor_reached: int = 1
 
 
 func _ready() -> void:
@@ -110,6 +111,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		current_level.border_flash_requested.connect(_on_level_border_flash_requested)
 	if current_level.has_signal("raid_started") and not current_level.raid_started.is_connected(_on_raid_started):
 		current_level.raid_started.connect(_on_raid_started)
+	if current_level.has_signal("raid_countdown_changed") and not current_level.raid_countdown_changed.is_connected(_on_raid_countdown_changed):
+		current_level.raid_countdown_changed.connect(_on_raid_countdown_changed)
 
 	if hud.has_method("bind_level"):
 		hud.bind_level(current_level, current_level_id)
@@ -134,6 +137,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 			current_level.set_total_dungeon_runs(total_dungeon_runs_completed)
 		if current_level.has_method("set_day_count"):
 			current_level.set_day_count(current_day)
+		if current_level.has_method("set_deepest_floor_reached"):
+			current_level.set_deepest_floor_reached(deepest_dungeon_floor_reached)
 
 	for spawned_player in player_spawner.get_players():
 		spawned_player.process_mode = Node.PROCESS_MODE_INHERIT
@@ -197,6 +202,7 @@ func _on_return_to_surface_requested() -> void:
 	total_dungeon_runs_completed += 1
 	dungeon_returns_since_raid += 1
 	current_day += 1
+	deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, floor_reached)
 	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 	if player != null:
 		player.show_status_message("Floor %d reached | %d kills | %d items collected" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
@@ -222,6 +228,7 @@ func _on_player_died() -> void:
 		total_dungeon_runs_completed += 1
 		dungeon_returns_since_raid += 1
 		current_day += 1
+		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, int(current_level.get("current_floor")))
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if player != null:
 			player.show_status_message("You lost all dungeon loot. Equipment damaged.", Color(1.0, 0.75, 0.45, 1.0), 3.0)
@@ -248,6 +255,11 @@ func _on_level_border_flash_requested(color: Color) -> void:
 
 func _on_raid_started() -> void:
 	dungeon_returns_since_raid = 0
+
+
+func _on_raid_countdown_changed(message: String, color: Color, visible: bool) -> void:
+	if hud.has_method("set_raid_countdown"):
+		hud.set_raid_countdown(message, color, visible)
 
 
 func _on_floor_transition_requested(next_floor: int) -> void:

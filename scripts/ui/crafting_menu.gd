@@ -171,10 +171,12 @@ func _rebuild_material_rows(cost: Dictionary) -> void:
 		var owned: int = player_inventory.get_item_count(str(resource_id))
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
-		var swatch := ColorRect.new()
-		swatch.custom_minimum_size = Vector2(10, 10)
-		swatch.color = ITEM_DATABASE.get_item_color(str(resource_id), "resource")
-		row.add_child(swatch)
+		var icon_tex := TextureRect.new()
+		icon_tex.custom_minimum_size = Vector2(16, 16)
+		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var mat_data := ITEM_DATABASE.get_item(str(resource_id))
+		icon_tex.texture = mat_data.get("icon", null)
+		row.add_child(icon_tex)
 		var label := Label.new()
 		label.text = "%s: %d/%d%s" % [_pretty_name(str(resource_id)), owned, required, " OK" if owned >= required else ""]
 		label.modulate = Color(0.45, 1.0, 0.45, 1.0) if owned >= required else Color(1.0, 0.45, 0.45, 1.0)

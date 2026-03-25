@@ -73,21 +73,22 @@ func _rebuild_grid(grid: GridContainer, source_inventory, target_inventory, from
 		var row := HBoxContainer.new()
 		row.custom_minimum_size = Vector2(120, 28)
 		row.add_theme_constant_override("separation", 6)
-		var swatch := ColorRect.new()
-		swatch.custom_minimum_size = Vector2(10, 10)
-		row.add_child(swatch)
+		var icon_tex := TextureRect.new()
+		icon_tex.custom_minimum_size = Vector2(16, 16)
+		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		row.add_child(icon_tex)
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(96, 28)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if index < source_inventory.items.size():
 			var stack: Dictionary = source_inventory.items[index]
 			button.text = "%s x%d" % [str(stack.get("name", stack["id"])), int(stack["quantity"])]
-			swatch.color = ITEM_DATABASE.get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))
+			var item_data := ITEM_DATABASE.get_item(str(stack.get("id", "")))
+			icon_tex.texture = item_data.get("icon", null)
 			button.pressed.connect(_on_transfer_pressed.bind(source_inventory, target_inventory, index))
 		else:
 			button.text = "--"
 			button.disabled = true
-			swatch.color = Color(0.28, 0.28, 0.32, 0.55)
 		if from_player:
 			button.modulate = Color(0.92, 1.0, 0.92, 1.0)
 		else:

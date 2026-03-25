@@ -6,7 +6,7 @@ var player_target = null
 var player_aggro_time_left: float = 0.0
 
 
-func setup_raid(target_player, target_core, dungeon_runs_completed: int, loot_root: Node) -> void:
+func setup_raid(target_player, target_core, deepest_floor: int, hp_multiplier: float, loot_root: Node) -> void:
 	if base_max_hp <= 0:
 		base_max_hp = max_hp
 	if base_damage <= 0:
@@ -17,12 +17,13 @@ func setup_raid(target_player, target_core, dungeon_runs_completed: int, loot_ro
 	core_target = target_core
 	loot_parent = loot_root
 	target = target_player
-	difficulty_multiplier = 1.0 + float(dungeon_runs_completed) * 0.08
+	var floor_steps := int(max(deepest_floor - 1, 0) / 5)
+	difficulty_multiplier = hp_multiplier
 	max_hp = int(round(base_max_hp * difficulty_multiplier))
 	current_hp = max_hp
-	damage = int(round(base_damage * (1.0 + float(dungeon_runs_completed) * 0.06)))
-	speed = base_speed * (1.0 + float(dungeon_runs_completed) * 0.04)
-	modulate = Color(1.0, 0.7, 0.7, 1.0)
+	damage = int(round(base_damage * (1.0 + float(floor_steps) * 0.12)))
+	speed = base_speed * (1.0 + float(floor_steps) * 0.04)
+	modulate = Color(1.0, 0.38, 0.38, 1.0)
 	_update_hp_bar()
 
 

@@ -3,6 +3,7 @@ extends Node2D
 signal banner_requested(message: String, color: Color, duration: float)
 signal border_flash_requested(color: Color)
 signal raid_started
+signal raid_countdown_changed(message: String, color: Color, visible: bool)
 
 const GROUND_SIZE := Vector2i(60, 40)
 const SOURCE_GRASS := 0
@@ -36,6 +37,8 @@ func _ready() -> void:
 		raid_system.banner_requested.connect(_on_banner_requested)
 		raid_system.border_flash_requested.connect(_on_border_flash_requested)
 		raid_system.raid_started.connect(func() -> void: raid_started.emit())
+	if raid_system != null and raid_system.has_signal("raid_countdown_changed"):
+		raid_system.raid_countdown_changed.connect(_on_raid_countdown_changed)
 
 
 func place_player(player: Node2D, spawn_override: Variant = null) -> void:
@@ -120,6 +123,11 @@ func set_day_count(day_count: int) -> void:
 		raid_system.set_day_count(day_count)
 
 
+func set_deepest_floor_reached(floor_number: int) -> void:
+	if raid_system != null and raid_system.has_method("set_deepest_floor_reached"):
+		raid_system.set_deepest_floor_reached(floor_number)
+
+
 func trigger_progress_raid() -> void:
 	if raid_system != null and raid_system.has_method("queue_progress_raid"):
 		raid_system.queue_progress_raid()
@@ -133,8 +141,16 @@ func _on_border_flash_requested(color: Color) -> void:
 	border_flash_requested.emit(color)
 
 
+func _on_raid_countdown_changed(message: String, color: Color, visible: bool) -> void:
+	raid_countdown_changed.emit(message, color, visible)
+
+
 func get_dungeon_entrance_position() -> Vector2:
 	return dungeon_entrance.global_position if dungeon_entrance != null else player_spawn.global_position
+
+
+func is_raid_active() -> bool:
+	return raid_system != null and raid_system.has_method("is_raid_active") and raid_system.is_raid_active()
 
 
 func get_spawn_position(spawn_override: Variant = null) -> Vector2:

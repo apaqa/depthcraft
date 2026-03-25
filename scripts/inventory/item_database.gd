@@ -7,7 +7,7 @@ const ITEMS := {
 		"max_stack": 99,
 		"type": "resource",
 		"description": "Basic building material",
-		"icon": preload("res://assets/crate.png"),
+		"icon": preload("res://assets/icons/kyrise/wood_01a.png"),
 	},
 	"stone": {
 		"id": "stone",
@@ -15,7 +15,7 @@ const ITEMS := {
 		"max_stack": 99,
 		"type": "resource",
 		"description": "Hard building material",
-		"icon": preload("res://assets/monster_elemental_earth_small.png"),
+		"icon": preload("res://assets/icons/kyrise/stoneblock_01a.png"),
 	},
 	"iron_ore": {
 		"id": "iron_ore",
@@ -23,7 +23,7 @@ const ITEMS := {
 		"max_stack": 99,
 		"type": "resource",
 		"description": "Raw metal ore",
-		"icon": preload("res://assets/monster_elemental_gold_short.png"),
+		"icon": preload("res://assets/icons/kyrise/ingot_01a.png"),
 	},
 	"fiber": {
 		"id": "fiber",
@@ -31,7 +31,7 @@ const ITEMS := {
 		"max_stack": 99,
 		"type": "resource",
 		"description": "Plant fiber for crafting",
-		"icon": preload("res://assets/monster_elemental_plant_small.png"),
+		"icon": preload("res://assets/icons/kyrise/cotton_01a.png"),
 	},
 	"seed": {
 		"id": "seed",
@@ -39,7 +39,7 @@ const ITEMS := {
 		"max_stack": 99,
 		"type": "resource",
 		"description": "A small seed used for farming",
-		"icon": preload("res://assets/monster_elemental_plant_small.png"),
+		"icon": preload("res://assets/icons/kyrise/flower_01a.png"),
 	},
 	"wheat": {
 		"id": "wheat",
@@ -47,7 +47,7 @@ const ITEMS := {
 		"max_stack": 99,
 		"type": "resource",
 		"description": "A harvested crop used for cooking",
-		"icon": preload("res://assets/floor_7.png"),
+		"icon": preload("res://assets/icons/kyrise/leaf_01a.png"),
 	},
 	"talent_shard": {
 		"id": "talent_shard",
@@ -55,7 +55,7 @@ const ITEMS := {
 		"max_stack": 99,
 		"type": "resource",
 		"description": "Used at the Talent Altar",
-		"icon": preload("res://assets/monster_elemental_fire_small.png"),
+		"icon": preload("res://assets/icons/kyrise/shard_01a.png"),
 	},
 	"gold": {
 		"id": "gold",
@@ -63,7 +63,7 @@ const ITEMS := {
 		"max_stack": 9999,
 		"type": "resource",
 		"description": "Currency for trading with merchants",
-		"icon": preload("res://assets/monster_elemental_gold_short.png"),
+		"icon": preload("res://assets/icons/kyrise/coin_01a.png"),
 	},
 	"wood_sword": {
 		"id": "wood_sword",
@@ -76,7 +76,7 @@ const ITEMS := {
 		"durability": 50,
 		"max_durability": 50,
 		"repair_material": "wood",
-		"icon": preload("res://assets/weapon_sword_wooden.png"),
+		"icon": preload("res://assets/icons/kyrise/sword_01a.png"),
 	},
 	"wood_shield": {
 		"id": "wood_shield",
@@ -89,7 +89,7 @@ const ITEMS := {
 		"durability": 40,
 		"max_durability": 40,
 		"repair_material": "wood",
-		"icon": preload("res://assets/box.png"),
+		"icon": preload("res://assets/icons/kyrise/shield_01a.png"),
 	},
 	"stone_pickaxe": {
 		"id": "stone_pickaxe",
@@ -102,7 +102,7 @@ const ITEMS := {
 		"durability": 60,
 		"max_durability": 60,
 		"repair_material": "stone",
-		"icon": preload("res://assets/weapon_hammer.png"),
+		"icon": preload("res://assets/icons/kyrise/ingot_01b.png"),
 	},
 	"leather_cap": {
 		"id": "leather_cap",
@@ -115,7 +115,7 @@ const ITEMS := {
 		"durability": 30,
 		"max_durability": 30,
 		"repair_material": "fiber",
-		"icon": preload("res://assets/monster_orc_armored.png"),
+		"icon": preload("res://assets/icons/kyrise/helmet_01a.png"),
 	},
 	"leather_vest": {
 		"id": "leather_vest",
@@ -128,7 +128,7 @@ const ITEMS := {
 		"durability": 40,
 		"max_durability": 40,
 		"repair_material": "fiber",
-		"icon": preload("res://assets/box.png"),
+		"icon": preload("res://assets/icons/kyrise/armor_01a.png"),
 	},
 	"iron_sword": {
 		"id": "iron_sword",
@@ -141,7 +141,7 @@ const ITEMS := {
 		"durability": 80,
 		"max_durability": 80,
 		"repair_material": "iron_ore",
-		"icon": preload("res://assets/weapon_sword_steel.png"),
+		"icon": preload("res://assets/icons/kyrise/sword_02a.png"),
 	},
 	"bandage": {
 		"id": "bandage",
@@ -150,7 +150,7 @@ const ITEMS := {
 		"type": "consumable",
 		"description": "Wraps wounds and restores health",
 		"effect": {"heal": 20},
-		"icon": preload("res://assets/flask_green.png"),
+		"icon": preload("res://assets/icons/kyrise/scroll_01a.png"),
 	},
 	"torch": {
 		"id": "torch",
@@ -159,7 +159,7 @@ const ITEMS := {
 		"type": "consumable",
 		"description": "A simple light source for dark spaces",
 		"effect": {"light": true},
-		"icon": preload("res://assets/torch_1.png"),
+		"icon": preload("res://assets/icons/kyrise/candle_01a.png"),
 	},
 	"bread": {
 		"id": "bread",
@@ -168,7 +168,7 @@ const ITEMS := {
 		"type": "consumable",
 		"description": "Freshly baked bread that restores health",
 		"effect": {"heal": 30},
-		"icon": preload("res://assets/floor_5.png"),
+		"icon": preload("res://assets/icons/kyrise/cookie_01a.png"),
 	},
 	"stew": {
 		"id": "stew",
@@ -177,7 +177,7 @@ const ITEMS := {
 		"type": "consumable",
 		"description": "A hearty stew that restores a large chunk of health",
 		"effect": {"heal": 50},
-		"icon": preload("res://assets/flask_big_red.png"),
+		"icon": preload("res://assets/icons/kyrise/cup_01a.png"),
 	},
 }
 

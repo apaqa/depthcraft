@@ -9,7 +9,11 @@ var _failures: PackedStringArray = []
 
 func _initialize() -> void:
 	await test_raid_spawns_enemies()
+	await test_raid_countdown_starts_from_dungeon_returns()
 	await test_raid_enemies_target_home_core()
+	await test_raid_scaling_uses_deepest_floor()
+	await test_raid_rewards_talent_shards_on_survival()
+	await test_portal_locks_during_raid()
 	await test_death_removes_dungeon_run_loot()
 	await test_safe_return_keeps_loot()
 	await test_death_applies_durability_penalty()
@@ -21,7 +25,15 @@ func test_raid_spawns_enemies() -> void:
 	setup.level.raid_system._start_raid()
 	await process_frame
 	var enemy_root = setup.level.get_node_or_null("RaidEnemyRoot")
-	_assert(enemy_root != null and enemy_root.get_child_count() >= 5, "A raid should spawn between 5 and 10 enemies.")
+	_assert(enemy_root != null and enemy_root.get_child_count() >= 8 and enemy_root.get_child_count() <= 15, "A raid should spawn between 8 and 15 enemies at base difficulty.")
+	await _cleanup_setup(setup)
+
+
+func test_raid_countdown_starts_from_dungeon_returns() -> void:
+	var setup := await _create_overworld_with_core()
+	setup.level.trigger_progress_raid()
+	_assert(setup.level.raid_system.is_countdown_active(), "Raid countdown should start after the configured dungeon return trigger.")
+	_assert(int(ceil(setup.level.raid_system.raid_countdown_remaining)) == 30, "Raid countdown should begin at 30 seconds.")
 	await _cleanup_setup(setup)
 
 
@@ -32,6 +44,41 @@ func test_raid_enemies_target_home_core() -> void:
 	var enemy_root = setup.level.get_node_or_null("RaidEnemyRoot")
 	var first_enemy = enemy_root.get_child(0)
 	_assert(first_enemy.core_target == setup.player.building_system.get_home_core(), "Raid enemies should target the home core.")
+	await _cleanup_setup(setup)
+
+
+func test_raid_scaling_uses_deepest_floor() -> void:
+	var setup := await _create_overworld_with_core()
+	setup.level.set_deepest_floor_reached(11)
+	setup.level.raid_system._start_raid()
+	await process_frame
+	var enemy_root = setup.level.get_node_or_null("RaidEnemyRoot")
+	var enemy_count: int = enemy_root.get_child_count()
+	var first_enemy = enemy_root.get_child(0)
+	_assert(enemy_count >= 14 and enemy_count <= 21, "Deepest floor scaling should add 3 enemies per 5 floors.")
+	_assert(first_enemy.max_hp >= 39, "Deepest floor scaling should increase raid enemy HP.")
+	await _cleanup_setup(setup)
+
+
+func test_raid_rewards_talent_shards_on_survival() -> void:
+	var setup := await _create_overworld_with_core()
+	var shards_before: int = setup.player.inventory.get_item_count("talent_shard")
+	setup.level.raid_system._start_raid()
+	await process_frame
+	for enemy in setup.level.raid_system.raid_enemies.duplicate():
+		if is_instance_valid(enemy):
+			enemy.die()
+	await process_frame
+	var shards_after: int = setup.player.inventory.get_item_count("talent_shard")
+	_assert(shards_after - shards_before == 5, "Surviving a raid should grant 5 talent shards.")
+	await _cleanup_setup(setup)
+
+
+func test_portal_locks_during_raid() -> void:
+	var setup := await _create_overworld_with_core()
+	setup.level.raid_system._start_raid()
+	await process_frame
+	_assert(setup.level.dungeon_entrance.get_interaction_prompt() == "Cannot enter during raid", "Dungeon entrance should be locked during an active raid.")
 	await _cleanup_setup(setup)
 
 
@@ -85,6 +132,7 @@ func _create_overworld_with_core() -> Dictionary:
 	player.building_system.place_home_core(Vector2i(4, 4))
 	level.place_player(player)
 	level.set_total_dungeon_runs(4)
+	level.set_deepest_floor_reached(1)
 	return {
 		"level": level,
 		"player": player,

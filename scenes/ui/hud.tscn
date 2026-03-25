@@ -214,6 +214,25 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 text = ""
 
+[node name="RaidCountdownLabel" type="Label" parent="HUD"]
+visible = false
+layout_mode = 0
+anchors_preset = 10
+anchor_left = 0.5
+anchor_top = 0.2
+anchor_right = 0.5
+anchor_bottom = 0.2
+offset_left = -280.0
+offset_top = -26.0
+offset_right = 280.0
+offset_bottom = 26.0
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 0.15, 0.15, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 26
+text = ""
+
 [node name="RaidBorder" type="ColorRect" parent="HUD"]
 visible = false
 layout_mode = 1

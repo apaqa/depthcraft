@@ -26,6 +26,7 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var death_overlay: Control = $DeathOverlay
 @onready var death_summary_label: Label = $DeathOverlay/VBoxContainer/SummaryLabel
 @onready var event_banner: Label = $EventBanner
+@onready var raid_countdown_label: Label = $RaidCountdownLabel
 @onready var raid_border: ColorRect = $RaidBorder
 @onready var status_label: Label = $StatusLabel
 @onready var transition_overlay: ColorRect = $TransitionOverlay
@@ -123,6 +124,8 @@ func bind_level(level, level_id: String) -> void:
 	current_level = level
 	current_level_id = level_id
 	minimap.visible = level_id == "dungeon"
+	if level_id != "overworld":
+		set_raid_countdown("", Color(1.0, 0.15, 0.15, 1.0), false)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -311,14 +314,16 @@ func rebuild_inventory_grid() -> void:
 			inventory_list.add_child(_build_item_row(stack, item_color))
 
 
-func _build_item_row(stack: Dictionary, swatch_color: Color) -> Control:
+func _build_item_row(stack: Dictionary, _swatch_color: Color) -> Control:
 	var row := HBoxContainer.new()
 	row.custom_minimum_size = Vector2(200, 24)
 	row.add_theme_constant_override("separation", 8)
-	var swatch := ColorRect.new()
-	swatch.custom_minimum_size = Vector2(14, 14)
-	swatch.color = swatch_color
-	row.add_child(swatch)
+	var icon_data := ITEM_DATABASE.get_item(str(stack.get("id", "")))
+	var icon_tex := TextureRect.new()
+	icon_tex.custom_minimum_size = Vector2(16, 16)
+	icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_tex.texture = icon_data.get("icon", null)
+	row.add_child(icon_tex)
 	var name_label := Label.new()
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.text = str(stack.get("name", stack.get("id", "")))
@@ -382,6 +387,14 @@ func show_event_banner(message: String, color: Color = Color.WHITE, duration: fl
 	tween.tween_callback(func() -> void: event_banner.visible = false)
 
 
+func set_raid_countdown(message: String, color: Color = Color(1.0, 0.15, 0.15, 1.0), visible: bool = false) -> void:
+	if raid_countdown_label == null:
+		return
+	raid_countdown_label.text = message
+	raid_countdown_label.self_modulate = color
+	raid_countdown_label.visible = visible and not message.is_empty()
+
+
 func flash_border(color: Color) -> void:
 	raid_border.color = Color(color.r, color.g, color.b, 0.0)
 	raid_border.visible = true
@@ -411,7 +424,7 @@ func update_consumable_bar(slots: Array) -> void:
 	var labels: Array[String] = []
 	for slot_index in range(2):
 		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
-		var key_name := "Q" if slot_index == 0 else "R"
+		var key_name = "Q" if slot_index == 0 else "R"
 		if slot.is_empty():
 			labels.append("[%s] Empty" % key_name)
 			continue
@@ -427,21 +440,21 @@ func _refresh_skill_slots() -> void:
 	var skill_system = get_node_or_null("/root/SkillSystem")
 	if skill_system == null:
 		return
-	var snapshots := skill_system.get_equipped_skill_snapshots()
+	var snapshots = skill_system.get_equipped_skill_snapshots()
 	for slot_index in range(3):
 		var slot: Dictionary = snapshots[slot_index] if slot_index < snapshots.size() else {}
-		var label := Label.new()
+		var label = Label.new()
 		label.custom_minimum_size = Vector2(96, 22)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.add_theme_constant_override("outline_size", 2)
 		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		var key_name := ["Z", "X", "V"][slot_index]
+		var key_name = ["Z", "X", "V"][slot_index]
 		if slot.is_empty():
 			label.text = "[%s] Empty" % key_name
 			label.self_modulate = Color(0.6, 0.6, 0.6, 1.0)
 		else:
-			var cooldown := float(slot.get("current_cooldown", 0.0))
-			var short_name := str(slot.get("short_name", "SK"))
+			var cooldown = float(slot.get("current_cooldown", 0.0))
+			var short_name = str(slot.get("short_name", "SK"))
 			label.text = "[%s] %s %s" % [key_name, short_name, ("%.1f" % cooldown) if cooldown > 0.0 else "Ready"]
 			label.self_modulate = Color(0.55, 0.55, 0.55, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
 			label.tooltip_text = str(slot.get("name", "Skill"))

@@ -12,11 +12,14 @@ signal destroyed
 var is_placed: bool = false
 var core_position: Vector2 = Vector2.ZERO
 var pulse_tween: Tween = null
-var max_hp: int = 200
-var current_hp: int = 200
+var max_hp: int = 500
+var current_hp: int = 500
+var raid_active: bool = false
+var hp_bar_time_left: float = 0.0
 
 
 func _ready() -> void:
+	set_process(true)
 	_start_pulse()
 	_update_hp_bar()
 
@@ -31,14 +34,16 @@ func place_at(world_position: Vector2) -> void:
 
 
 func set_raid_active(active: bool) -> void:
+	raid_active = active
 	if hp_bar_root != null:
-		hp_bar_root.visible = active and current_hp > 0
+		hp_bar_root.visible = (raid_active or hp_bar_time_left > 0.0) and current_hp > 0
 
 
 func take_raid_damage(amount: int) -> void:
 	if amount <= 0 or current_hp <= 0:
 		return
 	current_hp = max(current_hp - amount, 0)
+	hp_bar_time_left = 2.5
 	_update_hp_bar()
 	if current_hp <= 0:
 		destroyed.emit()
@@ -47,7 +52,14 @@ func take_raid_damage(amount: int) -> void:
 
 func restore_to_full() -> void:
 	current_hp = max_hp
+	hp_bar_time_left = 0.0
 	_update_hp_bar()
+
+
+func _process(delta: float) -> void:
+	hp_bar_time_left = max(hp_bar_time_left - delta, 0.0)
+	if hp_bar_root != null:
+		hp_bar_root.visible = (raid_active or hp_bar_time_left > 0.0) and current_hp > 0
 
 
 func _start_pulse() -> void:

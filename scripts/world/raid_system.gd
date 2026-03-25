@@ -4,17 +4,23 @@ class_name RaidSystem
 signal banner_requested(message: String, color: Color, duration: float)
 signal border_flash_requested(color: Color)
 signal raid_started
+signal raid_countdown_changed(message: String, color: Color, visible: bool)
 
 const RAID_ENEMY_SCENE := preload("res://scenes/enemies/raid_enemy.tscn")
-const RAID_INTERVAL := 300.0
-const RAID_WARNING_TIME := 10.0
+const RAID_WARNING_DURATION := 30.0
+const BASE_MIN_ENEMIES := 8
+const BASE_MAX_ENEMIES := 15
+const FLOOR_SCALE_STEP := 5
+const EXTRA_ENEMIES_PER_STEP := 3
+const HP_SCALE_PER_STEP := 0.2
 
 var player = null
 var building_system = null
 var total_dungeon_runs: int = 0
 var current_day: int = 1
-var time_until_raid: float = RAID_INTERVAL
-var warning_shown: bool = false
+var deepest_floor_reached: int = 1
+var raid_countdown_remaining: float = 0.0
+var raid_warning_active: bool = false
 var raid_active: bool = false
 var raid_enemies: Array = []
 
@@ -24,16 +30,17 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not raid_warning_active:
+		return
 	if raid_active or player == null:
+		_cancel_countdown()
 		return
 	if building_system == null or not building_system.has_functional_core():
+		_cancel_countdown()
 		return
-	time_until_raid = max(time_until_raid - delta, 0.0)
-	if not warning_shown and time_until_raid <= RAID_WARNING_TIME:
-		warning_shown = true
-		banner_requested.emit("RAID INCOMING! Defend your base!", Color(1.0, 0.25, 0.25, 1.0), 2.0)
-		border_flash_requested.emit(Color(1.0, 0.15, 0.15, 1.0))
-	if time_until_raid <= 0.0:
+	raid_countdown_remaining = max(raid_countdown_remaining - delta, 0.0)
+	_emit_countdown()
+	if raid_countdown_remaining <= 0.0:
 		_start_raid()
 
 
@@ -50,29 +57,43 @@ func set_day_count(day_count: int) -> void:
 	current_day = max(day_count, 1)
 
 
+func set_deepest_floor_reached(floor_number: int) -> void:
+	deepest_floor_reached = max(floor_number, 1)
+
+
 func queue_progress_raid() -> void:
-	time_until_raid = min(time_until_raid, RAID_WARNING_TIME)
+	if raid_active or raid_warning_active:
+		return
+	if building_system == null or not building_system.has_functional_core():
+		return
+	raid_warning_active = true
+	raid_countdown_remaining = RAID_WARNING_DURATION
+	border_flash_requested.emit(Color(1.0, 0.12, 0.12, 1.0))
+	_emit_countdown()
 
 
 func _start_raid() -> void:
 	var core = building_system.get_home_core() if building_system != null else null
 	if core == null:
-		_reset_timer()
+		_cancel_countdown()
 		return
+	_cancel_countdown()
 	raid_active = true
-	warning_shown = false
 	raid_started.emit()
 	if core.has_method("set_raid_active"):
 		core.set_raid_active(true)
 	if core.has_signal("destroyed") and not core.destroyed.is_connected(_on_core_destroyed):
 		core.destroyed.connect(_on_core_destroyed)
+	banner_requested.emit("RAID STARTED! DEFEND THE HOME CORE!", Color(1.0, 0.2, 0.2, 1.0), 2.0)
+	border_flash_requested.emit(Color(1.0, 0.12, 0.12, 1.0))
 	_spawn_raid_enemies(core)
 
 
 func _spawn_raid_enemies(core) -> void:
 	_clear_enemy_refs()
-	var day_bonus := int(current_day / 2)
-	var enemy_count: int = min(12, max(5, 5 + int(total_dungeon_runs / 2) + day_bonus + randi_range(0, 2)))
+	var scaling_steps := int(max(deepest_floor_reached - 1, 0) / FLOOR_SCALE_STEP)
+	var enemy_count: int = randi_range(BASE_MIN_ENEMIES, BASE_MAX_ENEMIES) + scaling_steps * EXTRA_ENEMIES_PER_STEP
+	var hp_multiplier := 1.0 + float(scaling_steps) * HP_SCALE_PER_STEP
 	var enemy_root: Node2D = Node2D.new()
 	enemy_root.name = "RaidEnemyRoot"
 	get_parent().add_child(enemy_root)
@@ -81,7 +102,7 @@ func _spawn_raid_enemies(core) -> void:
 		var enemy = RAID_ENEMY_SCENE.instantiate()
 		enemy_root.add_child(enemy)
 		enemy.global_position = _get_spawn_position(viewport_size, core.global_position)
-		enemy.setup_raid(player, core, total_dungeon_runs + day_bonus, enemy_root)
+		enemy.setup_raid(player, core, deepest_floor_reached, hp_multiplier, enemy_root)
 		enemy.died.connect(_on_raid_enemy_died.bind(enemy))
 		raid_enemies.append(enemy)
 
@@ -109,26 +130,47 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	var core = building_system.get_home_core() if building_system != null else null
 	if core != null and core.has_method("set_raid_active"):
 		core.set_raid_active(false)
-	banner_requested.emit("Raid Survived!", Color(0.45, 1.0, 0.45, 1.0), 2.0)
+	banner_requested.emit("RAID SURVIVED! +5 Talent Shards", Color(0.45, 1.0, 0.45, 1.0), 3.0)
 	if player != null and player.inventory != null:
-		player.inventory.add_item("talent_shard", randi_range(2, 3))
-	_reset_timer()
+		player.inventory.add_item("talent_shard", 5)
+	_clear_enemy_root()
 
 
 func _on_core_destroyed() -> void:
 	raid_active = false
-	banner_requested.emit("Home Core Destroyed!", Color(1.0, 0.3, 0.3, 1.0), 2.0)
+	banner_requested.emit("HOME CORE DESTROYED!", Color(1.0, 0.3, 0.3, 1.0), 3.0)
 	for enemy in raid_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
 	raid_enemies.clear()
-	_reset_timer()
+	_clear_enemy_root()
 
 
 func _clear_enemy_refs() -> void:
 	raid_enemies = raid_enemies.filter(func(enemy) -> bool: return enemy != null and is_instance_valid(enemy) and not enemy.is_queued_for_deletion())
 
 
-func _reset_timer() -> void:
-	time_until_raid = RAID_INTERVAL
-	warning_shown = false
+func is_raid_active() -> bool:
+	return raid_active
+
+
+func is_countdown_active() -> bool:
+	return raid_warning_active
+
+
+func _emit_countdown() -> void:
+	var seconds_left := int(ceil(raid_countdown_remaining))
+	var message := "⚠ RAID IN %d SECONDS ⚠" % max(seconds_left, 0)
+	raid_countdown_changed.emit(message, Color(1.0, 0.15, 0.15, 1.0), true)
+
+
+func _cancel_countdown() -> void:
+	raid_warning_active = false
+	raid_countdown_remaining = 0.0
+	raid_countdown_changed.emit("", Color(1.0, 0.15, 0.15, 1.0), false)
+
+
+func _clear_enemy_root() -> void:
+	var enemy_root = get_parent().get_node_or_null("RaidEnemyRoot")
+	if enemy_root != null:
+		enemy_root.queue_free()
