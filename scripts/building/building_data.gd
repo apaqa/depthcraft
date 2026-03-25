@@ -4,6 +4,7 @@ const WORKBENCH_SCENE_PATH := "res://scenes/building/facilities/workbench.tscn"
 const STORAGE_CHEST_SCENE_PATH := "res://scenes/building/facilities/storage_chest.tscn"
 const REPAIR_BENCH_SCENE_PATH := "res://scenes/building/facilities/repair_bench.tscn"
 const WOOD_DOOR_SCENE_PATH := "res://scenes/building/facilities/wood_door.tscn"
+const FULL_TILE_ATLAS := Vector2i.ZERO
 
 const BUILDINGS := {
 	"wood_wall": {
@@ -13,7 +14,7 @@ const BUILDINGS := {
 		"cost": {"wood": 2},
 		"has_collision": true,
 		"tile_source_id": 106,
-		"tile_atlas_coords": Vector2i.ZERO,
+		"tile_atlas_coords": FULL_TILE_ATLAS,
 	},
 	"wood_floor": {
 		"id": "wood_floor",
@@ -22,7 +23,7 @@ const BUILDINGS := {
 		"cost": {"wood": 1},
 		"has_collision": false,
 		"tile_source_id": 3,
-		"tile_atlas_coords": Vector2i.ZERO,
+		"tile_atlas_coords": FULL_TILE_ATLAS,
 	},
 	"stone_wall": {
 		"id": "stone_wall",
@@ -31,7 +32,7 @@ const BUILDINGS := {
 		"cost": {"stone": 3},
 		"has_collision": true,
 		"tile_source_id": 107,
-		"tile_atlas_coords": Vector2i.ZERO,
+		"tile_atlas_coords": FULL_TILE_ATLAS,
 	},
 	"stone_floor": {
 		"id": "stone_floor",
@@ -40,7 +41,7 @@ const BUILDINGS := {
 		"cost": {"stone": 2},
 		"has_collision": false,
 		"tile_source_id": 4,
-		"tile_atlas_coords": Vector2i.ZERO,
+		"tile_atlas_coords": FULL_TILE_ATLAS,
 	},
 	"wood_door": {
 		"id": "wood_door",

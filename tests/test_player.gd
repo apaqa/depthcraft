@@ -38,8 +38,8 @@ func test_collision_shape_uses_feet_box() -> void:
 	var player := PLAYER_SCENE.instantiate()
 	var collision_shape: CollisionShape2D = player.get_node("CollisionShape2D")
 	var rectangle: RectangleShape2D = collision_shape.shape
-	_assert(collision_shape.position.y >= 4.0, "Player collision should be offset downward toward the feet.")
-	_assert(rectangle.size == Vector2(10, 8), "Player collision should use a compact feet-sized rectangle.")
+	_assert(collision_shape.position == Vector2(0, 6), "Player collision should sit exactly at the feet position.")
+	_assert(rectangle.size == Vector2(6, 4), "Player collision should use the tiny feet-only rectangle.")
 
 
 func test_diagonal_normalization() -> void:
