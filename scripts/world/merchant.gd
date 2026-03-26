@@ -57,6 +57,17 @@ func _open_shop() -> void:
 	panel.offset_bottom = 200.0
 	_shop_canvas.add_child(panel)
 
+	var close_button := Button.new()
+	close_button.text = "✕"
+	close_button.position = Vector2(8.0, 8.0)
+	close_button.custom_minimum_size = Vector2(28.0, 28.0)
+	close_button.add_theme_font_size_override("font_size", 20)
+	close_button.add_theme_color_override("font_color", Color.WHITE)
+	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	close_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	close_button.pressed.connect(_close_shop)
+	panel.add_child(close_button)
+
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 12)

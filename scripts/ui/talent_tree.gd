@@ -10,6 +10,8 @@ const CONNECTOR_COLOR := Color(0.82, 0.72, 0.38, 0.9)
 
 signal close_requested
 
+@onready var panel_container: PanelContainer = $PanelContainer
+
 @onready var shard_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ShardLabel
 @onready var branch_row: HBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/BranchRow
 
@@ -19,11 +21,14 @@ var player = null
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_ensure_close_button()
 
 
 func open_for_player(target_player) -> void:
 	player = target_player
 	visible = true
+	if player != null and player.has_method("set_ui_blocked"):
+		player.set_ui_blocked(true)
 	_refresh()
 
 
@@ -31,6 +36,8 @@ func close_menu() -> void:
 	if not visible:
 		return
 	visible = false
+	if player != null and player.has_method("set_ui_blocked"):
+		player.set_ui_blocked(false)
 	release_focus()
 	close_requested.emit()
 
@@ -260,3 +267,19 @@ func _on_talent_pressed(talent_id: String) -> void:
 	if player.unlock_talent(talent_id):
 		print("Unlocked talent: ", talent_id)
 		_refresh()
+
+
+func _ensure_close_button() -> void:
+	if panel_container == null or panel_container.get_node_or_null("CloseButton") != null:
+		return
+	var close_button := Button.new()
+	close_button.name = "CloseButton"
+	close_button.text = "✕"
+	close_button.position = Vector2(8.0, 8.0)
+	close_button.custom_minimum_size = Vector2(28.0, 28.0)
+	close_button.add_theme_font_size_override("font_size", 20)
+	close_button.add_theme_color_override("font_color", Color.WHITE)
+	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	close_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	close_button.pressed.connect(close_menu)
+	panel_container.add_child(close_button)

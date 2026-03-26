@@ -4,6 +4,7 @@ signal close_requested
 
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
+@onready var panel_container: PanelContainer = $PanelContainer
 @onready var player_grid: GridContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer/PlayerGrid
 @onready var chest_grid: GridContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ChestPanel/VBoxContainer/ChestGrid
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
@@ -13,17 +14,22 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
 var player_inventory = null
 var chest_inventory = null
+var player = null
 
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_ensure_close_button()
 
 
 func open_for_storage(player_inv, chest_inv) -> void:
 	player_inventory = player_inv
 	chest_inventory = chest_inv
+	player = player_inventory.get_parent() if player_inventory != null else null
 	visible = true
+	if player != null and player.has_method("set_ui_blocked"):
+		player.set_ui_blocked(true)
 	_bind_inventory_signals()
 	_rebuild()
 
@@ -33,6 +39,8 @@ func close_menu() -> void:
 		return
 	_unbind_inventory_signals()
 	visible = false
+	if player != null and player.has_method("set_ui_blocked"):
+		player.set_ui_blocked(false)
 	release_focus()
 	close_requested.emit()
 
@@ -95,7 +103,7 @@ func _rebuild_grid(grid: GridContainer, source_inventory, target_inventory, from
 			row.add_child(icon_holder)
 			button.pressed.connect(_on_transfer_pressed.bind(source_inventory, target_inventory, index))
 		else:
-			button.text = "�?
+			button.text = "?"
 			button.disabled = true
 		if from_player:
 			button.modulate = Color(0.92, 1.0, 0.92, 1.0)
@@ -126,3 +134,18 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 	swatch.color = ITEM_DATABASE.get_stack_color(stack) if not stack.is_empty() else Color(0.18, 0.18, 0.2, 1.0)
 	return swatch
 
+
+func _ensure_close_button() -> void:
+	if panel_container == null or panel_container.get_node_or_null("CloseButton") != null:
+		return
+	var close_button := Button.new()
+	close_button.name = "CloseButton"
+	close_button.text = "✕"
+	close_button.position = Vector2(8.0, 8.0)
+	close_button.custom_minimum_size = Vector2(28.0, 28.0)
+	close_button.add_theme_font_size_override("font_size", 20)
+	close_button.add_theme_color_override("font_color", Color.WHITE)
+	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	close_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	close_button.pressed.connect(close_menu)
+	panel_container.add_child(close_button)

@@ -2,6 +2,8 @@ extends Control
 
 signal close_requested
 
+@onready var panel_container: PanelContainer = $PanelContainer
+
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
 @onready var list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/ListContainer
 @onready var detail_label: Label = $PanelContainer/MarginContainer/VBoxContainer/DetailLabel
@@ -13,11 +15,14 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	title_label.text = LocaleManager.L("repair_bench")
+	_ensure_close_button()
 
 
 func open_for_player(target_player) -> void:
 	player = target_player
 	visible = true
+	if player != null and player.has_method("set_ui_blocked"):
+		player.set_ui_blocked(true)
 	_refresh()
 
 
@@ -25,6 +30,8 @@ func close_menu() -> void:
 	if not visible:
 		return
 	visible = false
+	if player != null and player.has_method("set_ui_blocked"):
+		player.set_ui_blocked(false)
 	release_focus()
 	close_requested.emit()
 
@@ -114,12 +121,12 @@ func _refresh() -> void:
 		var info := Label.new()
 		info.text = LocaleManager.L("durability") + ": %d/%d" % [durability, max_durability]
 		row.add_child(info)
-		var lost := max(max_durability - durability, 0)
+		var lost = max(max_durability - durability, 0)
 		if lost > 0:
 			repairable_any = true
-			var material := player.equipment_system.get_repair_material("", item)
-			var cost_amount := max(int(ceil(float(lost) / 10.0)), 1)
-			var can_afford := player.inventory.get_item_count(material) >= cost_amount
+			var material = player.equipment_system.get_repair_material("", item)
+			var cost_amount = max(int(ceil(float(lost) / 10.0)), 1)
+			var can_afford = player.inventory.get_item_count(material) >= cost_amount
 			var cost_label := Label.new()
 			cost_label.text = LocaleManager.L("cost") + ": %d %s" % [cost_amount, material.replace("_", " ").capitalize()]
 			row.add_child(cost_label)
@@ -151,14 +158,30 @@ func _on_repair_inventory_pressed(inv_index: int) -> void:
 	var item: Dictionary = player.inventory.items[inv_index]
 	var max_dur := int(item.get("max_durability", 0))
 	var dur := int(item.get("durability", max_dur))
-	var lost := max(max_dur - dur, 0)
+	var lost = max(max_dur - dur, 0)
 	if lost <= 0:
 		return
-	var material := player.equipment_system.get_repair_material("", item)
-	var cost_amount := max(int(ceil(float(lost) / 10.0)), 1)
+	var material = player.equipment_system.get_repair_material("", item)
+	var cost_amount = max(int(ceil(float(lost) / 10.0)), 1)
 	if player.inventory.get_item_count(material) < cost_amount:
 		return
 	player.inventory.remove_item(material, cost_amount)
 	item["durability"] = max_dur
 	player.inventory.inventory_changed.emit()
 	_refresh()
+
+
+func _ensure_close_button() -> void:
+	if panel_container == null or panel_container.get_node_or_null("CloseButton") != null:
+		return
+	var close_button := Button.new()
+	close_button.name = "CloseButton"
+	close_button.text = "✕"
+	close_button.position = Vector2(8.0, 8.0)
+	close_button.custom_minimum_size = Vector2(28.0, 28.0)
+	close_button.add_theme_font_size_override("font_size", 20)
+	close_button.add_theme_color_override("font_color", Color.WHITE)
+	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	close_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	close_button.pressed.connect(close_menu)
+	panel_container.add_child(close_button)

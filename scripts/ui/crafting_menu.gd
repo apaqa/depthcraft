@@ -5,6 +5,8 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
 signal close_requested
 
+@onready var panel_container: PanelContainer = $PanelContainer
+
 @onready var recipe_list_container: VBoxContainer = $PanelContainer/MarginContainer/HBoxContainer/RecipePanel/RecipeScroll/RecipeListContainer
 @onready var title_label: Label = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/TitleLabel
 @onready var detail_text: RichTextLabel = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/DetailText
@@ -46,6 +48,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	craft_button.pressed.connect(_on_craft_pressed)
 	craft_button.text = LocaleManager.L("craft")
+	_ensure_close_button()
 
 
 func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "製作") -> void:
@@ -54,6 +57,8 @@ func open_for_player(target_player, available_recipe_ids: PackedStringArray = Pa
 	filtered_recipe_ids = available_recipe_ids
 	menu_title = title
 	visible = true
+	if player != null and player.has_method("set_ui_blocked"):
+		player.set_ui_blocked(true)
 	_rebuild_recipe_list()
 	if not recipe_ids.is_empty():
 		_on_recipe_button_pressed(recipe_ids[0])
@@ -63,6 +68,8 @@ func close_menu() -> void:
 	if not visible:
 		return
 	visible = false
+	if player != null and player.has_method("set_ui_blocked"):
+		player.set_ui_blocked(false)
 	release_focus()
 	close_requested.emit()
 
@@ -242,3 +249,19 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 	swatch.custom_minimum_size = Vector2(16, 16)
 	swatch.color = ITEM_DATABASE.get_stack_color(stack) if not stack.is_empty() else Color(0.22, 0.22, 0.22, 1.0)
 	return swatch
+
+
+func _ensure_close_button() -> void:
+	if panel_container == null or panel_container.get_node_or_null("CloseButton") != null:
+		return
+	var close_button := Button.new()
+	close_button.name = "CloseButton"
+	close_button.text = "✕"
+	close_button.position = Vector2(8.0, 8.0)
+	close_button.custom_minimum_size = Vector2(28.0, 28.0)
+	close_button.add_theme_font_size_override("font_size", 20)
+	close_button.add_theme_color_override("font_color", Color.WHITE)
+	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	close_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	close_button.pressed.connect(close_menu)
+	panel_container.add_child(close_button)
