@@ -26,6 +26,7 @@ const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
 const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
 const BOSS_ENEMY_SCENE := preload("res://scenes/enemies/boss_enemy.tscn")
 const DUNGEON_CHEST_SCENE := preload("res://scenes/dungeon/dungeon_chest.tscn")
+const LOCKED_CHEST_SCENE := preload("res://scenes/dungeon/locked_chest.tscn")
 const SPIKE_TRAP_SCENE := preload("res://scenes/dungeon/spike_trap.tscn")
 const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 
@@ -46,6 +47,7 @@ var gameplay_paused: bool = false
 var treasure_reveal_time_left: float = 0.0
 var boss_stairway = null
 var boss_enemy_ref = null
+var boss_locked_chest = null
 
 
 func _ready() -> void:
@@ -79,6 +81,7 @@ func _generate_floor() -> void:
 	floor_data = generator.generate_floor(current_floor, _create_rng(17))
 	boss_stairway = null
 	boss_enemy_ref = null
+	boss_locked_chest = null
 	_draw_floor()
 	_spawn_features()
 	_spawn_enemies()
@@ -186,6 +189,7 @@ func _spawn_enemies() -> void:
 	for child in enemy_root.get_children():
 		child.queue_free()
 	boss_enemy_ref = null
+	boss_locked_chest = null
 
 	if player == null or not is_instance_valid(player):
 		return
@@ -228,6 +232,7 @@ func _spawn_enemies() -> void:
 		var boss_room_index := int(floor_data.get("boss_room_index", floor_data.get("exit_room_index", 0)))
 		if boss_room_index >= 0 and boss_room_index < rooms.size():
 			_spawn_boss_enemy(rooms[boss_room_index], rng)
+			_spawn_boss_locked_chest(rooms[boss_room_index], rng)
 
 	set_gameplay_paused(gameplay_paused)
 
@@ -239,6 +244,8 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 		boss_enemy_ref = null
 		if boss_stairway != null and is_instance_valid(boss_stairway):
 			boss_stairway.set_locked(false, "[E] Descend to Floor %d" % (current_floor + 1))
+		if boss_locked_chest != null and is_instance_valid(boss_locked_chest):
+			boss_locked_chest.unlock()
 		return
 	if enemy_ref != null and enemy_ref.has_method("is_elite_enemy") and enemy_ref.is_elite_enemy():
 		set_gameplay_paused(true)
@@ -439,6 +446,14 @@ func _spawn_boss_enemy(room: Rect2i, rng: RandomNumberGenerator) -> void:
 	boss.died.connect(_on_enemy_died.bind(boss))
 	enemy_root.add_child(boss)
 	boss_enemy_ref = boss
+
+
+func _spawn_boss_locked_chest(room: Rect2i, rng: RandomNumberGenerator) -> void:
+	var chest = LOCKED_CHEST_SCENE.instantiate()
+	chest.global_position = _random_edge_point_in_room(room, rng)
+	chest.setup(loot_root, current_floor)
+	feature_root.add_child(chest)
+	boss_locked_chest = chest
 
 
 func set_gameplay_paused(paused: bool) -> void:

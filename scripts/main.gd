@@ -175,11 +175,13 @@ func _on_player_portal_requested(target_level_id: String) -> void:
 	if current_level_id == "overworld" and target_level_id == "dungeon" and current_level != null and current_level.has_method("get_dungeon_entrance_position"):
 		overworld_return_position = current_level.get_dungeon_entrance_position()
 	if current_level_id == "overworld" and target_level_id == "dungeon":
-		await hud.fade_to_black("進入地牢...", Color(0, 0, 0, 1), 0.5)
+		await hud.fade_to_black("進入地牢...", Color(0, 0, 0, 1), 0.8)
 		current_level_seed = _create_level_seed()
 		_broadcast_scene_change(target_level_id, 1, current_level_seed)
 		await get_tree().process_frame
-		await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
+		_reset_all_cameras()
+		await get_tree().create_timer(0.3).timeout
+		await hud.fade_from_black(Color(0, 0, 0, 1), 0.8)
 		return
 	call_deferred("_broadcast_scene_change", target_level_id, 1, current_level_seed)
 
@@ -272,14 +274,24 @@ func _on_raid_countdown_changed(message: String, color: Color, visible: bool) ->
 		hud.set_raid_countdown(message, color, visible)
 
 
+func _reset_all_cameras() -> void:
+	for spawned_player in player_spawner.get_players():
+		var cam := spawned_player.get_node_or_null("Camera2D")
+		if cam is Camera2D:
+			cam.position = Vector2.ZERO
+			cam.reset_smoothing()
+
+
 func _on_floor_transition_requested(next_floor: int) -> void:
 	if _is_multiplayer_enabled() and not _is_host():
 		request_next_floor.rpc_id(1, next_floor)
 		return
-	await hud.fade_to_black("第 %d 層" % next_floor, Color(0, 0, 0, 1), 0.5)
+	await hud.fade_to_black("第 %d 層" % next_floor, Color(0, 0, 0, 1), 0.8)
 	_broadcast_scene_change("dungeon", next_floor, current_level_seed)
 	await get_tree().process_frame
-	await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
+	_reset_all_cameras()
+	await get_tree().create_timer(0.3).timeout
+	await hud.fade_from_black(Color(0, 0, 0, 1), 0.8)
 
 
 @rpc("any_peer", "reliable")
