@@ -90,6 +90,7 @@ func _drop_gold_loot() -> void:
 
 func die() -> void:
 	print("ELITE DIE CALLED, dropping loot...")
+	print("loot_parent: ", loot_parent)
 	if loot_parent != null:
 		var shard_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop
 		shard_drop.setup("talent_shard", 3)
@@ -97,10 +98,14 @@ func die() -> void:
 		loot_parent.add_child(shard_drop)
 		_drop_gold_loot()
 		if randf() <= 0.5:
+			print("equipment roll passed")
 			var equipment_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop
 			equipment_drop.global_position = global_position + Vector2(10, -4)
 			loot_parent.add_child(equipment_drop)
+			print("equipment dropped: ", equipment_drop)
 			equipment_drop.setup_stack(DungeonLoot.generate_dungeon_equipment(floor_value))
+	else:
+		print("WARNING: loot_parent is null!")
 	super.die()
 
 
