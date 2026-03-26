@@ -263,3 +263,4 @@ static func get_stack_color(stack: Dictionary) -> Color:
 			_:
 				return Color.WHITE
 	return get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))
+

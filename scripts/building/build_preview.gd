@@ -25,3 +25,4 @@ func _process(_delta: float) -> void:
 	sprite.texture = texture
 	sprite.modulate = building_system.get_preview_modulate(tile_pos)
 	visible = true
+

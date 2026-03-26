@@ -23,21 +23,21 @@ var recipe_buttons: Dictionary = {}
 const CATEGORY_MAP = {
 	"Armor": "護甲",
 	"Weapons": "武器",
-	"Consumables": "消耗品",
-	"Cooking": "烹飪",
+	"Consumables": "消耗�?",
+	"Cooking": "?�飪",
 	"Tools": "工具"
 }
 
 const STAT_MAP = {
-	"Defense": "防禦",
-	"Attack": "攻擊",
-	"Slot": "欄位",
-	"Head": "頭部",
-	"Body": "身體",
-	"Hands": "手部",
-	"Feet": "腳部",
-	"Main Hand": "主手",
-	"Off Hand": "副手"
+	"Defense": "?�禦",
+	"Attack": "?��?",
+	"Slot": "欄�?",
+	"Head": "?�部",
+	"Body": "身�?",
+	"Hands": "?�部",
+	"Feet": "?�部",
+	"Main Hand": "主�?",
+	"Off Hand": "?��?"
 }
 
 
@@ -133,14 +133,14 @@ func _refresh_details() -> void:
 		for stat_id in recipe.get("stats", {}).keys():
 			lines.append("%s: +%s" % [_pretty_name(stat_id), str(recipe["stats"][stat_id])])
 		if recipe.has("max_durability"):
-			lines.append("耐久度: %d/%d" % [int(recipe.get("durability", recipe.get("max_durability", 0))), int(recipe.get("max_durability", 0))])
+			lines.append("?��?�? %d/%d" % [int(recipe.get("durability", recipe.get("max_durability", 0))), int(recipe.get("max_durability", 0))])
 		if recipe.has("slot"):
-			lines.append("欄位: %s" % _pretty_name(str(recipe.get("slot", ""))))
+			lines.append("欄�?: %s" % _pretty_name(str(recipe.get("slot", ""))))
 	else:
 		for effect_id in recipe.get("effect", {}).keys():
 			lines.append("%s: %s" % [_pretty_name(effect_id), str(recipe["effect"][effect_id])])
 	lines.append("")
-	lines.append("[b]材料:[/b]")
+	lines.append("[b]?��?:[/b]")
 	for resource_id in cost.keys():
 		var required: int = int(cost[resource_id])
 		var owned: int = player_inventory.get_item_count(resource_id)
@@ -227,3 +227,4 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 	swatch.custom_minimum_size = Vector2(16, 16)
 	swatch.color = ITEM_DATABASE.get_stack_color(stack) if not stack.is_empty() else Color(0.22, 0.22, 0.22, 1.0)
 	return swatch
+

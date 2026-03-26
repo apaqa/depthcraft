@@ -27,3 +27,4 @@ func _draw() -> void:
 	draw_circle(Vector2(spawn_tile.x * scale_x, spawn_tile.y * scale_y), 3.0, Color(0.35, 0.7, 1.0, 1.0))
 	var player_tile: Vector2 = snapshot.get("player_tile", Vector2.ZERO)
 	draw_circle(Vector2(player_tile.x * scale_x, player_tile.y * scale_y), 3.0, Color(1.0, 1.0, 1.0, 1.0))
+

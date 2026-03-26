@@ -104,3 +104,4 @@ func _get_effect(effect_id: String) -> float:
 
 func _emit_changed() -> void:
 	stats_changed.emit()
+

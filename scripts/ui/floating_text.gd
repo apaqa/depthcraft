@@ -15,3 +15,4 @@ func _ready() -> void:
 	tween.tween_property(self, "position:y", position.y - 30.0, 0.8)
 	tween.tween_property(label, "modulate:a", 0.0, 0.8)
 	tween.chain().tween_callback(queue_free)
+

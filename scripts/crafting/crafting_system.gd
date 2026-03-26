@@ -165,3 +165,4 @@ static func craft(recipe_id: String, inventory, cost_multiplier: float = 1.0) ->
 		inventory.remove_item(resource_id, int(get_recipe_cost(recipe_id, cost_multiplier)[resource_id]))
 
 	return inventory.add_item(str(recipe["result_item_id"]), 1)
+

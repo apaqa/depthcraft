@@ -39,17 +39,17 @@ func refresh() -> void:
 
 	if bool(state.get("remove_mode", false)):
 		title_label.text = "[ %s ]" % str(state.get("category_name", "Build"))
-		cost_label.text = "點擊已放置的方塊回收50%資源"
+		cost_label.text = "點�?已放置�??��??�收50%資�?"
 		cost_label.modulate = Color(1.0, 0.7, 0.45, 1.0)
 		core_label.text = _format_category_items(state)
 	else:
 		var building: Dictionary = state.get("building", {})
 		title_label.text = "[ %s ]" % str(state.get("category_name", "Build"))
 		if bool(state.get("category_empty", false)):
-			cost_label.text = "即將推出"
+			cost_label.text = "?��??�出"
 			cost_label.modulate = Color(0.75, 0.75, 0.8, 1.0)
 		elif bool(state.get("debug_mode", false)):
-			cost_label.text = "花費: 免費 [除錯]"
+			cost_label.text = "?�費: ?�費 [?�錯]"
 			cost_label.modulate = Color(1.0, 0.9, 0.25, 1.0)
 		else:
 			cost_label.text = "%s  |  %s" % [str(building.get("name", "Build")), _format_costs(building.get("cost", {}))]
@@ -57,12 +57,12 @@ func refresh() -> void:
 		core_label.text = _format_category_items(state, str(building.get("name", "")))
 
 	if bool(state.get("has_core", false)):
-		core_label.text += "\n核心: 已放置"
+		core_label.text += "\n?��?: 已放�?
 	elif bool(state.get("debug_mode", false)):
-		core_label.text += "\n核心: 按 C (除錯模式免費)"
+		core_label.text += "\n?��?: ??C (?�錯模�??�費)"
 	else:
-		core_label.text += "\n核心: 按 C (10木材, 5石頭)"
-	help_label.text = "[1-4] 分類  [滾輪] 物品  [Q/E] 切換  [左鍵] 放置  [右鍵] 移除  [B] 離開"
+		core_label.text += "\n?��?: ??C (10?��?, 5?�頭)"
+	help_label.text = "[1-4] ?��?  [滾輪] ?��?  [Q/E] ?��?  [左鍵] ?�置  [?�鍵] 移除  [B] ?��?"
 	category_label.bbcode_enabled = true
 	category_label.text = _format_categories(int(state.get("category_index", 0)))
 
@@ -76,7 +76,7 @@ func _format_costs(costs: Dictionary) -> String:
 		var amount := int(costs[resource_id])
 		var owned: int = inventory.get_item_count(resource_id)
 		parts.append("%d/%d %s" % [owned, amount, _pretty_name(resource_id)])
-	return "花費: %s" % ", ".join(parts)
+	return "?�費: %s" % ", ".join(parts)
 
 
 func _pretty_name(resource_id: String) -> String:
@@ -89,19 +89,20 @@ func _format_category_items(state: Dictionary, selected_name: String = "") -> St
 		var name := str(item_name)
 		parts.append("> %s <" % name if name == selected_name else name)
 	if parts.is_empty():
-		return "防禦物品: 即將推出"
-	return "物品: %s" % "  |  ".join(parts)
+		return "?�禦?��?: ?��??�出"
+	return "?��?: %s" % "  |  ".join(parts)
 
 
 func _format_categories(active_index: int) -> String:
 	var labels := [
-		"[1] 建築",
-		"[2] 門窗",
+		"[1] 建�?",
+		"[2] ?��?,
 		"[3] 設施",
-		"[4] 防禦",
+		"[4] ?�禦",
 	]
 	var parts: PackedStringArray = []
 	for index in range(labels.size()):
 		var color := "ffd86b" if index == active_index else "8a8f98"
 		parts.append("[color=#%s]%s[/color]" % [color, labels[index]])
 	return "  ".join(parts)
+

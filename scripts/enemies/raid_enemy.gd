@@ -85,3 +85,4 @@ func _get_active_target():
 
 func _drop_loot() -> void:
 	pass
+

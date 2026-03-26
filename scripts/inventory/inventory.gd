@@ -147,3 +147,4 @@ func _duplicate_items(source_items: Array[Dictionary]) -> Array[Dictionary]:
 	for stack in source_items:
 		copied_items.append(stack.duplicate())
 	return copied_items
+

@@ -146,3 +146,4 @@ func _report_results() -> void:
 	for failure in _failures:
 		push_error(failure)
 	quit(1)
+

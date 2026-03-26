@@ -60,9 +60,9 @@ func _unbind_inventory_signals() -> void:
 
 
 func _rebuild() -> void:
-	title_label.text = "å„²ç‰©ç®±"
-	player_label.text = "ä½ çš„èƒŒåŒ…"
-	chest_label.text = "å€‰åº«"
+	title_label.text = "?²ç‰©ç®?
+	player_label.text = "ä½ ç??Œå?"
+	chest_label.text = "?‰åº«"
 	_rebuild_grid(player_grid, player_inventory, chest_inventory, true)
 	_rebuild_grid(chest_grid, chest_inventory, player_inventory, false)
 
@@ -95,7 +95,7 @@ func _rebuild_grid(grid: GridContainer, source_inventory, target_inventory, from
 			row.add_child(icon_holder)
 			button.pressed.connect(_on_transfer_pressed.bind(source_inventory, target_inventory, index))
 		else:
-			button.text = "ç©º"
+			button.text = "ç©?
 			button.disabled = true
 		if from_player:
 			button.modulate = Color(0.92, 1.0, 0.92, 1.0)
@@ -125,3 +125,4 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 	swatch.custom_minimum_size = Vector2(16, 16)
 	swatch.color = ITEM_DATABASE.get_stack_color(stack) if not stack.is_empty() else Color(0.18, 0.18, 0.2, 1.0)
 	return swatch
+

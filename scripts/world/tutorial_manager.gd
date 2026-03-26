@@ -5,11 +5,11 @@ const SAVE_PATH := "user://tutorial_save.json"
 enum Step { MOVE = 0, ATTACK = 1, BUILD = 2, INTERACT = 3, DUNGEON = 4, DONE = 5 }
 
 const STEP_TEXTS := {
-	Step.MOVE:    "WASD 移動",
-	Step.ATTACK:  "滑鼠左鍵 攻擊",
-	Step.BUILD:   "按 B 開啟建造模式",
-	Step.INTERACT: "按 E 與設施互動",
-	Step.DUNGEON: "找到地牢入口進入地下城",
+	Step.MOVE:    "WASD 移�?",
+	Step.ATTACK:  "滑�?左鍵 ?��?",
+	Step.BUILD:   "??B ?��?建造模�?,
+	Step.INTERACT: "??E ?�設?��???,
+	Step.DUNGEON: "?�到?�牢?�口?�入?��???,
 }
 
 var _step: int = Step.MOVE
@@ -180,3 +180,4 @@ func _save_completed() -> void:
 		return
 	file.store_string(JSON.stringify({"completed": true}))
 	file.flush()
+

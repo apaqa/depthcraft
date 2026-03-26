@@ -291,3 +291,4 @@ func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
 func apply_slow(multiplier: float, duration: float) -> void:
 	slow_multiplier = clampf(multiplier, 0.1, 1.0)
 	slow_time_left = max(duration, 0.0)
+

@@ -19,7 +19,7 @@ func _ready() -> void:
 func open_with_options(options: Array[Dictionary]) -> void:
 	active_options = options.duplicate(true)
 	visible = true
-	title_label.text = "選擇一個強化"
+	title_label.text = "?��?一?�強??
 	_rebuild_cards()
 	auto_timer.start(30.0)
 
@@ -76,3 +76,4 @@ func _on_auto_timer_timeout() -> void:
 		return
 	var random_option: Dictionary = active_options[randi() % active_options.size()]
 	_choose_buff(str(random_option.get("id", "")))
+

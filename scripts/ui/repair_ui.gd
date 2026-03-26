@@ -39,7 +39,7 @@ func _refresh() -> void:
 	for child in list_container.get_children():
 		child.queue_free()
 	if player == null:
-		detail_label.text = "無修理對象"
+		detail_label.text = "?�修?��?�?
 		return
 	var equipped_any := false
 	var repairable_any := false
@@ -65,7 +65,7 @@ func _refresh() -> void:
 		bar_bg.add_child(bar_fill)
 		row.add_child(bar_bg)
 		var info := Label.new()
-		info.text = "耐久: %d/%d" % [durability, max_durability]
+		info.text = "?��?: %d/%d" % [durability, max_durability]
 		row.add_child(info)
 		var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name)
 		if not cost.is_empty():
@@ -86,12 +86,12 @@ func _refresh() -> void:
 			row.add_child(button)
 		list_container.add_child(row)
 	if not equipped_any:
-		detail_label.text = "沒有需要修理的裝備。請先裝備物品"
+		detail_label.text = "沒�??�要修?��?裝�??��??��??�物??
 		return
 	if not repairable_any:
-		detail_label.text = "所有裝備耐久已滿"
+		detail_label.text = "?�?��??�耐�?已滿"
 	else:
-		detail_label.text = "點選需要修理的物品進行修理"
+		detail_label.text = "點選?�要修?��??��??��?修�?"
 
 
 func _on_repair_pressed(slot_name: String) -> void:
@@ -99,3 +99,4 @@ func _on_repair_pressed(slot_name: String) -> void:
 		return
 	if player.equipment_system.repair_slot(slot_name, player.inventory):
 		_refresh()
+

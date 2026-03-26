@@ -46,7 +46,7 @@ func _build_ui() -> void:
 	_notice_label.anchor_bottom = 0.2
 	_notice_label.offset_left = -10.0
 	_notice_label.offset_right = 20.0
-	_notice_label.text = "多人模式中，遊戲不會暫停"
+	_notice_label.text = "多人模�?中�??�戲不�??��?"
 	_notice_label.visible = false
 	_notice_label.add_theme_font_size_override("font_size", 14)
 	_notice_label.add_theme_color_override("font_color", Color(0.88, 0.88, 0.88, 1.0))
@@ -66,11 +66,11 @@ func _build_ui() -> void:
 	_menu_buttons_root.add_theme_constant_override("separation", 16)
 	content_root.add_child(_menu_buttons_root)
 
-	_menu_buttons_root.add_child(_make_menu_button("繼續遊戲", close_menu))
-	_menu_buttons_root.add_child(_make_menu_button("保存遊戲", _on_save_pressed))
-	_menu_buttons_root.add_child(_make_menu_button("設定", _show_settings_page))
-	_menu_buttons_root.add_child(_make_menu_button("主選單", _go_to_main_menu))
-	_menu_buttons_root.add_child(_make_menu_button("關閉", close_menu))
+	_menu_buttons_root.add_child(_make_menu_button("繼�??�戲", close_menu))
+	_menu_buttons_root.add_child(_make_menu_button("保�??�戲", _on_save_pressed))
+	_menu_buttons_root.add_child(_make_menu_button("設�?", _show_settings_page))
+	_menu_buttons_root.add_child(_make_menu_button("主選??, _go_to_main_menu))
+	_menu_buttons_root.add_child(_make_menu_button("?��?", close_menu))
 
 	_settings_panel = PanelContainer.new()
 	_settings_panel.anchor_left = 0.42
@@ -92,26 +92,26 @@ func _build_ui() -> void:
 	panel_vbox.add_theme_constant_override("separation", 14)
 	panel_margin.add_child(panel_vbox)
 
-	var back_button := _make_menu_button("← 返回", _show_main_page)
+	var back_button := _make_menu_button("??返�?", _show_main_page)
 	back_button.add_theme_font_size_override("font_size", 18)
 	back_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel_vbox.add_child(back_button)
 
 	var title := Label.new()
-	title.text = "設定"
+	title.text = "設�?"
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	title.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
 	title.add_theme_constant_override("outline_size", 2)
 	panel_vbox.add_child(title)
 
-	panel_vbox.add_child(_build_section_label("音量"))
-	_add_bus_slider(panel_vbox, "Master", "主音量")
-	_add_bus_slider(panel_vbox, "Music", "音樂")
-	_add_bus_slider(panel_vbox, "SFX", "音效")
+	panel_vbox.add_child(_build_section_label("?��?"))
+	_add_bus_slider(panel_vbox, "Master", "主音??)
+	_add_bus_slider(panel_vbox, "Music", "?��?")
+	_add_bus_slider(panel_vbox, "SFX", "?��?")
 
-	panel_vbox.add_child(_build_section_label("視角"))
-	var zoom_row := _build_option_row("視角縮放")
+	panel_vbox.add_child(_build_section_label("視�?"))
+	var zoom_row := _build_option_row("視�?縮放")
 	_zoom_slider = HSlider.new()
 	_zoom_slider.min_value = 1.5
 	_zoom_slider.max_value = 3.0
@@ -122,8 +122,8 @@ func _build_ui() -> void:
 	zoom_row.add_child(_zoom_slider)
 	panel_vbox.add_child(zoom_row)
 
-	panel_vbox.add_child(_build_section_label("語言"))
-	var language_row := _build_option_row("語言")
+	panel_vbox.add_child(_build_section_label("語�?"))
+	var language_row := _build_option_row("語�?")
 	_lang_button = Button.new()
 	_style_secondary_button(_lang_button)
 	_lang_button.custom_minimum_size = Vector2(140, 32)
@@ -131,8 +131,8 @@ func _build_ui() -> void:
 	language_row.add_child(_lang_button)
 	panel_vbox.add_child(language_row)
 
-	panel_vbox.add_child(_build_section_label("新手提示"))
-	var tutorial_row := _build_option_row("顯示提示")
+	panel_vbox.add_child(_build_section_label("?��??�示"))
+	var tutorial_row := _build_option_row("顯示?�示")
 	_tutorial_toggle = CheckButton.new()
 	_tutorial_toggle.button_pressed = true
 	_tutorial_toggle.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
@@ -289,7 +289,7 @@ func _on_lang_toggle() -> void:
 		_lang_button.text = "English"
 	else:
 		TranslationServer.set_locale("zh_TW")
-		_lang_button.text = "繁體中文"
+		_lang_button.text = "繁�?中�?"
 
 
 func _on_zoom_changed(value: float) -> void:
@@ -323,7 +323,7 @@ func _load_settings() -> void:
 				_tutorial_toggle.set_pressed_no_signal(not bool(parsed.get("completed", false)))
 
 	if _lang_button != null:
-		_lang_button.text = "繁體中文" if TranslationServer.get_locale().begins_with("zh") else "English"
+		_lang_button.text = "繁�?中�?" if TranslationServer.get_locale().begins_with("zh") else "English"
 
 	if not FileAccess.file_exists(SETTINGS_PATH):
 		return
@@ -349,7 +349,7 @@ func _load_settings() -> void:
 	if data.has("locale") and _lang_button != null:
 		var locale := str(data["locale"])
 		TranslationServer.set_locale(locale)
-		_lang_button.text = "繁體中文" if locale.begins_with("zh") else "English"
+		_lang_button.text = "繁�?中�?" if locale.begins_with("zh") else "English"
 
 	if data.has("camera_zoom") and _zoom_slider != null:
 		var zoom_value := float(data["camera_zoom"])
@@ -371,3 +371,4 @@ func _save_settings() -> void:
 	if file != null:
 		file.store_string(JSON.stringify(data))
 		file.close()
+

@@ -70,3 +70,4 @@ static func load_buildings() -> Dictionary:
 static func clear_save() -> void:
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+

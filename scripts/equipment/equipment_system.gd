@@ -287,3 +287,4 @@ func get_display_stat_summary(base_summary: Dictionary) -> Dictionary:
 		"max_hp": int(round(float(base_summary.get("max_hp", 0.0)))),
 		"speed": int(round(float(base_summary.get("speed", 0.0)))),
 	}
+

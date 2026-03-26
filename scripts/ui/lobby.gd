@@ -73,3 +73,4 @@ func _on_leave_pressed() -> void:
 
 func _get_network_manager():
 	return get_node_or_null("/root/NetworkManager")
+

@@ -160,3 +160,4 @@ func _report_results() -> void:
 		push_error(failure)
 
 	quit(1)
+

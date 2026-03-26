@@ -33,9 +33,9 @@ func get_interaction_prompt() -> String:
 	_update_growth_state()
 	match state:
 		PlotState.EMPTY:
-			return "[E] 種植 (1種子)"
+			return "[E] 種�? (1種�?)"
 		PlotState.READY:
-			return "[E] 收穫"
+			return "[E] ?�穫"
 		_:
 			return "Growing... %d seconds left" % int(ceil(get_time_remaining()))
 
@@ -48,7 +48,7 @@ func interact(player) -> void:
 		PlotState.EMPTY:
 			if player.inventory.get_item_count("seed") < 1:
 				if player.has_method("show_status_message"):
-					player.show_status_message("需要1種子", Color(1.0, 0.6, 0.4, 1.0))
+					player.show_status_message("?��?種�?", Color(1.0, 0.6, 0.4, 1.0))
 				return
 			player.inventory.remove_item("seed", 1)
 			state = PlotState.PLANTED
@@ -110,3 +110,4 @@ func _refresh_visuals() -> void:
 		sprout_polygon.scale = Vector2.ONE if state == PlotState.PLANTED else Vector2(1.25, 1.25)
 	if crop_polygon != null:
 		crop_polygon.visible = state == PlotState.READY
+

@@ -503,3 +503,4 @@ func reveal_treasure_hunter(duration: float) -> void:
 
 func _is_boss_floor() -> bool:
 	return bool(floor_data.get("is_boss_floor", false))
+

@@ -184,3 +184,4 @@ func _set_connected_players(player_ids: Array[int]) -> void:
 func _update_status(status_text: String) -> void:
 	_connection_status = status_text
 	connection_status_changed.emit(_connection_status)
+

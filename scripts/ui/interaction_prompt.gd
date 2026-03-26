@@ -19,3 +19,4 @@ func show_prompt(prompt_text: String) -> void:
 func hide_prompt() -> void:
 	text = ""
 	visible = false
+

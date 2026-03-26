@@ -747,3 +747,4 @@ func _register_occupied_tiles(origin_tile: Vector2i, building_id: String, tile_s
 			"origin": origin_tile,
 			"kind": kind,
 		}
+

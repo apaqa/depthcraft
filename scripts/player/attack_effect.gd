@@ -17,3 +17,4 @@ func play_swing(attack_direction: Vector2) -> void:
 	tween.tween_property(self, "rotation", rotation + deg_to_rad(110 if resolved_direction.x >= 0.0 else -110), 0.2)
 	tween.tween_property(self, "modulate:a", 0.0, 0.2)
 	tween.finished.connect(queue_free)
+

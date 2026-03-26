@@ -182,3 +182,4 @@ func get_respawn_timer() -> Timer:
 	if respawn_timer != null:
 		return respawn_timer
 	return get_node_or_null("RespawnTimer")
+

@@ -3,7 +3,7 @@ class_name TalentAltarFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] 天賦樹"
+	return "[E] 天賦�?
 
 
 func interact(player) -> void:
@@ -21,3 +21,4 @@ func serialize_data() -> Dictionary:
 
 func load_from_data(_data: Dictionary) -> void:
 	pass
+

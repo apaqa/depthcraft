@@ -132,3 +132,4 @@ func _on_body_entered(body: Node) -> void:
 				text_color = DUNGEON_LOOT.get_rarity_color(_get_rarity())
 			body._show_floating_text(global_position, "+%d %s" % [quantity, item_name], text_color)
 		queue_free()
+

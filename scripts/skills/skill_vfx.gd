@@ -26,3 +26,4 @@ func _draw() -> void:
 		"war_cry":
 			var radius := lerpf(8.0, max_radius, t)
 			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 42, Color(1.0, 0.9, 0.35, 1.0 - t), 3.0)
+

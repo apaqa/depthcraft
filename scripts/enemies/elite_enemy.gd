@@ -115,3 +115,4 @@ func _summon_bats() -> void:
 			bat.set_ai_paused(ai_paused)
 		if get_parent() != null:
 			get_parent().add_child(bat)
+

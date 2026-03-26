@@ -12,7 +12,7 @@ const SOURCE_ROAD := 3
 const SOURCE_WATER := 5
 const SOURCE_WATER_ALT := 6
 const BASE_CLEAR_RADIUS := 128.0
-# Dungeon portal tile position (pixel 480,320 → tile 30,20)
+# Dungeon portal tile position (pixel 480,320 ??tile 30,20)
 const PORTAL_TILE := Vector2i(30, 20)
 # Water border thickness
 const WATER_BORDER := 2
@@ -167,3 +167,4 @@ func clear_base_area_around(world_position: Vector2) -> void:
 			continue
 		if child.global_position.distance_to(world_position) <= BASE_CLEAR_RADIUS:
 			child.set_permanently_depleted()
+

@@ -49,3 +49,4 @@ func _refresh_visuals() -> void:
 		sprite.modulate = Color(1.0, 1.0, 1.0, 1.0) if active else Color(0.5, 0.5, 0.5, 0.75)
 	if collision_shape != null:
 		collision_shape.disabled = not active
+

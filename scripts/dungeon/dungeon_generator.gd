@@ -155,3 +155,4 @@ func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index:
 		else:
 			room_types.append("normal")
 	return room_types
+

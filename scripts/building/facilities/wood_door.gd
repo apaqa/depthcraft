@@ -8,3 +8,4 @@ func serialize_data() -> Dictionary:
 
 func load_from_data(_data: Dictionary) -> void:
 	pass
+

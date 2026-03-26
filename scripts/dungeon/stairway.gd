@@ -63,3 +63,4 @@ func _apply_stair_visual() -> void:
 		sprite.texture = DOWN_TEXTURE
 		sprite.modulate = Color(0.72, 0.72, 0.72, 1.0) if is_locked else Color(1.0, 1.0, 1.0, 1.0)
 		sprite.flip_v = false
+

@@ -33,3 +33,4 @@ static func clear_save() -> void:
 	if file != null:
 		file.store_string("{}")
 		file.flush()
+

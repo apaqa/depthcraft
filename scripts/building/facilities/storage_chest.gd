@@ -13,7 +13,7 @@ func _ready() -> void:
 
 
 func get_interaction_prompt() -> String:
-	return "[E] 倉庫"
+	return "[E] ?�庫"
 
 
 func interact(player) -> void:
@@ -38,3 +38,4 @@ func load_from_data(data: Dictionary) -> void:
 
 func _on_inventory_changed() -> void:
 	chest_changed.emit()
+

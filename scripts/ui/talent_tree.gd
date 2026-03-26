@@ -42,7 +42,7 @@ func _refresh() -> void:
 		child.queue_free()
 	if player == null:
 		return
-	shard_label.text = "天賦碎片: %d" % player.inventory.get_item_count("talent_shard")
+	shard_label.text = "天賦碎�?: %d" % player.inventory.get_item_count("talent_shard")
 	for branch_id in TALENT_DATA.get_branch_ids():
 		var panel := PanelContainer.new()
 		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -98,10 +98,10 @@ func _refresh() -> void:
 
 func _build_talent_text(talent: Dictionary) -> String:
 	var talent_id := str(talent.get("id", ""))
-	var milestone_prefix := "[里程碑]\n" if bool(talent.get("is_milestone", false)) else ""
+	var milestone_prefix := "[?��?碑]\n" if bool(talent.get("is_milestone", false)) else ""
 	if player != null and player.has_talent(talent_id):
-		return "%s%s\n已解鎖" % [milestone_prefix, str(talent.get("name", talent_id))]
-	return "%s%s\n%s\n花費: %d" % [
+		return "%s%s\n已解?? % [milestone_prefix, str(talent.get("name", talent_id))]
+	return "%s%s\n%s\n?�費: %d" % [
 		milestone_prefix,
 		str(talent.get("name", talent_id)),
 		str(talent.get("description", "")),
@@ -127,3 +127,4 @@ func _on_talent_pressed(talent_id: String) -> void:
 	if player.unlock_talent(talent_id):
 		print("Unlocked talent: ", talent_id)
 		_refresh()
+

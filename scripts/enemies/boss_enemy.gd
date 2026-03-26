@@ -163,3 +163,4 @@ func _get_normal_enemy_stats(floor_number: int) -> Dictionary:
 	if floor_number <= 10:
 		return {"hp": 80, "damage": 18}
 	return {"hp": 100 + floor_number * 5, "damage": 22 + floor_number * 2}
+

@@ -296,7 +296,7 @@ func _try_interact() -> void:
 	if interactable == null or not interactable.has_method("interact"):
 		return
 	if _interaction_requires_core(interactable):
-		show_status_message("需要有效的家園核心", Color(1.0, 0.65, 0.4, 1.0))
+		show_status_message("?�要�??��?家�??��?", Color(1.0, 0.65, 0.4, 1.0))
 		return
 	if interactable.has_method("hit"):
 		last_interacted_resource = interactable
@@ -469,7 +469,7 @@ func die() -> void:
 		return
 	is_dead = true
 	set_physics_process(false)
-	_show_floating_text(global_position, "你死了", Color(1.0, 0.35, 0.35, 1.0))
+	_show_floating_text(global_position, "你死�?, Color(1.0, 0.35, 0.35, 1.0))
 	died.emit()
 
 
@@ -952,3 +952,4 @@ func _spawn_afterimage() -> void:
 	var tween := afterimage.create_tween()
 	tween.tween_property(afterimage, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(afterimage.queue_free)
+

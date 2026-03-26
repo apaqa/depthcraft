@@ -12,7 +12,7 @@ extends Control
 
 
 func _ready() -> void:
-	title_label.text = "深淵工坊 DepthCraft"
+	title_label.text = "深淵工�? DepthCraft"
 	join_panel.visible = false
 	ip_input.text = _get_network_manager().get_last_join_ip() if _get_network_manager() != null else "127.0.0.1"
 	if not single_player_button.pressed.is_connected(_on_single_player_pressed):
@@ -80,3 +80,4 @@ func _on_connection_failed_message(message: String) -> void:
 
 func _get_network_manager():
 	return get_node_or_null("/root/NetworkManager")
+

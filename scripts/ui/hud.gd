@@ -72,7 +72,7 @@ func _ready() -> void:
 
 
 func update_hp(current: int, max_hp: int) -> void:
-	hp_label.text = "血量"
+	hp_label.text = "血??
 	hp_bar_fill.size.x = 120.0 * clampf(float(current) / float(max(max_hp, 1)), 0.0, 1.0)
 
 
@@ -201,7 +201,7 @@ func _on_inventory_changed() -> void:
 
 
 func update_bag_label(used_slots: int, max_slots: int) -> void:
-	bag_label.text = "背包: %d/%d" % [used_slots, max_slots]
+	bag_label.text = "?��?: %d/%d" % [used_slots, max_slots]
 
 
 func update_floor_label(current_floor: int) -> void:
@@ -210,7 +210,7 @@ func update_floor_label(current_floor: int) -> void:
 
 
 func update_kills_label(kills: int) -> void:
-	kills_label.text = "擊殺: %d" % kills if kills > 0 else ""
+	kills_label.text = "?�殺: %d" % kills if kills > 0 else ""
 
 
 func _refresh_debug_label() -> void:
@@ -219,7 +219,7 @@ func _refresh_debug_label() -> void:
 		return
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
-	debug_label.text = "[除錯模式]\n[8] 除錯  [9] 重置+清除  [0] 重置" if debug_label.visible else "[除錯模式]"
+	debug_label.text = "[?�錯模�?]\n[8] ?�錯  [9] ?�置+清除  [0] ?�置" if debug_label.visible else "[?�錯模�?]"
 	debug_label.modulate.a = 0.5
 	debug_label.add_theme_font_size_override("font_size", 10)
 
@@ -232,7 +232,7 @@ func set_connection_info(message: String) -> void:
 func _on_crafting_requested(_facility) -> void:
 	_close_all_menus()
 	var recipe_filter := PackedStringArray()
-	var menu_title := "製作"
+	var menu_title := "製�?"
 	if _facility != null and _facility.has_method("get_recipe_ids"):
 		recipe_filter = _facility.get_recipe_ids()
 	if _facility != null and _facility.has_method("get_menu_title"):
@@ -418,7 +418,7 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 
 func show_death_screen(summary: Dictionary) -> void:
 	death_overlay.visible = true
-	death_summary_label.text = "第 %d 層 | 擊殺: %d | 戰利品已遺失！" % [
+	death_summary_label.text = "�?%d �?| ?�殺: %d | ?�利?�已?�失�? % [
 		int(summary.get("floor", 0)),
 		int(summary.get("kills", 0)),
 	]
@@ -478,7 +478,7 @@ func update_consumable_bar(slots: Array) -> void:
 		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
 		var key_name = "Q" if slot_index == 0 else "R"
 		if slot.is_empty():
-			labels.append("[%s] 空" % key_name)
+			labels.append("[%s] �? % key_name)
 			continue
 		labels.append("[%s] %s x%d" % [key_name, str(slot.get("name", "Item")), int(slot.get("quantity", 0))])
 	consumable_bar.text = " | ".join(labels)
@@ -520,7 +520,7 @@ func _refresh_skill_slots() -> void:
 		skill_label.add_theme_font_size_override("font_size", 11)
 
 		if slot.is_empty():
-			skill_label.text = "[%s]\n空" % key_name
+			skill_label.text = "[%s]\n�? % key_name
 			skill_label.self_modulate = Color(0.5, 0.5, 0.5, 1.0)
 			container.add_child(skill_label)
 		else:
@@ -562,7 +562,7 @@ func _refresh_skill_slots() -> void:
 			break
 	if has_unequipped:
 		var hint := Label.new()
-		hint.text = "  ← 按 K 裝備技能"
+		hint.text = "  ????K 裝�??�??
 		hint.self_modulate = Color(1.0, 0.9, 0.4, 1.0)
 		hint.add_theme_constant_override("outline_size", 2)
 		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
@@ -583,3 +583,4 @@ func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), 
 	fade_out.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0), fade_duration)
 	await fade_out.finished
 	transition_overlay.visible = false
+

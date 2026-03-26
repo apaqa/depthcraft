@@ -57,3 +57,4 @@ func get_players() -> Array[CharacterBody2D]:
 		if player != null:
 			result.append(player)
 	return result
+
