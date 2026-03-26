@@ -532,6 +532,11 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 		total_damage_dealt += attack_damage
 	if (lifesteal_ratio + equipment_lifesteal_ratio) > 0.0 and total_damage_dealt > 0:
 		heal(int(max(round(total_damage_dealt * (lifesteal_ratio + equipment_lifesteal_ratio)), 1.0)))
+	# Also hit the closest nearby resource node (trees, rocks, ore)
+	var closest_resource = _get_closest_interactable()
+	if closest_resource != null and closest_resource.has_method("hit"):
+		last_interacted_resource = closest_resource
+		closest_resource.hit()
 	_save_persistent_state()
 
 

@@ -5,17 +5,12 @@ signal border_flash_requested(color: Color)
 signal raid_started
 signal raid_countdown_changed(message: String, color: Color, visible: bool)
 
-const GROUND_SIZE := Vector2i(60, 40)
 const SOURCE_GRASS := 1
 const SOURCE_GRASS_ALT := 1
 const SOURCE_ROAD := 3
 const SOURCE_WATER := 5
 const SOURCE_WATER_ALT := 6
 const BASE_CLEAR_RADIUS := 128.0
-# Dungeon portal tile position (pixel 480,320 ??tile 30,20)
-const PORTAL_TILE := Vector2i(30, 20)
-# Water border thickness
-const WATER_BORDER := 2
 const TREE_SCENE := preload("res://scenes/world/tree_node.tscn")
 const ROCK_SCENE := preload("res://scenes/world/rock_node.tscn")
 const IRON_SCENE := preload("res://scenes/world/iron_node.tscn")
@@ -28,12 +23,21 @@ const MERCHANT_SCENE := preload("res://scenes/world/merchant.tscn")
 @onready var raid_system = $RaidSystem
 @onready var dungeon_entrance = $ReturnPortal
 
+var generation_seed: int = 0
+var _generator: WorldGenerator = null
+
 
 func _ready() -> void:
+	_generator = WorldGenerator.new()
+	_generator.generate(generation_seed)
+	player_spawn.position = _generator.get_spawn_pixel()
+	dungeon_entrance.position = _generator.get_dungeon_entrance_pixel()
 	build_ground()
 	_spawn_resource_layout()
 	_spawn_merchant()
-	if raid_system != null and raid_system.has_signal("banner_requested") and raid_system.has_signal("border_flash_requested") and raid_system.has_signal("raid_started"):
+	if raid_system != null and raid_system.has_signal("banner_requested") \
+			and raid_system.has_signal("border_flash_requested") \
+			and raid_system.has_signal("raid_started"):
 		raid_system.banner_requested.connect(_on_banner_requested)
 		raid_system.border_flash_requested.connect(_on_border_flash_requested)
 		raid_system.raid_started.connect(func() -> void: raid_started.emit())
@@ -51,21 +55,24 @@ func place_player(player: Node2D, spawn_override: Variant = null) -> void:
 
 func build_ground() -> void:
 	tile_map_layer.clear()
+	var map_size := WorldGenerator.MAP_SIZE
+	var center := WorldGenerator.CENTER
+	var entrance_tile := _generator.dungeon_entrance_tile
 
-	for y in range(GROUND_SIZE.y):
-		for x in range(GROUND_SIZE.x):
+	for y in range(map_size.y):
+		for x in range(map_size.x):
 			var coords := Vector2i(x, y)
-			# Water border around the map edges
-			if x < WATER_BORDER or x >= GROUND_SIZE.x - WATER_BORDER \
-					or y < WATER_BORDER or y >= GROUND_SIZE.y - WATER_BORDER:
+			# Road runs between spawn (center) and dungeon entrance, 2 tiles wide
+			var on_road := (x >= center.x - 1 and x <= center.x) \
+					and (y >= entrance_tile.y and y <= center.y)
+			if on_road:
+				tile_map_layer.set_cell(coords, SOURCE_ROAD, Vector2i.ZERO)
+				continue
+			var tile_type := _generator.get_tile_type(coords)
+			if tile_type == "water" or tile_type == "lake":
 				var src := SOURCE_WATER if (x + y) % 2 == 0 else SOURCE_WATER_ALT
 				tile_map_layer.set_cell(coords, src, Vector2i.ZERO)
-			# Dirt road leading south from portal to water border
-			elif x >= PORTAL_TILE.x - 1 and x <= PORTAL_TILE.x \
-					and y >= PORTAL_TILE.y and y < GROUND_SIZE.y - WATER_BORDER:
-				tile_map_layer.set_cell(coords, SOURCE_ROAD, Vector2i.ZERO)
 			else:
-				# Solid grass tile - no transition tiles in main ground area
 				tile_map_layer.set_cell(coords, SOURCE_GRASS, Vector2i.ZERO)
 
 	tile_map_layer.update_internals()
@@ -73,42 +80,74 @@ func build_ground() -> void:
 
 func _spawn_resource_layout() -> void:
 	for child in get_children():
-		if child.name.begins_with("AutoResource_"):
+		if child is ResourceNode or child.name.begins_with("AutoResource_"):
 			child.queue_free()
-	var placements := [
-		{"scene": TREE_SCENE, "pos": Vector2(112, 112)}, {"scene": TREE_SCENE, "pos": Vector2(176, 160)},
-		{"scene": TREE_SCENE, "pos": Vector2(272, 96)}, {"scene": TREE_SCENE, "pos": Vector2(352, 208)},
-		{"scene": TREE_SCENE, "pos": Vector2(592, 160)}, {"scene": TREE_SCENE, "pos": Vector2(704, 96)},
-		{"scene": TREE_SCENE, "pos": Vector2(784, 224)}, {"scene": TREE_SCENE, "pos": Vector2(864, 128)},
-		{"scene": TREE_SCENE, "pos": Vector2(896, 320)}, {"scene": TREE_SCENE, "pos": Vector2(656, 448)},
-		{"scene": ROCK_SCENE, "pos": Vector2(144, 320)}, {"scene": ROCK_SCENE, "pos": Vector2(304, 400)},
-		{"scene": ROCK_SCENE, "pos": Vector2(480, 112)}, {"scene": ROCK_SCENE, "pos": Vector2(704, 352)},
-		{"scene": ROCK_SCENE, "pos": Vector2(896, 464)}, {"scene": ROCK_SCENE, "pos": Vector2(560, 528)},
-		{"scene": IRON_SCENE, "pos": Vector2(240, 496)}, {"scene": IRON_SCENE, "pos": Vector2(448, 496)},
-		{"scene": IRON_SCENE, "pos": Vector2(768, 512)}, {"scene": IRON_SCENE, "pos": Vector2(912, 240)},
-		{"scene": GRASS_SCENE, "pos": Vector2(96, 224)}, {"scene": GRASS_SCENE, "pos": Vector2(160, 448)},
-		{"scene": GRASS_SCENE, "pos": Vector2(256, 224)}, {"scene": GRASS_SCENE, "pos": Vector2(336, 528)},
-		{"scene": GRASS_SCENE, "pos": Vector2(416, 272)}, {"scene": GRASS_SCENE, "pos": Vector2(544, 224)},
-		{"scene": GRASS_SCENE, "pos": Vector2(624, 400)}, {"scene": GRASS_SCENE, "pos": Vector2(736, 208)},
-		{"scene": GRASS_SCENE, "pos": Vector2(816, 416)}, {"scene": GRASS_SCENE, "pos": Vector2(928, 144)},
-		{"scene": GRASS_SCENE, "pos": Vector2(944, 560)}, {"scene": GRASS_SCENE, "pos": Vector2(528, 592)},
-	]
+
+	var spawn_px := _generator.get_spawn_pixel()
+	var entrance_px := _generator.get_dungeon_entrance_pixel()
+	var safe_dist := float((WorldGenerator.SAFE_RADIUS + 2) * WorldGenerator.TILE_SIZE)
+	var entrance_clear := float(3 * WorldGenerator.TILE_SIZE)
 	var idx := 0
-	for placement in placements:
-		var node = (placement["scene"] as PackedScene).instantiate()
+
+	for cluster in _generator.forest_clusters:
+		var count := clampi(cluster.radius / 2, 10, 25)
+		for pos in _generator.sample_positions_in_cluster(cluster, count):
+			if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
+				continue
+			var node := TREE_SCENE.instantiate()
+			node.name = "AutoResource_%d" % idx
+			node.position = pos
+			add_child(node)
+			idx += 1
+
+	for cluster in _generator.mountain_clusters:
+		var rock_count := clampi(cluster.radius / 2, 8, 15)
+		for pos in _generator.sample_positions_in_cluster(cluster, rock_count):
+			if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
+				continue
+			var node := ROCK_SCENE.instantiate()
+			node.name = "AutoResource_%d" % idx
+			node.position = pos
+			add_child(node)
+			idx += 1
+		var iron_count := clampi(cluster.radius / 5, 2, 5)
+		for pos in _generator.sample_positions_in_cluster(cluster, iron_count):
+			if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
+				continue
+			var node := IRON_SCENE.instantiate()
+			node.name = "AutoResource_%d" % idx
+			node.position = pos
+			add_child(node)
+			idx += 1
+
+	for pos in _generator.sample_plains_positions(20):
+		if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
+			continue
+		var node := GRASS_SCENE.instantiate()
 		node.name = "AutoResource_%d" % idx
-		node.position = placement["pos"]
+		node.position = pos
 		add_child(node)
 		idx += 1
+
+
+func _is_valid_resource_pos(pos: Vector2, spawn_px: Vector2, entrance_px: Vector2,
+		safe_dist: float, entrance_clear: float) -> bool:
+	if pos.distance_to(spawn_px) < safe_dist:
+		return false
+	if pos.distance_to(entrance_px) < entrance_clear:
+		return false
+	var tile := Vector2i(int(pos.x) / WorldGenerator.TILE_SIZE, int(pos.y) / WorldGenerator.TILE_SIZE)
+	var tile_type := _generator.get_tile_type(tile)
+	return tile_type != "water" and tile_type != "lake"
 
 
 func _spawn_merchant() -> void:
 	var existing := get_node_or_null("Merchant")
 	if existing != null:
 		return
-	var merchant = MERCHANT_SCENE.instantiate()
+	var merchant := MERCHANT_SCENE.instantiate()
 	merchant.name = "Merchant"
-	merchant.position = Vector2(288, 320)
+	merchant.position = _generator.get_spawn_pixel() + Vector2(48, 0)
 	add_child(merchant)
 
 
@@ -167,4 +206,3 @@ func clear_base_area_around(world_position: Vector2) -> void:
 			continue
 		if child.global_position.distance_to(world_position) <= BASE_CLEAR_RADIUS:
 			child.set_permanently_depleted()
-
