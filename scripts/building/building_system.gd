@@ -13,6 +13,8 @@ const BUILDING_DATA := preload("res://scripts/building/building_data.gd")
 const BUILDING_SAVE := preload("res://scripts/building/building_save.gd")
 const BUILD_PREVIEW_SCENE := preload("res://scenes/building/build_preview.tscn")
 const HOME_CORE_SCENE := preload("res://scenes/building/home_core.tscn")
+const BUILDING_TILE_SCRIPT := preload("res://scripts/building/building_tile.gd")
+const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 const HOME_CORE_BUILDING_ID := "home_core"
 const TILE_SIZE := 16
 
@@ -60,7 +62,7 @@ func set_active_level(level_id: String, level) -> void:
 
 	if not _loaded_from_save:
 		var save_data: Dictionary = BUILDING_SAVE.load_buildings()
-		placed_buildings = save_data.get("buildings", {})
+		placed_buildings = _normalize_building_save_data(save_data.get("buildings", {}))
 		home_core_position = save_data.get("core_position", Vector2.ZERO)
 		placed_facilities = _normalize_facility_save_data(save_data.get("facilities", []))
 		_loaded_from_save = true
@@ -283,10 +285,19 @@ func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 		if not _place_tile_building(tile_pos, building):
 			_refund_full_cost(building["cost"])
 			return false
-		placed_buildings[tile_pos] = building_id
+		placed_buildings[tile_pos] = {
+			"id": building_id,
+			"data": {
+				"max_hp": BUILDING_DATA.get_default_max_hp(building_id),
+				"current_hp": BUILDING_DATA.get_default_max_hp(building_id),
+			},
+		}
 	_rebuild_occupied_positions()
 	_auto_save()
 	build_state_changed.emit()
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null:
+		achievement_manager.record_building_placed()
 	return true
 
 
@@ -295,7 +306,8 @@ func remove_building(tile_pos: Vector2i) -> bool:
 	var origin_tile: Vector2i = tile_pos if occupied_data.is_empty() else occupied_data.get("origin", tile_pos)
 
 	if placed_buildings.has(origin_tile):
-		var building_id := str(placed_buildings[origin_tile])
+		var building_record: Dictionary = placed_buildings[origin_tile]
+		var building_id := str(building_record.get("id", ""))
 		var building: Dictionary = BUILDING_DATA.get_building(building_id)
 		if building_instances.has(origin_tile):
 			var placed_instance = building_instances[origin_tile]
@@ -382,6 +394,9 @@ func place_home_core(tile_pos: Vector2i) -> bool:
 	_rebuild_occupied_positions()
 	_auto_save()
 	build_state_changed.emit()
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null:
+		achievement_manager.record_building_placed()
 	return true
 
 
@@ -505,11 +520,12 @@ func _apply_saved_state_to_level() -> void:
 	occupied_positions.clear()
 
 	for tile_pos in placed_buildings.keys():
-		var building_id := str(placed_buildings[tile_pos])
+		var building_record: Dictionary = placed_buildings[tile_pos]
+		var building_id := str(building_record.get("id", ""))
 		var building := BUILDING_DATA.get_building(building_id)
 		if building.is_empty():
 			continue
-		_place_tile_building(tile_pos, building)
+		_place_tile_building(tile_pos, building, building_record.get("data", {}))
 
 	for tile_pos in placed_facilities.keys():
 		var facility_data: Dictionary = placed_facilities[tile_pos]
@@ -558,9 +574,12 @@ func _ensure_preview() -> void:
 func _place_facility(tile_pos: Vector2i, building: Dictionary) -> bool:
 	placed_facilities[tile_pos] = {
 		"id": str(building["id"]),
-		"data": {},
+		"data": {
+			"max_hp": BUILDING_DATA.get_default_max_hp(str(building["id"])),
+			"current_hp": BUILDING_DATA.get_default_max_hp(str(building["id"])),
+		},
 	}
-	if _spawn_facility_instance(tile_pos, building, {}):
+	if _spawn_facility_instance(tile_pos, building, placed_facilities[tile_pos].get("data", {})):
 		return true
 	placed_facilities.erase(tile_pos)
 	return false
@@ -586,17 +605,20 @@ func _spawn_facility_instance(tile_pos: Vector2i, building: Dictionary, data: Di
 	var instance = scene.instantiate()
 	instance.global_position = _tile_to_world_center_for_size(tile_pos, _get_building_tile_size(building))
 	active_level.add_child(instance)
+	if instance.has_method("initialize_building"):
+		instance.initialize_building(_build_building_runtime_data(building), self, tile_pos, data)
 	if instance.has_method("load_from_data"):
 		instance.load_from_data(data)
 	if instance.has_signal("chest_changed") and not instance.chest_changed.is_connected(_on_facility_changed):
 		instance.chest_changed.connect(_on_facility_changed.bind(tile_pos))
 	if instance.has_signal("farm_changed") and not instance.farm_changed.is_connected(_on_facility_changed):
 		instance.farm_changed.connect(_on_facility_changed.bind(tile_pos))
+	_register_damageable_instance(instance, tile_pos, true)
 	facility_instances[tile_pos] = instance
 	return true
 
 
-func _place_tile_building(tile_pos: Vector2i, building: Dictionary) -> bool:
+func _place_tile_building(tile_pos: Vector2i, building: Dictionary, data: Dictionary = {}) -> bool:
 	if building_container == null:
 		return false
 
@@ -605,26 +627,10 @@ func _place_tile_building(tile_pos: Vector2i, building: Dictionary) -> bool:
 		if is_instance_valid(existing):
 			existing.queue_free()
 
-	var placed_root := Node2D.new()
-	placed_root.position = _tile_to_world_center(tile_pos)
-	placed_root.z_index = 0
-	placed_root.name = "%s_%d_%d" % [str(building.get("id", "building")), tile_pos.x, tile_pos.y]
-
-	var sprite := Sprite2D.new()
-	sprite.texture = building.get("preview_texture", null)
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	placed_root.add_child(sprite)
-
-	if bool(building.get("has_collision", false)):
-		var blocker := StaticBody2D.new()
-		var collision := CollisionShape2D.new()
-		var shape := RectangleShape2D.new()
-		shape.size = Vector2(16, 16)
-		collision.shape = shape
-		blocker.add_child(collision)
-		placed_root.add_child(blocker)
-
+	var placed_root = BUILDING_TILE_SCRIPT.new()
+	placed_root.configure_tile(_build_building_runtime_data(building), self, tile_pos, data)
 	building_container.add_child(placed_root)
+	_register_damageable_instance(placed_root, tile_pos, false)
 	building_instances[tile_pos] = placed_root
 	return true
 
@@ -638,6 +644,44 @@ func _on_facility_changed(tile_pos: Vector2i) -> void:
 		record["data"] = instance.serialize_data()
 		placed_facilities[tile_pos] = record
 	_auto_save()
+
+
+func _on_registered_building_state_changed(tile_pos: Vector2i, is_facility: bool) -> void:
+	var instance = facility_instances.get(tile_pos, null) if is_facility else building_instances.get(tile_pos, null)
+	if instance == null or not is_instance_valid(instance) or not instance.has_method("serialize_data"):
+		return
+	if is_facility:
+		if not placed_facilities.has(tile_pos):
+			return
+		var facility_record: Dictionary = placed_facilities[tile_pos]
+		facility_record["data"] = instance.serialize_data()
+		placed_facilities[tile_pos] = facility_record
+	else:
+		if not placed_buildings.has(tile_pos):
+			return
+		var building_record: Dictionary = placed_buildings[tile_pos]
+		building_record["data"] = instance.serialize_data()
+		placed_buildings[tile_pos] = building_record
+	_auto_save()
+
+
+func _on_registered_building_destroyed(tile_pos: Vector2i, refund_cost: Dictionary, is_facility: bool) -> void:
+	if is_facility:
+		placed_facilities.erase(tile_pos)
+		var facility_instance = facility_instances.get(tile_pos, null)
+		if facility_instance != null and is_instance_valid(facility_instance):
+			facility_instance.queue_free()
+		facility_instances.erase(tile_pos)
+	else:
+		placed_buildings.erase(tile_pos)
+		var building_instance = building_instances.get(tile_pos, null)
+		if building_instance != null and is_instance_valid(building_instance):
+			building_instance.queue_free()
+		building_instances.erase(tile_pos)
+	_drop_refund_loot(tile_pos, refund_cost)
+	_rebuild_occupied_positions()
+	_auto_save()
+	build_state_changed.emit()
 
 
 func _on_home_core_destroyed() -> void:
@@ -679,6 +723,38 @@ func _serialize_facilities() -> Array:
 	return payload
 
 
+func _normalize_building_save_data(saved_buildings: Dictionary) -> Dictionary:
+	var normalized: Dictionary = {}
+	for tile_pos in saved_buildings.keys():
+		var raw_record = saved_buildings[tile_pos]
+		if typeof(raw_record) == TYPE_STRING:
+			var legacy_id := str(raw_record)
+			normalized[tile_pos] = {
+				"id": legacy_id,
+				"data": {
+					"max_hp": BUILDING_DATA.get_default_max_hp(legacy_id),
+					"current_hp": BUILDING_DATA.get_default_max_hp(legacy_id),
+				},
+			}
+			continue
+		if typeof(raw_record) != TYPE_DICTIONARY:
+			continue
+		var record: Dictionary = raw_record
+		var building_id := str(record.get("id", ""))
+		if building_id == "":
+			continue
+		var data: Dictionary = (record.get("data", {}) as Dictionary).duplicate(true)
+		if not data.has("max_hp"):
+			data["max_hp"] = BUILDING_DATA.get_default_max_hp(building_id)
+		if not data.has("current_hp"):
+			data["current_hp"] = int(data.get("max_hp", BUILDING_DATA.get_default_max_hp(building_id)))
+		normalized[tile_pos] = {
+			"id": building_id,
+			"data": data,
+		}
+	return normalized
+
+
 func _normalize_facility_save_data(saved_facilities: Array) -> Dictionary:
 	var normalized: Dictionary = {}
 	for facility_variant in saved_facilities:
@@ -687,9 +763,15 @@ func _normalize_facility_save_data(saved_facilities: Array) -> Dictionary:
 		var facility: Dictionary = facility_variant
 		var pos_data = facility.get("position", [])
 		if pos_data is Array and pos_data.size() >= 2:
+			var facility_id := str(facility.get("id", ""))
+			var data: Dictionary = (facility.get("data", {}) as Dictionary).duplicate(true)
+			if not data.has("max_hp"):
+				data["max_hp"] = BUILDING_DATA.get_default_max_hp(facility_id)
+			if not data.has("current_hp"):
+				data["current_hp"] = int(data.get("max_hp", BUILDING_DATA.get_default_max_hp(facility_id)))
 			normalized[Vector2i(int(pos_data[0]), int(pos_data[1]))] = {
-				"id": str(facility.get("id", "")),
-				"data": facility.get("data", {}),
+				"id": facility_id,
+				"data": data,
 			}
 	return normalized
 
@@ -736,7 +818,7 @@ func _tile_to_world_center_for_size(tile_pos: Vector2i, tile_size: Vector2i) -> 
 func _rebuild_occupied_positions() -> void:
 	occupied_positions.clear()
 	for tile_pos in placed_buildings.keys():
-		var building_id := str(placed_buildings[tile_pos])
+		var building_id := str((placed_buildings[tile_pos] as Dictionary).get("id", ""))
 		var building := BUILDING_DATA.get_building(building_id)
 		if building.is_empty():
 			continue
@@ -763,4 +845,57 @@ func _register_occupied_tiles(origin_tile: Vector2i, building_id: String, tile_s
 			"origin": origin_tile,
 			"kind": kind,
 		}
+
+
+func get_building_tile_size_for_id(building_id: String) -> Vector2i:
+	var building := BUILDING_DATA.get_building(building_id)
+	if building.is_empty():
+		return Vector2i.ONE
+	return _get_building_tile_size(building)
+
+
+func get_raid_targets() -> Array:
+	var targets: Array = []
+	for tile_pos in building_instances.keys():
+		var instance = building_instances[tile_pos]
+		if instance != null and is_instance_valid(instance) and instance.has_method("take_raid_damage") and int(instance.get("current_hp")) > 0:
+			targets.append(instance)
+	for tile_pos in facility_instances.keys():
+		var facility = facility_instances[tile_pos]
+		if facility != null and is_instance_valid(facility) and facility.has_method("take_raid_damage") and int(facility.get("current_hp")) > 0:
+			targets.append(facility)
+	var core = get_home_core()
+	if core != null:
+		targets.append(core)
+	return targets
+
+
+func _build_building_runtime_data(building: Dictionary) -> Dictionary:
+	var runtime := building.duplicate(true)
+	if not runtime.has("base_max_hp"):
+		runtime["base_max_hp"] = BUILDING_DATA.get_default_max_hp(str(runtime.get("id", "")))
+	return runtime
+
+
+func _register_damageable_instance(instance, tile_pos: Vector2i, is_facility: bool) -> void:
+	if instance == null:
+		return
+	if instance.has_signal("building_state_changed") and not instance.building_state_changed.is_connected(_on_registered_building_state_changed):
+		instance.building_state_changed.connect(_on_registered_building_state_changed.bind(tile_pos, is_facility))
+	if instance.has_signal("building_destroyed") and not instance.building_destroyed.is_connected(_on_registered_building_destroyed):
+		instance.building_destroyed.connect(_on_registered_building_destroyed.bind(is_facility))
+
+
+func _drop_refund_loot(tile_pos: Vector2i, refund_cost: Dictionary) -> void:
+	if active_level == null:
+		return
+	var world_position := _tile_to_world_center(tile_pos)
+	for resource_id in refund_cost.keys():
+		var refund_amount := int(floor(float(refund_cost[resource_id]) * 0.5))
+		if refund_amount <= 0:
+			continue
+		var drop = LOOT_DROP_SCENE.instantiate()
+		drop.setup(str(resource_id), refund_amount)
+		drop.global_position = world_position + Vector2(randf_range(-8.0, 8.0), randf_range(-6.0, 6.0))
+		active_level.add_child(drop)
 

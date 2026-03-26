@@ -515,6 +515,8 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 		var collider = result.get("collider", null)
 		if collider == null or not collider.has_method("take_damage") or collider == self:
 			continue
+		if collider.has_method("is_player_owned_building") and collider.is_player_owned_building():
+			continue
 		var attack_damage := get_attack_damage()
 		if execute_skill_armed:
 			var execute_enemy_hp := int(collider.get("current_hp"))
@@ -585,6 +587,7 @@ func _configure_input_actions() -> void:
 	_set_key_action("toggle_build", KEY_C)
 	_set_key_action("toggle_equipment", KEY_B)
 	_set_key_action("toggle_skills", KEY_K)
+	_set_key_action("toggle_achievements", KEY_J)
 	_set_key_action("skill_slot_1", KEY_Z)
 	_set_key_action("skill_slot_2", KEY_X)
 	_set_key_action("skill_slot_3", KEY_V)
@@ -689,6 +692,9 @@ func unlock_talent(talent_id: String) -> bool:
 		if skill_system != null:
 			skill_system.unlock_skill_from_talent(talent_id)
 	_refresh_all_stats()
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null:
+		achievement_manager.record_talent_unlocked(unlocked_talents.size())
 	_save_persistent_state()
 	return true
 
@@ -707,6 +713,9 @@ func start_dungeon_run() -> void:
 	var skill_system = _skill_system()
 	if skill_system != null:
 		skill_system.clear_dungeon_cooldowns()
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null:
+		achievement_manager.start_dungeon_run()
 
 
 func finish_dungeon_run(safe_return: bool) -> void:

@@ -76,6 +76,17 @@ const RECIPES := {
 		"max_stack": 10,
 		"station": "cooking",
 	},
+	"herb_tea": {
+		"id": "herb_tea",
+		"name": "Herb Tea",
+		"category": "Cooking",
+		"result_item_id": "herb_tea",
+		"result_type": "consumable",
+		"cost": {"wheat": 1, "fiber": 2},
+		"effect": {"heal": 70},
+		"max_stack": 10,
+		"station": "cooking",
+	},
 	"leather_cap": {
 		"id": "leather_cap",
 		"name": "Leather Cap",
@@ -170,5 +181,12 @@ static func craft(recipe_id: String, inventory, cost_multiplier: float = 1.0) ->
 	for resource_id in get_recipe_cost(recipe_id, cost_multiplier).keys():
 		inventory.remove_item(resource_id, int(get_recipe_cost(recipe_id, cost_multiplier)[resource_id]))
 
-	return inventory.add_item(str(recipe["result_item_id"]), 1)
+	var crafted: bool = inventory.add_item(str(recipe["result_item_id"]), 1)
+	if crafted:
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree != null:
+			var achievement_manager = tree.root.get_node_or_null("/root/AchievementManager")
+			if achievement_manager != null:
+				achievement_manager.record_recipe_crafted(recipe)
+	return crafted
 

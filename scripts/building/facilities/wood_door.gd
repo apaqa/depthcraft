@@ -1,11 +1,11 @@
-extends Area2D
+extends "res://scripts/building/building_base.gd"
 class_name WoodDoorFacility
 
 
-func serialize_data() -> Dictionary:
-	return {}
+func get_interaction_prompt() -> String:
+	return "[E] Door"
 
 
-func load_from_data(_data: Dictionary) -> void:
+func interact(_player) -> void:
 	pass
 

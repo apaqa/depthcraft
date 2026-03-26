@@ -102,7 +102,7 @@ func _spawn_raid_enemies(core) -> void:
 		var enemy = RAID_ENEMY_SCENE.instantiate()
 		enemy_root.add_child(enemy)
 		enemy.global_position = _get_spawn_position(viewport_size, core.global_position)
-		enemy.setup_raid(player, core, deepest_floor_reached, hp_multiplier, enemy_root)
+		enemy.setup_raid(player, core, building_system, deepest_floor_reached, hp_multiplier, enemy_root)
 		enemy.died.connect(_on_raid_enemy_died.bind(enemy))
 		raid_enemies.append(enemy)
 

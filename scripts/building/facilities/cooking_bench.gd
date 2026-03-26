@@ -1,5 +1,12 @@
-extends StaticBody2D
+extends "res://scripts/building/upgradeable_facility.gd"
 class_name CookingBenchFacility
+
+
+const RECIPE_LEVELS := {
+	1: ["bread"],
+	2: ["bread", "stew"],
+	3: ["bread", "stew", "herb_tea"],
+}
 
 
 func get_interaction_prompt() -> String:
@@ -12,20 +19,22 @@ func interact(player) -> void:
 
 
 func get_recipe_ids() -> PackedStringArray:
-	return PackedStringArray(["bread", "stew"])
+	return PackedStringArray(RECIPE_LEVELS.get(get_upgrade_level(), RECIPE_LEVELS[1]))
 
 
 func get_menu_title() -> String:
-	return LocaleManager.L("menu_title_cooking")
+	return "%s Lv%d" % [LocaleManager.L("menu_title_cooking"), get_upgrade_level()]
 
 
 func requires_home_core() -> bool:
 	return true
 
 
-func serialize_data() -> Dictionary:
-	return {}
-
-
-func load_from_data(_data: Dictionary) -> void:
-	pass
+func get_upgrade_summary() -> String:
+	match get_upgrade_level():
+		1:
+			return "Unlocks simple campfire food."
+		2:
+			return "Unlocks richer healing meals."
+		_:
+			return "Unlocks restorative hot drinks."

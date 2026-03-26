@@ -241,6 +241,15 @@ const ITEMS := {
 		"effect": {"heal": 50},
 		"icon": preload("res://assets/icons/kyrise/cup_01a.png"),
 	},
+	"herb_tea": {
+		"id": "herb_tea",
+		"name": "Herb Tea",
+		"max_stack": 10,
+		"type": "consumable",
+		"description": "A calming drink that restores a large amount of health",
+		"effect": {"heal": 70},
+		"icon": preload("res://assets/icons/kyrise/cup_01a.png"),
+	},
 }
 
 

@@ -24,6 +24,8 @@ const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
 @onready var talent_tree: Control = $TalentTree
 @onready var equipment_panel: Control = $EquipmentPanel
 @onready var skill_equip_ui: Control = $SkillEquipUI
+@onready var achievement_popup: Control = $AchievementPopup
+@onready var achievement_panel: Control = $AchievementPanel
 @onready var minimap: Control = $Minimap
 @onready var buff_select: Control = $BuffSelect
 @onready var death_overlay: Control = $DeathOverlay
@@ -105,8 +107,13 @@ func _ready() -> void:
 		equipment_panel.close_requested.connect(_on_menu_closed)
 	if skill_equip_ui.has_signal("close_requested") and not skill_equip_ui.close_requested.is_connected(_on_menu_closed):
 		skill_equip_ui.close_requested.connect(_on_menu_closed)
+	if achievement_panel.has_signal("close_requested") and not achievement_panel.close_requested.is_connected(_on_menu_closed):
+		achievement_panel.close_requested.connect(_on_menu_closed)
 	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
 		buff_select.buff_chosen.connect(_on_buff_chosen)
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null and not achievement_manager.achievement_unlocked.is_connected(_on_achievement_unlocked):
+		achievement_manager.achievement_unlocked.connect(_on_achievement_unlocked)
 	set_process(true)
 	settings_menu = SettingsMenu.new()
 	settings_menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -134,6 +141,7 @@ func bind_player(new_player) -> void:
 	player.interaction_prompt_cleared.connect(hide_interaction_prompt)
 	player.hp_changed.connect(update_hp)
 	inventory.inventory_changed.connect(_on_inventory_changed)
+	player.equipment_system.equipment_changed.connect(_on_equipment_changed)
 	player.building_system.build_state_changed.connect(_refresh_debug_label)
 	player.crafting_requested.connect(_on_crafting_requested)
 	player.storage_requested.connect(_on_storage_requested)
@@ -150,6 +158,7 @@ func bind_player(new_player) -> void:
 	if home_arrow != null and home_arrow.has_method("bind_player"):
 		home_arrow.bind_player(player)
 	_on_inventory_changed()
+	_on_equipment_changed()
 	_refresh_debug_label()
 	_refresh_buff_icons(player.get_active_buffs())
 	_refresh_skill_slots()
@@ -178,6 +187,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_skills") and player != null and not player.building_system.is_build_mode_active():
 		_toggle_skill_equip_ui()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("toggle_achievements") and player != null and not player.building_system.is_build_mode_active():
+		_toggle_achievement_panel()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel") and inventory_panel.visible:
 		inventory_panel.visible = false
@@ -225,7 +237,22 @@ func _on_inventory_changed() -> void:
 		currency_label.text = ITEM_DATABASE.format_currency(inventory.get_total_copper())
 	if player != null and player.has_method("get_consumable_slots"):
 		update_consumable_bar(player.get_consumable_slots())
+	_sync_achievement_equipment_state()
 	rebuild_inventory_grid()
+
+
+func _on_equipment_changed() -> void:
+	_sync_achievement_equipment_state()
+
+
+func _sync_achievement_equipment_state() -> void:
+	if player == null:
+		return
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null:
+		achievement_manager.record_equipment_state(inventory, player.equipment_system)
+	if achievement_panel != null and achievement_panel.visible and achievement_panel.has_method("rebuild"):
+		achievement_panel.rebuild()
 
 
 func update_bag_label(used_slots: int, max_slots: int) -> void:
@@ -265,7 +292,7 @@ func _on_crafting_requested(_facility) -> void:
 		recipe_filter = _facility.get_recipe_ids()
 	if _facility != null and _facility.has_method("get_menu_title"):
 		menu_title = _facility.get_menu_title()
-	crafting_menu.open_for_player(player, recipe_filter, menu_title)
+	crafting_menu.open_for_player(player, recipe_filter, menu_title, _facility)
 	player.set_ui_blocked(true)
 
 
@@ -277,13 +304,13 @@ func _on_storage_requested(facility) -> void:
 
 func _on_repair_requested(_facility) -> void:
 	_close_all_menus()
-	repair_ui.open_for_player(player)
+	repair_ui.open_for_player(player, _facility)
 	player.set_ui_blocked(true)
 
 
 func _on_talent_requested(_facility) -> void:
 	_close_all_menus()
-	talent_tree.open_for_player(player)
+	talent_tree.open_for_player(player, _facility)
 	player.set_ui_blocked(true)
 
 
@@ -309,6 +336,15 @@ func _toggle_skill_equip_ui() -> void:
 	player.set_ui_blocked(true)
 
 
+func _toggle_achievement_panel() -> void:
+	if achievement_panel.visible:
+		achievement_panel.close_panel()
+		return
+	_close_all_menus()
+	achievement_panel.open_panel()
+	player.set_ui_blocked(true)
+
+
 func _close_all_menus() -> void:
 	inventory_panel.visible = false
 	crafting_menu.close_menu()
@@ -317,6 +353,7 @@ func _close_all_menus() -> void:
 	talent_tree.close_menu()
 	equipment_panel.close_menu()
 	skill_equip_ui.close_menu()
+	achievement_panel.close_panel()
 	buff_select.close_menu()
 	if settings_menu != null and settings_menu.visible:
 		settings_menu.close_menu()
@@ -331,7 +368,18 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or buff_select.visible or (settings_menu != null and settings_menu.visible)
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or buff_select.visible or (settings_menu != null and settings_menu.visible)
+
+
+func _on_achievement_unlocked(id: String) -> void:
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager == null:
+		return
+	var achievement: Dictionary = achievement_manager.get_achievement(id)
+	if achievement_popup != null and achievement_popup.has_method("show_achievement"):
+		achievement_popup.show_achievement(achievement)
+	if achievement_panel != null and achievement_panel.visible and achievement_panel.has_method("rebuild"):
+		achievement_panel.rebuild()
 
 
 func _toggle_settings_menu() -> void:

@@ -1,4 +1,4 @@
-extends StaticBody2D
+extends "res://scripts/building/building_base.gd"
 class_name FarmPlotFacility
 
 signal farm_changed
@@ -21,11 +21,13 @@ var planted_at_unix: float = 0.0
 
 
 func _ready() -> void:
+	super._ready()
 	set_process(true)
 	_refresh_visuals()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	super._process(delta)
 	_update_growth_state()
 
 
@@ -71,10 +73,12 @@ func requires_home_core() -> bool:
 
 
 func serialize_data() -> Dictionary:
-	return {
+	var payload := super.serialize_data()
+	payload.merge({
 		"state": state,
 		"planted_at_unix": planted_at_unix,
-	}
+	}, true)
+	return payload
 
 
 func load_from_data(data: Dictionary) -> void:

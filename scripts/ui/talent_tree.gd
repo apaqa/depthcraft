@@ -14,18 +14,24 @@ signal close_requested
 
 @onready var shard_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ShardLabel
 @onready var branch_row: HBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/BranchRow
+@onready var content_vbox: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer
 
 var player = null
+var facility = null
+var upgrade_label: Label = null
+var upgrade_button: Button = null
 
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_ensure_close_button()
+	_ensure_upgrade_controls()
 
 
-func open_for_player(target_player) -> void:
+func open_for_player(target_player, target_facility = null) -> void:
 	player = target_player
+	facility = target_facility
 	visible = true
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
@@ -57,6 +63,7 @@ func _refresh() -> void:
 		return
 
 	shard_label.text = LocaleManager.L("talent_shards") % player.inventory.get_item_count("talent_shard")
+	_refresh_upgrade_controls()
 
 	for branch_id in TALENT_DATA.get_branch_ids():
 		var panel := PanelContainer.new()
@@ -281,3 +288,49 @@ func _ensure_close_button() -> void:
 	close_button.z_index = 100
 	close_button.pressed.connect(close_menu)
 	add_child(close_button)
+
+
+func _ensure_upgrade_controls() -> void:
+	if content_vbox == null or upgrade_label != null:
+		return
+	upgrade_label = Label.new()
+	upgrade_label.visible = false
+	upgrade_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content_vbox.add_child(upgrade_label)
+	content_vbox.move_child(upgrade_label, 1)
+
+	upgrade_button = Button.new()
+	upgrade_button.visible = false
+	upgrade_button.pressed.connect(_on_upgrade_pressed)
+	content_vbox.add_child(upgrade_button)
+	content_vbox.move_child(upgrade_button, 2)
+
+
+func _refresh_upgrade_controls() -> void:
+	if upgrade_label == null or upgrade_button == null:
+		return
+	if facility == null or not facility.has_method("can_upgrade") or not facility.can_upgrade():
+		upgrade_label.visible = false
+		upgrade_button.visible = false
+		return
+	var cost: Dictionary = facility.get_upgrade_cost() if facility.has_method("get_upgrade_cost") else {}
+	var parts: PackedStringArray = []
+	var can_afford := true
+	for resource_id in cost.keys():
+		var need := int(cost[resource_id])
+		var have: int = player.inventory.get_item_count(str(resource_id)) if player != null and player.inventory != null else 0
+		parts.append("%s %d/%d" % [resource_id.replace("_", " ").capitalize(), have, need])
+		if have < need:
+			can_afford = false
+	upgrade_label.text = "%s\nUpgrade Cost: %s" % [facility.get_upgrade_summary() if facility.has_method("get_upgrade_summary") else "", ", ".join(parts)]
+	upgrade_label.visible = true
+	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else "Upgrade"
+	upgrade_button.disabled = not can_afford
+	upgrade_button.visible = true
+
+
+func _on_upgrade_pressed() -> void:
+	if facility == null or player == null or not facility.has_method("try_upgrade"):
+		return
+	if facility.try_upgrade(player):
+		_refresh()

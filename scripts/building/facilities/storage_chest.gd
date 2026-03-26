@@ -1,4 +1,4 @@
-extends StaticBody2D
+extends "res://scripts/building/building_base.gd"
 class_name StorageChestFacility
 
 signal chest_changed
@@ -7,6 +7,7 @@ signal chest_changed
 
 
 func _ready() -> void:
+	super._ready()
 	inventory.max_slots = 30
 	if not inventory.inventory_changed.is_connected(_on_inventory_changed):
 		inventory.inventory_changed.connect(_on_inventory_changed)
@@ -26,9 +27,11 @@ func requires_home_core() -> bool:
 
 
 func serialize_data() -> Dictionary:
-	return {
+	var payload := super.serialize_data()
+	payload.merge({
 		"inventory_items": inventory.get_state(),
-	}
+	}, true)
+	return payload
 
 
 func load_from_data(data: Dictionary) -> void:

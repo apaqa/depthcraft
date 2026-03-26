@@ -168,3 +168,21 @@ static func get_buildings_for_category(category_id: String) -> Array[Dictionary]
 	for building_id in (CATEGORY_DATA.get(category_id, {}) as Dictionary).get("items", []):
 		buildings.append(get_building(str(building_id)))
 	return buildings
+
+
+static func get_default_max_hp(building_id: String) -> int:
+	var building := get_building(building_id)
+	if building.is_empty():
+		return 1
+	if str(building.get("kind", "")) == "core":
+		return 500
+	var category := str(building.get("category", "facility"))
+	match category:
+		"structure":
+			return 100
+		"door_window":
+			return 50
+		"defense":
+			return 150
+		_:
+			return 80

@@ -13,14 +13,18 @@ signal close_requested
 @onready var materials_container: VBoxContainer = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/MaterialsContainer
 @onready var craft_button: Button = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/CraftButton
 @onready var flash_rect: ColorRect = $FlashRect
+@onready var detail_vbox: VBoxContainer = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer
 
 var player_inventory = null
 var player = null
+var facility = null
 var recipe_ids: PackedStringArray = []
 var selected_recipe_id: String = ""
 var filtered_recipe_ids: PackedStringArray = []
 var menu_title: String = ""
 var recipe_buttons: Dictionary = {}
+var upgrade_label: Label = null
+var upgrade_button: Button = null
 
 const CATEGORY_KEY_MAP = {
 	"Armor": "CAT_ARMOR",
@@ -49,11 +53,13 @@ func _ready() -> void:
 	craft_button.pressed.connect(_on_craft_pressed)
 	craft_button.text = LocaleManager.L("craft")
 	_ensure_close_button()
+	_ensure_upgrade_controls()
 
 
-func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "") -> void:
+func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "", target_facility = null) -> void:
 	player = target_player
 	player_inventory = player.inventory if player != null else null
+	facility = target_facility
 	filtered_recipe_ids = available_recipe_ids
 	menu_title = title if title != "" else LocaleManager.L("crafting_title")
 	visible = true
@@ -62,6 +68,8 @@ func open_for_player(target_player, available_recipe_ids: PackedStringArray = Pa
 	_rebuild_recipe_list()
 	if not recipe_ids.is_empty():
 		_on_recipe_button_pressed(recipe_ids[0])
+	else:
+		_refresh_upgrade_controls()
 
 
 func close_menu() -> void:
@@ -161,6 +169,7 @@ func _refresh_details() -> void:
 	craft_button.disabled = not CRAFTING_SYSTEM.can_craft(selected_recipe_id, player_inventory, cost_multiplier)
 	craft_button.modulate = Color(0.45, 0.95, 0.45, 1.0) if not craft_button.disabled else Color(0.55, 0.55, 0.55, 1.0)
 	_refresh_recipe_button_states()
+	_refresh_upgrade_controls()
 
 
 func _on_craft_pressed() -> void:
@@ -169,6 +178,19 @@ func _on_craft_pressed() -> void:
 	var cost_multiplier: float = player.get_crafting_cost_multiplier() if player != null and player.has_method("get_crafting_cost_multiplier") else 1.0
 	if CRAFTING_SYSTEM.craft(selected_recipe_id, player_inventory, cost_multiplier):
 		_refresh_details()
+		_play_flash()
+
+
+func _on_upgrade_pressed() -> void:
+	if facility == null or player == null or not facility.has_method("try_upgrade"):
+		return
+	if facility.try_upgrade(player):
+		_rebuild_recipe_list()
+		if recipe_ids.is_empty():
+			_refresh_details()
+			return
+		var next_recipe := selected_recipe_id if recipe_ids.has(selected_recipe_id) else recipe_ids[0]
+		_on_recipe_button_pressed(next_recipe)
 		_play_flash()
 
 
@@ -265,3 +287,42 @@ func _ensure_close_button() -> void:
 	close_button.z_index = 100
 	close_button.pressed.connect(close_menu)
 	add_child(close_button)
+
+
+func _ensure_upgrade_controls() -> void:
+	if detail_vbox == null or upgrade_label != null:
+		return
+	upgrade_label = Label.new()
+	upgrade_label.visible = false
+	upgrade_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_vbox.add_child(upgrade_label)
+	detail_vbox.move_child(upgrade_label, detail_vbox.get_child_count() - 1)
+
+	upgrade_button = Button.new()
+	upgrade_button.visible = false
+	upgrade_button.pressed.connect(_on_upgrade_pressed)
+	detail_vbox.add_child(upgrade_button)
+	detail_vbox.move_child(upgrade_button, detail_vbox.get_child_count() - 1)
+
+
+func _refresh_upgrade_controls() -> void:
+	if upgrade_label == null or upgrade_button == null:
+		return
+	if facility == null or not facility.has_method("can_upgrade") or not facility.can_upgrade():
+		upgrade_label.visible = false
+		upgrade_button.visible = false
+		return
+	var cost: Dictionary = facility.get_upgrade_cost() if facility.has_method("get_upgrade_cost") else {}
+	var parts: PackedStringArray = []
+	var can_afford := true
+	for resource_id in cost.keys():
+		var required := int(cost[resource_id])
+		var owned: int = player_inventory.get_item_count(str(resource_id)) if player_inventory != null else 0
+		parts.append("%s %d/%d" % [_pretty_name(str(resource_id)), owned, required])
+		if owned < required:
+			can_afford = false
+	upgrade_label.text = "%s\nUpgrade Cost: %s" % [facility.get_upgrade_summary() if facility.has_method("get_upgrade_summary") else "", ", ".join(parts)]
+	upgrade_label.visible = true
+	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else "Upgrade"
+	upgrade_button.disabled = not can_afford
+	upgrade_button.visible = true
