@@ -28,7 +28,7 @@ func test_talent_pool_has_three_branches() -> void:
 
 
 func test_all_talent_nodes_have_data() -> void:
-	_assert(TALENT_DATA.get_all_talents().size() == 45, "Talent tree should expose 45 configured nodes.")
+	_assert(TALENT_DATA.get_all_talents().size() == 78, "Talent tree should expose 78 configured nodes.")
 
 
 func test_unlocking_talent_requires_enough_shards() -> void:
@@ -83,7 +83,7 @@ func test_talent_shards_are_spent() -> void:
 	var player = PLAYER_SCENE.instantiate()
 	root.add_child(player)
 	await process_frame
-	player.inventory.add_item("talent_shard", 2)
+	player.inventory.add_item("talent_shard", 1)
 	player.unlock_talent("D1")
 	_assert(player.inventory.get_item_count("talent_shard") == 0, "Unlocking a talent should spend the shard cost.")
 	player.queue_free()
