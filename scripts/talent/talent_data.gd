@@ -96,7 +96,7 @@ const TALENTS := {
 	"S7":  {"id": "S7",  "name": "輕盈之靴", "branch": "support", "sub": "main", "sequence": 7,  "cost": 2, "prerequisite": "S6",  "description": "移速 +15%",             "effects": {"speed_multiplier": 0.15},                          "class_id": "all"},
 	"S8":  {"id": "S8",  "name": "討價還價", "branch": "support", "sub": "main", "sequence": 8,  "cost": 2, "prerequisite": "S7",  "description": "商店價格 -20%",         "effects": {"merchant_discount": 0.2},                          "class_id": "all"},
 	"S9":  {"id": "S9",  "name": "冒險家",   "branch": "support", "sub": "main", "sequence": 9,  "cost": 2, "prerequisite": "S8",  "description": "地圖全亮",              "effects": {"full_minimap": 1},                                 "class_id": "all"},
-	"S10": {"id": "S10", "name": "衝刺",     "branch": "support", "sub": "main", "sequence": 10, "cost": 2, "prerequisite": "S9",  "description": "解鎖衝刺技能（3 秒 +100% 速度）", "effects": {"skill_sprint": 1}, "is_milestone": true, "skill_unlock": "Sprint", "class_id": "all", "class_id": ""},
+	"S10": {"id": "S10", "name": "衝刺",     "branch": "support", "sub": "main", "sequence": 10, "cost": 2, "prerequisite": "S9",  "description": "解鎖衝刺技能（3 秒 +100% 速度）", "effects": {"skill_sprint": 1}, "is_milestone": true, "skill_unlock": "Sprint", "class_id": "all"},
 
 	# ── Support Speed (SS1–SS8) ───────────────────────────────────────────
 	"SS1": {"id": "SS1", "name": "疾風步",   "branch": "support", "sub": "speed", "sequence": 1, "cost": 3, "prerequisite": "S5",  "description": "移速 +10%",                 "effects": {"speed_multiplier": 0.10},       "class_id": "all"},

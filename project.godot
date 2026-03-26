@@ -22,6 +22,7 @@ BuildingData="*res://scripts/building/building_data.gd"
 ItemDatabase="*res://scripts/inventory/item_database.gd"
 TalentData="*res://scripts/talent/talent_data.gd"
 NetworkManager="*res://scripts/network/network_manager.gd"
+ClassSystem="*res://scripts/systems/class_system.gd"
 SkillSystem="*res://scripts/skills/skill_system.gd"
 
 [display]

@@ -93,6 +93,9 @@ func _ready() -> void:
 	equipment_system.equipment_changed.connect(_on_equipment_changed)
 	if load_persistent_state_on_ready:
 		_load_persistent_state()
+	var _class_system = get_node_or_null("/root/ClassSystem")
+	if _class_system != null:
+		_class_system.apply_to_stats(player_stats)
 	_recalculate_buff_state()
 	_refresh_all_stats()
 	_setup_torch_light()

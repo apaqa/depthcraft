@@ -31,6 +31,9 @@ func _ready() -> void:
 		network_manager.players_changed.connect(_on_network_players_changed)
 	if network_manager != null and not network_manager.connection_status_changed.is_connected(_on_connection_status_changed):
 		network_manager.connection_status_changed.connect(_on_connection_status_changed)
+	var class_system = get_node_or_null("/root/ClassSystem")
+	if class_system != null and not class_system.has_chosen_class():
+		await _show_class_select()
 	_start_tutorial()
 	_sync_players_with_session()
 	change_level(current_level_id)
@@ -437,4 +440,15 @@ func _get_connected_player_ids() -> Array[int]:
 func _start_tutorial() -> void:
 	_tutorial_manager = TUTORIAL_MANAGER.new()
 	add_child(_tutorial_manager)
+
+
+const CLASS_SELECT_SCREEN := preload("res://scripts/ui/class_select_screen.gd")
+
+func _show_class_select() -> void:
+	var screen := Control.new()
+	screen.set_script(CLASS_SELECT_SCREEN)
+	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	get_tree().root.add_child(screen)
+	await screen.class_chosen
+	screen.queue_free()
 

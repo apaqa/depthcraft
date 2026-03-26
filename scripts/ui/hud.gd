@@ -41,6 +41,7 @@ var current_level = null
 var current_level_id: String = ""
 var settings_menu: SettingsMenu = null
 var currency_label: Label = null
+var class_label: Label = null
 
 
 func _ready() -> void:
@@ -61,6 +62,17 @@ func _ready() -> void:
 	currency_label.add_theme_font_size_override("font_size", 12)
 	currency_label.text = "0銅"
 	add_child(currency_label)
+
+	class_label = Label.new()
+	class_label.position = Vector2(160, 6)
+	class_label.size = Vector2(80, 16)
+	class_label.add_theme_font_size_override("font_size", 12)
+	class_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5, 1.0))
+	class_label.add_theme_constant_override("outline_size", 2)
+	class_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	var _cs := get_node_or_null("/root/ClassSystem")
+	class_label.text = _cs.get_class_display_name() if _cs != null else ""
+	add_child(class_label)
 
 	update_hp(100, 100)
 	update_bag_label(0, 20)
