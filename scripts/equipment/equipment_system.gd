@@ -95,8 +95,8 @@ func get_preview_bonus_map(item_data: Dictionary, slot_name: String = "") -> Dic
 func get_item_display_name(item: Dictionary) -> String:
 	if item.is_empty():
 		return ""
-	var base_name := str(item.get("name", item.get("id", "")))
-	return "(Broken) %s" % base_name if _is_item_broken(item) else base_name
+	var base_name := ITEM_DATABASE.get_stack_display_name(item)
+	return LocaleManager.L("broken_item_fmt") % base_name if _is_item_broken(item) else base_name
 
 
 func get_item_display_color(item: Dictionary) -> Color:

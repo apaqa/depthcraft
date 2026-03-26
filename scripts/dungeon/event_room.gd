@@ -5,9 +5,6 @@ const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
 const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 
-const PROMPT_READY := "[E] Investigate the mysterious altar"
-const PROMPT_USED := "[E] The altar has gone silent"
-
 enum EventType {
 	GAMBLE,
 	CURSE,
@@ -41,7 +38,7 @@ func setup(target_loot_root: Node, target_floor_number: int, seed_value: int) ->
 
 
 func get_interaction_prompt() -> String:
-	return PROMPT_USED if is_used else PROMPT_READY
+	return LocaleManager.L("event_prompt_used") if is_used else LocaleManager.L("event_prompt_ready")
 
 
 func interact(player) -> void:
@@ -117,7 +114,7 @@ func _refresh_visual_state() -> void:
 	if sprite != null:
 		sprite.modulate = Color(0.56, 0.56, 0.64, 0.95) if is_used else Color(1.0, 1.0, 1.0, 1.0)
 	if title_label != null:
-		title_label.text = "Dormant Altar" if is_used else "Mysterious Altar"
+		title_label.text = LocaleManager.L("event_title_dormant") if is_used else LocaleManager.L("event_title_mysterious")
 
 
 func _resolve_gamble(player) -> bool:
@@ -125,15 +122,15 @@ func _resolve_gamble(player) -> bool:
 	if inventory == null or not inventory.has_method("pay_copper"):
 		return false
 	if not inventory.pay_copper(50):
-		_show_status(player, "The altar demands 50 copper.", Color(1.0, 0.66, 0.35, 1.0))
+		_show_status(player, LocaleManager.L("event_demand_copper"), Color(1.0, 0.66, 0.35, 1.0))
 		return false
 
-	_show_floating_text(player, "-50 Copper", Color(1.0, 0.72, 0.32, 1.0))
+	_show_floating_text(player, LocaleManager.L("event_floating_copper_loss"), Color(1.0, 0.72, 0.32, 1.0))
 	if rng.randf() <= 0.5:
 		_spawn_item_drop("copper", 200)
-		_show_status(player, "Jackpot. The altar pays out.", Color(1.0, 0.92, 0.42, 1.0))
+		_show_status(player, LocaleManager.L("event_jackpot"), Color(1.0, 0.92, 0.42, 1.0))
 	else:
-		_show_status(player, "The altar keeps your offering.", Color(0.75, 0.72, 0.82, 1.0))
+		_show_status(player, LocaleManager.L("event_keeps_offering"), Color(0.75, 0.72, 0.82, 1.0))
 	return true
 
 
@@ -142,7 +139,7 @@ func _resolve_curse(player) -> bool:
 	var current_hp := int(player.get("current_hp"))
 	var health_cost := maxi(int(ceil(float(max_hp) * 0.20)), 1)
 	if current_hp <= health_cost:
-		_show_status(player, "You need more HP to survive the ritual.", Color(1.0, 0.45, 0.45, 1.0))
+		_show_status(player, LocaleManager.L("event_need_more_hp"), Color(1.0, 0.45, 0.45, 1.0))
 		return false
 
 	player.set("current_hp", current_hp - health_cost)
@@ -157,15 +154,15 @@ func _resolve_curse(player) -> bool:
 	var buff_id := str(buff.get("id", ""))
 	if buff_id != "" and player.has_method("apply_buff"):
 		player.apply_buff(buff_id)
-	var display_name := buff_id.replace("_", " ").capitalize()
-	_show_status(player, "A curse becomes a blessing: %s." % display_name, Color(0.72, 1.0, 0.78, 1.0))
+	var display_name := LocaleManager.L("buff_%s_name" % buff_id)
+	_show_status(player, LocaleManager.L("event_curse_blessing") % display_name, Color(0.72, 1.0, 0.78, 1.0))
 	return true
 
 
 func _resolve_treasure(player) -> bool:
 	var equipment := DUNGEON_LOOT.generate_dungeon_equipment(max(floor_number, 1), rng)
 	_spawn_stack_drop(equipment)
-	_show_status(player, "Treasure erupts from the altar.", Color(0.72, 0.92, 1.0, 1.0))
+	_show_status(player, LocaleManager.L("event_treasure_erupts"), Color(0.72, 0.92, 1.0, 1.0))
 	return true
 
 

@@ -51,11 +51,11 @@ func _ready() -> void:
 	_ensure_close_button()
 
 
-func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "製作") -> void:
+func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "") -> void:
 	player = target_player
 	player_inventory = player.inventory if player != null else null
 	filtered_recipe_ids = available_recipe_ids
-	menu_title = title
+	menu_title = title if title != "" else LocaleManager.L("crafting_title")
 	visible = true
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
@@ -100,7 +100,7 @@ func _rebuild_recipe_list() -> void:
 	for category_name in category_names:
 		var header := Label.new()
 		var translated_name = _translate_category(category_name)
-		header.text = "=== %s ===" % translated_name
+		header.text = LocaleManager.L("crafting_category_header") % translated_name
 		header.modulate = Color(0.95, 0.9, 0.65, 1.0)
 		recipe_list_container.add_child(header)
 		for recipe in grouped[category_name]:
@@ -224,7 +224,8 @@ func _rebuild_material_rows(cost: Dictionary) -> void:
 		var mat_data := ITEM_DATABASE.get_item(str(resource_id))
 		row.add_child(_build_item_icon_holder(mat_data))
 		var label := Label.new()
-		label.text = "%s: %d/%d%s" % [_pretty_name(str(resource_id)), owned, required, " OK" if owned >= required else ""]
+		var suffix := LocaleManager.L("crafting_material_ok") if owned >= required else ""
+		label.text = LocaleManager.L("crafting_material_progress") % [_pretty_name(str(resource_id)), owned, required, suffix]
 		label.modulate = Color(0.45, 1.0, 0.45, 1.0) if owned >= required else Color(1.0, 0.45, 0.45, 1.0)
 		row.add_child(label)
 		materials_container.add_child(row)

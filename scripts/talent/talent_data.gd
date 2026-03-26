@@ -16,16 +16,16 @@ const SUB_BRANCH_ORDER := {
 
 const SUB_BRANCH_LABELS := {
 	"offense": {
-		"crit": "暴擊流",
-		"dot": "持續傷害流",
+		"crit": "sub_branch_offense_crit",
+		"dot": "sub_branch_offense_dot",
 	},
 	"defense": {
-		"block": "格擋流",
-		"regen": "回復流",
+		"block": "sub_branch_defense_block",
+		"regen": "sub_branch_defense_regen",
 	},
 	"support": {
-		"speed": "速度流",
-		"explore": "探索流",
+		"speed": "sub_branch_support_speed",
+		"explore": "sub_branch_support_explore",
 	},
 }
 
@@ -261,13 +261,13 @@ static func _create_talent_entry(
 	) -> Dictionary:
 	var talent := {
 		"id": talent_id,
-		"name": str(node_data.get("name", talent_id)),
+		"name": "talent_%s_name" % talent_id,
 		"branch": branch_id,
 		"sub_branch": sub_branch_id,
 		"sequence": sequence,
 		"cost": cost,
 		"prerequisite": prerequisite,
-		"description": str(node_data.get("description", "")),
+		"description": "talent_%s_desc" % talent_id,
 		"effects": (node_data.get("effects", {}) as Dictionary).duplicate(true),
 	}
 	if bool(node_data.get("is_milestone", false)):

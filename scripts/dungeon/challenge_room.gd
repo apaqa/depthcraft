@@ -94,7 +94,7 @@ func _start_challenge() -> void:
 	set_process(true)
 
 	if active_player != null and active_player.has_method("show_status_message"):
-		active_player.show_status_message("Challenge started. Clear the room in 30 seconds.", Color(1.0, 0.62, 0.62, 1.0), 2.0)
+		active_player.show_status_message(LocaleManager.L("challenge_started"), Color(1.0, 0.62, 0.62, 1.0), 2.0)
 
 	tracked_enemies.clear()
 	if level_ref.has_method("spawn_challenge_room_wave"):
@@ -142,10 +142,10 @@ func _resolve_room(succeeded: bool) -> void:
 		if level_ref != null and level_ref.has_method("spawn_challenge_room_reward"):
 			level_ref.spawn_challenge_room_reward(room_index)
 		if active_player != null and active_player.has_method("show_status_message"):
-			active_player.show_status_message("Challenge cleared. Bonus loot dropped.", Color(0.72, 1.0, 0.76, 1.0), 2.4)
+			active_player.show_status_message(LocaleManager.L("challenge_cleared"), Color(0.72, 1.0, 0.76, 1.0), 2.4)
 	else:
 		if active_player != null and active_player.has_method("show_status_message"):
-			active_player.show_status_message("Challenge failed. The doors reopen.", Color(1.0, 0.72, 0.52, 1.0), 2.2)
+			active_player.show_status_message(LocaleManager.L("challenge_failed"), Color(1.0, 0.72, 0.52, 1.0), 2.2)
 
 
 func _close_doors() -> void:
@@ -237,7 +237,7 @@ func _destroy_countdown_ui() -> void:
 func _update_countdown_label() -> void:
 	if countdown_label == null:
 		return
-	countdown_label.text = "Challenge: %02d" % int(ceil(time_left))
+	countdown_label.text = LocaleManager.L("challenge_countdown") % int(ceil(time_left))
 
 
 func _exit_tree() -> void:

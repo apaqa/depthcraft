@@ -73,7 +73,7 @@ func _add_hint_label() -> void:
 	label.position = Vector2(_room.position.x * TILE_SIZE + 8.0, _room.position.y * TILE_SIZE + 6.0)
 	label.size = Vector2(maxf(_room.size.x * TILE_SIZE - 16.0, 48.0), 24.0)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.text = "Order: %s" % " -> ".join(PackedStringArray(_build_order_labels()))
+	label.text = LocaleManager.L("puzzle_order") % " -> ".join(PackedStringArray(_build_order_labels()))
 	label.label_settings = _create_label_settings(Color(0.9, 0.96, 1.0, 1.0), Color(0.04, 0.08, 0.18, 1.0), 12)
 	add_child(label)
 

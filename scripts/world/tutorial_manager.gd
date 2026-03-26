@@ -4,12 +4,12 @@ const SAVE_PATH := "user://tutorial_save.json"
 
 enum Step { MOVE = 0, ATTACK = 1, BUILD = 2, INTERACT = 3, DUNGEON = 4, DONE = 5 }
 
-const STEP_TEXTS := {
-	Step.MOVE: "WASD 移動",
-	Step.ATTACK: "點擊滑鼠左鍵攻擊",
-	Step.BUILD: "按 B 開啟建造模式",
-	Step.INTERACT: "按 E 與設施互動",
-	Step.DUNGEON: "走到地牢入口以進入地牢",
+const STEP_TEXT_KEYS := {
+	Step.MOVE: "tutorial_move",
+	Step.ATTACK: "tutorial_attack",
+	Step.BUILD: "tutorial_build",
+	Step.INTERACT: "tutorial_interact",
+	Step.DUNGEON: "tutorial_dungeon",
 }
 
 var _step: int = Step.MOVE
@@ -113,7 +113,8 @@ func _finish() -> void:
 func _show_step(step: int) -> void:
 	if _label == null:
 		return
-	_label.text = str(STEP_TEXTS.get(step, ""))
+	var key := str(STEP_TEXT_KEYS.get(step, ""))
+	_label.text = LocaleManager.L(key) if key != "" else ""
 
 
 func _build_ui() -> void:

@@ -1,5 +1,51 @@
 extends Node
 
+const ITEM_NAME_KEYS := {
+	"wood": "item_wood_name",
+	"stone": "item_stone_name",
+	"iron_ore": "item_iron_ore_name",
+	"fiber": "item_fiber_name",
+	"seed": "item_seed_name",
+	"wheat": "item_wheat_name",
+	"talent_shard": "item_talent_shard_name",
+	"copper": "item_copper_name",
+	"silver": "item_silver_name",
+	"gold": "item_gold_name",
+	"wood_sword": "item_wood_sword_name",
+	"wood_shield": "item_wood_shield_name",
+	"stone_pickaxe": "item_stone_pickaxe_name",
+	"leather_cap": "item_leather_cap_name",
+	"leather_vest": "item_leather_vest_name",
+	"iron_sword": "item_iron_sword_name",
+	"bandage": "item_bandage_name",
+	"torch": "item_torch_name",
+	"bread": "item_bread_name",
+	"stew": "item_stew_name",
+}
+
+const ITEM_DESC_KEYS := {
+	"wood": "item_wood_desc",
+	"stone": "item_stone_desc",
+	"iron_ore": "item_iron_ore_desc",
+	"fiber": "item_fiber_desc",
+	"seed": "item_seed_desc",
+	"wheat": "item_wheat_desc",
+	"talent_shard": "item_talent_shard_desc",
+	"copper": "item_copper_desc",
+	"silver": "item_silver_desc",
+	"gold": "item_gold_desc",
+	"wood_sword": "item_wood_sword_desc",
+	"wood_shield": "item_wood_shield_desc",
+	"stone_pickaxe": "item_stone_pickaxe_desc",
+	"leather_cap": "item_leather_cap_desc",
+	"leather_vest": "item_leather_vest_desc",
+	"iron_sword": "item_iron_sword_desc",
+	"bandage": "item_bandage_desc",
+	"torch": "item_torch_desc",
+	"bread": "item_bread_desc",
+	"stew": "item_stew_desc",
+}
+
 const ITEMS := {
 	"wood": {
 		"id": "wood",
@@ -201,8 +247,27 @@ const ITEMS := {
 static func get_item(item_id: String) -> Dictionary:
 	if not ITEMS.has(item_id):
 		return {}
+	var item: Dictionary = ITEMS[item_id].duplicate(true)
+	var name_key := str(ITEM_NAME_KEYS.get(item_id, ""))
+	if name_key != "":
+		item["name"] = LocaleManager.L(name_key)
+	var description_key := str(ITEM_DESC_KEYS.get(item_id, ""))
+	if description_key != "":
+		item["description"] = LocaleManager.L(description_key)
+	return item
 
-	return ITEMS[item_id].duplicate(true)
+
+static func get_display_name(item_id: String) -> String:
+	return str(get_item(item_id).get("name", item_id))
+
+
+static func get_stack_display_name(stack: Dictionary) -> String:
+	if stack.is_empty():
+		return ""
+	var item_id := str(stack.get("id", ""))
+	if item_id == "":
+		return str(stack.get("name", ""))
+	return get_display_name(item_id)
 
 
 static func get_item_icon(item_id: String) -> Texture2D:
@@ -301,4 +366,3 @@ static func get_stack_color(stack: Dictionary) -> Color:
 			_:
 				return Color.WHITE
 	return get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))
-

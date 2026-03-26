@@ -25,7 +25,9 @@ func _ready() -> void:
 	if canvas_layer is CanvasLayer:
 		canvas_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
-	LocaleManager.locale_changed.connect(_refresh_locale)
+	if not LocaleManager.locale_changed.is_connected(_refresh_locale):
+		LocaleManager.locale_changed.connect(_refresh_locale)
+	_refresh_locale(LocaleManager.get_locale())
 
 
 func _build_ui() -> void:
@@ -236,7 +238,7 @@ func _add_bus_slider(parent: Control, bus_name: String, label_key: String) -> vo
 	parent.add_child(row)
 
 
-func _refresh_locale() -> void:
+func _refresh_locale(_new_locale: String = "") -> void:
 	for key in _i18n_nodes:
 		var node = _i18n_nodes[key]
 		if not is_instance_valid(node):
@@ -325,6 +327,7 @@ func _on_lang_toggle() -> void:
 		LocaleManager.set_locale("en")
 	else:
 		LocaleManager.set_locale("zh")
+	_refresh_locale(LocaleManager.get_locale())
 
 
 func _on_zoom_changed(value: float) -> void:

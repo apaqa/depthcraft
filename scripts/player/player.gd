@@ -368,14 +368,14 @@ func _disconnect_resource_signals(resource) -> void:
 func _on_resource_gathered(resource_id: String, quantity: int) -> void:
 	var total_quantity: int = quantity + player_stats.get_total_gather_bonus()
 	var item_data: Dictionary = ITEM_DATABASE.get_item(resource_id)
-	var display_name: String = str(item_data.get("name", resource_id.capitalize()))
+	var display_name: String = str(item_data.get("name", ITEM_DATABASE.get_display_name(resource_id)))
 	var source_position := global_position
 	if last_interacted_resource != null:
 		source_position = last_interacted_resource.global_position
 	if inventory.add_item(resource_id, total_quantity):
 		_show_floating_text(source_position, "+%d %s" % [total_quantity, display_name], Color(0.75, 1.0, 0.75, 1.0))
 	else:
-		_show_floating_text(source_position, "Bag Full", Color(1.0, 0.6, 0.6, 1.0))
+		_show_floating_text(source_position, LocaleManager.L("bag_full"), Color(1.0, 0.6, 0.6, 1.0))
 
 
 func _on_resource_depleted() -> void:

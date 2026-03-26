@@ -156,18 +156,18 @@ func _spawn_features() -> void:
 
 	var stairway = STAIRWAY_SCENE.instantiate()
 	stairway.global_position = floor_data.get("exit_point", Vector2.ZERO)
-	stairway.prompt_text = "[E] Descend to Floor %d" % (current_floor + 1)
+	stairway.prompt_text = LocaleManager.L("prompt_descend_floor") % (current_floor + 1)
 	if stairway.has_method("set_stair_variant"):
 		stairway.set_stair_variant("down")
 	if _is_boss_floor():
-		stairway.set_locked(true, "[E] Descend to Floor %d" % (current_floor + 1), "[E] Defeat Boss to unlock")
+		stairway.set_locked(true, LocaleManager.L("prompt_descend_floor") % (current_floor + 1), LocaleManager.L("prompt_defeat_boss_unlock"))
 		boss_stairway = stairway
 	stairway.descend_requested.connect(_on_descend_requested)
 	feature_root.add_child(stairway)
 
 	var return_exit = STAIRWAY_SCENE.instantiate()
 	return_exit.global_position = floor_data.get("spawn_point", Vector2.ZERO)
-	return_exit.prompt_text = "[F] Return to Surface"
+	return_exit.prompt_text = LocaleManager.L("prompt_return_surface")
 	return_exit.uses_secondary_input = true
 	if return_exit.has_method("set_stair_variant"):
 		return_exit.set_stair_variant("up")
@@ -265,7 +265,7 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	if enemy_ref != null and enemy_ref.has_method("is_boss_enemy") and enemy_ref.is_boss_enemy():
 		boss_enemy_ref = null
 		if boss_stairway != null and is_instance_valid(boss_stairway):
-			boss_stairway.set_locked(false, "[E] Descend to Floor %d" % (current_floor + 1))
+			boss_stairway.set_locked(false, LocaleManager.L("prompt_descend_floor") % (current_floor + 1))
 		if boss_locked_chest != null and is_instance_valid(boss_locked_chest):
 			boss_locked_chest.unlock()
 		return

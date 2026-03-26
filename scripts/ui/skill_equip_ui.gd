@@ -266,7 +266,7 @@ func _on_skill_selected(skill_id: String) -> void:
 	_selected_skill_id = skill_id
 
 	var name_str := LocaleManager.L(str(def.get("name", skill_id)))
-	var desc_str := str(def.get("desc", ""))
+	var desc_str := LocaleManager.L(str(def.get("desc", "")))
 	var cd := float(def.get("cooldown", 0.0))
 
 	if is_passive:

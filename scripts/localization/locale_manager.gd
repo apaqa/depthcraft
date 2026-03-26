@@ -34,7 +34,8 @@ func L(key: String) -> String:
 
 
 func set_locale(locale: String) -> void:
-	_locale = locale
+	if locale == "":
+		return
 	load_locale(locale)
 	locale_changed.emit(locale)
 

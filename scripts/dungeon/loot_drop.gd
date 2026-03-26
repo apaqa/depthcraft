@@ -177,7 +177,7 @@ func _on_body_entered(body: Node) -> void:
 		if body.has_method("record_dungeon_loot"):
 			body.record_dungeon_loot(item_id, quantity)
 		if body.has_method("_show_floating_text"):
-			var item_name := str(stack_data.get("name", ITEM_DATABASE.get_item(item_id).get("name", item_id)))
+			var item_name := ITEM_DATABASE.get_stack_display_name(stack_data if not stack_data.is_empty() else ITEM_DATABASE.get_item(item_id))
 			var text_color := Color(1.0, 0.95, 0.45, 1.0)
 			if _is_equipment():
 				text_color = DUNGEON_LOOT.get_rarity_color(_get_rarity())

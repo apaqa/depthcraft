@@ -4,11 +4,11 @@ class_name DungeonStairway
 signal descend_requested
 signal return_surface_requested
 
-@export var prompt_text: String = "[E] Descend"
+@export var prompt_text: String = "prompt_descend_default"
 @export var uses_secondary_input: bool = false
 @export var stair_variant: String = "down"
 @export var is_locked: bool = false
-@export var locked_prompt_text: String = "[E] Locked"
+@export var locked_prompt_text: String = "prompt_locked"
 
 const DOWN_TEXTURE := preload("res://assets/floor_stairs.png")
 const UP_TEXTURE := preload("res://assets/stairs_top.png")
@@ -21,7 +21,8 @@ func _ready() -> void:
 
 
 func get_interaction_prompt() -> String:
-	return locked_prompt_text if is_locked else prompt_text
+	var key := locked_prompt_text if is_locked else prompt_text
+	return LocaleManager.L(key) if not key.begins_with("[") else key
 
 
 func interact(_player) -> void:

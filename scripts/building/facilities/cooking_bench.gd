@@ -3,7 +3,7 @@ class_name CookingBenchFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] " + LocaleManager.L("PROMPT_COOK")
+	return LocaleManager.L("prompt_cooking")
 
 
 func interact(player) -> void:
@@ -16,7 +16,7 @@ func get_recipe_ids() -> PackedStringArray:
 
 
 func get_menu_title() -> String:
-	return LocaleManager.L("cooking_station")
+	return LocaleManager.L("menu_title_cooking")
 
 
 func requires_home_core() -> bool:

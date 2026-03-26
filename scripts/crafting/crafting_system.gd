@@ -1,6 +1,8 @@
 extends Node
 class_name CraftingSystem
 
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+
 const RECIPES := {
 	"wood_sword": {
 		"id": "wood_sword",
@@ -128,7 +130,11 @@ static func get_available_recipes_for_ids(recipe_ids: PackedStringArray) -> Arra
 static func get_recipe(recipe_id: String) -> Dictionary:
 	if not RECIPES.has(recipe_id):
 		return {}
-	return RECIPES[recipe_id].duplicate(true)
+	var recipe: Dictionary = RECIPES[recipe_id].duplicate(true)
+	var result_item_id := str(recipe.get("result_item_id", ""))
+	if result_item_id != "":
+		recipe["name"] = ITEM_DATABASE.get_display_name(result_item_id)
+	return recipe
 
 
 static func get_recipe_cost(recipe_id: String, cost_multiplier: float = 1.0) -> Dictionary:

@@ -171,7 +171,7 @@ func _open_shop() -> void:
 func _add_item_row(parent: Control, item_offer: Dictionary) -> void:
 	var item_data := ITEM_DATABASE.get_item(str(item_offer.get("id", "")))
 	var quantity := int(item_offer.get("quantity", 1))
-	var name := str(item_data.get("name", str(item_offer.get("id", "")).capitalize()))
+	var name := str(item_data.get("name", ITEM_DATABASE.get_display_name(str(item_offer.get("id", "")))))
 	if quantity > 1:
 		name = "%s x%d" % [name, quantity]
 	_add_shop_row(parent, name, int(item_offer.get("price", 0)), _on_buy_item.bind(str(item_offer.get("id", "")), quantity, int(item_offer.get("price", 0))))
@@ -249,7 +249,7 @@ func _refresh_equipment_offer_row() -> void:
 		_equipment_button.text = LocaleManager.L("sold_button")
 		_equipment_button.disabled = true
 		return
-	_equipment_label.text = "%s  %s" % [str(_equipment_offer.get("name", LocaleManager.L("mystery_equipment"))), ITEM_DATABASE.format_currency(_equipment_price)]
+	_equipment_label.text = "%s  %s" % [ITEM_DATABASE.get_stack_display_name(_equipment_offer), ITEM_DATABASE.format_currency(_equipment_price)]
 	_equipment_label.add_theme_color_override("font_color", DUNGEON_LOOT.get_item_display_color(_equipment_offer))
 	_equipment_button.text = LocaleManager.L("buy")
 	_equipment_button.disabled = false

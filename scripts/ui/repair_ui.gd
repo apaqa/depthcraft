@@ -2,6 +2,8 @@ extends Control
 
 signal close_requested
 
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+
 @onready var panel_container: PanelContainer = $PanelContainer
 
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
@@ -62,7 +64,7 @@ func _refresh() -> void:
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		var title := Label.new()
-		title.text = "%s (%s)" % [player.equipment_system.get_item_display_name(item), slot_name.replace("_", " ").capitalize()]
+		title.text = LocaleManager.L("repair_equipped_item_fmt") % [player.equipment_system.get_item_display_name(item), _translate_slot_name(slot_name)]
 		title.self_modulate = player.equipment_system.get_item_display_color(item)
 		row.add_child(title)
 		var bar_bg := ColorRect.new()
@@ -74,7 +76,7 @@ func _refresh() -> void:
 		bar_bg.add_child(bar_fill)
 		row.add_child(bar_bg)
 		var info := Label.new()
-		info.text = LocaleManager.L("durability") + ": %d/%d" % [durability, max_durability]
+		info.text = LocaleManager.L("durability_label") % [durability, max_durability]
 		row.add_child(info)
 		var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name)
 		if not cost.is_empty():
@@ -82,11 +84,11 @@ func _refresh() -> void:
 			var cost_parts: PackedStringArray = []
 			var can_afford := true
 			for resource_id in cost.keys():
-				cost_parts.append("%d %s" % [int(cost[resource_id]), resource_id.replace("_", " ").capitalize()])
+				cost_parts.append("%d %s" % [int(cost[resource_id]), ITEM_DATABASE.get_display_name(str(resource_id))])
 				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
 					can_afford = false
 			var cost_label := Label.new()
-			cost_label.text = LocaleManager.L("cost") + ": " + ", ".join(cost_parts)
+			cost_label.text = LocaleManager.L("repair_cost_fmt") % ", ".join(cost_parts)
 			row.add_child(cost_label)
 			var button := Button.new()
 			button.text = LocaleManager.L("repair")
@@ -107,7 +109,7 @@ func _refresh() -> void:
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		var title := Label.new()
-		title.text = "%s [%s]" % [player.equipment_system.get_item_display_name(item), "INV"]
+		title.text = LocaleManager.L("repair_inventory_item_fmt") % [player.equipment_system.get_item_display_name(item), LocaleManager.L("inventory_short")]
 		title.self_modulate = player.equipment_system.get_item_display_color(item)
 		row.add_child(title)
 		var bar_bg := ColorRect.new()
@@ -119,7 +121,7 @@ func _refresh() -> void:
 		bar_bg.add_child(bar_fill)
 		row.add_child(bar_bg)
 		var info := Label.new()
-		info.text = LocaleManager.L("durability") + ": %d/%d" % [durability, max_durability]
+		info.text = LocaleManager.L("durability_label") % [durability, max_durability]
 		row.add_child(info)
 		var lost = max(max_durability - durability, 0)
 		if lost > 0:
@@ -128,7 +130,7 @@ func _refresh() -> void:
 			var cost_amount = max(int(ceil(float(lost) / 10.0)), 1)
 			var can_afford = player.inventory.get_item_count(material) >= cost_amount
 			var cost_label := Label.new()
-			cost_label.text = LocaleManager.L("cost") + ": %d %s" % [cost_amount, material.replace("_", " ").capitalize()]
+			cost_label.text = LocaleManager.L("repair_cost_single_fmt") % [cost_amount, ITEM_DATABASE.get_display_name(material)]
 			row.add_child(cost_label)
 			var button := Button.new()
 			button.text = LocaleManager.L("repair")
@@ -169,6 +171,25 @@ func _on_repair_inventory_pressed(inv_index: int) -> void:
 	item["durability"] = max_dur
 	player.inventory.inventory_changed.emit()
 	_refresh()
+
+
+func _translate_slot_name(slot_name: String) -> String:
+	match slot_name:
+		"weapon":
+			return LocaleManager.L("slot_weapon")
+		"helmet":
+			return LocaleManager.L("slot_helmet")
+		"chest_armor":
+			return LocaleManager.L("slot_chest_armor")
+		"boots":
+			return LocaleManager.L("slot_boots")
+		"accessory":
+			return LocaleManager.L("slot_accessory")
+		"offhand":
+			return LocaleManager.L("slot_offhand")
+		"tool":
+			return LocaleManager.L("slot_tool")
+	return slot_name.replace("_", " ").capitalize()
 
 
 func _ensure_close_button() -> void:

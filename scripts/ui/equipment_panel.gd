@@ -106,7 +106,7 @@ func _refresh() -> void:
 		if str(stack.get("type", "")) != "consumable":
 			continue
 		var id := str(stack.get("id", ""))
-		var label := str(stack.get("name", id))
+		var label := ITEM_DATABASE.get_stack_display_name(stack)
 		var qty := int(stack.get("quantity", 0))
 		var tag := ""
 		if id == q_id:
@@ -168,7 +168,7 @@ func _build_slot_text(slot_name: String, item: Dictionary) -> String:
 		return label + LocaleManager.L("empty")
 	var durability := int(item.get("durability", 0))
 	var max_durability := int(item.get("max_durability", 0))
-	return "%s%s  %s: %d/%d" % [label, player.equipment_system.get_item_display_name(item), LocaleManager.L("durability_label"), durability, max_durability]
+	return "%s%s  %s" % [label, player.equipment_system.get_item_display_name(item), LocaleManager.L("slot_durability") % [durability, max_durability]]
 
 
 func _translate_slot(slot_name: String) -> String:

@@ -112,7 +112,7 @@ func use_skill_slot(slot_index: int) -> bool:
 	var skill_id := equipped_skill_ids[slot_index]
 	if skill_id == "" or not skills.has(skill_id):
 		if player != null:
-			player.show_status_message("Skill slot empty", Color(0.7, 0.7, 0.7, 1.0))
+			player.show_status_message(LocaleManager.L("skill_slot_empty"), Color(0.7, 0.7, 0.7, 1.0))
 		return false
 	var skill: Dictionary = skills[skill_id]
 	if float(skill.get("current_cooldown", 0.0)) > 0.0:
@@ -169,7 +169,7 @@ func _cast_execute(_skill_id: String) -> bool:
 		return false
 	if player.has_method("arm_execute_skill"):
 		player.arm_execute_skill()
-		player.show_status_message("Execute armed", Color(1.0, 0.6, 0.35, 1.0))
+		player.show_status_message(LocaleManager.L("skill_execute_armed"), Color(1.0, 0.6, 0.35, 1.0))
 	return true
 
 
@@ -192,7 +192,7 @@ func _cast_treasure_hunter(_skill_id: String) -> bool:
 	if current_level != null and current_level.has_method("reveal_treasure_hunter"):
 		current_level.reveal_treasure_hunter(10.0)
 		if player != null:
-			player.show_status_message("Treasure Hunter active", Color(1.0, 0.9, 0.4, 1.0))
+			player.show_status_message(LocaleManager.L("skill_treasure_hunter_active"), Color(1.0, 0.9, 0.4, 1.0))
 		return true
 	return false
 
@@ -206,8 +206,8 @@ func _cast_sprint(_skill_id: String) -> bool:
 
 func _coming_soon(skill_id: String) -> bool:
 	if player != null:
-		var skill_name := str((skills.get(skill_id, {}) as Dictionary).get("name", "Skill"))
-		player.show_status_message("%s Coming Soon" % skill_name, Color(0.9, 0.9, 0.9, 1.0))
+		var skill_name := LocaleManager.L(str((skills.get(skill_id, {}) as Dictionary).get("name", "skill_name_fallback")))
+		player.show_status_message(LocaleManager.L("skill_coming_soon") % skill_name, Color(0.9, 0.9, 0.9, 1.0))
 	return true
 
 
@@ -219,6 +219,9 @@ func _rebuild_skill_runtime() -> void:
 	skills.clear()
 	for skill_id in SKILL_DEFS.keys():
 		var runtime := (SKILL_DEFS[skill_id] as Dictionary).duplicate(true)
+		runtime["name"] = "skill_%s_name" % skill_id
+		runtime["short_name"] = "skill_%s_short" % skill_id
+		runtime["desc"] = "skill_%s_desc" % skill_id
 		runtime["current_cooldown"] = 0.0
 		runtime["effect_func"] = Callable(self, str(runtime.get("effect_method", "")))
 		skills[skill_id] = runtime

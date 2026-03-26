@@ -379,7 +379,7 @@ func _build_item_row(stack: Dictionary, _swatch_color: Color) -> Control:
 	row.add_child(_build_item_icon_holder(stack))
 	var name_label := Label.new()
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.text = str(stack.get("name", stack.get("id", "")))
+	name_label.text = ITEM_DATABASE.get_stack_display_name(stack)
 	name_label.self_modulate = ITEM_DATABASE.get_stack_color(stack)
 	row.add_child(name_label)
 	var quantity_label := Label.new()
@@ -495,9 +495,9 @@ func update_consumable_bar(slots: Array) -> void:
 		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
 		var key_name = "Q" if slot_index == 0 else "R"
 		if slot.is_empty():
-			labels.append("[%s] %s" % [key_name, LocaleManager.L("empty")])
+			labels.append(LocaleManager.L("consumable_empty") % key_name)
 			continue
-		labels.append("[%s] %s x%d" % [key_name, str(slot.get("name", "Item")), int(slot.get("quantity", 0))])
+		labels.append("[%s] %s x%d" % [key_name, ITEM_DATABASE.get_stack_display_name(slot), int(slot.get("quantity", 0))])
 	consumable_bar.text = " | ".join(labels)
 
 
@@ -543,10 +543,10 @@ func _refresh_skill_slots() -> void:
 		else:
 			var cooldown := float(slot.get("current_cooldown", 0.0))
 			var max_cooldown := maxf(float(slot.get("cooldown", 1.0)), 0.001)
-			var short_name := str(slot.get("short_name", "SK"))
+			var short_name := LocaleManager.L(str(slot.get("short_name", "skill_name_fallback")))
 			skill_label.text = "[%s]\n%s" % [key_name, short_name]
 			skill_label.self_modulate = Color(0.65, 0.65, 0.65, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
-			skill_label.tooltip_text = str(slot.get("name", "Skill"))
+			skill_label.tooltip_text = LocaleManager.L(str(slot.get("name", "skill_name_fallback")))
 			container.add_child(skill_label)
 
 			if cooldown > 0.0:

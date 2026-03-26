@@ -111,7 +111,7 @@ func _add_healing_pool() -> void:
 	title.position = center + Vector2(-40.0, -40.0)
 	title.size = Vector2(80.0, 20.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.text = "Healing Pool"
+	title.text = LocaleManager.L("safe_room_healing_pool")
 	title.label_settings = _create_label_settings(Color(0.92, 1.0, 0.94, 1.0), Color(0.05, 0.16, 0.08, 1.0), 12)
 	add_child(title)
 
