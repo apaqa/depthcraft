@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+LocaleManager="*res://scripts/localization/locale_manager.gd"
 BuildingData="*res://scripts/building/building_data.gd"
 ItemDatabase="*res://scripts/inventory/item_database.gd"
 TalentData="*res://scripts/talent/talent_data.gd"

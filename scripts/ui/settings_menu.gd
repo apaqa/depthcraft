@@ -15,6 +15,7 @@ var _notice_label: Label = null
 var _menu_buttons_root: VBoxContainer = null
 var _settings_panel: PanelContainer = null
 var _paused_game: bool = false
+var _i18n_nodes: Dictionary = {}
 
 
 func _ready() -> void:
@@ -24,9 +25,11 @@ func _ready() -> void:
 	if canvas_layer is CanvasLayer:
 		canvas_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
+	LocaleManager.locale_changed.connect(_refresh_locale)
 
 
 func _build_ui() -> void:
+	_i18n_nodes.clear()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
@@ -46,7 +49,7 @@ func _build_ui() -> void:
 	_notice_label.anchor_bottom = 0.2
 	_notice_label.offset_left = -10.0
 	_notice_label.offset_right = 20.0
-	_notice_label.text = "å¤šäººæ¨¡å?ä¸­ï??Šæˆ²ä¸æ??«å?"
+	_notice_label.text = LocaleManager.tr("settings_multiplayer_notice")
 	_notice_label.visible = false
 	_notice_label.add_theme_font_size_override("font_size", 14)
 	_notice_label.add_theme_color_override("font_color", Color(0.88, 0.88, 0.88, 1.0))
@@ -66,11 +69,11 @@ func _build_ui() -> void:
 	_menu_buttons_root.add_theme_constant_override("separation", 16)
 	content_root.add_child(_menu_buttons_root)
 
-	_menu_buttons_root.add_child(_make_menu_button("ç¹¼ç??Šæˆ²", close_menu))
-	_menu_buttons_root.add_child(_make_menu_button("ä¿å??Šæˆ²", _on_save_pressed))
-	_menu_buttons_root.add_child(_make_menu_button("è¨­å?", _show_settings_page))
-	_menu_buttons_root.add_child(_make_menu_button("ä¸»é¸??, _go_to_main_menu))
-	_menu_buttons_root.add_child(_make_menu_button("?œé?", close_menu))
+	_menu_buttons_root.add_child(_make_i18n_button("settings_resume", close_menu))
+	_menu_buttons_root.add_child(_make_i18n_button("settings_save", _on_save_pressed))
+	_menu_buttons_root.add_child(_make_i18n_button("settings_label", _show_settings_page))
+	_menu_buttons_root.add_child(_make_i18n_button("settings_main_menu", _go_to_main_menu))
+	_menu_buttons_root.add_child(_make_i18n_button("settings_quit", close_menu))
 
 	_settings_panel = PanelContainer.new()
 	_settings_panel.anchor_left = 0.42
@@ -92,26 +95,27 @@ func _build_ui() -> void:
 	panel_vbox.add_theme_constant_override("separation", 14)
 	panel_margin.add_child(panel_vbox)
 
-	var back_button := _make_menu_button("??è¿”å?", _show_main_page)
+	var back_button := _make_i18n_button("settings_back", _show_main_page)
 	back_button.add_theme_font_size_override("font_size", 18)
 	back_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel_vbox.add_child(back_button)
 
 	var title := Label.new()
-	title.text = "è¨­å?"
+	title.text = LocaleManager.tr("settings_title")
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	title.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
 	title.add_theme_constant_override("outline_size", 2)
 	panel_vbox.add_child(title)
+	_i18n_nodes["settings_title"] = title
 
-	panel_vbox.add_child(_build_section_label("?³é?"))
-	_add_bus_slider(panel_vbox, "Master", "ä¸»éŸ³??)
-	_add_bus_slider(panel_vbox, "Music", "?³æ?")
-	_add_bus_slider(panel_vbox, "SFX", "?³æ?")
+	panel_vbox.add_child(_make_i18n_section("settings_audio"))
+	_add_bus_slider(panel_vbox, "Master", "settings_master")
+	_add_bus_slider(panel_vbox, "Music", "settings_music")
+	_add_bus_slider(panel_vbox, "SFX", "settings_sfx")
 
-	panel_vbox.add_child(_build_section_label("è¦–è?"))
-	var zoom_row := _build_option_row("è¦–è?ç¸®æ”¾")
+	panel_vbox.add_child(_make_i18n_section("settings_display"))
+	var zoom_row := _build_option_row("settings_view_zoom")
 	_zoom_slider = HSlider.new()
 	_zoom_slider.min_value = 1.5
 	_zoom_slider.max_value = 3.0
@@ -122,23 +126,36 @@ func _build_ui() -> void:
 	zoom_row.add_child(_zoom_slider)
 	panel_vbox.add_child(zoom_row)
 
-	panel_vbox.add_child(_build_section_label("èªžè?"))
-	var language_row := _build_option_row("èªžè?")
+	panel_vbox.add_child(_make_i18n_section("settings_language"))
+	var language_row := _build_option_row("settings_language")
 	_lang_button = Button.new()
 	_style_secondary_button(_lang_button)
 	_lang_button.custom_minimum_size = Vector2(140, 32)
+	_lang_button.text = LocaleManager.tr("lang_current")
 	_lang_button.pressed.connect(_on_lang_toggle)
 	language_row.add_child(_lang_button)
 	panel_vbox.add_child(language_row)
 
-	panel_vbox.add_child(_build_section_label("?°æ??ç¤º"))
-	var tutorial_row := _build_option_row("é¡¯ç¤º?ç¤º")
+	panel_vbox.add_child(_make_i18n_section("settings_tutorial_section"))
+	var tutorial_row := _build_option_row("settings_show_hints")
 	_tutorial_toggle = CheckButton.new()
 	_tutorial_toggle.button_pressed = true
 	_tutorial_toggle.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	_tutorial_toggle.toggled.connect(_on_tutorial_toggled)
 	tutorial_row.add_child(_tutorial_toggle)
 	panel_vbox.add_child(tutorial_row)
+
+
+func _make_i18n_button(key: String, callback: Callable) -> Button:
+	var button := _make_menu_button(LocaleManager.tr(key), callback)
+	_i18n_nodes[key] = button
+	return button
+
+
+func _make_i18n_section(key: String) -> Label:
+	var lbl := _build_section_label(LocaleManager.tr(key))
+	_i18n_nodes[key] = lbl
+	return lbl
 
 
 func _make_menu_button(text_value: String, callback: Callable) -> Button:
@@ -178,15 +195,16 @@ func _build_section_label(text_value: String) -> Label:
 	return label
 
 
-func _build_option_row(label_text: String) -> HBoxContainer:
+func _build_option_row(label_key: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	var label := Label.new()
-	label.text = label_text
+	label.text = LocaleManager.tr(label_key)
 	label.custom_minimum_size = Vector2(120, 0)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	row.add_child(label)
+	_i18n_nodes[label_key + "_row_lbl"] = label
 	return row
 
 
@@ -201,11 +219,11 @@ func _style_secondary_button(button: Button) -> void:
 	button.add_theme_constant_override("outline_size", 1)
 
 
-func _add_bus_slider(parent: Control, bus_name: String, display_name: String) -> void:
+func _add_bus_slider(parent: Control, bus_name: String, label_key: String) -> void:
 	var bus_idx := AudioServer.get_bus_index(bus_name)
 	if bus_idx < 0:
 		return
-	var row := _build_option_row(display_name)
+	var row := _build_option_row(label_key)
 	var slider := HSlider.new()
 	slider.min_value = -40.0
 	slider.max_value = 0.0
@@ -216,6 +234,25 @@ func _add_bus_slider(parent: Control, bus_name: String, display_name: String) ->
 	row.add_child(slider)
 	_sliders[bus_name] = slider
 	parent.add_child(row)
+
+
+func _refresh_locale() -> void:
+	for key in _i18n_nodes:
+		var node = _i18n_nodes[key]
+		if not is_instance_valid(node):
+			continue
+		var tr_key := key
+		# Row labels have "_row_lbl" suffix â€” strip it to get the real key
+		if tr_key.ends_with("_row_lbl"):
+			tr_key = tr_key.substr(0, tr_key.length() - 8)
+		if node is Button:
+			node.text = LocaleManager.tr(tr_key)
+		elif node is Label:
+			node.text = LocaleManager.tr(tr_key)
+	if _lang_button != null:
+		_lang_button.text = LocaleManager.tr("lang_current")
+	if _notice_label != null:
+		_notice_label.text = LocaleManager.tr("settings_multiplayer_notice")
 
 
 func open_menu(camera: Camera2D = null) -> void:
@@ -283,13 +320,11 @@ func _on_volume_changed(bus_name: String, db_value: float) -> void:
 
 
 func _on_lang_toggle() -> void:
-	var current := TranslationServer.get_locale()
+	var current := LocaleManager.get_locale()
 	if current.begins_with("zh"):
-		TranslationServer.set_locale("en")
-		_lang_button.text = "English"
+		LocaleManager.set_locale("en")
 	else:
-		TranslationServer.set_locale("zh_TW")
-		_lang_button.text = "ç¹é?ä¸­æ?"
+		LocaleManager.set_locale("zh")
 
 
 func _on_zoom_changed(value: float) -> void:
@@ -323,7 +358,7 @@ func _load_settings() -> void:
 				_tutorial_toggle.set_pressed_no_signal(not bool(parsed.get("completed", false)))
 
 	if _lang_button != null:
-		_lang_button.text = "ç¹é?ä¸­æ?" if TranslationServer.get_locale().begins_with("zh") else "English"
+		_lang_button.text = LocaleManager.tr("lang_current")
 
 	if not FileAccess.file_exists(SETTINGS_PATH):
 		return
@@ -346,10 +381,11 @@ func _load_settings() -> void:
 				if _sliders.has(bus_name):
 					(_sliders[bus_name] as HSlider).set_value_no_signal(db_val)
 
-	if data.has("locale") and _lang_button != null:
+	if data.has("locale"):
 		var locale := str(data["locale"])
-		TranslationServer.set_locale(locale)
-		_lang_button.text = "ç¹é?ä¸­æ?" if locale.begins_with("zh") else "English"
+		LocaleManager.set_locale(locale)
+		if _lang_button != null:
+			_lang_button.text = LocaleManager.tr("lang_current")
 
 	if data.has("camera_zoom") and _zoom_slider != null:
 		var zoom_value := float(data["camera_zoom"])
@@ -364,11 +400,10 @@ func _save_settings() -> void:
 		var bus_idx := AudioServer.get_bus_index(bus_name)
 		if bus_idx >= 0:
 			data["volume_" + bus_name.to_lower()] = AudioServer.get_bus_volume_db(bus_idx)
-	data["locale"] = TranslationServer.get_locale()
+	data["locale"] = LocaleManager.get_locale()
 	if _zoom_slider != null:
 		data["camera_zoom"] = _zoom_slider.value
 	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(data))
 		file.close()
-
