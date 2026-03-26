@@ -3,7 +3,7 @@ class_name RepairBenchFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] 修�?"
+	return "[E] 修理"
 
 
 func interact(player) -> void:
@@ -21,4 +21,3 @@ func serialize_data() -> Dictionary:
 
 func load_from_data(_data: Dictionary) -> void:
 	pass
-

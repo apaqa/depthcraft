@@ -5,10 +5,10 @@ const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
 
 const SHOP_ITEMS := [
 	{"id": "bandage", "quantity": 1, "price": 5, "label": "繃帶"},
-	{"id": "bread", "quantity": 1, "price": 8, "label": "麵�?"},
-	{"id": "seed", "quantity": 3, "price": 3, "label": "種�? x3"},
-	{"id": "iron_ore", "quantity": 5, "price": 15, "label": "?�礦 x5"},
-	{"id": "torch", "quantity": 3, "price": 6, "label": "?��? x3"},
+	{"id": "bread", "quantity": 1, "price": 8, "label": "麵�?"},
+	{"id": "seed", "quantity": 3, "price": 3, "label": "種�? x3"},
+	{"id": "iron_ore", "quantity": 5, "price": 15, "label": "?�礦 x5"},
+	{"id": "torch", "quantity": 3, "price": 6, "label": "?��? x3"},
 ]
 
 var _shop_canvas: CanvasLayer = null
@@ -18,7 +18,7 @@ var _message_label: Label = null
 
 
 func get_interaction_prompt() -> String:
-	return "[E] 交�?"
+	return "[E] 交�?"
 
 
 func interact(player) -> void:
@@ -28,6 +28,8 @@ func interact(player) -> void:
 	_open_shop()
 	if player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
+	if "in_menu" in player:
+		player.in_menu = true
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -67,7 +69,7 @@ func _open_shop() -> void:
 	margin.add_child(vbox)
 
 	var title := Label.new()
-	title.text = "?�人"
+	title.text = "?�人"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
@@ -78,7 +80,7 @@ func _open_shop() -> void:
 		_add_shop_row(vbox, str(item["label"]), int(item["price"]),
 				_on_buy_item.bind(str(item["id"]), int(item["quantity"]), int(item["price"])))
 
-	_add_shop_row(vbox, "神�?裝�?", 50, _on_buy_equipment)
+	_add_shop_row(vbox, "神�?裝�?", 50, _on_buy_equipment)
 
 	vbox.add_child(HSeparator.new())
 
@@ -94,7 +96,7 @@ func _open_shop() -> void:
 	_update_gold_label()
 	footer.add_child(_gold_label)
 	var close_btn := Button.new()
-	close_btn.text = "?��?"
+	close_btn.text = "?��?"
 	close_btn.pressed.connect(_close_shop)
 	footer.add_child(close_btn)
 	vbox.add_child(footer)
@@ -103,7 +105,7 @@ func _open_shop() -> void:
 func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable) -> void:
 	var row := HBoxContainer.new()
 	var lbl := Label.new()
-	lbl.text = "%s  ?? %d ?�幣" % [label_text, price]
+	lbl.text = "%s  ?? %d ?�幣" % [label_text, price]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var btn := Button.new()
@@ -120,7 +122,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	if inv == null:
 		return
 	if not inv.has_item("gold", price):
-		_message_label.text = "?�幣不足"
+		_message_label.text = "?�幣不足"
 		return
 	if inv.remove_item("gold", price):
 		if inv.add_item(item_id, quantity):
@@ -129,7 +131,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 		else:
 			# Refund gold if bag is full
 			inv.add_item("gold", price)
-			_message_label.text = "?��?已滿"
+			_message_label.text = "?��?已滿"
 
 
 func _on_buy_equipment() -> void:
@@ -139,7 +141,7 @@ func _on_buy_equipment() -> void:
 	if inv == null:
 		return
 	if not inv.has_item("gold", 50):
-		_message_label.text = "?�幣不足"
+		_message_label.text = "?�幣不足"
 		return
 	if inv.remove_item("gold", 50):
 		var equip := DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
@@ -149,7 +151,7 @@ func _on_buy_equipment() -> void:
 		else:
 			# Refund gold if bag is full
 			inv.add_item("gold", 50)
-			_message_label.text = "?��?已滿"
+			_message_label.text = "?��?已滿"
 
 
 func _update_gold_label() -> void:
@@ -159,7 +161,7 @@ func _update_gold_label() -> void:
 	var gold_count := 0
 	if inv != null:
 		gold_count = inv.get_item_count("gold")
-	_gold_label.text = "?�幣: %d" % gold_count
+	_gold_label.text = "?�幣: %d" % gold_count
 
 
 func _close_shop() -> void:
