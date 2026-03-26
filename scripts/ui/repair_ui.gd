@@ -193,16 +193,14 @@ func _translate_slot_name(slot_name: String) -> String:
 
 
 func _ensure_close_button() -> void:
-	if panel_container == null or panel_container.get_node_or_null("CloseButton") != null:
+	if get_node_or_null("CloseButton") != null:
 		return
-	var close_button := Button.new()
-	close_button.name = "CloseButton"
-	close_button.text = "✕"
-	close_button.position = Vector2(8.0, 8.0)
-	close_button.custom_minimum_size = Vector2(28.0, 28.0)
-	close_button.add_theme_font_size_override("font_size", 20)
-	close_button.add_theme_color_override("font_color", Color.WHITE)
-	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
-	close_button.add_theme_color_override("font_pressed_color", Color.WHITE)
-	close_button.pressed.connect(close_menu)
-	panel_container.add_child(close_button)
+	var close_btn = Button.new()
+	close_btn.name = "CloseButton"
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(32, 32)
+	close_btn.size = Vector2(32, 32)
+	close_btn.position = panel_container.position + Vector2(8, 8)
+	close_btn.z_index = 100
+	close_btn.pressed.connect(close_menu)
+	add_child(close_btn)

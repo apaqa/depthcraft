@@ -63,7 +63,7 @@ func _refresh() -> void:
 	for child in slot_list.get_children():
 		child.queue_free()
 	inventory_list.clear()
-	inventory_list.set_item_icon_max_width(24)
+	inventory_list.fixed_icon_size = Vector2i(24, 24)
 	_inventory_indices.clear()
 	_inventory_types.clear()
 	_hovered_inventory_index = -1
