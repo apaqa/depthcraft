@@ -39,6 +39,7 @@ var player = null
 var inventory = null
 var current_level = null
 var current_level_id: String = ""
+var settings_menu: SettingsMenu = null
 
 
 func _ready() -> void:
@@ -63,6 +64,11 @@ func _ready() -> void:
 	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
 		buff_select.buff_chosen.connect(_on_buff_chosen)
 	set_process(true)
+	settings_menu = SettingsMenu.new()
+	settings_menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(settings_menu)
+	if not settings_menu.close_requested.is_connected(_on_menu_closed):
+		settings_menu.close_requested.connect(_on_menu_closed)
 
 
 func update_hp(current: int, max_hp: int) -> void:
@@ -150,6 +156,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_cancel") and inventory_panel.visible:
 		inventory_panel.visible = false
 		_on_menu_closed()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel"):
+		_toggle_settings_menu()
 		get_viewport().set_input_as_handled()
 
 
@@ -281,6 +290,8 @@ func _close_all_menus() -> void:
 	equipment_panel.close_menu()
 	skill_equip_ui.close_menu()
 	buff_select.close_menu()
+	if settings_menu != null and settings_menu.visible:
+		settings_menu.close_menu()
 	_on_menu_closed()
 
 
@@ -292,7 +303,19 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or buff_select.visible
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or buff_select.visible or (settings_menu != null and settings_menu.visible)
+
+
+func _toggle_settings_menu() -> void:
+	if settings_menu == null:
+		return
+	if settings_menu.visible:
+		settings_menu.close_menu()
+		return
+	_close_all_menus()
+	settings_menu.open_menu(get_viewport().get_camera_2d())
+	if player != null:
+		player.set_ui_blocked(true)
 
 
 func _process(_delta: float) -> void:
