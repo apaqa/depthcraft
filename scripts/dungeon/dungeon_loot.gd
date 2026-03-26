@@ -1,33 +1,33 @@
 extends RefCounted
 class_name DungeonLoot
 
-const PREFIXES := ["Rusty", "Iron", "Steel", "Dark", "Ancient", "Cursed", "Blessed", "Swift"]
-const WEAPON_NAMES := ["Sword", "Axe", "Mace", "Dagger", "Spear"]
-const HELMET_NAMES := ["Helm", "Hood", "Crown", "Cap"]
-const CHEST_NAMES := ["Plate", "Mail", "Vest", "Robe"]
-const BOOT_NAMES := ["Boots", "Greaves", "Sandals"]
-const ACCESSORY_NAMES := ["Ring", "Amulet", "Charm", "Pendant"]
+const PREFIXES := ["生鏽的", "鐵製", "鋼製", "暗影", "遠古", "被詛咒的", "受祝福的", "迅捷的"]
+const WEAPON_NAMES := ["長劍", "戰斧", "鈍器", "匕首", "長槍"]
+const HELMET_NAMES := ["頭盔", "兜帽", "王冠", "便帽"]
+const CHEST_NAMES := ["板甲", "鎖子甲", "背心", "法袍"]
+const BOOT_NAMES := ["靴子", "護腿", "涼鞋"]
+const ACCESSORY_NAMES := ["戒指", "護身符", "飾品", "項鍊"]
 const RARITY_COLORS := {
-	"Common": Color(1.0, 1.0, 1.0, 1.0),
-	"Uncommon": Color(0.45, 0.95, 0.45, 1.0),
-	"Rare": Color(0.42, 0.68, 1.0, 1.0),
-	"Epic": Color(0.82, 0.45, 1.0, 1.0),
-	"Legendary": Color(1.0, 0.65, 0.1, 1.0),
+	"普通": Color(1.0, 1.0, 1.0, 1.0),
+	"優秀": Color(0.45, 0.95, 0.45, 1.0),
+	"稀有": Color(0.42, 0.68, 1.0, 1.0),
+	"史詩": Color(0.82, 0.45, 1.0, 1.0),
+	"傳說": Color(1.0, 0.65, 0.1, 1.0),
 }
 const AFFIX_POOL := [
-	{"label": "ATK", "stat": "attack", "min": 3, "max": 8},
-	{"label": "DEF", "stat": "defense", "min": 2, "max": 6},
-	{"label": "Max HP", "stat": "max_hp", "min": 10, "max": 30},
-	{"label": "Speed", "stat": "speed_multiplier", "min": 5, "max": 15, "scale": 0.01, "suffix": "%"},
-	{"label": "Crit Chance", "stat": "crit_chance", "min": 3, "max": 8, "scale": 0.01, "suffix": "%"},
-	{"label": "Lifesteal", "stat": "lifesteal_ratio", "min": 3, "max": 5, "scale": 0.01, "suffix": "%"},
-	{"label": "Gather Speed", "stat": "gather_bonus", "min": 1, "max": 3},
+	{"label": "攻擊", "stat": "attack", "min": 3, "max": 8},
+	{"label": "防禦", "stat": "defense", "min": 2, "max": 6},
+	{"label": "最大生命", "stat": "max_hp", "min": 10, "max": 30},
+	{"label": "移速", "stat": "speed_multiplier", "min": 5, "max": 15, "scale": 0.01, "suffix": "%"},
+	{"label": "暴擊率", "stat": "crit_chance", "min": 3, "max": 8, "scale": 0.01, "suffix": "%"},
+	{"label": "吸血", "stat": "lifesteal_ratio", "min": 3, "max": 5, "scale": 0.01, "suffix": "%"},
+	{"label": "採集速度", "stat": "gather_bonus", "min": 1, "max": 3},
 ]
 const QUALITY_MULTIPLIERS := {
-	"Common": 1.0, "Uncommon": 1.3, "Rare": 1.6, "Epic": 2.0, "Legendary": 2.5,
+	"普通": 1.0, "優秀": 1.3, "稀有": 1.6, "史詩": 2.0, "傳說": 2.5,
 }
 const QUALITY_AFFIX_COUNT := {
-	"Common": 0, "Uncommon": 1, "Rare": 2, "Epic": 3, "Legendary": 3,
+	"普通": 0, "優秀": 1, "稀有": 2, "史詩": 3, "傳說": 3,
 }
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
@@ -79,7 +79,7 @@ static func get_item_display_color(stack: Dictionary) -> Color:
 
 
 static func _pick_quality(floor_number: int, rng: RandomNumberGenerator = null) -> String:
-	var tiers := ["Common", "Uncommon", "Rare", "Epic", "Legendary"]
+	var tiers := ["普通", "優秀", "稀有", "史詩", "傳說"]
 	var min_floors := [1, 3, 5, 8, 12]
 	var weights := [
 		max(70.0 - float(floor_number) * 4.0, 5.0),
@@ -93,7 +93,7 @@ static func _pick_quality(floor_number: int, rng: RandomNumberGenerator = null) 
 		if floor_number >= min_floors[i]:
 			total += weights[i]
 	if total <= 0.0:
-		return "Common"
+		return "普通"
 	var roll := _randf(rng) * total
 	var running := 0.0
 	for i in range(tiers.size()):
@@ -102,10 +102,10 @@ static func _pick_quality(floor_number: int, rng: RandomNumberGenerator = null) 
 		running += weights[i]
 		if roll <= running:
 			return tiers[i]
-	return "Common"
+	return "普通"
 
 
-static func _generate_name(slot: String, quality: String = "Common", rng: RandomNumberGenerator = null) -> String:
+static func _generate_name(slot: String, quality: String = "普通", rng: RandomNumberGenerator = null) -> String:
 	var prefix_a: String = _pick(PREFIXES, rng)
 	var prefix_b: String = _pick(PREFIXES, rng)
 	var noun: String
@@ -120,8 +120,8 @@ static func _generate_name(slot: String, quality: String = "Common", rng: Random
 			noun = _pick(BOOT_NAMES, rng)
 		_:
 			noun = _pick(ACCESSORY_NAMES, rng)
-	var base_name := "%s %s %s" % [prefix_a, prefix_b, noun]
-	if quality != "Common":
+	var base_name := "%s%s%s" % [prefix_a, prefix_b, noun]
+	if quality != "普通":
 		return "[%s] %s" % [quality, base_name]
 	return base_name
 
@@ -169,13 +169,13 @@ static func _apply_affixes_to_stats(item: Dictionary) -> void:
 static func _determine_rarity(num_affixes: int) -> String:
 	match num_affixes:
 		0:
-			return "Common"
+			return "普通"
 		1:
-			return "Uncommon"
+			return "優秀"
 		2:
-			return "Rare"
+			return "稀有"
 		_:
-			return "Epic"
+			return "史詩"
 
 
 static func _pick(values: Array, rng: RandomNumberGenerator = null):
