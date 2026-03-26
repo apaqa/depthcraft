@@ -21,11 +21,11 @@ var menu_title: String = ""
 var recipe_buttons: Dictionary = {}
 
 const CATEGORY_KEY_MAP = {
-	"Armor": "cat_armor",
-	"Weapons": "cat_weapons",
-	"Consumables": "cat_consumables",
-	"Cooking": "cat_cooking",
-	"Tools": "cat_tools"
+	"Armor": "CAT_ARMOR",
+	"Weapons": "CAT_WEAPONS",
+	"Consumables": "CAT_CONSUMABLES",
+	"Cooking": "CAT_COOKING",
+	"Tools": "CAT_TOOLS"
 }
 
 const STAT_KEY_MAP = {
@@ -45,7 +45,7 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	craft_button.pressed.connect(_on_craft_pressed)
-	craft_button.text = LocaleManager.L("craft_button")
+	craft_button.text = LocaleManager.L("craft")
 
 
 func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "製作") -> void:

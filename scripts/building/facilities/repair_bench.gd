@@ -3,7 +3,7 @@ class_name RepairBenchFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] 修理"
+	return "[E] " + LocaleManager.L("repair")
 
 
 func interact(player) -> void:
