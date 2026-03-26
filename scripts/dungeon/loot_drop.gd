@@ -53,7 +53,7 @@ func setup(drop_item_id: String, drop_quantity: int) -> void:
 	quantity = drop_quantity
 	stack_data.clear()
 	_update_icon()
-	_spawn_delay = 0.5
+	_spawn_delay = 1.5
 
 
 func setup_stack(drop_stack: Dictionary) -> void:
@@ -61,7 +61,7 @@ func setup_stack(drop_stack: Dictionary) -> void:
 	item_id = str(stack_data.get("id", ""))
 	quantity = int(stack_data.get("quantity", 1))
 	_update_icon()
-	_spawn_delay = 0.5
+	_spawn_delay = 1.5
 
 
 func _is_equipment() -> bool:
@@ -102,6 +102,8 @@ func _update_icon() -> void:
 		sprite.scale = Vector2(1, 1)
 		if icon.get_width() > 16 or icon.get_height() > 16:
 			sprite.scale = Vector2(16.0 / icon.get_width(), 16.0 / icon.get_height())
+		if item_id == "talent_shard":
+			sprite.scale = sprite.scale * 0.5
 		sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data) if str(item_data.get("type", "")) == "equipment" else Color.WHITE
 		return
 	sprite.texture = null

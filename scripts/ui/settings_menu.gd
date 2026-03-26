@@ -337,7 +337,7 @@ func _load_settings() -> void:
 		return
 
 	for bus_name in ["Master", "Music", "SFX"]:
-		var key := "volume_" + bus_name.to_lower()
+		var key = "volume_" + bus_name.to_lower()
 		if data.has(key):
 			var bus_idx := AudioServer.get_bus_index(bus_name)
 			if bus_idx >= 0:
