@@ -94,7 +94,7 @@ func _build_ui() -> void:
 
 	var back_button := _make_menu_button("← 返回", _show_main_page)
 	back_button.add_theme_font_size_override("font_size", 18)
-	back_button.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	back_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel_vbox.add_child(back_button)
 
 	var title := Label.new()
@@ -155,7 +155,7 @@ func _make_menu_button(text_value: String, callback: Callable) -> Button:
 	button.add_theme_color_override("font_focus_color", Color(1.0, 1.0, 1.0, 1.0))
 	button.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
 	button.add_theme_constant_override("outline_size", 2)
-	button.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.pressed.connect(callback)
 	button.mouse_entered.connect(func() -> void:
 		button.modulate = Color(1.15, 1.15, 1.15, 1.0)
