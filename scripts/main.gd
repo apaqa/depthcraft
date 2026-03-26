@@ -237,7 +237,7 @@ func _on_player_died() -> void:
 			})
 		await get_tree().create_timer(3.0).timeout
 		if hud.has_method("play_transition"):
-			await hud.play_transition("你死了\n�?%d �?| %d ?�殺 | ?�?�地?�戰?��?已遺失�?" % [int(current_level.get("current_floor")), int(current_level.get("total_kills"))], Color(0.35, 0.0, 0.0, 1.0), 0.25, 0.15)
+			await hud.play_transition("你死了\n第 %d 層 | %d 擊殺 | 地牢戰利品已遺失" % [int(current_level.get("current_floor")), int(current_level.get("total_kills"))], Color(0.35, 0.0, 0.0, 1.0), 0.25, 0.15)
 		if player != null:
 			player.finish_dungeon_run(false)
 		total_dungeon_runs_completed += 1
@@ -246,7 +246,7 @@ func _on_player_died() -> void:
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, int(current_level.get("current_floor")))
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if player != null:
-			player.show_status_message("你失戰，已??, Color(1.0, 0.75, 0.45, 1.0), 3.0)
+			player.show_status_message("你失去了戰利品！", Color(1.0, 0.75, 0.45, 1.0), 3.0)
 		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 			current_level.trigger_progress_raid()
 		if hud.has_method("hide_death_screen"):
@@ -279,7 +279,7 @@ func _on_raid_countdown_changed(message: String, color: Color, visible: bool) ->
 
 func _reset_all_cameras() -> void:
 	for spawned_player in player_spawner.get_players():
-		var cam := spawned_player.get_node_or_null("Camera2D")
+		var cam: Camera2D = spawned_player.get_node_or_null("Camera2D") as Camera2D
 		if cam is Camera2D:
 			cam.position = Vector2.ZERO
 			cam.reset_smoothing()
@@ -377,7 +377,7 @@ func _place_players_in_current_level(spawn_override: Variant = null) -> void:
 		else:
 			spawned_player.reparent(level_root)
 			spawned_player.global_position = player_position
-		var cam := spawned_player.get_node_or_null("Camera2D")
+		var cam: Camera2D = spawned_player.get_node_or_null("Camera2D") as Camera2D
 		if cam is Camera2D:
 			cam.reset_smoothing()
 

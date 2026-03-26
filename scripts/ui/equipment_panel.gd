@@ -99,8 +99,8 @@ func _refresh() -> void:
 		_inventory_indices.append(index)
 		_inventory_types.append("equipment")
 	# Consumables in inventory (for Q/R quickslot assignment)
-	var q_id := player.get("consumable_q_id") if player != null else ""
-	var r_id := player.get("consumable_r_id") if player != null else ""
+	var q_id: String = str(player.get("consumable_q_id")) if player != null else ""
+	var r_id: String = str(player.get("consumable_r_id")) if player != null else ""
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
 		if str(stack.get("type", "")) != "consumable":

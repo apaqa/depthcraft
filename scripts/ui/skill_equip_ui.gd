@@ -270,8 +270,7 @@ func _on_skill_selected(skill_id: String) -> void:
 	var cd := float(def.get("cooldown", 0.0))
 
 	if is_passive:
-		_info_label.text = "%s%s
-%s" % [name_str, LocaleManager.L("passive_info_fmt"), desc_str]
+		_info_label.text = "%s%s\n%s" % [name_str, LocaleManager.L("passive_info_fmt"), desc_str]
 		_selected_skill_id = ""
 	else:
 		var cd_text := LocaleManager.L("cd_format") % cd
@@ -280,8 +279,7 @@ func _on_skill_selected(skill_id: String) -> void:
 			if skill_system.equipped_skill_ids[i] == skill_id:
 				equipped_in = LocaleManager.L("equipped_in_slot") % KEY_NAMES[i]
 				break
-		_info_label.text = "%s  [%s]%s
-%s" % [name_str, cd_text, equipped_in, desc_str]
+		_info_label.text = "%s  [%s]%s\n%s" % [name_str, cd_text, equipped_in, desc_str]
 
 	_refresh_unlocked_list()
 
@@ -309,4 +307,3 @@ func _on_slot_pressed(slot_index: int) -> void:
 
 func _get_skill_system() -> Node:
 	return get_node_or_null("/root/SkillSystem")
-

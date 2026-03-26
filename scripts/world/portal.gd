@@ -1,4 +1,4 @@
-extends StaticBody2D
+ï»¿extends StaticBody2D
 class_name LevelPortal
 
 @export var target_level_id: String = "dungeon"
@@ -17,14 +17,14 @@ func _ready() -> void:
 
 func get_interaction_prompt() -> String:
 	if target_level_id == "dungeon" and _is_dungeon_locked():
-		return "è¥²æ??Ÿé??¡æ??²å…¥"
+		return "Cannot enter during raid"
 	return prompt_text
 
 
 func interact(player) -> void:
 	if target_level_id == "dungeon" and _is_dungeon_locked():
 		if player != null and player.has_method("show_status_message"):
-			player.show_status_message("è¥²æ??Ÿé??¡æ??²å…¥", Color(1.0, 0.35, 0.35, 1.0), 1.5)
+			player.show_status_message("Cannot enter during raid", Color(1.0, 0.35, 0.35, 1.0), 1.5)
 		return
 	if player != null:
 		player.portal_requested.emit(target_level_id)
@@ -33,4 +33,3 @@ func interact(player) -> void:
 func _is_dungeon_locked() -> bool:
 	var level = get_parent()
 	return level != null and level.has_method("is_raid_active") and level.is_raid_active()
-

@@ -241,7 +241,7 @@ func _refresh_locale() -> void:
 		var node = _i18n_nodes[key]
 		if not is_instance_valid(node):
 			continue
-		var tr_key := key
+		var tr_key: String = str(key)
 		# Row labels have "_row_lbl" suffix — strip it to get the real key
 		if tr_key.ends_with("_row_lbl"):
 			tr_key = tr_key.substr(0, tr_key.length() - 8)
