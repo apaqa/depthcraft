@@ -138,7 +138,7 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 
 func _on_core_destroyed() -> void:
 	raid_active = false
-	banner_requested.emit(LocaleManager.L("core_destroyed"), Color(1.0, 0.3, 0.3, 1.0), 3.0)
+	banner_requested.emit(LocaleManager.L("raid_failed"), Color(1.0, 0.3, 0.3, 1.0), 3.0)
 	for enemy in raid_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()

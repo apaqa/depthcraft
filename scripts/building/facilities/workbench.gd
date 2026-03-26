@@ -3,12 +3,16 @@ class_name WorkbenchFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] " + LocaleManager.L("BTN_CRAFT")
+	return "[E] " + LocaleManager.L("craft")
 
 
 func interact(player) -> void:
 	if player != null and player.has_method("request_crafting_menu"):
 		player.request_crafting_menu(self)
+
+
+func get_menu_title() -> String:
+	return LocaleManager.L("workbench")
 
 
 func requires_home_core() -> bool:

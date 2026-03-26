@@ -103,7 +103,14 @@ func _ready() -> void:
 
 
 func update_hp(current: int, max_hp: int) -> void:
-	hp_label.text = "%s: %d/%d" % [LocaleManager.L("hp_label"), current, max_hp]/root/SkillSystem")
+	hp_label.text = "%s: %d/%d" % [LocaleManager.L("hp"), current, max_hp]
+	var ratio = float(current) / float(max(max_hp, 1))
+	hp_bar_fill.size.x = 196.0 * clampf(ratio, 0.0, 1.0)
+	hp_bar_fill.color = Color(0.85, 0.15, 0.15, 1.0) if ratio > 0.25 else Color(1.0, 0.1, 0.1, 1.0)
+
+
+func bind_player(new_player) -> void:
+	var skill_system = get_node_or_null("/root/SkillSystem")
 	if skill_system != null and skill_system.skills_changed.is_connected(_refresh_skill_slots):
 		skill_system.skills_changed.disconnect(_refresh_skill_slots)
 
@@ -206,16 +213,16 @@ func _on_inventory_changed() -> void:
 
 
 func update_bag_label(used_slots: int, max_slots: int) -> void:
-	bag_label.text = LocaleManager.L("bag_label") % [used_slots, max_slots]
+	bag_label.text = LocaleManager.L("backpack") + ": %d/%d" % [used_slots, max_slots]
 
 
 func update_floor_label(current_floor: int) -> void:
-	floor_label.text = LocaleManager.L("floor_label") % current_floor if current_floor > 0 else ""
+	floor_label.text = LocaleManager.L("floor") + ": %d" % current_floor if current_floor > 0 else ""
 	day_label.visible = current_floor <= 0
 
 
 func update_kills_label(kills: int) -> void:
-	kills_label.text = LocaleManager.L("kills_label") % kills if kills > 0 else ""
+	kills_label.text = LocaleManager.L("kills") + ": %d" % kills if kills > 0 else ""
 
 
 func _refresh_debug_label() -> void:
@@ -473,7 +480,7 @@ func show_status_message(message: String, color: Color = Color.WHITE, duration: 
 
 
 func update_day_label(day_number: int) -> void:
-	day_label.text = LocaleManager.L("day_label") % max(day_number, 1)
+	day_label.text = LocaleManager.L("days") + ": %d" % max(day_number, 1)
 	day_label.visible = true
 
 
@@ -483,7 +490,7 @@ func update_consumable_bar(slots: Array) -> void:
 		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
 		var key_name = "Q" if slot_index == 0 else "R"
 		if slot.is_empty():
-			labels.append(LocaleManager.L("consumable_empty") % key_name)
+			labels.append("[%s] %s" % [key_name, LocaleManager.L("empty")])
 			continue
 		labels.append("[%s] %s x%d" % [key_name, str(slot.get("name", "Item")), int(slot.get("quantity", 0))])
 	consumable_bar.text = " | ".join(labels)
@@ -525,8 +532,7 @@ func _refresh_skill_slots() -> void:
 		skill_label.add_theme_font_size_override("font_size", 11)
 
 		if slot.is_empty():
-			skill_label.text = "[%s]
-%s" % [key_name, LocaleManager.L("slot_empty")]
+			skill_label.text = "[%s]\n%s" % [key_name, LocaleManager.L("empty")]
 			skill_label.self_modulate = Color(0.5, 0.5, 0.5, 1.0)
 			container.add_child(skill_label)
 		else:
@@ -568,7 +574,7 @@ func _refresh_skill_slots() -> void:
 			break
 	if has_unequipped:
 		var hint := Label.new()
-		hint.text = LocaleManager.L("skill_hint_equip")
+		hint.text = LocaleManager.L("press_k_equip")
 		hint.add_theme_constant_override("outline_size", 2)
 		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		skill_slot_row.add_child(hint)

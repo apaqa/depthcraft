@@ -38,7 +38,7 @@ func _exit_tree() -> void:
 
 
 func get_interaction_prompt() -> String:
-	return "[E] Trade"
+	return LocaleManager.L("merchant_interact")
 
 
 func interact(player) -> void:
@@ -118,13 +118,13 @@ func _open_shop() -> void:
 	margin.add_child(vbox)
 
 	var title := Label.new()
-	title.text = "Boss Merchant"
+	title.text = LocaleManager.L("boss_merchant_title")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Supplies before the boss"
+	subtitle.text = LocaleManager.L("boss_merchant_subtitle")
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.modulate = Color(0.84, 0.84, 0.84, 1.0)
 	vbox.add_child(subtitle)
@@ -148,7 +148,7 @@ func _open_shop() -> void:
 	_gold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(_gold_label)
 	var close_button := Button.new()
-	close_button.text = "Close"
+	close_button.text = LocaleManager.L("close_button")
 	close_button.pressed.connect(_close_shop)
 	footer.add_child(close_button)
 	vbox.add_child(footer)
@@ -184,7 +184,7 @@ func _add_shop_row(parent: Control, label_text: String, price: int, callback: Ca
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
 	var button := Button.new()
-	button.text = "Buy"
+	button.text = LocaleManager.L("buy")
 	button.pressed.connect(callback)
 	row.add_child(button)
 	parent.add_child(row)
@@ -197,7 +197,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	if inventory == null:
 		return
 	if inventory.get_total_copper() < price:
-		_set_message("Not enough coins.")
+		_set_message(LocaleManager.L("insufficient_gold"))
 		return
 	if inventory.pay_copper(price):
 		if inventory.add_item(item_id, quantity):
@@ -205,7 +205,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 			_update_gold_label()
 		else:
 			inventory.add_item("copper", price)
-			_set_message("Inventory full.")
+			_set_message(LocaleManager.L("bag_full"))
 
 
 func _on_buy_equipment() -> void:
@@ -215,7 +215,7 @@ func _on_buy_equipment() -> void:
 	if inventory == null:
 		return
 	if inventory.get_total_copper() < _equipment_price:
-		_set_message("Not enough coins.")
+		_set_message(LocaleManager.L("insufficient_gold"))
 		return
 	if inventory.pay_copper(_equipment_price):
 		if inventory.add_stack(_equipment_offer):
@@ -226,21 +226,21 @@ func _on_buy_equipment() -> void:
 			_refresh_equipment_offer_row()
 		else:
 			inventory.add_item("copper", _equipment_price)
-			_set_message("Inventory full.")
+			_set_message(LocaleManager.L("bag_full"))
 
 
 func _refresh_equipment_offer_row() -> void:
 	if _equipment_label == null or _equipment_button == null:
 		return
 	if _equipment_offer.is_empty():
-		_equipment_label.text = "Mystery Gear  SOLD OUT"
+		_equipment_label.text = "%s  %s" % [LocaleManager.L("mystery_equipment"), LocaleManager.L("sold_out")]
 		_equipment_label.remove_theme_color_override("font_color")
-		_equipment_button.text = "Sold"
+		_equipment_button.text = LocaleManager.L("sold_button")
 		_equipment_button.disabled = true
 		return
-	_equipment_label.text = "%s  %s" % [str(_equipment_offer.get("name", "Mystery Gear")), ITEM_DATABASE.format_currency(_equipment_price)]
+	_equipment_label.text = "%s  %s" % [str(_equipment_offer.get("name", LocaleManager.L("mystery_equipment"))), ITEM_DATABASE.format_currency(_equipment_price)]
 	_equipment_label.add_theme_color_override("font_color", DUNGEON_LOOT.get_item_display_color(_equipment_offer))
-	_equipment_button.text = "Buy"
+	_equipment_button.text = LocaleManager.L("buy")
 	_equipment_button.disabled = false
 
 
@@ -251,7 +251,7 @@ func _update_gold_label() -> void:
 	var total := 0
 	if inventory != null:
 		total = inventory.get_total_copper()
-	_gold_label.text = "Coins: %s" % ITEM_DATABASE.format_currency(total)
+	_gold_label.text = LocaleManager.L("gold_label") % total
 
 
 func _set_message(message: String) -> void:

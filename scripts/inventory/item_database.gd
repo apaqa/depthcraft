@@ -274,13 +274,13 @@ static func format_currency(copper_total: int) -> String:
 	var c := copper_total % 10
 	var parts: Array[String] = []
 	if g > 0:
-		parts.append("%d金" % g)
+		parts.append("%d%s" % [g, LocaleManager.L("currency_gold")])
 	if s > 0:
-		parts.append("%d銀" % s)
+		parts.append("%d%s" % [s, LocaleManager.L("currency_silver")])
 	if c > 0:
-		parts.append("%d銅" % c)
+		parts.append("%d%s" % [c, LocaleManager.L("currency_copper")])
 	if parts.is_empty():
-		return "0銅"
+		return "0%s" % LocaleManager.L("currency_copper")
 	return " ".join(parts)
 
 

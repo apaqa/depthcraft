@@ -70,7 +70,7 @@ func _open_shop() -> void:
 	margin.add_child(vbox)
 
 	var title := Label.new()
-	title.text = LocaleManager.L("merchant_title")
+	title.text = LocaleManager.L("merchant")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
@@ -110,7 +110,7 @@ func _add_shop_row(parent: Control, label_text: String, price: int, callback: Ca
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var btn := Button.new()
-	btn.text = LocaleManager.L("buy_button")
+	btn.text = LocaleManager.L("buy")
 	btn.pressed.connect(callback)
 	row.add_child(btn)
 	parent.add_child(row)
