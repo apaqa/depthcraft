@@ -12,7 +12,7 @@ extends Control
 
 
 func _ready() -> void:
-	title_label.text = "深淵工�? DepthCraft"
+	title_label.text = LocaleManager.L("main_title")
 	join_panel.visible = false
 	ip_input.text = _get_network_manager().get_last_join_ip() if _get_network_manager() != null else "127.0.0.1"
 	if not single_player_button.pressed.is_connected(_on_single_player_pressed):
@@ -61,7 +61,7 @@ func _on_join_game_pressed() -> void:
 func _on_connect_pressed() -> void:
 	var ip := ip_input.text.strip_edges()
 	if ip.is_empty():
-		status_label.text = "Enter a host IP address."
+		status_label.text = LocaleManager.L("enter_ip")
 		return
 	var network_manager = _get_network_manager()
 	if network_manager == null:

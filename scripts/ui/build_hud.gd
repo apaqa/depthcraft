@@ -39,17 +39,17 @@ func refresh() -> void:
 
 	if bool(state.get("remove_mode", false)):
 		title_label.text = "[ %s ]" % str(state.get("category_name", "Build"))
-		cost_label.text = "é»žæ?å·²æ”¾ç½®ç??¹å??žæ”¶50%è³‡æ?"
+		cost_label.text = LocaleManager.L("build_remove_hint")
 		cost_label.modulate = Color(1.0, 0.7, 0.45, 1.0)
 		core_label.text = _format_category_items(state)
 	else:
 		var building: Dictionary = state.get("building", {})
 		title_label.text = "[ %s ]" % str(state.get("category_name", "Build"))
 		if bool(state.get("category_empty", false)):
-			cost_label.text = "?³å??¨å‡º"
+			cost_label.text = LocaleManager.L("category_empty")
 			cost_label.modulate = Color(0.75, 0.75, 0.8, 1.0)
 		elif bool(state.get("debug_mode", false)):
-			cost_label.text = "?±è²»: ?è²» [?¤éŒ¯]"
+			cost_label.text = LocaleManager.L("build_debug_free")
 			cost_label.modulate = Color(1.0, 0.9, 0.25, 1.0)
 		else:
 			cost_label.text = "%s  |  %s" % [str(building.get("name", "Build")), _format_costs(building.get("cost", {}))]
@@ -57,12 +57,12 @@ func refresh() -> void:
 		core_label.text = _format_category_items(state, str(building.get("name", "")))
 
 	if bool(state.get("has_core", false)):
-		core_label.text += "\n?¸å?: å·²æ”¾ç½?
+		core_label.text += "\n?ï¿½ï¿½?: å·²æ”¾ï¿½?
 	elif bool(state.get("debug_mode", false)):
-		core_label.text += "\n?¸å?: ??C (?¤éŒ¯æ¨¡å??è²»)"
+		core_label.text += "\n?ï¿½ï¿½?: ??C (?ï¿½éŒ¯æ¨¡ï¿½??ï¿½è²»)"
 	else:
-		core_label.text += "\n?¸å?: ??C (10?¨æ?, 5?³é ­)"
-	help_label.text = "[1-4] ?†é?  [æ»¾è¼ª] ?©å?  [Q/E] ?‡æ?  [å·¦éµ] ?¾ç½®  [?³éµ] ç§»é™¤  [B] ?¢é?"
+		core_label.text += "\n?ï¿½ï¿½?: ??C (10?ï¿½ï¿½?, 5?ï¿½é ­)"
+	help_label.text = LocaleManager.L("build_help")
 	category_label.bbcode_enabled = true
 	category_label.text = _format_categories(int(state.get("category_index", 0)))
 
@@ -76,7 +76,7 @@ func _format_costs(costs: Dictionary) -> String:
 		var amount := int(costs[resource_id])
 		var owned: int = inventory.get_item_count(resource_id)
 		parts.append("%d/%d %s" % [owned, amount, _pretty_name(resource_id)])
-	return "?±è²»: %s" % ", ".join(parts)
+	return "?ï¿½è²»: %s" % ", ".join(parts)
 
 
 func _pretty_name(resource_id: String) -> String:
@@ -89,16 +89,16 @@ func _format_category_items(state: Dictionary, selected_name: String = "") -> St
 		var name := str(item_name)
 		parts.append("> %s <" % name if name == selected_name else name)
 	if parts.is_empty():
-		return "?²ç¦¦?©å?: ?³å??¨å‡º"
-	return "?©å?: %s" % "  |  ".join(parts)
+		return "?ï¿½ç¦¦?ï¿½ï¿½?: ?ï¿½ï¿½??ï¿½å‡º"
+	return "?ï¿½ï¿½?: %s" % "  |  ".join(parts)
 
 
 func _format_categories(active_index: int) -> String:
 	var labels := [
-		"[1] å»ºç?",
-		"[2] ?€çª?,
-		"[3] è¨­æ–½",
-		"[4] ?²ç¦¦",
+		LocaleManager.L("build_cat_1"),
+		"[2] ?ï¿½ï¿½?,
+		LocaleManager.L("build_cat_3"),
+		LocaleManager.L("build_cat_4"),
 	]
 	var parts: PackedStringArray = []
 	for index in range(labels.size()):

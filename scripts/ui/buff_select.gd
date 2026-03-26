@@ -19,35 +19,7 @@ func _ready() -> void:
 func open_with_options(options: Array[Dictionary]) -> void:
 	active_options = options.duplicate(true)
 	visible = true
-	title_label.text = "?¸æ?ä¸€?‹å¼·??
-	_rebuild_cards()
-	auto_timer.start(30.0)
-
-
-func close_menu() -> void:
-	if not visible:
-		return
-	visible = false
-	auto_timer.stop()
-	for child in card_container.get_children():
-		child.queue_free()
-
-
-func _rebuild_cards() -> void:
-	for child in card_container.get_children():
-		child.queue_free()
-	for option in active_options:
-		var button := Button.new()
-		button.custom_minimum_size = Vector2(170, 180)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		var panel_style := StyleBoxFlat.new()
-		panel_style.bg_color = Color(0.14, 0.14, 0.18, 0.96)
-		panel_style.border_width_left = 3
-		panel_style.border_width_top = 3
-		panel_style.border_width_right = 3
-		panel_style.border_width_bottom = 3
-		panel_style.border_color = option.get("color", Color.WHITE)
+	title_label.text = LocaleManager.L("buff_select_title")color", Color.WHITE)
 		panel_style.corner_radius_top_left = 8
 		panel_style.corner_radius_top_right = 8
 		panel_style.corner_radius_bottom_left = 8

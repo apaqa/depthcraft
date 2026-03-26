@@ -60,9 +60,8 @@ func _unbind_inventory_signals() -> void:
 
 
 func _rebuild() -> void:
-	title_label.text = "?²ç‰©ç®?
-	player_label.text = "ä½ ç??Œå?"
-	chest_label.text = "?‰åº«"
+	title_label.text = LocaleManager.L("storage_title")ä½ ï¿½??ï¿½ï¿½?"
+	chest_label.text = LocaleManager.L("chest_label")
 	_rebuild_grid(player_grid, player_inventory, chest_inventory, true)
 	_rebuild_grid(chest_grid, chest_inventory, player_inventory, false)
 
@@ -95,7 +94,7 @@ func _rebuild_grid(grid: GridContainer, source_inventory, target_inventory, from
 			row.add_child(icon_holder)
 			button.pressed.connect(_on_transfer_pressed.bind(source_inventory, target_inventory, index))
 		else:
-			button.text = "ç©?
+			button.text = "ï¿½?
 			button.disabled = true
 		if from_player:
 			button.modulate = Color(0.92, 1.0, 0.92, 1.0)

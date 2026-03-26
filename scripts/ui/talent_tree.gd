@@ -42,7 +42,7 @@ func _refresh() -> void:
 		child.queue_free()
 	if player == null:
 		return
-	shard_label.text = "天賦碎片: %d" % player.inventory.get_item_count("talent_shard")
+	shard_label.text = LocaleManager.L("talent_shards") % player.inventory.get_item_count("talent_shard")
 	for branch_id in TALENT_DATA.get_branch_ids():
 		var panel := PanelContainer.new()
 		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -55,7 +55,7 @@ func _refresh() -> void:
 		panel.add_child(branch_box)
 
 		var title := Label.new()
-		title.text = TALENT_DATA.get_branch_label(branch_id)
+		title.text = LocaleManager.L(TALENT_DATA.get_branch_label(branch_id))
 		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		branch_box.add_child(title)
 
@@ -189,12 +189,15 @@ func _build_talent_text(talent: Dictionary) -> String:
 	var is_milestone := bool(talent.get("is_milestone", false))
 	var milestone_prefix := "[里程碑]\n" if is_milestone else ""
 	if player != null and player.has_talent(talent_id):
-		return "%s%s\n已解鎖" % [milestone_prefix, str(talent.get("name", talent_id))]
-	return "%s%s\n%s\n費用: %d" % [
+		return "%s%s
+%s" % [milestone_prefix, LocaleManager.L(str(talent.get("name", talent_id))), LocaleManager.L("talent_unlocked")]
+	return "%s%s
+%s
+%s" % [
 		milestone_prefix,
-		str(talent.get("name", talent_id)),
-		str(talent.get("description", "")),
-		int(talent.get("cost", 0)),
+		LocaleManager.L(str(talent.get("name", talent_id))),
+		LocaleManager.L(str(talent.get("description", ""))),
+		LocaleManager.L("talent_cost") % int(talent.get("cost", 0)),
 	]
 
 

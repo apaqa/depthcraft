@@ -90,20 +90,47 @@ func _get_rarity() -> String:
 
 
 func _setup_equipment_visuals() -> void:
-	if get_node_or_null("LootPillar") != null:
+	if get_node_or_null("LootPillarOuter") != null:
 		return
-	var pillar_color := DUNGEON_LOOT.get_rarity_color(_get_rarity())
-	var pillar := Polygon2D.new()
-	pillar.name = "LootPillar"
-	pillar.polygon = PackedVector2Array([
+	var base_color := DUNGEON_LOOT.get_rarity_color(_get_rarity())
+	
+	# Triple-layer pillar for relief effect
+	# Outer (darkened)
+	var pillar_outer := Polygon2D.new()
+	pillar_outer.name = "LootPillarOuter"
+	pillar_outer.polygon = PackedVector2Array([
+		Vector2(-4, -46), Vector2(4, -46),
+		Vector2(4, -2), Vector2(-4, -2),
+	])
+	pillar_outer.color = base_color.darkened(0.4)
+	add_child(pillar_outer)
+	
+	# Middle (original)
+	var pillar_mid := Polygon2D.new()
+	pillar_mid.name = "LootPillarMid"
+	pillar_mid.polygon = PackedVector2Array([
 		Vector2(-2, -44), Vector2(2, -44),
 		Vector2(2, -4), Vector2(-2, -4),
 	])
-	pillar.color = pillar_color
-	add_child(pillar)
+	pillar_mid.color = base_color
+	add_child(pillar_mid)
+	
+	# Inner (lightened)
+	var pillar_inner := Polygon2D.new()
+	pillar_inner.name = "LootPillarInner"
+	pillar_inner.polygon = PackedVector2Array([
+		Vector2(-0.5, -42), Vector2(0.5, -42),
+		Vector2(0.5, -6), Vector2(-0.5, -6),
+	])
+	pillar_inner.color = base_color.lightened(0.4)
+	add_child(pillar_inner)
+	
 	var tween := create_tween().set_loops()
-	tween.tween_property(pillar, "modulate:a", 0.8, 0.6)
-	tween.tween_property(pillar, "modulate:a", 0.3, 0.6)
+	for p in [pillar_outer, pillar_mid, pillar_inner]:
+		tween.parallel().tween_property(p, "modulate:a", 0.8, 0.6)
+	tween.tween_interval(0.1)
+	for p in [pillar_outer, pillar_mid, pillar_inner]:
+		tween.parallel().tween_property(p, "modulate:a", 0.3, 0.6)
 
 
 func _update_icon() -> void:

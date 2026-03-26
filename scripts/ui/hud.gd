@@ -60,7 +60,7 @@ func _ready() -> void:
 	currency_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	currency_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4, 1.0))
 	currency_label.add_theme_font_size_override("font_size", 12)
-	currency_label.text = "0銅"
+	currency_label.text = ""
 	add_child(currency_label)
 
 	class_label = Label.new()

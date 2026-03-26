@@ -39,20 +39,20 @@ func _refresh_players(player_ids: Array[int]) -> void:
 	var local_peer_id := multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
 	var network_manager = _get_network_manager()
 	if player_ids.is_empty() and network_manager != null and network_manager.is_multiplayer and not network_manager.is_host:
-		player_list.add_item("Waiting for host...")
+		player_list.add_item(LocaleManager.L("lobby_waiting_host"))
 	else:
 		for peer_id in player_ids:
-			var label := "Player %d" % peer_id
+			var label := LocaleManager.L("lobby_player") % peer_id
 			if network_manager != null and network_manager.is_host and peer_id == 1:
-				label += " (Host)"
+				label += LocaleManager.L("lobby_host_suffix")
 			elif peer_id == local_peer_id:
-				label += " (You)"
+				label += LocaleManager.L("lobby_you_suffix")
 			player_list.add_item(label)
-	players_label.text = "Players: %d" % max(player_ids.size(), 1 if network_manager != null and network_manager.is_multiplayer else 0)
+	players_label.text = LocaleManager.L("lobby_players") % max(player_ids.size(), 1 if network_manager != null and network_manager.is_multiplayer else 0)
 
 
 func _on_connection_status_changed(status_text: String) -> void:
-	status_label.text = "Waiting for players..." if status_text.is_empty() else status_text
+	status_label.text = LocaleManager.L("lobby_waiting_players") if status_text.is_empty() else status_text
 
 
 func _on_connection_failed_message(message: String) -> void:

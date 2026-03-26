@@ -277,5 +277,12 @@
   "talent_S14_name": "一線生機",
   "talent_S14_desc": "死亡時30%機率保留一格物品",
   "talent_S15_name": "時間扭曲",
-  "talent_S15_desc": "使周圍敵人減速"
+  "talent_S15_desc": "使周圍敵人減速",
+  "in_bag": "[背包]",
+  "hint_right_click_discard": "右鍵丟棄",
+  "hint_right_click_quickslot": "右鍵設快捷",
+  "consumable_quickslot_hint": "右鍵指定 Q/R 快捷鍵",
+  "ctx_discard": "丟棄",
+  "ctx_set_q": "設為 Q 快捷",
+  "ctx_set_r": "設為 R 快捷"
 }

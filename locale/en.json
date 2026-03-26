@@ -277,5 +277,12 @@
   "talent_S14_name": "Last Chance",
   "talent_S14_desc": "On death: 30% keep one item",
   "talent_S15_name": "Time Warp",
-  "talent_S15_desc": "Unlock Time Warp skill"
+  "talent_S15_desc": "Unlock Time Warp skill",
+  "in_bag": "[Bag]",
+  "hint_right_click_discard": "right-click to discard",
+  "hint_right_click_quickslot": "right-click quickslot",
+  "consumable_quickslot_hint": "Right-click to assign Q/R",
+  "ctx_discard": "Discard",
+  "ctx_set_q": "Set Q Slot",
+  "ctx_set_r": "Set R Slot"
 }

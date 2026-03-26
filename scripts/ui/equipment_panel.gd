@@ -69,12 +69,46 @@ func _refresh() -> void:
 		button.expand_icon = true
 		if not item.is_empty():
 			var color = player.equipment_system.get_item_display_color(item)
-			button.add_theme_color_override("font_color", color)
+			_apply_rarity_style(button, color)
 			var icon = item.get("icon")
 			if icon is Texture2D:
 				button.icon = icon
 		button.pressed.connect(_on_slot_pressed.bind(String(slot_name)))
 		slot_list.add_child(button)
+...
+func _apply_rarity_style(node: Control, base_color: Color) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.1, 0.8) # Dark background
+	
+	# Middle Layer: Original color border (2px)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = base_color
+	
+	# Outer Layer: Darkened color via shadow (2px size, 0 offset)
+	style.shadow_color = base_color.darkened(0.4)
+	style.shadow_size = 2
+	
+	node.add_theme_stylebox_override("normal", style)
+	node.add_theme_stylebox_override("hover", style.duplicate())
+	node.add_theme_stylebox_override("pressed", style.duplicate())
+	
+	# Inner Layer: Lightened color (1px) via a child decoration
+	var inner_border := ReferenceRect.new()
+	inner_border.name = "InnerBorder"
+	inner_border.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	inner_border.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	inner_border.grow_vertical = Control.GROW_DIRECTION_BOTH
+	inner_border.offset_left = 2
+	inner_border.offset_top = 2
+	inner_border.offset_right = -2
+	inner_border.offset_bottom = -2
+	inner_border.border_color = base_color.lightened(0.4)
+	inner_border.border_width = 1.0
+	inner_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	node.add_child(inner_border)
 	# Equipment in inventory
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
@@ -85,7 +119,7 @@ func _refresh() -> void:
 		var icon = stack.get("icon")
 		if not icon is Texture2D:
 			icon = null
-		inventory_list.add_item("%s [%s]  右鍵丟棄" % [display_name, _translate_slot(slot_name)], icon)
+		inventory_list.add_item("%s [%s]  %s" % [display_name, _translate_slot(slot_name), LocaleManager.L("hint_right_click_discard")], icon)
 		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, player.equipment_system.get_item_display_color(stack))
 		_inventory_indices.append(index)
 		_inventory_types.append("equipment")
@@ -104,27 +138,27 @@ func _refresh() -> void:
 			tag = " [Q]"
 		elif id == r_id:
 			tag = " [R]"
-		inventory_list.add_item("%s x%d%s  右鍵設快捷" % [label, qty, tag])
+		inventory_list.add_item("%s x%d%s  %s" % [label, qty, tag, LocaleManager.L("hint_right_click_quickslot")])
 		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, Color(0.32, 0.78, 0.42, 1.0))
 		_inventory_indices.append(index)
 		_inventory_types.append("consumable")
 	var summary: Dictionary = player.get_stats_summary()
-	stat_label.text = "攻擊: %d   防禦: %d   血量: %d   速度: %d" % [
+	stat_label.text = LocaleManager.L("stat_summary") % [
 		int(summary.get("attack", 0)),
 		int(summary.get("defense", 0)),
 		int(summary.get("max_hp", 0)),
 		int(summary.get("speed", 0)),
 	]
-	comparison_label.text = "滑鼠移至背包装備以查看比較"
+	comparison_label.text = LocaleManager.L("compare_hint")
 
 
 func _build_slot_text(slot_name: String, item: Dictionary) -> String:
 	var label := "[%s] " % _translate_slot(slot_name)
 	if item.is_empty():
-		return label + "空"
+		return label + LocaleManager.L("slot_empty")
 	var durability := int(item.get("durability", 0))
 	var max_durability := int(item.get("max_durability", 0))
-	return "%s%s  耐久: %d/%d" % [label, player.equipment_system.get_item_display_name(item), durability, max_durability]
+	return "%s%s  %s" % [label, player.equipment_system.get_item_display_name(item), LocaleManager.L("slot_durability") % [durability, max_durability]]
 
 
 func _translate_slot(slot_name: String) -> String:
@@ -157,10 +191,10 @@ func _on_inventory_item_clicked(index: int, _at_position: Vector2, mouse_button_
 	var item_type := _inventory_types[index] if index < _inventory_types.size() else ""
 	_context_menu.clear()
 	if item_type == "equipment":
-		_context_menu.add_item("丟棄", 0)
+		_context_menu.add_item(LocaleManager.L("ctx_discard"), 0)
 	elif item_type == "consumable":
-		_context_menu.add_item("設為 Q 快捷", 1)
-		_context_menu.add_item("設為 R 快捷", 2)
+		_context_menu.add_item(LocaleManager.L("ctx_set_q"), 1)
+		_context_menu.add_item(LocaleManager.L("ctx_set_r"), 2)
 	if _context_menu.item_count > 0:
 		_context_menu.position = Vector2i(get_global_mouse_position())
 		_context_menu.reset_size()
@@ -218,14 +252,14 @@ func _update_comparison_label() -> void:
 	if comparison_label == null or player == null:
 		return
 	if _hovered_inventory_index < 0 or _hovered_inventory_index >= _inventory_indices.size():
-		comparison_label.text = "滑鼠移至背包装備以查看比較"
+		comparison_label.text = LocaleManager.L("compare_hint")
 		return
 	if _hovered_inventory_index < _inventory_types.size() and _inventory_types[_hovered_inventory_index] == "consumable":
-		comparison_label.text = "右鍵指定 Q/R 快捷鍵"
+		comparison_label.text = LocaleManager.L("consumable_quickslot_hint")
 		return
 	var stack_index: int = _inventory_indices[_hovered_inventory_index]
 	if stack_index < 0 or stack_index >= player.inventory.items.size():
-		comparison_label.text = "滑鼠移至背包装備以查看比較"
+		comparison_label.text = LocaleManager.L("compare_hint")
 		return
 	var item: Dictionary = player.inventory.items[stack_index]
 	var current_summary: Dictionary = player.get_stats_summary()
@@ -233,6 +267,6 @@ func _update_comparison_label() -> void:
 	var lines = player.equipment_system.get_comparison_lines(current_summary, preview_summary)
 	var chinese_lines: Array[String] = []
 	for line in lines:
-		var translated = line.replace("ATK", "攻擊").replace("DEF", "防禦").replace("HP", "血量").replace("SPD", "速度")
+		var translated = line.replace("ATK", LocaleManager.L("stat_attack")).replace("DEF", LocaleManager.L("stat_defense")).replace("HP", LocaleManager.L("stat_hp")).replace("SPD", LocaleManager.L("stat_speed"))
 		chinese_lines.append(translated)
 	comparison_label.text = "\n".join(chinese_lines)

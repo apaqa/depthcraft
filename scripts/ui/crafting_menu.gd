@@ -17,7 +17,7 @@ var player = null
 var recipe_ids: PackedStringArray = []
 var selected_recipe_id: String = ""
 var filtered_recipe_ids: PackedStringArray = []
-var menu_title: String = "製作"
+var menu_title: String = ""
 var recipe_buttons: Dictionary = {}
 
 const CATEGORY_MAP = {
@@ -45,7 +45,7 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	craft_button.pressed.connect(_on_craft_pressed)
-	craft_button.text = "製作"
+	craft_button.text = LocaleManager.L("craft_button")
 
 
 func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "製作") -> void:
@@ -92,7 +92,7 @@ func _rebuild_recipe_list() -> void:
 	category_names.sort()
 	for category_name in category_names:
 		var header := Label.new()
-		var translated_name = CATEGORY_MAP.get(category_name, category_name)
+		var translated_name = _translate_category(category_name)
 		header.text = "=== %s ===" % translated_name
 		header.modulate = Color(0.95, 0.9, 0.65, 1.0)
 		recipe_list_container.add_child(header)
@@ -134,14 +134,14 @@ func _refresh_details() -> void:
 		for stat_id in recipe.get("stats", {}).keys():
 			lines.append("%s: +%s" % [_pretty_name(stat_id), str(recipe["stats"][stat_id])])
 		if recipe.has("max_durability"):
-			lines.append("耐久度: %d/%d" % [int(recipe.get("durability", recipe.get("max_durability", 0))), int(recipe.get("max_durability", 0))])
+			lines.append(LocaleManager.L("durability_label") % [int(recipe.get("durability", recipe.get("max_durability", 0))), int(recipe.get("max_durability", 0))])
 		if recipe.has("slot"):
-			lines.append("欄位: %s" % _pretty_name(str(recipe.get("slot", ""))))
+			lines.append(LocaleManager.L("slot_label") % _pretty_name(str(recipe.get("slot", ""))))
 	else:
 		for effect_id in recipe.get("effect", {}).keys():
 			lines.append("%s: %s" % [_pretty_name(effect_id), str(recipe["effect"][effect_id])])
 	lines.append("")
-	lines.append("[b]材料:[/b]")
+	lines.append(LocaleManager.L("materials_header"))
 	for resource_id in cost.keys():
 		var required: int = int(cost[resource_id])
 		var owned: int = player_inventory.get_item_count(resource_id)
