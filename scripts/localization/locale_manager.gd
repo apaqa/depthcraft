@@ -41,7 +41,7 @@ func _load_locale(locale: String) -> void:
 		_locale = locale
 
 
-func tr(key: String) -> String:
+func L(key: String) -> String:
 	return _strings.get(key, key)
 
 

@@ -451,4 +451,3 @@ func _show_class_select() -> void:
 	get_tree().root.add_child(screen)
 	await screen.class_chosen
 	screen.queue_free()
-

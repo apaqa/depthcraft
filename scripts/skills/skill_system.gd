@@ -268,4 +268,3 @@ func _spawn_vfx(mode: String, world_position: Vector2) -> void:
 	vfx.mode = mode
 	vfx.global_position = world_position
 	root.add_child(vfx)
-

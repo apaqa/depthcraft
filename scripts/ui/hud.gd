@@ -103,35 +103,7 @@ func _ready() -> void:
 
 
 func update_hp(current: int, max_hp: int) -> void:
-	hp_label.text = "血??
-	hp_bar_fill.size.x = 120.0 * clampf(float(current) / float(max(max_hp, 1)), 0.0, 1.0)
-
-
-func bind_player(new_player) -> void:
-	if player != null:
-		if player.interaction_prompt_changed.is_connected(show_interaction_prompt):
-			player.interaction_prompt_changed.disconnect(show_interaction_prompt)
-		if player.interaction_prompt_cleared.is_connected(hide_interaction_prompt):
-			player.interaction_prompt_cleared.disconnect(hide_interaction_prompt)
-		if player.inventory.inventory_changed.is_connected(_on_inventory_changed):
-			player.inventory.inventory_changed.disconnect(_on_inventory_changed)
-		if player.building_system.build_state_changed.is_connected(_refresh_debug_label):
-			player.building_system.build_state_changed.disconnect(_refresh_debug_label)
-		if player.crafting_requested.is_connected(_on_crafting_requested):
-			player.crafting_requested.disconnect(_on_crafting_requested)
-		if player.storage_requested.is_connected(_on_storage_requested):
-			player.storage_requested.disconnect(_on_storage_requested)
-		if player.repair_requested.is_connected(_on_repair_requested):
-			player.repair_requested.disconnect(_on_repair_requested)
-		if player.talent_requested.is_connected(_on_talent_requested):
-			player.talent_requested.disconnect(_on_talent_requested)
-		if player.equipment_panel_requested.is_connected(_on_equipment_requested):
-			player.equipment_panel_requested.disconnect(_on_equipment_requested)
-		if player.buffs_changed.is_connected(_refresh_buff_icons):
-			player.buffs_changed.disconnect(_refresh_buff_icons)
-		if player.status_message_requested.is_connected(show_status_message):
-			player.status_message_requested.disconnect(show_status_message)
-	var skill_system = get_node_or_null("/root/SkillSystem")
+	hp_label.text = "%s: %d/%d" % [LocaleManager.L("hp_label"), current, max_hp]/root/SkillSystem")
 	if skill_system != null and skill_system.skills_changed.is_connected(_refresh_skill_slots):
 		skill_system.skills_changed.disconnect(_refresh_skill_slots)
 
@@ -234,16 +206,16 @@ func _on_inventory_changed() -> void:
 
 
 func update_bag_label(used_slots: int, max_slots: int) -> void:
-	bag_label.text = "?��?: %d/%d" % [used_slots, max_slots]
+	bag_label.text = LocaleManager.L("bag_label") % [used_slots, max_slots]
 
 
 func update_floor_label(current_floor: int) -> void:
-	floor_label.text = "層數: %d" % current_floor if current_floor > 0 else ""
+	floor_label.text = LocaleManager.L("floor_label") % current_floor if current_floor > 0 else ""
 	day_label.visible = current_floor <= 0
 
 
 func update_kills_label(kills: int) -> void:
-	kills_label.text = "?�殺: %d" % kills if kills > 0 else ""
+	kills_label.text = LocaleManager.L("kills_label") % kills if kills > 0 else ""
 
 
 func _refresh_debug_label() -> void:
@@ -252,7 +224,7 @@ func _refresh_debug_label() -> void:
 		return
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
-	debug_label.text = "[?�錯模�?]\n[8] ?�錯  [9] ?�置+清除  [0] ?�置" if debug_label.visible else "[?�錯模�?]"
+	debug_label.text = LocaleManager.L("debug_label_hint") if debug_label.visible else LocaleManager.L("debug_label")
 	debug_label.modulate.a = 0.5
 	debug_label.add_theme_font_size_override("font_size", 10)
 
@@ -265,7 +237,7 @@ func set_connection_info(message: String) -> void:
 func _on_crafting_requested(_facility) -> void:
 	_close_all_menus()
 	var recipe_filter := PackedStringArray()
-	var menu_title := "製�?"
+	var menu_title := LocaleManager.L("crafting_title")
 	if _facility != null and _facility.has_method("get_recipe_ids"):
 		recipe_filter = _facility.get_recipe_ids()
 	if _facility != null and _facility.has_method("get_menu_title"):
@@ -368,9 +340,9 @@ func rebuild_inventory_grid() -> void:
 		return
 
 	var groups := {
-		"resource": {"title": "Resources", "color": Color(0.62, 0.42, 0.22, 1.0)},
-		"equipment": {"title": "Equipment", "color": Color(0.3, 0.55, 0.95, 1.0)},
-		"consumable": {"title": "Consumables", "color": Color(0.32, 0.78, 0.42, 1.0)},
+		"resource": {"title": "inv_resources", "color": Color(0.62, 0.42, 0.22, 1.0)},
+		"equipment": {"title": "inv_equipment", "color": Color(0.3, 0.55, 0.95, 1.0)},
+		"consumable": {"title": "inv_consumables", "color": Color(0.32, 0.78, 0.42, 1.0)},
 	}
 	for type_id in ["resource", "equipment", "consumable"]:
 		var section_items: Array[Dictionary] = []
@@ -380,7 +352,7 @@ func rebuild_inventory_grid() -> void:
 		if section_items.is_empty():
 			continue
 		var header := Label.new()
-		header.text = str((groups[type_id] as Dictionary).get("title", type_id.capitalize()))
+		header.text = LocaleManager.L(str((groups[type_id] as Dictionary).get("title", type_id)))
 		header.modulate = Color(0.95, 0.9, 0.7, 1.0)
 		inventory_list.add_child(header)
 		for stack in section_items:
@@ -445,13 +417,13 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 		var swatch := ColorRect.new()
 		swatch.custom_minimum_size = Vector2(8, 8)
 		swatch.color = buff.get("color", Color.WHITE)
-		swatch.tooltip_text = str(buff.get("name", "Buff"))
+		swatch.tooltip_text = LocaleManager.L(str(buff.get("name", "Buff")))
 		buff_row.add_child(swatch)
 
 
 func show_death_screen(summary: Dictionary) -> void:
 	death_overlay.visible = true
-	death_summary_label.text = "�?%d �?| ?�殺: %d | ?�利?�已?�失�? % [
+	death_summary_label.text = LocaleManager.L("death_summary") % [
 		int(summary.get("floor", 0)),
 		int(summary.get("kills", 0)),
 	]
@@ -501,7 +473,7 @@ func show_status_message(message: String, color: Color = Color.WHITE, duration: 
 
 
 func update_day_label(day_number: int) -> void:
-	day_label.text = "天數: %d" % max(day_number, 1)
+	day_label.text = LocaleManager.L("day_label") % max(day_number, 1)
 	day_label.visible = true
 
 
@@ -511,7 +483,7 @@ func update_consumable_bar(slots: Array) -> void:
 		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
 		var key_name = "Q" if slot_index == 0 else "R"
 		if slot.is_empty():
-			labels.append("[%s] �? % key_name)
+			labels.append(LocaleManager.L("consumable_empty") % key_name)
 			continue
 		labels.append("[%s] %s x%d" % [key_name, str(slot.get("name", "Item")), int(slot.get("quantity", 0))])
 	consumable_bar.text = " | ".join(labels)
@@ -553,7 +525,8 @@ func _refresh_skill_slots() -> void:
 		skill_label.add_theme_font_size_override("font_size", 11)
 
 		if slot.is_empty():
-			skill_label.text = "[%s]\n�? % key_name
+			skill_label.text = "[%s]
+%s" % [key_name, LocaleManager.L("slot_empty")]
 			skill_label.self_modulate = Color(0.5, 0.5, 0.5, 1.0)
 			container.add_child(skill_label)
 		else:
@@ -595,8 +568,7 @@ func _refresh_skill_slots() -> void:
 			break
 	if has_unequipped:
 		var hint := Label.new()
-		hint.text = "  ????K 裝�??�??
-		hint.self_modulate = Color(1.0, 0.9, 0.4, 1.0)
+		hint.text = LocaleManager.L("skill_hint_equip")
 		hint.add_theme_constant_override("outline_size", 2)
 		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		skill_slot_row.add_child(hint)
@@ -633,4 +605,3 @@ func fade_from_black(overlay_color: Color = Color(0, 0, 0, 1), fade_duration: fl
 	tween.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0), fade_duration)
 	await tween.finished
 	transition_overlay.visible = false
-

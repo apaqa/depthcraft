@@ -49,7 +49,7 @@ func _build_ui() -> void:
 	_notice_label.anchor_bottom = 0.2
 	_notice_label.offset_left = -10.0
 	_notice_label.offset_right = 20.0
-	_notice_label.text = LocaleManager.tr("settings_multiplayer_notice")
+	_notice_label.text = LocaleManager.L("settings_multiplayer_notice")
 	_notice_label.visible = false
 	_notice_label.add_theme_font_size_override("font_size", 14)
 	_notice_label.add_theme_color_override("font_color", Color(0.88, 0.88, 0.88, 1.0))
@@ -101,7 +101,7 @@ func _build_ui() -> void:
 	panel_vbox.add_child(back_button)
 
 	var title := Label.new()
-	title.text = LocaleManager.tr("settings_title")
+	title.text = LocaleManager.L("settings_title")
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	title.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
@@ -131,7 +131,7 @@ func _build_ui() -> void:
 	_lang_button = Button.new()
 	_style_secondary_button(_lang_button)
 	_lang_button.custom_minimum_size = Vector2(140, 32)
-	_lang_button.text = LocaleManager.tr("lang_current")
+	_lang_button.text = LocaleManager.L("lang_current")
 	_lang_button.pressed.connect(_on_lang_toggle)
 	language_row.add_child(_lang_button)
 	panel_vbox.add_child(language_row)
@@ -147,13 +147,13 @@ func _build_ui() -> void:
 
 
 func _make_i18n_button(key: String, callback: Callable) -> Button:
-	var button := _make_menu_button(LocaleManager.tr(key), callback)
+	var button := _make_menu_button(LocaleManager.L(key), callback)
 	_i18n_nodes[key] = button
 	return button
 
 
 func _make_i18n_section(key: String) -> Label:
-	var lbl := _build_section_label(LocaleManager.tr(key))
+	var lbl := _build_section_label(LocaleManager.L(key))
 	_i18n_nodes[key] = lbl
 	return lbl
 
@@ -199,7 +199,7 @@ func _build_option_row(label_key: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	var label := Label.new()
-	label.text = LocaleManager.tr(label_key)
+	label.text = LocaleManager.L(label_key)
 	label.custom_minimum_size = Vector2(120, 0)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
@@ -246,13 +246,13 @@ func _refresh_locale() -> void:
 		if tr_key.ends_with("_row_lbl"):
 			tr_key = tr_key.substr(0, tr_key.length() - 8)
 		if node is Button:
-			node.text = LocaleManager.tr(tr_key)
+			node.text = LocaleManager.L(tr_key)
 		elif node is Label:
-			node.text = LocaleManager.tr(tr_key)
+			node.text = LocaleManager.L(tr_key)
 	if _lang_button != null:
-		_lang_button.text = LocaleManager.tr("lang_current")
+		_lang_button.text = LocaleManager.L("lang_current")
 	if _notice_label != null:
-		_notice_label.text = LocaleManager.tr("settings_multiplayer_notice")
+		_notice_label.text = LocaleManager.L("settings_multiplayer_notice")
 
 
 func open_menu(camera: Camera2D = null) -> void:
@@ -358,7 +358,7 @@ func _load_settings() -> void:
 				_tutorial_toggle.set_pressed_no_signal(not bool(parsed.get("completed", false)))
 
 	if _lang_button != null:
-		_lang_button.text = LocaleManager.tr("lang_current")
+		_lang_button.text = LocaleManager.L("lang_current")
 
 	if not FileAccess.file_exists(SETTINGS_PATH):
 		return
@@ -385,7 +385,7 @@ func _load_settings() -> void:
 		var locale := str(data["locale"])
 		LocaleManager.set_locale(locale)
 		if _lang_button != null:
-			_lang_button.text = LocaleManager.tr("lang_current")
+			_lang_button.text = LocaleManager.L("lang_current")
 
 	if data.has("camera_zoom") and _zoom_slider != null:
 		var zoom_value := float(data["camera_zoom"])
