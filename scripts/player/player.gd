@@ -44,6 +44,8 @@ var in_menu: bool = false
 var invincible_time_left: float = 0.0
 var attack_cooldown_left: float = 0.0
 var consumable_cooldown_left: float = 0.0
+var consumable_q_id: String = ""
+var consumable_r_id: String = ""
 var is_dead: bool = false
 var active_buff_ids: Array[String] = []
 var unlocked_talents: Array[String] = []
@@ -296,7 +298,7 @@ func _try_interact() -> void:
 	if interactable == null or not interactable.has_method("interact"):
 		return
 	if _interaction_requires_core(interactable):
-		show_status_message("?€è¦æ??ˆç?å®¶å??¸å?", Color(1.0, 0.65, 0.4, 1.0))
+		show_status_message("?ï¿½è¦ï¿½??ï¿½ï¿½?å®¶ï¿½??ï¿½ï¿½?", Color(1.0, 0.65, 0.4, 1.0))
 		return
 	if interactable.has_method("hit"):
 		last_interacted_resource = interactable
@@ -469,7 +471,7 @@ func die() -> void:
 		return
 	is_dead = true
 	set_physics_process(false)
-	_show_floating_text(global_position, "ä½ æ­»äº?, Color(1.0, 0.35, 0.35, 1.0))
+	_show_floating_text(global_position, "ä½ æ­»ï¿½?, Color(1.0, 0.35, 0.35, 1.0))
 	died.emit()
 
 
@@ -820,14 +822,37 @@ func _refresh_all_stats() -> void:
 	hp_changed.emit(current_hp, max_hp)
 
 
+func set_consumable_slot(slot_index: int, item_id_val: String) -> void:
+	if slot_index == 0:
+		consumable_q_id = item_id_val
+	elif slot_index == 1:
+		consumable_r_id = item_id_val
+	if inventory != null:
+		inventory.inventory_changed.emit()
+
+
 func get_consumable_slots() -> Array[Dictionary]:
-	var slots: Array[Dictionary] = []
+	var slots: Array[Dictionary] = [{}, {}]
 	for stack in inventory.items:
 		if str(stack.get("type", "")) != "consumable":
 			continue
-		slots.append(stack.duplicate(true))
-		if slots.size() >= 2:
-			break
+		var id := str(stack.get("id", ""))
+		if id == consumable_q_id:
+			slots[0] = stack.duplicate(true)
+		elif id == consumable_r_id:
+			slots[1] = stack.duplicate(true)
+	# Fall back: fill empty slots with any consumable not already pinned
+	if slots[0].is_empty() and slots[1].is_empty():
+		for stack in inventory.items:
+			if str(stack.get("type", "")) != "consumable":
+				continue
+			if slots[0].is_empty():
+				slots[0] = stack.duplicate(true)
+			elif str(stack.get("id", "")) != str(slots[0].get("id", "")):
+				slots[1] = stack.duplicate(true)
+				break
+	while slots.size() > 0 and (slots as Array).back().is_empty():
+		slots.pop_back()
 	return slots
 
 

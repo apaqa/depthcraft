@@ -13,6 +13,7 @@ const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
 var stack_data: Dictionary = {}
 var _player_ref: Node = null
 var _spawn_delay: float = 0.0
+var _pickup_delay: float = 0.0
 
 
 func _ready() -> void:
@@ -22,9 +23,9 @@ func _ready() -> void:
 		lifetime_timer.timeout.connect(queue_free)
 	lifetime_timer.start()
 	_update_icon()
-	_find_player.call_deferred()
 	if _is_equipment():
 		_setup_equipment_visuals()
+	_find_player.call_deferred()
 
 
 func _find_player() -> void:
@@ -34,6 +35,11 @@ func _find_player() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _pickup_delay > 0:
+		_pickup_delay -= delta
+		if _pickup_delay <= 0:
+			for body in get_overlapping_bodies():
+				_on_body_entered(body)
 	if _spawn_delay > 0:
 		_spawn_delay -= delta
 		return
@@ -65,6 +71,15 @@ func setup_stack(drop_stack: Dictionary) -> void:
 	print("LOOT COLOR DEBUG: ", stack_data.get("rarity", "none"), " color: ", DUNGEON_LOOT.get_item_display_color(stack_data))
 
 
+func setup_discard(drop_stack: Dictionary) -> void:
+	stack_data = drop_stack.duplicate(true)
+	item_id = str(stack_data.get("id", ""))
+	quantity = int(stack_data.get("quantity", 1))
+	_update_icon()
+	_spawn_delay = 0.3
+	_pickup_delay = 1.2
+
+
 func _is_equipment() -> bool:
 	var data := stack_data if not stack_data.is_empty() else ITEM_DATABASE.get_item(item_id)
 	return str(data.get("type", "")) == "equipment"
@@ -75,8 +90,11 @@ func _get_rarity() -> String:
 
 
 func _setup_equipment_visuals() -> void:
+	if get_node_or_null("LootPillar") != null:
+		return
 	var pillar_color := DUNGEON_LOOT.get_rarity_color(_get_rarity())
 	var pillar := Polygon2D.new()
+	pillar.name = "LootPillar"
 	pillar.polygon = PackedVector2Array([
 		Vector2(-2, -44), Vector2(2, -44),
 		Vector2(2, -4), Vector2(-2, -4),
@@ -93,6 +111,10 @@ func _update_icon() -> void:
 		return
 	var item_data: Dictionary = stack_data if not stack_data.is_empty() else ITEM_DATABASE.get_item(item_id)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	
+	if _is_equipment():
+		_setup_equipment_visuals()
+	
 	if item_data.is_empty():
 		sprite.texture = null
 		sprite.modulate = DUNGEON_LOOT.get_item_display_color(stack_data)
@@ -105,13 +127,15 @@ func _update_icon() -> void:
 			sprite.scale = Vector2(16.0 / icon.get_width(), 16.0 / icon.get_height())
 		if item_id == "talent_shard":
 			sprite.scale = sprite.scale * 0.5
-		sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data) if str(item_data.get("type", "")) == "equipment" else Color.WHITE
+		sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data)
 		return
 	sprite.texture = null
 	sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data)
 
 
 func _on_body_entered(body: Node) -> void:
+	if _pickup_delay > 0:
+		return
 	if body == null or not body.has_method("get"):
 		return
 	var inventory = body.get("inventory")
@@ -132,4 +156,3 @@ func _on_body_entered(body: Node) -> void:
 				text_color = DUNGEON_LOOT.get_rarity_color(_get_rarity())
 			body._show_floating_text(global_position, "+%d %s" % [quantity, item_name], text_color)
 		queue_free()
-

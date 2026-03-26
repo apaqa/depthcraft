@@ -3,6 +3,7 @@ extends Control
 signal close_requested
 
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 
 @onready var slot_list: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel/VBoxContainer/SlotList
 @onready var inventory_list: ItemList = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryList
@@ -11,13 +12,20 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
 var player = null
 var _inventory_indices: Array[int] = []
+var _inventory_types: Array[String] = []
 var _hovered_inventory_index: int = -1
+var _context_menu: PopupMenu = null
+var _context_inv_index: int = -1
 
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	inventory_list.item_selected.connect(_on_inventory_selected)
+	inventory_list.item_clicked.connect(_on_inventory_item_clicked)
+	_context_menu = PopupMenu.new()
+	add_child(_context_menu)
+	_context_menu.id_pressed.connect(_on_context_id_pressed)
 	set_process(true)
 
 
@@ -49,6 +57,7 @@ func _refresh() -> void:
 	inventory_list.clear()
 	inventory_list.set_item_icon_max_width(24)
 	_inventory_indices.clear()
+	_inventory_types.clear()
 	_hovered_inventory_index = -1
 	if player == null:
 		return
@@ -66,6 +75,7 @@ func _refresh() -> void:
 				button.icon = icon
 		button.pressed.connect(_on_slot_pressed.bind(String(slot_name)))
 		slot_list.add_child(button)
+	# Equipment in inventory
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
 		if str(stack.get("type", "")) != "equipment":
@@ -75,9 +85,29 @@ func _refresh() -> void:
 		var icon = stack.get("icon")
 		if not icon is Texture2D:
 			icon = null
-		inventory_list.add_item("%s [%s]" % [display_name, _translate_slot(slot_name)], icon)
+		inventory_list.add_item("%s [%s]  右鍵丟棄" % [display_name, _translate_slot(slot_name)], icon)
 		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, player.equipment_system.get_item_display_color(stack))
 		_inventory_indices.append(index)
+		_inventory_types.append("equipment")
+	# Consumables in inventory (for Q/R quickslot assignment)
+	var q_id := player.get("consumable_q_id") if player != null else ""
+	var r_id := player.get("consumable_r_id") if player != null else ""
+	for index in range(player.inventory.items.size()):
+		var stack: Dictionary = player.inventory.items[index]
+		if str(stack.get("type", "")) != "consumable":
+			continue
+		var id := str(stack.get("id", ""))
+		var label := str(stack.get("name", id))
+		var qty := int(stack.get("quantity", 0))
+		var tag := ""
+		if id == q_id:
+			tag = " [Q]"
+		elif id == r_id:
+			tag = " [R]"
+		inventory_list.add_item("%s x%d%s  右鍵設快捷" % [label, qty, tag])
+		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, Color(0.32, 0.78, 0.42, 1.0))
+		_inventory_indices.append(index)
+		_inventory_types.append("consumable")
 	var summary: Dictionary = player.get_stats_summary()
 	stat_label.text = "攻擊: %d   防禦: %d   血量: %d   速度: %d" % [
 		int(summary.get("attack", 0)),
@@ -112,7 +142,57 @@ func _translate_slot(slot_name: String) -> String:
 func _on_inventory_selected(index: int) -> void:
 	if player == null or index < 0 or index >= _inventory_indices.size():
 		return
+	if index < _inventory_types.size() and _inventory_types[index] == "consumable":
+		return
 	player.equipment_system.equip_from_inventory(player.inventory, _inventory_indices[index])
+	_refresh()
+
+
+func _on_inventory_item_clicked(index: int, _at_position: Vector2, mouse_button_index: int) -> void:
+	if mouse_button_index != MOUSE_BUTTON_RIGHT:
+		return
+	if index < 0 or index >= _inventory_indices.size():
+		return
+	_context_inv_index = _inventory_indices[index]
+	var item_type := _inventory_types[index] if index < _inventory_types.size() else ""
+	_context_menu.clear()
+	if item_type == "equipment":
+		_context_menu.add_item("丟棄", 0)
+	elif item_type == "consumable":
+		_context_menu.add_item("設為 Q 快捷", 1)
+		_context_menu.add_item("設為 R 快捷", 2)
+	if _context_menu.item_count > 0:
+		_context_menu.position = Vector2i(get_global_mouse_position())
+		_context_menu.reset_size()
+		_context_menu.popup()
+
+
+func _on_context_id_pressed(id: int) -> void:
+	match id:
+		0: _discard_item(_context_inv_index)
+		1: _set_quickslot(_context_inv_index, 0)
+		2: _set_quickslot(_context_inv_index, 1)
+
+
+func _discard_item(inv_index: int) -> void:
+	if player == null or inv_index < 0 or inv_index >= player.inventory.items.size():
+		return
+	var stack: Dictionary = player.inventory.items[inv_index].duplicate(true)
+	if not player.inventory.remove_item(str(stack.get("id", "")), 1):
+		return
+	var drop = LOOT_DROP_SCENE.instantiate()
+	drop.global_position = player.global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
+	drop.setup_discard(stack)
+	player.get_parent().add_child(drop)
+	_refresh()
+
+
+func _set_quickslot(inv_index: int, slot_index: int) -> void:
+	if player == null or inv_index < 0 or inv_index >= player.inventory.items.size():
+		return
+	var item_id := str(player.inventory.items[inv_index].get("id", ""))
+	if player.has_method("set_consumable_slot"):
+		player.set_consumable_slot(slot_index, item_id)
 	_refresh()
 
 
@@ -139,6 +219,9 @@ func _update_comparison_label() -> void:
 		return
 	if _hovered_inventory_index < 0 or _hovered_inventory_index >= _inventory_indices.size():
 		comparison_label.text = "滑鼠移至背包装備以查看比較"
+		return
+	if _hovered_inventory_index < _inventory_types.size() and _inventory_types[_hovered_inventory_index] == "consumable":
+		comparison_label.text = "右鍵指定 Q/R 快捷鍵"
 		return
 	var stack_index: int = _inventory_indices[_hovered_inventory_index]
 	if stack_index < 0 or stack_index >= player.inventory.items.size():

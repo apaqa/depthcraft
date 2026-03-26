@@ -39,7 +39,7 @@ func _refresh() -> void:
 	for child in list_container.get_children():
 		child.queue_free()
 	if player == null:
-		detail_label.text = "?�修?��?�?
+		detail_label.text = "無法修復：未連結到玩家"
 		return
 	var equipped_any := false
 	var repairable_any := false
@@ -65,7 +65,7 @@ func _refresh() -> void:
 		bar_bg.add_child(bar_fill)
 		row.add_child(bar_bg)
 		var info := Label.new()
-		info.text = "?��?: %d/%d" % [durability, max_durability]
+		info.text = "耐久度: %d/%d" % [durability, max_durability]
 		row.add_child(info)
 		var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name)
 		if not cost.is_empty():
@@ -77,21 +77,63 @@ func _refresh() -> void:
 				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
 					can_afford = false
 			var cost_label := Label.new()
-			cost_label.text = "Cost: %s" % ", ".join(cost_parts)
+			cost_label.text = "材料: %s" % ", ".join(cost_parts)
 			row.add_child(cost_label)
 			var button := Button.new()
-			button.text = "[Repair]"
+			button.text = "[修理]"
 			button.disabled = not can_afford
 			button.pressed.connect(_on_repair_pressed.bind(slot_name))
 			row.add_child(button)
 		list_container.add_child(row)
+	# Inventory (unequipped) equipment
+	for index in range(player.inventory.items.size()):
+		var item: Dictionary = player.inventory.items[index]
+		if str(item.get("type", "")) != "equipment":
+			continue
+		var durability := int(item.get("durability", 0))
+		var max_durability := int(item.get("max_durability", 0))
+		if max_durability <= 0:
+			continue
+		equipped_any = true
+		var row := VBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		var title := Label.new()
+		title.text = "%s [背包]" % player.equipment_system.get_item_display_name(item)
+		title.self_modulate = player.equipment_system.get_item_display_color(item)
+		row.add_child(title)
+		var bar_bg := ColorRect.new()
+		bar_bg.custom_minimum_size = Vector2(280, 10)
+		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
+		var bar_fill := ColorRect.new()
+		bar_fill.custom_minimum_size = Vector2(280.0 * clampf(float(durability) / float(max(max_durability, 1)), 0.0, 1.0), 10)
+		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if durability <= 0 else (Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0))
+		bar_bg.add_child(bar_fill)
+		row.add_child(bar_bg)
+		var info := Label.new()
+		info.text = "耐久度: %d/%d" % [durability, max_durability]
+		row.add_child(info)
+		var lost := max(max_durability - durability, 0)
+		if lost > 0:
+			repairable_any = true
+			var material := player.equipment_system.get_repair_material("", item)
+			var cost_amount := max(int(ceil(float(lost) / 10.0)), 1)
+			var can_afford := player.inventory.get_item_count(material) >= cost_amount
+			var cost_label := Label.new()
+			cost_label.text = "材料: %d %s" % [cost_amount, material.replace("_", " ").capitalize()]
+			row.add_child(cost_label)
+			var button := Button.new()
+			button.text = "[修理]"
+			button.disabled = not can_afford
+			button.pressed.connect(_on_repair_inventory_pressed.bind(index))
+			row.add_child(button)
+		list_container.add_child(row)
 	if not equipped_any:
-		detail_label.text = "沒�??�要修?��?裝�??��??��??�物??
+		detail_label.text = "沒有需要修復的裝備（未穿戴任何裝備）"
 		return
 	if not repairable_any:
-		detail_label.text = "?�?��??�耐�?已滿"
+		detail_label.text = "所有裝備耐久度已滿"
 	else:
-		detail_label.text = "點選?�要修?��??��??��?修�?"
+		detail_label.text = "點選想要修復的裝備進行修理"
 
 
 func _on_repair_pressed(slot_name: String) -> void:
@@ -100,3 +142,21 @@ func _on_repair_pressed(slot_name: String) -> void:
 	if player.equipment_system.repair_slot(slot_name, player.inventory):
 		_refresh()
 
+
+func _on_repair_inventory_pressed(inv_index: int) -> void:
+	if player == null or inv_index < 0 or inv_index >= player.inventory.items.size():
+		return
+	var item: Dictionary = player.inventory.items[inv_index]
+	var max_dur := int(item.get("max_durability", 0))
+	var dur := int(item.get("durability", max_dur))
+	var lost := max(max_dur - dur, 0)
+	if lost <= 0:
+		return
+	var material := player.equipment_system.get_repair_material("", item)
+	var cost_amount := max(int(ceil(float(lost) / 10.0)), 1)
+	if player.inventory.get_item_count(material) < cost_amount:
+		return
+	player.inventory.remove_item(material, cost_amount)
+	item["durability"] = max_dur
+	player.inventory.inventory_changed.emit()
+	_refresh()
