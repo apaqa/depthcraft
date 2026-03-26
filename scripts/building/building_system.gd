@@ -13,8 +13,8 @@ const BUILDING_DATA := preload("res://scripts/building/building_data.gd")
 const BUILDING_SAVE := preload("res://scripts/building/building_save.gd")
 const BUILD_PREVIEW_SCENE := preload("res://scenes/building/build_preview.tscn")
 const HOME_CORE_SCENE := preload("res://scenes/building/home_core.tscn")
+const HOME_CORE_BUILDING_ID := "home_core"
 const TILE_SIZE := 16
-const HOME_CORE_COST := {"wood": 10, "stone": 5}
 
 @onready var player = get_parent()
 
@@ -126,10 +126,6 @@ func handle_input(event: InputEvent) -> bool:
 			KEY_4:
 				select_category(3)
 				return true
-
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_C:
-		place_home_core(get_hovered_tile_pos())
-		return true
 
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
@@ -269,6 +265,8 @@ func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 	var building: Dictionary = BUILDING_DATA.get_building(building_id)
 	if building.is_empty():
 		return false
+	if str(building.get("kind", "tile")) == "core":
+		return place_home_core(tile_pos)
 
 	var is_valid := is_valid_placement(tile_pos, building_id)
 	if not is_valid:
@@ -340,6 +338,8 @@ func is_valid_placement(tile_pos: Vector2i, building_id: String = "") -> bool:
 	var building: Dictionary = BUILDING_DATA.get_building(target_building_id)
 	if building.is_empty():
 		return false
+	if str(building.get("kind", "tile")) == "core":
+		return can_place_home_core(tile_pos)
 
 	var tile_size := _get_building_tile_size(building)
 	if not _is_area_clear(tile_pos, tile_size):
@@ -367,14 +367,14 @@ func can_place_home_core(tile_pos: Vector2i) -> bool:
 	if not _is_area_free_of_world_objects(tile_pos, Vector2i.ONE):
 		return false
 
-	return _has_cost(HOME_CORE_COST)
+	return _has_cost(_get_home_core_cost())
 
 
 func place_home_core(tile_pos: Vector2i) -> bool:
 	if not can_place_home_core(tile_pos):
 		return false
 
-	if not _consume_cost(HOME_CORE_COST):
+	if not _consume_cost(_get_home_core_cost()):
 		return false
 
 	home_core_position = _tile_to_world_center(tile_pos)
@@ -393,20 +393,27 @@ func get_ui_state() -> Dictionary:
 	var building := get_selected_building()
 	var category_id := get_selected_category_id()
 	var category_buildings: Array[Dictionary] = BUILDING_DATA.get_buildings_for_category(category_id)
-	var item_names: PackedStringArray = []
+	var item_states: Array[Dictionary] = []
 	for category_building in category_buildings:
-		item_names.append(LocaleManager.L(str(category_building.get("name", ""))))
+		var item_id := str(category_building.get("id", ""))
+		item_states.append({
+			"id": item_id,
+			"name": LocaleManager.L(str(category_building.get("name", ""))),
+			"disabled": _is_building_disabled(item_id),
+		})
+	var selected_building_id := str(building.get("id", ""))
 	return {
 		"build_mode": is_build_mode_active(),
 		"remove_mode": is_remove_mode(),
 		"building": building,
 		"can_afford": _has_cost(building.get("cost", {})),
+		"selected_disabled": _is_building_disabled(selected_building_id),
 		"has_core": has_home_core(),
 		"debug_mode": debug_mode,
 		"category_id": category_id,
 		"category_name": BUILDING_DATA.get_category_name(category_id),
 		"category_index": selected_category_index,
-		"category_items": item_names,
+		"category_items": item_states,
 		"category_empty": category_buildings.is_empty(),
 	}
 
@@ -649,6 +656,15 @@ func get_home_core():
 	if has_functional_core():
 		return home_core_instance
 	return null
+
+
+func _get_home_core_cost() -> Dictionary:
+	var home_core_building := BUILDING_DATA.get_building(HOME_CORE_BUILDING_ID)
+	return home_core_building.get("cost", {})
+
+
+func _is_building_disabled(building_id: String) -> bool:
+	return building_id == HOME_CORE_BUILDING_ID and has_home_core()
 
 
 func _serialize_facilities() -> Array:

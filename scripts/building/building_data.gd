@@ -7,12 +7,13 @@ const WOOD_DOOR_SCENE_PATH := "res://scenes/building/facilities/wood_door.tscn"
 const TALENT_ALTAR_SCENE_PATH := "res://scenes/building/facilities/talent_altar.tscn"
 const FARM_PLOT_SCENE_PATH := "res://scenes/building/facilities/farm_plot.tscn"
 const COOKING_BENCH_SCENE_PATH := "res://scenes/building/facilities/cooking_bench.tscn"
+const HOME_CORE_SCENE_PATH := "res://scenes/building/home_core.tscn"
 const FULL_TILE_ATLAS := Vector2i.ZERO
 const CATEGORY_ORDER := ["structure", "door_window", "facility", "defense"]
 const CATEGORY_DATA := {
 	"structure": {"name": "build_cat_structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
 	"door_window": {"name": "build_cat_door_window", "items": ["wood_door"]},
-	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot"]},
+	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot", "home_core"]},
 	"defense": {"name": "build_cat_defense", "items": []},
 }
 
@@ -126,9 +127,18 @@ const BUILDINGS := {
 		"scene_path": COOKING_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/torch_no_flame.png"),
 	},
+	"home_core": {
+		"id": "home_core",
+		"name": "home_core",
+		"category": "facility",
+		"kind": "core",
+		"cost": {"wood": 10, "stone": 5},
+		"scene_path": HOME_CORE_SCENE_PATH,
+		"preview_texture": preload("res://assets/column.png"),
+	},
 }
 
-const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench"]
+const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench", "home_core"]
 
 
 static func get_building(building_id: String) -> Dictionary:

@@ -11,6 +11,7 @@ var _failures: PackedStringArray = []
 func _initialize() -> void:
 	BUILDING_SAVE.clear_save()
 	await test_building_data_cost()
+	await test_home_core_appears_in_facilities()
 	await test_building_data_list()
 	await test_building_tiles_use_distinct_visual_sources()
 	await test_place_building_deducts_resources()
@@ -34,6 +35,17 @@ func _initialize() -> void:
 func test_building_data_cost() -> void:
 	var building: Dictionary = BUILDING_DATA.get_building("wood_wall")
 	_assert(int(building["cost"]["wood"]) == 2, "Wood wall should cost 2 wood.")
+
+
+func test_home_core_appears_in_facilities() -> void:
+	var facility_buildings: Array[Dictionary] = BUILDING_DATA.get_buildings_for_category("facility")
+	var has_home_core := false
+	for building in facility_buildings:
+		if str(building.get("id", "")) == "home_core":
+			has_home_core = true
+			_assert(str(building.get("kind", "")) == "core", "Home core should be exposed as a dedicated core build entry.")
+			break
+	_assert(has_home_core, "Facility category should expose the home core entry.")
 
 
 func test_building_data_list() -> void:

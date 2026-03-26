@@ -4,7 +4,7 @@ extends Control
 @onready var category_label: RichTextLabel = $PanelContainer/MarginContainer/VBoxContainer/CategoryLabel
 @onready var cost_label: Label = $PanelContainer/MarginContainer/VBoxContainer/CostLabel
 @onready var help_label: Label = $PanelContainer/MarginContainer/VBoxContainer/HelpLabel
-@onready var core_label: Label = $PanelContainer/MarginContainer/VBoxContainer/CoreLabel
+@onready var core_label: RichTextLabel = $PanelContainer/MarginContainer/VBoxContainer/CoreLabel
 
 var building_system = null
 var inventory = null
@@ -48,13 +48,16 @@ func refresh() -> void:
 		if bool(state.get("category_empty", false)):
 			cost_label.text = LocaleManager.L("category_empty")
 			cost_label.modulate = Color(0.75, 0.75, 0.8, 1.0)
+		elif bool(state.get("selected_disabled", false)):
+			cost_label.text = "%s  |  %s" % [LocaleManager.L(str(building.get("name", "Build"))), "Built"]
+			cost_label.modulate = Color(0.65, 0.65, 0.65, 1.0)
 		elif bool(state.get("debug_mode", false)):
 			cost_label.text = LocaleManager.L("build_debug_free")
 			cost_label.modulate = Color(1.0, 0.9, 0.25, 1.0)
 		else:
-			cost_label.text = "%s  |  %s" % [str(building.get("name", "Build")), _format_costs(building.get("cost", {}))]
+			cost_label.text = "%s  |  %s" % [LocaleManager.L(str(building.get("name", "Build"))), _format_costs(building.get("cost", {}))]
 			cost_label.modulate = Color(0.45, 1.0, 0.45, 1.0) if bool(state.get("can_afford", false)) else Color(1.0, 0.45, 0.45, 1.0)
-		core_label.text = _format_category_items(state, str(building.get("name", "")))
+		core_label.text = _format_category_items(state, str(building.get("id", "")))
 
 	if bool(state.get("has_core", false)):
 		core_label.text += "\n" + LocaleManager.L("core_placed")
@@ -65,6 +68,7 @@ func refresh() -> void:
 	help_label.text = LocaleManager.L("build_help")
 	category_label.bbcode_enabled = true
 	category_label.text = _format_categories(int(state.get("category_index", 0)))
+	core_label.bbcode_enabled = true
 
 
 func _format_costs(costs: Dictionary) -> String:
@@ -83,11 +87,17 @@ func _pretty_name(resource_id: String) -> String:
 	return resource_id.replace("_", " ").capitalize()
 
 
-func _format_category_items(state: Dictionary, selected_name: String = "") -> String:
+func _format_category_items(state: Dictionary, selected_id: String = "") -> String:
 	var parts: PackedStringArray = []
-	for item_name in state.get("category_items", []):
-		var name := str(item_name)
-		parts.append("> %s <" % name if name == selected_name else name)
+	for item_state in state.get("category_items", []):
+		var data := item_state as Dictionary
+		var name := str(data.get("name", ""))
+		var item_id := str(data.get("id", ""))
+		var color := "6e737d" if bool(data.get("disabled", false)) else "fff2bf"
+		if item_id == selected_id:
+			parts.append("[color=#%s]> %s <[/color]" % [color, name])
+		else:
+			parts.append("[color=#%s]%s[/color]" % [color, name])
 	if parts.is_empty():
 		return LocaleManager.L("category_empty")
 	return LocaleManager.L("build_category_fmt") % "  |  ".join(parts)

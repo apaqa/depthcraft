@@ -2,6 +2,7 @@ extends Control
 
 const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
 
 @onready var hp_label: Label = $HPLabel
 @onready var hp_bar_fill: ColorRect = $HPBarBG/HPBarFill
@@ -42,6 +43,7 @@ var current_level_id: String = ""
 var settings_menu: SettingsMenu = null
 var currency_label: Label = null
 var class_label: Label = null
+var home_arrow: Control = null
 
 
 func _ready() -> void:
@@ -100,6 +102,7 @@ func _ready() -> void:
 	add_child(settings_menu)
 	if not settings_menu.close_requested.is_connected(_on_menu_closed):
 		settings_menu.close_requested.connect(_on_menu_closed)
+	_ensure_home_arrow()
 
 
 func update_hp(current: int, max_hp: int) -> void:
@@ -133,6 +136,8 @@ func bind_player(new_player) -> void:
 		skill_system.skills_changed.connect(_refresh_skill_slots)
 	if build_hud.has_method("bind_system"):
 		build_hud.bind_system(player.building_system, inventory)
+	if home_arrow != null and home_arrow.has_method("bind_player"):
+		home_arrow.bind_player(player)
 	_on_inventory_changed()
 	_refresh_debug_label()
 	_refresh_buff_icons(player.get_active_buffs())
@@ -611,3 +616,11 @@ func fade_from_black(overlay_color: Color = Color(0, 0, 0, 1), fade_duration: fl
 	tween.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0), fade_duration)
 	await tween.finished
 	transition_overlay.visible = false
+
+
+func _ensure_home_arrow() -> void:
+	if home_arrow != null:
+		return
+	home_arrow = HOME_ARROW_SCRIPT.new()
+	home_arrow.name = "HomeArrow"
+	add_child(home_arrow)
