@@ -30,7 +30,7 @@ var player = null
 var current_level = null
 var current_level_id: String = ""
 var unlocked_skill_ids: Array[String] = []
-var equipped_skill_ids: Array[String] = ["", "", "", "", "", ""]
+var equipped_skill_ids: Array[String] = ["", "", ""]
 var skills := {}
 
 

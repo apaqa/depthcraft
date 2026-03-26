@@ -495,8 +495,8 @@ func _refresh_skill_slots() -> void:
 	var snapshots = skill_system.get_equipped_skill_snapshots()
 	const SLOT_W := 70.0
 	const SLOT_H := 36.0
-	const KEY_NAMES := ["Z", "X", "C", "V", "G", "H"]
-	for slot_index in range(6):
+	const KEY_NAMES := ["Z", "X", "V"]
+	for slot_index in range(3):
 		var slot: Dictionary = snapshots[slot_index] if slot_index < snapshots.size() else {}
 		var key_name: String = KEY_NAMES[slot_index]
 

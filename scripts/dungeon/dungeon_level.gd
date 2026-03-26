@@ -98,15 +98,15 @@ func _draw_floor() -> void:
 
 
 func _apply_biome_colors() -> void:
-	if current_floor >= 13:
+	if current_floor >= 31:
 		# Abyss: everything dark and desaturated
 		tile_map_layer.modulate = Color(0.5, 0.5, 0.6)
 		wall_tile_map_layer.modulate = Color(0.5, 0.5, 0.6)
-	elif current_floor >= 9:
+	elif current_floor >= 21:
 		# Lava dungeon: floor warm orange-red, walls dark crimson
 		tile_map_layer.modulate = Color(0.9, 0.7, 0.6)
 		wall_tile_map_layer.modulate = Color(0.7, 0.4, 0.4)
-	elif current_floor >= 5:
+	elif current_floor >= 11:
 		# Dark dungeon: floor neutral, walls cold blue
 		tile_map_layer.modulate = Color(1.0, 1.0, 1.0)
 		wall_tile_map_layer.modulate = Color(0.7, 0.7, 0.9)
@@ -122,7 +122,7 @@ func _update_player_ambient_light() -> void:
 	var existing = player.get_node_or_null("DungeonAmbientLight")
 	if existing != null:
 		existing.queue_free()
-	if current_floor >= 13:
+	if current_floor >= 31:
 		var gradient := Gradient.new()
 		gradient.colors = PackedColorArray([Color(1.0, 1.0, 1.0, 1.0), Color(1.0, 1.0, 1.0, 0.0)])
 		gradient.offsets = PackedFloat32Array([0.0, 1.0])
