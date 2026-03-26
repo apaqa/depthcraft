@@ -7,6 +7,9 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var player_grid: GridContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer/PlayerGrid
 @onready var chest_grid: GridContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ChestPanel/VBoxContainer/ChestGrid
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
+@onready var player_label: Label = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/PlayerPanel/VBoxContainer/PlayerLabel
+@onready var chest_label: Label = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/ChestPanel/VBoxContainer/ChestLabel
+
 
 var player_inventory = null
 var chest_inventory = null
@@ -58,6 +61,8 @@ func _unbind_inventory_signals() -> void:
 
 func _rebuild() -> void:
 	title_label.text = "儲物箱"
+	player_label.text = "你的背包"
+	chest_label.text = "倉庫"
 	_rebuild_grid(player_grid, player_inventory, chest_inventory, true)
 	_rebuild_grid(chest_grid, chest_inventory, player_inventory, false)
 
@@ -80,14 +85,17 @@ func _rebuild_grid(grid: GridContainer, source_inventory, target_inventory, from
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if index < source_inventory.items.size():
 			var stack: Dictionary = source_inventory.items[index]
-			button.text = "%s x%d" % [str(stack.get("name", stack["id"])), int(stack["quantity"])]
+			var item_id: String = str(stack.get("id", ""))
+			var db_item := ITEM_DATABASE.get_item(item_id)
+			var item_name: String = str(stack.get("name", db_item.get("name", item_id)))
+			button.text = "%s x%d" % [item_name, int(stack["quantity"])]
 			row.remove_child(icon_holder)
 			icon_holder.queue_free()
 			icon_holder = _build_item_icon_holder(stack)
 			row.add_child(icon_holder)
 			button.pressed.connect(_on_transfer_pressed.bind(source_inventory, target_inventory, index))
 		else:
-			button.text = "--"
+			button.text = "空"
 			button.disabled = true
 		if from_player:
 			button.modulate = Color(0.92, 1.0, 0.92, 1.0)

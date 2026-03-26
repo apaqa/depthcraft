@@ -175,4 +175,4 @@ func _clear_enemy_root() -> void:
 	if enemy_root != null:
 		enemy_root.queue_free()
 ()
-e()
+()
