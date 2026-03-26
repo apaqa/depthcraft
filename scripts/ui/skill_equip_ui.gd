@@ -58,10 +58,14 @@ func _build_ui() -> void:
 	title_row.add_child(_title_label)
 
 	var close_btn := Button.new()
+	close_btn.name = "CloseButton"
 	close_btn.text = "X"
-	close_btn.custom_minimum_size = Vector2(28, 28)
+	close_btn.position = panel.position + Vector2(8, 8)
+	close_btn.custom_minimum_size = Vector2(32, 32)
+	close_btn.size = Vector2(32, 32)
+	close_btn.z_index = 100
 	close_btn.pressed.connect(close_menu)
-	title_row.add_child(close_btn)
+	add_child(close_btn)
 
 	var sep := HSeparator.new()
 	root_vbox.add_child(sep)

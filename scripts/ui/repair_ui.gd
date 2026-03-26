@@ -17,7 +17,13 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	title_label.text = LocaleManager.L("repair_bench")
+	_resize_panel()
 	_ensure_close_button()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_resize_panel()
 
 
 func open_for_player(target_player) -> void:
@@ -190,6 +196,18 @@ func _translate_slot_name(slot_name: String) -> String:
 		"tool":
 			return LocaleManager.L("slot_tool")
 	return slot_name.replace("_", " ").capitalize()
+
+
+func _resize_panel() -> void:
+	if panel_container == null:
+		return
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var panel_height: float = maxf(500.0, viewport_size.y * 0.7)
+	panel_container.offset_top = maxf(24.0, (viewport_size.y - panel_height) * 0.5)
+	panel_container.offset_bottom = panel_container.offset_top + panel_height
+	var close_btn := get_node_or_null("CloseButton") as Button
+	if close_btn != null:
+		close_btn.position = panel_container.position + Vector2(8, 8)
 
 
 func _ensure_close_button() -> void:

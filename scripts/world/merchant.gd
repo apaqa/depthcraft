@@ -13,6 +13,7 @@ const SHOP_ITEMS := [
 ]
 
 var _shop_canvas: CanvasLayer = null
+var _shop_root: Control = null
 var _current_player = null
 var _gold_label: Label = null
 var _message_label: Label = null
@@ -46,6 +47,11 @@ func _open_shop() -> void:
 	_shop_canvas.layer = 10
 	add_child(_shop_canvas)
 
+	_shop_root = Control.new()
+	_shop_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_shop_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shop_canvas.add_child(_shop_root)
+
 	var panel := Panel.new()
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
@@ -56,16 +62,17 @@ func _open_shop() -> void:
 	panel.offset_top = -200.0
 	panel.offset_right = 210.0
 	panel.offset_bottom = 200.0
-	_shop_canvas.add_child(panel)
+	_shop_root.add_child(panel)
 
 	var x_btn = Button.new()
+	x_btn.name = "CloseButton"
 	x_btn.text = "X"
 	x_btn.custom_minimum_size = Vector2(32, 32)
 	x_btn.size = Vector2(32, 32)
-	x_btn.position = Vector2(8, 8)
+	x_btn.position = panel.position + Vector2(8, 8)
 	x_btn.z_index = 100
 	x_btn.pressed.connect(_close_shop)
-	panel.add_child(x_btn)
+	_shop_root.add_child(x_btn)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -177,6 +184,7 @@ func _close_shop() -> void:
 	if _shop_canvas != null:
 		_shop_canvas.queue_free()
 		_shop_canvas = null
+	_shop_root = null
 	get_tree().paused = false
 	if _current_player != null:
 		if _current_player.has_method("set_ui_blocked"):

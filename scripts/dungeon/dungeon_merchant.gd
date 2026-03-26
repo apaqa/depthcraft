@@ -11,6 +11,7 @@ const SHOP_ITEMS := [
 ]
 
 var _shop_canvas: CanvasLayer = null
+var _shop_root: Control = null
 var _current_player = null
 var _gold_label: Label = null
 var _message_label: Label = null
@@ -94,6 +95,11 @@ func _open_shop() -> void:
 	_shop_canvas.layer = 10
 	add_child(_shop_canvas)
 
+	_shop_root = Control.new()
+	_shop_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_shop_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shop_canvas.add_child(_shop_root)
+
 	var panel := Panel.new()
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
@@ -104,18 +110,17 @@ func _open_shop() -> void:
 	panel.offset_top = -190.0
 	panel.offset_right = 220.0
 	panel.offset_bottom = 190.0
-	_shop_canvas.add_child(panel)
+	_shop_root.add_child(panel)
 
 	var close_button := Button.new()
-	close_button.text = "✕"
-	close_button.position = Vector2(8.0, 8.0)
-	close_button.custom_minimum_size = Vector2(28.0, 28.0)
-	close_button.add_theme_font_size_override("font_size", 20)
-	close_button.add_theme_color_override("font_color", Color.WHITE)
-	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
-	close_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	close_button.name = "CloseButton"
+	close_button.text = "X"
+	close_button.position = panel.position + Vector2(8, 8)
+	close_button.custom_minimum_size = Vector2(32, 32)
+	close_button.size = Vector2(32, 32)
+	close_button.z_index = 100
 	close_button.pressed.connect(_close_shop)
-	panel.add_child(close_button)
+	_shop_root.add_child(close_button)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -276,6 +281,7 @@ func _close_shop() -> void:
 	if _shop_canvas != null:
 		_shop_canvas.queue_free()
 		_shop_canvas = null
+	_shop_root = null
 	get_tree().paused = false
 	if _current_player != null:
 		if _current_player.has_method("set_ui_blocked"):

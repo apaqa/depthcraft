@@ -270,16 +270,14 @@ func _on_talent_pressed(talent_id: String) -> void:
 
 
 func _ensure_close_button() -> void:
-	if panel_container == null or panel_container.get_node_or_null("CloseButton") != null:
+	if panel_container == null or get_node_or_null("CloseButton") != null:
 		return
 	var close_button := Button.new()
 	close_button.name = "CloseButton"
-	close_button.text = "✕"
-	close_button.position = Vector2(8.0, 8.0)
-	close_button.custom_minimum_size = Vector2(28.0, 28.0)
-	close_button.add_theme_font_size_override("font_size", 20)
-	close_button.add_theme_color_override("font_color", Color.WHITE)
-	close_button.add_theme_color_override("font_hover_color", Color.WHITE)
-	close_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	close_button.text = "X"
+	close_button.position = panel_container.position + Vector2(8, 8)
+	close_button.custom_minimum_size = Vector2(32, 32)
+	close_button.size = Vector2(32, 32)
+	close_button.z_index = 100
 	close_button.pressed.connect(close_menu)
-	panel_container.add_child(close_button)
+	add_child(close_button)
