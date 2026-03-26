@@ -5,6 +5,7 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
 
 @onready var hp_label: Label = $HPLabel
+@onready var hp_bar_bg: ColorRect = $HPBarBG
 @onready var hp_bar_fill: ColorRect = $HPBarBG/HPBarFill
 @onready var bag_label: Label = $BagLabel
 @onready var floor_label: Label = $FloorLabel
@@ -36,6 +37,16 @@ const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
 @onready var consumable_bar: Label = $ConsumableBar
 @onready var skill_slot_row: HBoxContainer = $SkillSlotRow
 
+const HUD_LEFT_MARGIN := 8.0
+const HUD_TOP_MARGIN := 8.0
+const HUD_LINE_HEIGHT := 18.0
+const HP_BAR_SIZE := Vector2(120.0, 10.0)
+const HP_LABEL_SIZE := Vector2(120.0, 18.0)
+const CLASS_LABEL_SIZE := Vector2(140.0, 18.0)
+const INFO_LABEL_SIZE := Vector2(220.0, 18.0)
+const BUFF_ROW_SIZE := Vector2(220.0, 24.0)
+const SKILL_ROW_BOTTOM_MARGIN := 12.0
+
 var player = null
 var inventory = null
 var current_level = null
@@ -48,16 +59,16 @@ var home_arrow: Control = null
 
 func _ready() -> void:
 	skill_slot_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	skill_slot_row.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	skill_slot_row.anchor_left = 0.5
+	skill_slot_row.anchor_right = 0.5
+	skill_slot_row.anchor_top = 1.0
+	skill_slot_row.anchor_bottom = 1.0
 	skill_slot_row.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	skill_slot_row.offset_left = -150.0
-	skill_slot_row.offset_right = 150.0
-	skill_slot_row.offset_top = -50.0
-	skill_slot_row.offset_bottom = -10.0
+	skill_slot_row.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	if not resized.is_connected(_on_hud_resized):
+		resized.connect(_on_hud_resized)
 
 	currency_label = Label.new()
-	currency_label.position = Vector2(8, 62)
-	currency_label.size = Vector2(180, 16)
 	currency_label.add_theme_constant_override("outline_size", 2)
 	currency_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	currency_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4, 1.0))
@@ -66,8 +77,6 @@ func _ready() -> void:
 	add_child(currency_label)
 
 	class_label = Label.new()
-	class_label.position = Vector2(160, 6)
-	class_label.size = Vector2(80, 16)
 	class_label.add_theme_font_size_override("font_size", 12)
 	class_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5, 1.0))
 	class_label.add_theme_constant_override("outline_size", 2)
@@ -75,6 +84,8 @@ func _ready() -> void:
 	var _cs := get_node_or_null("/root/ClassSystem")
 	class_label.text = _cs.get_class_display_name() if _cs != null else ""
 	add_child(class_label)
+	_layout_static_hud()
+	_center_skill_slot_row()
 
 	update_hp(100, 100)
 	update_bag_label(0, 20)
@@ -108,7 +119,7 @@ func _ready() -> void:
 func update_hp(current: int, max_hp: int) -> void:
 	hp_label.text = "%s: %d/%d" % [LocaleManager.L("hp"), current, max_hp]
 	var ratio = float(current) / float(max(max_hp, 1))
-	hp_bar_fill.size.x = 196.0 * clampf(ratio, 0.0, 1.0)
+	hp_bar_fill.size.x = HP_BAR_SIZE.x * clampf(ratio, 0.0, 1.0)
 	hp_bar_fill.color = Color(0.85, 0.15, 0.15, 1.0) if ratio > 0.25 else Color(1.0, 0.1, 0.1, 1.0)
 
 
@@ -583,6 +594,7 @@ func _refresh_skill_slots() -> void:
 		hint.add_theme_constant_override("outline_size", 2)
 		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		skill_slot_row.add_child(hint)
+	_center_skill_slot_row.call_deferred()
 
 
 func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.25, hold_duration: float = 0.0) -> void:
@@ -624,3 +636,46 @@ func _ensure_home_arrow() -> void:
 	home_arrow = HOME_ARROW_SCRIPT.new()
 	home_arrow.name = "HomeArrow"
 	add_child(home_arrow)
+
+
+func _layout_static_hud() -> void:
+	var hp_y := HUD_TOP_MARGIN
+	var hp_bar_x := HUD_LEFT_MARGIN + HP_LABEL_SIZE.x + 6.0
+	var info_y := hp_y + HUD_LINE_HEIGHT + 4.0
+
+	_set_control_rect(hp_label, Vector2(HUD_LEFT_MARGIN, hp_y), HP_LABEL_SIZE)
+	_set_control_rect(hp_bar_bg, Vector2(hp_bar_x, hp_y + 4.0), HP_BAR_SIZE)
+	_set_control_rect(class_label, Vector2(hp_bar_x + HP_BAR_SIZE.x + 8.0, hp_y), CLASS_LABEL_SIZE)
+	hp_bar_fill.position = Vector2.ZERO
+	hp_bar_fill.size = Vector2(HP_BAR_SIZE.x, HP_BAR_SIZE.y)
+
+	_set_control_rect(bag_label, Vector2(HUD_LEFT_MARGIN, info_y), INFO_LABEL_SIZE)
+	_set_control_rect(floor_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT), INFO_LABEL_SIZE)
+	_set_control_rect(kills_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 2.0), INFO_LABEL_SIZE)
+	_set_control_rect(day_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 3.0), INFO_LABEL_SIZE)
+	_set_control_rect(currency_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 4.0), INFO_LABEL_SIZE)
+	_set_control_rect(buff_row, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 5.0), BUFF_ROW_SIZE)
+
+
+func _set_control_rect(control: Control, pos: Vector2, rect_size: Vector2) -> void:
+	if control == null:
+		return
+	control.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	control.position = pos
+	control.size = rect_size
+
+
+func _center_skill_slot_row() -> void:
+	if skill_slot_row == null:
+		return
+	var row_size := skill_slot_row.get_combined_minimum_size()
+	row_size.x = maxf(row_size.x, 210.0)
+	row_size.y = maxf(row_size.y, 36.0)
+	skill_slot_row.offset_left = -row_size.x * 0.5
+	skill_slot_row.offset_right = row_size.x * 0.5
+	skill_slot_row.offset_bottom = -SKILL_ROW_BOTTOM_MARGIN
+	skill_slot_row.offset_top = skill_slot_row.offset_bottom - row_size.y
+
+
+func _on_hud_resized() -> void:
+	_center_skill_slot_row.call_deferred()

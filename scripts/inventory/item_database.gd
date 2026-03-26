@@ -109,7 +109,7 @@ const ITEMS := {
 		"max_stack": 9999,
 		"type": "resource",
 		"description": "Basic currency — 10 copper = 1 silver",
-		"icon": preload("res://assets/icons/kyrise/coin_03a.png"),
+		"icon": preload("res://assets/icons/kyrise/coin_03b.png"),
 	},
 	"silver": {
 		"id": "silver",
