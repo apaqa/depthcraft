@@ -168,7 +168,10 @@ func _close_shop() -> void:
 	if _shop_canvas != null:
 		_shop_canvas.queue_free()
 		_shop_canvas = null
-	if _current_player != null and _current_player.has_method("set_ui_blocked"):
-		_current_player.set_ui_blocked(false)
+	if _current_player != null:
+		if _current_player.has_method("set_ui_blocked"):
+			_current_player.set_ui_blocked(false)
+		if "in_menu" in _current_player:
+			_current_player.in_menu = false
 	_current_player = null
 

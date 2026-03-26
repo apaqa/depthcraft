@@ -31,7 +31,6 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var raid_border: ColorRect = $RaidBorder
 @onready var status_label: Label = $StatusLabel
 @onready var transition_overlay: ColorRect = $TransitionOverlay
-@onready var transition_label: Label = $TransitionOverlay/TransitionLabel
 @onready var consumable_bar: Label = $ConsumableBar
 @onready var skill_slot_row: HBoxContainer = $SkillSlotRow
 
@@ -43,6 +42,14 @@ var settings_menu: SettingsMenu = null
 
 
 func _ready() -> void:
+	skill_slot_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	skill_slot_row.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	skill_slot_row.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	skill_slot_row.offset_left = -150.0
+	skill_slot_row.offset_right = 150.0
+	skill_slot_row.offset_top = -50.0
+	skill_slot_row.offset_bottom = -10.0
+
 	update_hp(100, 100)
 	update_bag_label(0, 20)
 	update_consumable_bar([])
@@ -201,7 +208,7 @@ func _on_inventory_changed() -> void:
 
 
 func update_bag_label(used_slots: int, max_slots: int) -> void:
-	bag_label.text = "?Œå?: %d/%d" % [used_slots, max_slots]
+	bag_label.text = "?ï¿½ï¿½?: %d/%d" % [used_slots, max_slots]
 
 
 func update_floor_label(current_floor: int) -> void:
@@ -210,7 +217,7 @@ func update_floor_label(current_floor: int) -> void:
 
 
 func update_kills_label(kills: int) -> void:
-	kills_label.text = "?Šæ®º: %d" % kills if kills > 0 else ""
+	kills_label.text = "?ï¿½æ®º: %d" % kills if kills > 0 else ""
 
 
 func _refresh_debug_label() -> void:
@@ -219,7 +226,7 @@ func _refresh_debug_label() -> void:
 		return
 
 	debug_label.visible = player.building_system.is_debug_mode_enabled()
-	debug_label.text = "[?¤éŒ¯æ¨¡å?]\n[8] ?¤éŒ¯  [9] ?ç½®+æ¸…é™¤  [0] ?ç½®" if debug_label.visible else "[?¤éŒ¯æ¨¡å?]"
+	debug_label.text = "[?ï¿½éŒ¯æ¨¡ï¿½?]\n[8] ?ï¿½éŒ¯  [9] ?ï¿½ç½®+æ¸…é™¤  [0] ?ï¿½ç½®" if debug_label.visible else "[?ï¿½éŒ¯æ¨¡ï¿½?]"
 	debug_label.modulate.a = 0.5
 	debug_label.add_theme_font_size_override("font_size", 10)
 
@@ -232,7 +239,7 @@ func set_connection_info(message: String) -> void:
 func _on_crafting_requested(_facility) -> void:
 	_close_all_menus()
 	var recipe_filter := PackedStringArray()
-	var menu_title := "è£½ä?"
+	var menu_title := "è£½ï¿½?"
 	if _facility != null and _facility.has_method("get_recipe_ids"):
 		recipe_filter = _facility.get_recipe_ids()
 	if _facility != null and _facility.has_method("get_menu_title"):
@@ -418,7 +425,7 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 
 func show_death_screen(summary: Dictionary) -> void:
 	death_overlay.visible = true
-	death_summary_label.text = "ç¬?%d å±?| ?Šæ®º: %d | ?°åˆ©?å·²?ºå¤±ï¼? % [
+	death_summary_label.text = "ï¿½?%d ï¿½?| ?ï¿½æ®º: %d | ?ï¿½åˆ©?ï¿½å·²?ï¿½å¤±ï¿½? % [
 		int(summary.get("floor", 0)),
 		int(summary.get("kills", 0)),
 	]
@@ -478,7 +485,7 @@ func update_consumable_bar(slots: Array) -> void:
 		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
 		var key_name = "Q" if slot_index == 0 else "R"
 		if slot.is_empty():
-			labels.append("[%s] ç©? % key_name)
+			labels.append("[%s] ï¿½? % key_name)
 			continue
 		labels.append("[%s] %s x%d" % [key_name, str(slot.get("name", "Item")), int(slot.get("quantity", 0))])
 	consumable_bar.text = " | ".join(labels)
@@ -520,7 +527,7 @@ func _refresh_skill_slots() -> void:
 		skill_label.add_theme_font_size_override("font_size", 11)
 
 		if slot.is_empty():
-			skill_label.text = "[%s]\nç©? % key_name
+			skill_label.text = "[%s]\nï¿½? % key_name
 			skill_label.self_modulate = Color(0.5, 0.5, 0.5, 1.0)
 			container.add_child(skill_label)
 		else:
@@ -562,7 +569,7 @@ func _refresh_skill_slots() -> void:
 			break
 	if has_unequipped:
 		var hint := Label.new()
-		hint.text = "  ????K è£å??€??
+		hint.text = "  ????K è£ï¿½??ï¿½??
 		hint.self_modulate = Color(1.0, 0.9, 0.4, 1.0)
 		hint.add_theme_constant_override("outline_size", 2)
 		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
