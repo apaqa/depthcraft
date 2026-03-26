@@ -13,7 +13,7 @@ func _ready() -> void:
 
 
 func get_interaction_prompt() -> String:
-	return "[E] ?‰åº«"
+	return LocaleManager.L("prompt_storage")
 
 
 func interact(player) -> void:
@@ -38,4 +38,3 @@ func load_from_data(data: Dictionary) -> void:
 
 func _on_inventory_changed() -> void:
 	chest_changed.emit()
-

@@ -134,8 +134,8 @@ func _make_split_connector() -> Control:
 	var root := Control.new()
 	root.custom_minimum_size = Vector2(PANEL_WIDTH - 36.0, 28.0)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var width := root.custom_minimum_size.x
-	var center_x := floor(width * 0.5)
+	var width: float = root.custom_minimum_size.x
+	var center_x: float = floor(width * 0.5)
 	root.add_child(_make_line(Vector2(center_x, 0.0), Vector2(2.0, 10.0)))
 	root.add_child(_make_line(Vector2(36.0, 10.0), Vector2(width - 72.0, 2.0)))
 	root.add_child(_make_line(Vector2(36.0, 10.0), Vector2(2.0, 18.0)))
@@ -147,8 +147,8 @@ func _make_merge_connector() -> Control:
 	var root := Control.new()
 	root.custom_minimum_size = Vector2(PANEL_WIDTH - 36.0, 28.0)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var width := root.custom_minimum_size.x
-	var center_x := floor(width * 0.5)
+	var width: float = root.custom_minimum_size.x
+	var center_x: float = floor(width * 0.5)
 	root.add_child(_make_line(Vector2(36.0, 0.0), Vector2(2.0, 18.0)))
 	root.add_child(_make_line(Vector2(width - 38.0, 0.0), Vector2(2.0, 18.0)))
 	root.add_child(_make_line(Vector2(36.0, 18.0), Vector2(width - 72.0, 2.0)))
