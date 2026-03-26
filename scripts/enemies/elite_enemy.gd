@@ -2,7 +2,6 @@ extends Enemy
 class_name EliteEnemy
 
 const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
-const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
 
 var floor_value: int = 1
 var attack_pattern_index: int = 0
@@ -11,6 +10,7 @@ var pulse_time: float = 0.0
 
 
 func _ready() -> void:
+	print("ELITE ENEMY SCRIPT LOADED")
 	super._ready()
 	animated_sprite.modulate = Color(1.0, 0.45, 0.45, 1.0)
 	scale = Vector2(1.15, 1.15)
@@ -27,7 +27,7 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	detection_range = 140.0
 	attack_range = 28.0
 	attack_cooldown = 1.2
-	drop_table = []
+	drop_table.clear()
 
 
 func _physics_process(delta: float) -> void:
@@ -47,7 +47,8 @@ func _perform_attack() -> void:
 		return
 	match attack_pattern_index % 3:
 		0:
-			target.take_damage(damage, (target.global_position - global_position).normalized())
+			if target.has_method("take_damage"):
+				target.take_damage(damage, (target.global_position - global_position).normalized())
 		1:
 			call_deferred("_perform_charge_attack")
 		_:
@@ -55,7 +56,8 @@ func _perform_attack() -> void:
 				_summon_bats()
 				summon_cooldown_left = 10.0
 			else:
-				target.take_damage(damage, (target.global_position - global_position).normalized())
+				if target.has_method("take_damage"):
+					target.take_damage(damage, (target.global_position - global_position).normalized())
 	attack_pattern_index += 1
 
 
@@ -73,7 +75,8 @@ func _perform_charge_attack() -> void:
 	tween.tween_property(self, "global_position", dash_target, 0.18)
 	await tween.finished
 	if global_position.distance_to(target.global_position) <= attack_range + 20.0:
-		target.take_damage(int(round(damage * 1.2)), (target.global_position - global_position).normalized())
+		if target.has_method("take_damage"):
+			target.take_damage(int(round(damage * 1.2)), (target.global_position - global_position).normalized())
 	ai_paused = false
 
 
@@ -88,16 +91,16 @@ func _drop_gold_loot() -> void:
 func die() -> void:
 	print("ELITE DIE CALLED, dropping loot...")
 	if loot_parent != null:
-		var shard_drop = LOOT_DROP_SCENE.instantiate()
+		var shard_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop
 		shard_drop.setup("talent_shard", 3)
 		shard_drop.global_position = global_position
 		loot_parent.add_child(shard_drop)
 		_drop_gold_loot()
 		if randf() <= 0.5:
-			var equipment_drop = LOOT_DROP_SCENE.instantiate()
+			var equipment_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop
 			equipment_drop.global_position = global_position + Vector2(10, -4)
 			loot_parent.add_child(equipment_drop)
-			equipment_drop.setup_stack(DUNGEON_LOOT.generate_dungeon_equipment(floor_value))
+			equipment_drop.setup_stack(DungeonLoot.generate_dungeon_equipment(floor_value))
 	super.die()
 
 
@@ -105,7 +108,9 @@ func _summon_bats() -> void:
 	if loot_parent == null or get_parent() == null:
 		return
 	for index in range(2):
-		var bat: Enemy = BAT_SWARM_SCENE.instantiate()
+		var bat := BAT_SWARM_SCENE.instantiate() as Enemy
+		if bat == null:
+			continue
 		bat.global_position = global_position + Vector2(14 + index * 10, -10 + index * 8)
 		bat.configure_for_floor(target, max(floor_value - 1, 1), loot_parent)
 		if bat.has_method("set_ai_paused"):

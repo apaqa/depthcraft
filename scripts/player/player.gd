@@ -267,6 +267,24 @@ func _input(event: InputEvent) -> void:
 			skill_system.use_skill_slot(2)
 		get_viewport().set_input_as_handled()
 		return
+	if event.is_action_pressed("skill_slot_4") and not build_mode and not ui_blocked and not is_dead:
+		var skill_system = _skill_system()
+		if skill_system != null:
+			skill_system.use_skill_slot(3)
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("skill_slot_5") and not build_mode and not ui_blocked and not is_dead:
+		var skill_system = _skill_system()
+		if skill_system != null:
+			skill_system.use_skill_slot(4)
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("skill_slot_6") and not build_mode and not ui_blocked and not is_dead:
+		var skill_system = _skill_system()
+		if skill_system != null:
+			skill_system.use_skill_slot(5)
+		get_viewport().set_input_as_handled()
+		return
 
 	if build_mode:
 		if building_system.handle_input(event):
@@ -573,6 +591,7 @@ func _configure_input_actions() -> void:
 	_set_key_action("use_consumable", KEY_Q)
 	_set_key_action("use_consumable_2", KEY_R)
 	_set_key_action("toggle_equipment", KEY_C)
+	_set_key_action("toggle_skills", KEY_K)
 	_set_key_action("skill_slot_1", KEY_Z)
 	_set_key_action("skill_slot_2", KEY_X)
 	_set_key_action("skill_slot_3", KEY_V)

@@ -21,6 +21,7 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var repair_ui: Control = $RepairUI
 @onready var talent_tree: Control = $TalentTree
 @onready var equipment_panel: Control = $EquipmentPanel
+@onready var skill_equip_ui: Control = $SkillEquipUI
 @onready var minimap: Control = $Minimap
 @onready var buff_select: Control = $BuffSelect
 @onready var death_overlay: Control = $DeathOverlay
@@ -57,6 +58,8 @@ func _ready() -> void:
 		talent_tree.close_requested.connect(_on_menu_closed)
 	if equipment_panel.has_signal("close_requested") and not equipment_panel.close_requested.is_connected(_on_menu_closed):
 		equipment_panel.close_requested.connect(_on_menu_closed)
+	if skill_equip_ui.has_signal("close_requested") and not skill_equip_ui.close_requested.is_connected(_on_menu_closed):
+		skill_equip_ui.close_requested.connect(_on_menu_closed)
 	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
 		buff_select.buff_chosen.connect(_on_buff_chosen)
 	set_process(true)
@@ -130,7 +133,7 @@ func bind_level(level, level_id: String) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _is_modal_open():
-		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact") or event.is_action_pressed("toggle_equipment"):
+		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact") or event.is_action_pressed("toggle_equipment") or event.is_action_pressed("toggle_skills"):
 			_close_all_menus()
 			get_viewport().set_input_as_handled()
 		return
@@ -140,6 +143,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_equipment") and player != null and not player.building_system.is_build_mode_active():
 		_toggle_equipment_panel()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("toggle_skills") and player != null and not player.building_system.is_build_mode_active():
+		_toggle_skill_equip_ui()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel") and inventory_panel.visible:
 		inventory_panel.visible = false
@@ -257,6 +263,15 @@ func _toggle_equipment_panel() -> void:
 	player.set_ui_blocked(true)
 
 
+func _toggle_skill_equip_ui() -> void:
+	if skill_equip_ui.visible:
+		skill_equip_ui.close_menu()
+		return
+	_close_all_menus()
+	skill_equip_ui.open_for_player(player)
+	player.set_ui_blocked(true)
+
+
 func _close_all_menus() -> void:
 	inventory_panel.visible = false
 	crafting_menu.close_menu()
@@ -264,6 +279,7 @@ func _close_all_menus() -> void:
 	repair_ui.close_menu()
 	talent_tree.close_menu()
 	equipment_panel.close_menu()
+	skill_equip_ui.close_menu()
 	buff_select.close_menu()
 	_on_menu_closed()
 
@@ -276,7 +292,7 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or buff_select.visible
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or buff_select.visible
 
 
 func _process(_delta: float) -> void:
@@ -454,24 +470,67 @@ func _refresh_skill_slots() -> void:
 	if skill_system == null:
 		return
 	var snapshots = skill_system.get_equipped_skill_snapshots()
-	for slot_index in range(3):
+	const SLOT_W := 70.0
+	const SLOT_H := 36.0
+	const KEY_NAMES := ["Z", "X", "C", "V", "G", "H"]
+	for slot_index in range(6):
 		var slot: Dictionary = snapshots[slot_index] if slot_index < snapshots.size() else {}
-		var label = Label.new()
-		label.custom_minimum_size = Vector2(96, 22)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_constant_override("outline_size", 2)
-		label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		var key_name = ["Z", "X", "V"][slot_index]
+		var key_name: String = KEY_NAMES[slot_index]
+
+		var container := Control.new()
+		container.custom_minimum_size = Vector2(SLOT_W, SLOT_H)
+		container.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+
+		var bg := ColorRect.new()
+		bg.position = Vector2.ZERO
+		bg.size = Vector2(SLOT_W, SLOT_H)
+		bg.color = Color(0.08, 0.08, 0.1, 0.88)
+		container.add_child(bg)
+
+		var skill_label := Label.new()
+		skill_label.position = Vector2.ZERO
+		skill_label.size = Vector2(SLOT_W, SLOT_H)
+		skill_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		skill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		skill_label.add_theme_constant_override("outline_size", 2)
+		skill_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		skill_label.add_theme_font_size_override("font_size", 11)
+
 		if slot.is_empty():
-			label.text = "[%s] 空" % key_name
-			label.self_modulate = Color(0.6, 0.6, 0.6, 1.0)
+			skill_label.text = "[%s]\n空" % key_name
+			skill_label.self_modulate = Color(0.5, 0.5, 0.5, 1.0)
+			container.add_child(skill_label)
 		else:
-			var cooldown = float(slot.get("current_cooldown", 0.0))
-			var short_name = str(slot.get("short_name", "SK"))
-			label.text = "[%s] %s %s" % [key_name, short_name, ("%.1f" % cooldown) if cooldown > 0.0 else "就緒"]
-			label.self_modulate = Color(0.55, 0.55, 0.55, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
-			label.tooltip_text = str(slot.get("name", "Skill"))
-		skill_slot_row.add_child(label)
+			var cooldown := float(slot.get("current_cooldown", 0.0))
+			var max_cooldown := maxf(float(slot.get("cooldown", 1.0)), 0.001)
+			var short_name := str(slot.get("short_name", "SK"))
+			skill_label.text = "[%s]\n%s" % [key_name, short_name]
+			skill_label.self_modulate = Color(0.65, 0.65, 0.65, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
+			skill_label.tooltip_text = str(slot.get("name", "Skill"))
+			container.add_child(skill_label)
+
+			if cooldown > 0.0:
+				var ratio := clampf(cooldown / max_cooldown, 0.0, 1.0)
+				var overlay := ColorRect.new()
+				overlay.position = Vector2.ZERO
+				overlay.size = Vector2(SLOT_W, SLOT_H * ratio)
+				overlay.color = Color(0.0, 0.0, 0.0, 0.62)
+				container.add_child(overlay)
+
+				var cd_label := Label.new()
+				cd_label.position = Vector2.ZERO
+				cd_label.size = Vector2(SLOT_W, SLOT_H)
+				cd_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				cd_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+				cd_label.text = "%.1f" % cooldown
+				cd_label.add_theme_font_size_override("font_size", 12)
+				cd_label.add_theme_constant_override("outline_size", 3)
+				cd_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+				cd_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+				container.add_child(cd_label)
+
+		skill_slot_row.add_child(container)
+
 	var has_unequipped := false
 	for skill_id in skill_system.unlocked_skill_ids:
 		var is_passive := bool((skill_system.skills.get(skill_id, {}) as Dictionary).get("passive", false))
@@ -480,7 +539,7 @@ func _refresh_skill_slots() -> void:
 			break
 	if has_unequipped:
 		var hint := Label.new()
-		hint.text = "  ← 在天賦祭壇裝備技能"
+		hint.text = "  ← 按 K 裝備技能"
 		hint.self_modulate = Color(1.0, 0.9, 0.4, 1.0)
 		hint.add_theme_constant_override("outline_size", 2)
 		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))

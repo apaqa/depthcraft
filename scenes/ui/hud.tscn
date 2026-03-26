@@ -1,6 +1,7 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_0mwgc"]
+[ext_resource type="PackedScene" path="res://scenes/ui/skill_equip_ui.tscn" id="12_skilleq"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_panel.tscn" id="2_qof7f"]
 [ext_resource type="Script" path="res://scripts/ui/interaction_prompt.gd" id="3_ysik2"]
 [ext_resource type="PackedScene" path="res://scenes/ui/build_hud.tscn" id="4_34v3t"]
@@ -142,6 +143,8 @@ script = ExtResource("3_ysik2")
 
 [node name="EquipmentPanel" parent="HUD" instance=ExtResource("11_equip")]
 
+[node name="SkillEquipUI" parent="HUD" instance=ExtResource("12_skilleq")]
+
 [node name="Minimap" type="Control" parent="HUD"]
 visible = false
 layout_mode = 0
@@ -282,11 +285,11 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -180.0
-offset_top = -72.0
-offset_right = 180.0
+offset_left = -225.0
+offset_top = -84.0
+offset_right = 225.0
 offset_bottom = -48.0
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
 [node name="TransitionOverlay" type="ColorRect" parent="HUD"]
 visible = false

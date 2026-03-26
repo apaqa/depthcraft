@@ -1,15 +1,15 @@
 extends Node
 
 const SKILL_DEFS := {
-	"whirlwind": {"id": "whirlwind", "name": "Whirlwind", "short_name": "WW", "cooldown": 5.0, "passive": false, "effect_method": "_cast_whirlwind"},
-	"execute": {"id": "execute", "name": "Execute", "short_name": "EXE", "cooldown": 10.0, "passive": false, "effect_method": "_cast_execute"},
-	"war_cry": {"id": "war_cry", "name": "War Cry", "short_name": "WAR", "cooldown": 12.0, "passive": false, "effect_method": "_cast_war_cry"},
-	"undying_will": {"id": "undying_will", "name": "Undying", "short_name": "UND", "cooldown": 0.0, "passive": true, "effect_method": "_passive_undying"},
-	"treasure_hunter": {"id": "treasure_hunter", "name": "Treasure", "short_name": "TR", "cooldown": 30.0, "passive": false, "effect_method": "_cast_treasure_hunter"},
-	"sprint": {"id": "sprint", "name": "Sprint", "short_name": "SPR", "cooldown": 15.0, "passive": false, "effect_method": "_cast_sprint"},
-	"blade_storm": {"id": "blade_storm", "name": "Blade", "short_name": "BS", "cooldown": 20.0, "passive": false, "effect_method": "_coming_soon"},
-	"invincible": {"id": "invincible", "name": "Invincible", "short_name": "INV", "cooldown": 60.0, "passive": false, "effect_method": "_coming_soon"},
-	"time_warp": {"id": "time_warp", "name": "Time Warp", "short_name": "TW", "cooldown": 30.0, "passive": false, "effect_method": "_coming_soon"},
+	"whirlwind": {"id": "whirlwind", "name": "旋風斬", "short_name": "旋風", "cooldown": 5.0, "passive": false, "effect_method": "_cast_whirlwind", "desc": "對周圍敵人造成 80% 攻擊傷害並擊退"},
+	"execute": {"id": "execute", "name": "斬殺", "short_name": "斬殺", "cooldown": 10.0, "passive": false, "effect_method": "_cast_execute", "desc": "下次攻擊對低血量敵人造成額外傷害"},
+	"war_cry": {"id": "war_cry", "name": "戰吼", "short_name": "戰吼", "cooldown": 12.0, "passive": false, "effect_method": "_cast_war_cry", "desc": "使附近敵人減速 50%，持續 3 秒"},
+	"undying_will": {"id": "undying_will", "name": "不屈意志", "short_name": "不屈", "cooldown": 0.0, "passive": true, "effect_method": "_passive_undying", "desc": "（被動）瀕死時觸發保護效果"},
+	"treasure_hunter": {"id": "treasure_hunter", "name": "尋寶術", "short_name": "尋寶", "cooldown": 30.0, "passive": false, "effect_method": "_cast_treasure_hunter", "desc": "在地圖上標記附近寶物，持續 10 秒"},
+	"sprint": {"id": "sprint", "name": "疾衝", "short_name": "疾衝", "cooldown": 15.0, "passive": false, "effect_method": "_cast_sprint", "desc": "大幅提升移動速度，持續 3 秒"},
+	"blade_storm": {"id": "blade_storm", "name": "刃風", "short_name": "刃風", "cooldown": 20.0, "passive": false, "effect_method": "_coming_soon", "desc": "（即將推出）召喚旋轉刀刃攻擊敵人"},
+	"invincible": {"id": "invincible", "name": "無敵", "short_name": "無敵", "cooldown": 60.0, "passive": false, "effect_method": "_coming_soon", "desc": "（即將推出）短暫進入無敵狀態"},
+	"time_warp": {"id": "time_warp", "name": "時間扭曲", "short_name": "時扭", "cooldown": 30.0, "passive": false, "effect_method": "_coming_soon", "desc": "（即將推出）讓時間短暫停止"},
 }
 const TALENT_TO_SKILL := {
 	"O5": "whirlwind",
@@ -30,7 +30,7 @@ var player = null
 var current_level = null
 var current_level_id: String = ""
 var unlocked_skill_ids: Array[String] = []
-var equipped_skill_ids: Array[String] = ["", "", ""]
+var equipped_skill_ids: Array[String] = ["", "", "", "", "", ""]
 var skills := {}
 
 
@@ -207,6 +207,28 @@ func _rebuild_skill_runtime() -> void:
 		runtime["current_cooldown"] = 0.0
 		runtime["effect_func"] = Callable(self, str(runtime.get("effect_method", "")))
 		skills[skill_id] = runtime
+
+
+func equip_to_slot(skill_id: String, slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= equipped_skill_ids.size():
+		return
+	if skill_id == "" or not unlocked_skill_ids.has(skill_id):
+		return
+	if _is_passive(skill_id):
+		return
+	# Clear the skill from any other slot it currently occupies
+	for index in range(equipped_skill_ids.size()):
+		if equipped_skill_ids[index] == skill_id and index != slot_index:
+			equipped_skill_ids[index] = ""
+	equipped_skill_ids[slot_index] = skill_id
+	skills_changed.emit()
+
+
+func unequip_slot(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= equipped_skill_ids.size():
+		return
+	equipped_skill_ids[slot_index] = ""
+	skills_changed.emit()
 
 
 func _equip_first_free_slot(skill_id: String) -> void:

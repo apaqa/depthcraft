@@ -186,6 +186,7 @@ func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 		apply_knockback(hit_direction, 120.0)
 	var tween := create_tween()
 	tween.tween_property(self, "modulate", Color.WHITE, 0.2)
+	print("take_damage called, hp: ", current_hp)
 	if current_hp <= 0:
 		die()
 

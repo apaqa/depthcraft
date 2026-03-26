@@ -7,8 +7,10 @@ extends Node2D
 const BUILDING_SAVE := preload("res://scripts/building/building_save.gd")
 const DUNGEON_SCENE := preload("res://scenes/dungeon/dungeon_level.tscn")
 const OVERWORLD_SCENE := preload("res://scenes/overworld/test_overworld.tscn")
+const TUTORIAL_MANAGER := preload("res://scripts/world/tutorial_manager.gd")
 
 var player
+var _tutorial_manager: Node = null
 var current_level = null
 var current_level_id: String = "overworld"
 var current_level_seed: int = 0
@@ -27,6 +29,7 @@ func _ready() -> void:
 		network_manager.players_changed.connect(_on_network_players_changed)
 	if network_manager != null and not network_manager.connection_status_changed.is_connected(_on_connection_status_changed):
 		network_manager.connection_status_changed.connect(_on_connection_status_changed)
+	_start_tutorial()
 	_sync_players_with_session()
 	change_level(current_level_id)
 	_on_connection_status_changed(_get_connection_status())
@@ -331,6 +334,8 @@ func _bind_local_player() -> void:
 	var skill_system = get_node_or_null("/root/SkillSystem")
 	if skill_system != null:
 		skill_system.bind_player(player)
+	if is_instance_valid(_tutorial_manager):
+		_tutorial_manager.bind_player(player)
 
 
 func _place_players_in_current_level(spawn_override: Variant = null) -> void:
@@ -404,3 +409,8 @@ func _get_connection_status() -> String:
 func _get_connected_player_ids() -> Array[int]:
 	var network_manager = _network_manager()
 	return network_manager.get_connected_player_ids() if network_manager != null else []
+
+
+func _start_tutorial() -> void:
+	_tutorial_manager = TUTORIAL_MANAGER.new()
+	add_child(_tutorial_manager)
