@@ -5,8 +5,8 @@ const SAVE_PATH := "user://class_save.json"
 const CLASS_DEFS := {
 	"warrior": {
 		"id": "warrior",
-		"name": "戰士",
-		"desc": "堅韌的前線戰士，擅長近身作戰。",
+		"name_key": "class_warrior_name",
+		"desc_key": "class_warrior_desc",
 		"hp_mult": 1.3,
 		"atk_mult": 1.2,
 		"spd_mult": 0.9,
@@ -14,8 +14,8 @@ const CLASS_DEFS := {
 	},
 	"mage": {
 		"id": "mage",
-		"name": "法師",
-		"desc": "精通魔法的施法者，技能冷卻大幅縮短。",
+		"name_key": "class_mage_name",
+		"desc_key": "class_mage_desc",
 		"hp_mult": 0.9,
 		"atk_mult": 1.1,
 		"spd_mult": 1.0,
