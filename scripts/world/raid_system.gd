@@ -84,7 +84,7 @@ func _start_raid() -> void:
 		core.set_raid_active(true)
 	if core.has_signal("destroyed") and not core.destroyed.is_connected(_on_core_destroyed):
 		core.destroyed.connect(_on_core_destroyed)
-	banner_requested.emit("RAID STARTED! DEFEND THE HOME CORE!", Color(1.0, 0.2, 0.2, 1.0), 2.0)
+	banner_requested.emit("襲擊開始！請守護家園核心！", Color(1.0, 0.2, 0.2, 1.0), 2.0)
 	border_flash_requested.emit(Color(1.0, 0.12, 0.12, 1.0))
 	_spawn_raid_enemies(core)
 
@@ -130,7 +130,7 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	var core = building_system.get_home_core() if building_system != null else null
 	if core != null and core.has_method("set_raid_active"):
 		core.set_raid_active(false)
-	banner_requested.emit("RAID SURVIVED! +5 Talent Shards", Color(0.45, 1.0, 0.45, 1.0), 3.0)
+	banner_requested.emit("成功抵禦襲擊！獲得 +5 天賦碎片", Color(0.45, 1.0, 0.45, 1.0), 3.0)
 	if player != null and player.inventory != null:
 		player.inventory.add_item("talent_shard", 5)
 	_clear_enemy_root()
@@ -138,7 +138,7 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 
 func _on_core_destroyed() -> void:
 	raid_active = false
-	banner_requested.emit("HOME CORE DESTROYED!", Color(1.0, 0.3, 0.3, 1.0), 3.0)
+	banner_requested.emit("家園核心已被摧毀！", Color(1.0, 0.3, 0.3, 1.0), 3.0)
 	for enemy in raid_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
