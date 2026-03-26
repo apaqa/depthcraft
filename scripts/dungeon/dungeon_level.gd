@@ -514,7 +514,7 @@ func spawn_challenge_room_wave(room_index: int) -> Array:
 	var room: Rect2i = rooms[room_index]
 	var rng := _create_room_rng(337, room_index)
 	var config := get_floor_spawn_config(current_floor, rng)
-	var enemy_count := max(2, rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"])) * 2)
+	var enemy_count: int = max(2, rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"])) * 2)
 	var spawned_enemies: Array = []
 	for _enemy_index in range(enemy_count):
 		var enemy_scene: PackedScene = _pick_enemy_scene(current_floor, rng)
@@ -563,7 +563,7 @@ func _get_room_door_tiles(room: Rect2i) -> Array[Vector2i]:
 			if not is_perimeter:
 				continue
 			for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-				var neighbor := tile_pos + offset
+				var neighbor: Vector2i = tile_pos + Vector2i(offset)
 				if _is_tile_inside_room(neighbor, room):
 					continue
 				if floor_lookup.has(neighbor):

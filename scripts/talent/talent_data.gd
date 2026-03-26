@@ -157,18 +157,19 @@ const BRANCH_DATA := {
 
 
 static func get_all_talents() -> Array[Dictionary]:
+	var built_talents := _build_talents()
 	var talents: Array[Dictionary] = []
-	for talent_id in _build_talents().keys():
-		talents.append(get_talent(str(talent_id)))
+	for talent_data in built_talents.values():
+		talents.append((talent_data as Dictionary).duplicate(true))
 	talents.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return _sort_value(a) < _sort_value(b))
 	return talents
 
 
 static func get_talent(talent_id: String) -> Dictionary:
-	var talents := _build_talents()
-	if not talents.has(talent_id):
+	var built_talents := _build_talents()
+	if not built_talents.has(talent_id):
 		return {}
-	return (talents[talent_id] as Dictionary).duplicate(true)
+	return (built_talents[talent_id] as Dictionary).duplicate(true)
 
 
 static func get_branch_ids() -> PackedStringArray:

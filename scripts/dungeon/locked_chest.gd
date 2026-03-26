@@ -43,7 +43,7 @@ func _drop_loot() -> void:
 		loot_root = get_parent()
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	var equip := DUNGEON_LOOT.generate_dungeon_equipment_min_rarity(floor_number, "稀有", rng)
+	var equip := DUNGEON_LOOT.generate_dungeon_equipment_min_rarity(floor_number, "Rare", rng)
 	var equip_drop = LOOT_DROP_SCENE.instantiate()
 	equip_drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
 	equip_drop.setup_stack(equip)

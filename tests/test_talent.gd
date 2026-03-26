@@ -18,6 +18,7 @@ func _initialize() -> void:
 	test_talent_pool_has_three_branches()
 	test_all_talent_nodes_have_data()
 	test_branch_layout_sizes()
+	test_talent_cost_scaling()
 	await test_branch_unlock_requires_main_gate()
 	await test_support_talent_increases_gather_bonus()
 	await test_defense_talent_increases_hp()
@@ -43,6 +44,14 @@ func test_branch_layout_sizes() -> void:
 	_assert(TALENT_DATA.get_sub_branch_talents("support", "main").size() == 10, "Support main line should have 10 nodes.")
 	_assert(TALENT_DATA.get_sub_branch_talents("support", "speed").size() == 8, "Support speed branch should have 8 nodes.")
 	_assert(TALENT_DATA.get_sub_branch_talents("support", "explore").size() == 8, "Support exploration branch should have 8 nodes.")
+
+
+func test_talent_cost_scaling() -> void:
+	_assert(int(TALENT_DATA.get_talent("O1").get("cost", -1)) == 1, "Main-line nodes 1-5 should cost 1 shard.")
+	_assert(int(TALENT_DATA.get_talent("O6").get("cost", -1)) == 2, "Main-line nodes 6-10 should cost 2 shards.")
+	_assert(int(TALENT_DATA.get_talent("O11").get("cost", -1)) == 3, "Branch nodes 11-15 should cost 3 shards.")
+	_assert(int(TALENT_DATA.get_talent("O16").get("cost", -1)) == 5, "Branch nodes 16+ should cost 5 shards.")
+	_assert(int(TALENT_DATA.get_talent("S26").get("cost", -1)) == 5, "Late branch capstones should keep the 5-shard cost.")
 
 
 func test_branch_unlock_requires_main_gate() -> void:

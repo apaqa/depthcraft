@@ -87,10 +87,6 @@ func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
 	super.apply_knockback(direction, force * 0.1)
 
 
-func _drop_gold_loot() -> void:
-	_drop_gold(randi_range(10, 20))
-
-
 func die() -> void:
 	if loot_parent != null:
 		var shard_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop

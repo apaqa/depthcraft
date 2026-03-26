@@ -17,12 +17,6 @@ const RARITY_ALIASES := {
 	"Rare": "Rare",
 	"Epic": "Epic",
 	"Legendary": "Legendary",
-	"普通": "Common",
-	"良好": "Uncommon",
-	"優良": "Uncommon",
-	"稀有": "Rare",
-	"史詩": "Epic",
-	"傳說": "Legendary",
 }
 const RARITY_COLORS := {
 	"Common": Color(1.0, 1.0, 1.0, 1.0),
@@ -87,12 +81,12 @@ static func generate_dungeon_equipment_min_rarity(floor_number: int, min_rarity:
 
 
 static func _build_equipment(slot: String, quality: String, floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
-	var resolved_floor := max(floor_number, 1)
+	var resolved_floor: int = maxi(floor_number, 1)
 	var normalized_quality := _normalize_rarity(quality)
 	var quality_mult := float(QUALITY_MULTIPLIERS.get(normalized_quality, 1.0))
 	var base_power := int(round((3 + resolved_floor * 2) * quality_mult))
 	var num_affixes: int = int(QUALITY_AFFIX_COUNT.get(normalized_quality, 0))
-	var durability := 50 + resolved_floor * 5
+	var durability: int = 50 + resolved_floor * 5
 	var item := {
 		"id": "dungeon_%s_%d" % [slot, _randi(rng)],
 		"name": _generate_name(slot, normalized_quality, rng),
@@ -117,7 +111,7 @@ static func _build_equipment(slot: String, quality: String, floor_number: int, r
 
 
 static func _pick_quality(floor_number: int, rng: RandomNumberGenerator = null) -> String:
-	var resolved_floor := max(floor_number, 1)
+	var resolved_floor: int = maxi(floor_number, 1)
 	var min_floors := [1, 3, 5, 8, 12]
 	var weights := [
 		max(70.0 - float(resolved_floor) * 4.0, 5.0),
