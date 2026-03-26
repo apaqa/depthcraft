@@ -11,10 +11,18 @@ var _lang_button: Button = null
 var _zoom_slider: HSlider = null
 var _tutorial_toggle: CheckButton = null
 var _camera_ref: Camera2D = null
+var _notice_label: Label = null
+var _menu_buttons_root: VBoxContainer = null
+var _settings_panel: PanelContainer = null
+var _paused_game: bool = false
 
 
 func _ready() -> void:
 	visible = false
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	var canvas_layer := get_parent()
+	if canvas_layer is CanvasLayer:
+		canvas_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
 
 
@@ -22,109 +30,182 @@ func _build_ui() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	var bg := ColorRect.new()
-	bg.color = Color(0.0, 0.0, 0.0, 0.55)
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.6)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
 
-	var panel := PanelContainer.new()
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.custom_minimum_size = Vector2(340, 0)
-	add_child(panel)
+	var content_root := Control.new()
+	content_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(content_root)
 
-	var margin := MarginContainer.new()
-	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-		margin.add_theme_constant_override(side, 20)
-	panel.add_child(margin)
+	_notice_label = Label.new()
+	_notice_label.anchor_left = 0.18
+	_notice_label.anchor_top = 0.14
+	_notice_label.anchor_right = 0.52
+	_notice_label.anchor_bottom = 0.2
+	_notice_label.offset_left = -10.0
+	_notice_label.offset_right = 20.0
+	_notice_label.text = "多人模式中，遊戲不會暫停"
+	_notice_label.visible = false
+	_notice_label.add_theme_font_size_override("font_size", 14)
+	_notice_label.add_theme_color_override("font_color", Color(0.88, 0.88, 0.88, 1.0))
+	_notice_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	_notice_label.add_theme_constant_override("outline_size", 2)
+	content_root.add_child(_notice_label)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
-	margin.add_child(vbox)
+	_menu_buttons_root = VBoxContainer.new()
+	_menu_buttons_root.anchor_left = 0.18
+	_menu_buttons_root.anchor_top = 0.28
+	_menu_buttons_root.anchor_right = 0.42
+	_menu_buttons_root.anchor_bottom = 0.78
+	_menu_buttons_root.offset_left = -20.0
+	_menu_buttons_root.offset_right = 20.0
+	_menu_buttons_root.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_menu_buttons_root.alignment = BoxContainer.ALIGNMENT_CENTER
+	_menu_buttons_root.add_theme_constant_override("separation", 16)
+	content_root.add_child(_menu_buttons_root)
+
+	_menu_buttons_root.add_child(_make_menu_button("繼續遊戲", close_menu))
+	_menu_buttons_root.add_child(_make_menu_button("保存遊戲", _on_save_pressed))
+	_menu_buttons_root.add_child(_make_menu_button("設定", _show_settings_page))
+	_menu_buttons_root.add_child(_make_menu_button("主選單", _go_to_main_menu))
+	_menu_buttons_root.add_child(_make_menu_button("關閉", close_menu))
+
+	_settings_panel = PanelContainer.new()
+	_settings_panel.anchor_left = 0.42
+	_settings_panel.anchor_top = 0.18
+	_settings_panel.anchor_right = 0.82
+	_settings_panel.anchor_bottom = 0.82
+	_settings_panel.self_modulate = Color(1.0, 1.0, 1.0, 0.98)
+	_settings_panel.visible = false
+	content_root.add_child(_settings_panel)
+
+	var panel_margin := MarginContainer.new()
+	panel_margin.add_theme_constant_override("margin_left", 24)
+	panel_margin.add_theme_constant_override("margin_right", 24)
+	panel_margin.add_theme_constant_override("margin_top", 22)
+	panel_margin.add_theme_constant_override("margin_bottom", 22)
+	_settings_panel.add_child(panel_margin)
+
+	var panel_vbox := VBoxContainer.new()
+	panel_vbox.add_theme_constant_override("separation", 14)
+	panel_margin.add_child(panel_vbox)
+
+	var back_button := _make_menu_button("← 返回", _show_main_page)
+	back_button.add_theme_font_size_override("font_size", 18)
+	back_button.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	panel_vbox.add_child(back_button)
 
 	var title := Label.new()
-	title.text = "設定 / Settings"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 16)
-	vbox.add_child(title)
-	vbox.add_child(HSeparator.new())
+	title.text = "設定"
+	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	title.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	title.add_theme_constant_override("outline_size", 2)
+	panel_vbox.add_child(title)
 
-	# --- Volume ---
-	_add_section_label(vbox, "音量 / Volume")
-	_add_bus_slider(vbox, "Master", "主音量")
-	_add_bus_slider(vbox, "Music", "BGM")
-	_add_bus_slider(vbox, "SFX", "音效")
-	vbox.add_child(HSeparator.new())
+	panel_vbox.add_child(_build_section_label("音量"))
+	_add_bus_slider(panel_vbox, "Master", "主音量")
+	_add_bus_slider(panel_vbox, "Music", "音樂")
+	_add_bus_slider(panel_vbox, "SFX", "音效")
 
-	# --- Language ---
-	_add_section_label(vbox, "語言 / Language")
-	var lang_row := HBoxContainer.new()
-	var lang_label := Label.new()
-	lang_label.text = "語言 / Language:"
-	lang_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lang_row.add_child(lang_label)
-	_lang_button = Button.new()
-	_lang_button.text = "中文"
-	_lang_button.custom_minimum_size = Vector2(80, 0)
-	_lang_button.pressed.connect(_on_lang_toggle)
-	lang_row.add_child(_lang_button)
-	vbox.add_child(lang_row)
-	vbox.add_child(HSeparator.new())
-
-	# --- Camera zoom ---
-	_add_section_label(vbox, "視角 / View")
-	var zoom_row := HBoxContainer.new()
-	var zoom_label := Label.new()
-	zoom_label.text = "視角高度:"
-	zoom_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	zoom_row.add_child(zoom_label)
+	panel_vbox.add_child(_build_section_label("視角"))
+	var zoom_row := _build_option_row("視角縮放")
 	_zoom_slider = HSlider.new()
 	_zoom_slider.min_value = 1.5
 	_zoom_slider.max_value = 3.0
 	_zoom_slider.step = 0.1
 	_zoom_slider.value = 2.0
-	_zoom_slider.custom_minimum_size = Vector2(140, 0)
+	_zoom_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_zoom_slider.value_changed.connect(_on_zoom_changed)
 	zoom_row.add_child(_zoom_slider)
-	vbox.add_child(zoom_row)
-	vbox.add_child(HSeparator.new())
+	panel_vbox.add_child(zoom_row)
 
-	# --- Tutorial toggle ---
-	_add_section_label(vbox, "新手提示 / Tutorial")
-	var tut_row := HBoxContainer.new()
-	var tut_label := Label.new()
-	tut_label.text = "顯示新手提示:"
-	tut_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tut_row.add_child(tut_label)
+	panel_vbox.add_child(_build_section_label("語言"))
+	var language_row := _build_option_row("語言")
+	_lang_button = Button.new()
+	_style_secondary_button(_lang_button)
+	_lang_button.custom_minimum_size = Vector2(140, 32)
+	_lang_button.pressed.connect(_on_lang_toggle)
+	language_row.add_child(_lang_button)
+	panel_vbox.add_child(language_row)
+
+	panel_vbox.add_child(_build_section_label("新手提示"))
+	var tutorial_row := _build_option_row("顯示提示")
 	_tutorial_toggle = CheckButton.new()
+	_tutorial_toggle.button_pressed = true
+	_tutorial_toggle.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	_tutorial_toggle.toggled.connect(_on_tutorial_toggled)
-	tut_row.add_child(_tutorial_toggle)
-	vbox.add_child(tut_row)
-	vbox.add_child(HSeparator.new())
-
-	# --- Close button ---
-	var close_btn := Button.new()
-	close_btn.text = "關閉 / Close  [Esc]"
-	close_btn.pressed.connect(close_menu)
-	vbox.add_child(close_btn)
+	tutorial_row.add_child(_tutorial_toggle)
+	panel_vbox.add_child(tutorial_row)
 
 
-func _add_section_label(parent: Control, text: String) -> void:
+func _make_menu_button(text_value: String, callback: Callable) -> Button:
+	var button := Button.new()
+	button.text = text_value
+	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(240, 36)
+	button.add_theme_font_size_override("font_size", 24)
+	button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	button.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0, 1.0))
+	button.add_theme_color_override("font_pressed_color", Color(1.0, 1.0, 1.0, 1.0))
+	button.add_theme_color_override("font_focus_color", Color(1.0, 1.0, 1.0, 1.0))
+	button.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	button.add_theme_constant_override("outline_size", 2)
+	button.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.pressed.connect(callback)
+	button.mouse_entered.connect(func() -> void:
+		button.modulate = Color(1.15, 1.15, 1.15, 1.0)
+		button.scale = Vector2(1.05, 1.05)
+	)
+	button.mouse_exited.connect(func() -> void:
+		button.modulate = Color.WHITE
+		button.scale = Vector2.ONE
+	)
+	return button
+
+
+func _build_section_label(text_value: String) -> Label:
 	var label := Label.new()
-	label.text = text
-	label.self_modulate = Color(0.9, 0.85, 0.55, 1.0)
-	label.add_theme_font_size_override("font_size", 11)
-	parent.add_child(label)
+	label.text = text_value
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.55, 1.0))
+	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	label.add_theme_constant_override("outline_size", 1)
+	return label
+
+
+func _build_option_row(label_text: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	var label := Label.new()
+	label.text = label_text
+	label.custom_minimum_size = Vector2(120, 0)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	row.add_child(label)
+	return row
+
+
+func _style_secondary_button(button: Button) -> void:
+	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	button.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0, 1.0))
+	button.add_theme_color_override("font_pressed_color", Color(1.0, 1.0, 1.0, 1.0))
+	button.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	button.add_theme_constant_override("outline_size", 1)
 
 
 func _add_bus_slider(parent: Control, bus_name: String, display_name: String) -> void:
 	var bus_idx := AudioServer.get_bus_index(bus_name)
 	if bus_idx < 0:
 		return
-	var row := HBoxContainer.new()
-	var label := Label.new()
-	label.text = display_name + ":"
-	label.custom_minimum_size = Vector2(60, 0)
-	row.add_child(label)
+	var row := _build_option_row(display_name)
 	var slider := HSlider.new()
 	slider.min_value = -40.0
 	slider.max_value = 0.0
@@ -140,7 +221,13 @@ func _add_bus_slider(parent: Control, bus_name: String, display_name: String) ->
 func open_menu(camera: Camera2D = null) -> void:
 	_camera_ref = camera
 	_load_settings()
+	_show_main_page()
 	visible = true
+	_paused_game = _can_pause_game()
+	if _notice_label != null:
+		_notice_label.visible = not _paused_game
+	if _paused_game:
+		get_tree().paused = true
 
 
 func close_menu() -> void:
@@ -148,7 +235,45 @@ func close_menu() -> void:
 		return
 	_save_settings()
 	visible = false
+	if _paused_game:
+		get_tree().paused = false
+	_paused_game = false
 	close_requested.emit()
+
+
+func _show_main_page() -> void:
+	if _menu_buttons_root != null:
+		_menu_buttons_root.visible = true
+	if _settings_panel != null:
+		_settings_panel.visible = false
+
+
+func _show_settings_page() -> void:
+	if _menu_buttons_root != null:
+		_menu_buttons_root.visible = false
+	if _settings_panel != null:
+		_settings_panel.visible = true
+
+
+func _can_pause_game() -> bool:
+	return not (multiplayer.has_multiplayer_peer() and multiplayer.get_peers().size() > 0)
+
+
+func _on_save_pressed() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if not players.is_empty() and players[0].has_method("_save_persistent_state"):
+		players[0]._save_persistent_state()
+		print("Game saved.")
+		return
+	print("Save placeholder: no save hook available.")
+
+
+func _go_to_main_menu() -> void:
+	_save_settings()
+	if _paused_game:
+		get_tree().paused = false
+	_paused_game = false
+	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
 
 func _on_volume_changed(bus_name: String, db_value: float) -> void:
@@ -164,7 +289,7 @@ func _on_lang_toggle() -> void:
 		_lang_button.text = "English"
 	else:
 		TranslationServer.set_locale("zh_TW")
-		_lang_button.text = "中文"
+		_lang_button.text = "繁體中文"
 
 
 func _on_zoom_changed(value: float) -> void:
@@ -189,7 +314,6 @@ func _on_tutorial_toggled(show_hints: bool) -> void:
 
 
 func _load_settings() -> void:
-	# Tutorial toggle from tutorial_save.json
 	if _tutorial_toggle != null and FileAccess.file_exists(TUTORIAL_PATH):
 		var tf := FileAccess.open(TUTORIAL_PATH, FileAccess.READ)
 		if tf != null:
@@ -198,10 +322,10 @@ func _load_settings() -> void:
 			if parsed is Dictionary:
 				_tutorial_toggle.set_pressed_no_signal(not bool(parsed.get("completed", false)))
 
+	if _lang_button != null:
+		_lang_button.text = "繁體中文" if TranslationServer.get_locale().begins_with("zh") else "English"
+
 	if not FileAccess.file_exists(SETTINGS_PATH):
-		# Reflect current locale
-		if _lang_button != null:
-			_lang_button.text = "中文" if TranslationServer.get_locale().begins_with("zh") else "English"
 		return
 
 	var file := FileAccess.open(SETTINGS_PATH, FileAccess.READ)
@@ -225,12 +349,13 @@ func _load_settings() -> void:
 	if data.has("locale") and _lang_button != null:
 		var locale := str(data["locale"])
 		TranslationServer.set_locale(locale)
-		_lang_button.text = "中文" if locale.begins_with("zh") else "English"
-	elif _lang_button != null:
-		_lang_button.text = "中文" if TranslationServer.get_locale().begins_with("zh") else "English"
+		_lang_button.text = "繁體中文" if locale.begins_with("zh") else "English"
 
 	if data.has("camera_zoom") and _zoom_slider != null:
-		_zoom_slider.set_value_no_signal(float(data["camera_zoom"]))
+		var zoom_value := float(data["camera_zoom"])
+		_zoom_slider.set_value_no_signal(zoom_value)
+		if _camera_ref != null and is_instance_valid(_camera_ref):
+			_camera_ref.zoom = Vector2(zoom_value, zoom_value)
 
 
 func _save_settings() -> void:
