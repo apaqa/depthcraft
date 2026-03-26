@@ -192,6 +192,9 @@ func _on_player_portal_requested(target_level_id: String) -> void:
 func _on_floor_changed(current_floor: int) -> void:
 	if hud.has_method("update_floor_label"):
 		hud.update_floor_label(current_floor)
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null:
+		achievement_manager.record_floor_reached(current_floor)
 
 
 func _on_kills_changed(kills: int) -> void:
@@ -226,6 +229,9 @@ func _on_return_to_surface_requested() -> void:
 
 
 func _on_player_died() -> void:
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null:
+		achievement_manager.record_player_died()
 	if current_level_id == "dungeon":
 		if hud.has_method("show_death_screen"):
 			var death_floor: Variant = current_level.get("current_floor")

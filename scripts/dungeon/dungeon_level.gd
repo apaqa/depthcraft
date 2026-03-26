@@ -262,6 +262,14 @@ func _spawn_enemies() -> void:
 func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	total_kills += 1
 	kills_changed.emit(total_kills)
+	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null:
+		var kill_kind := "normal"
+		if enemy_ref != null and enemy_ref.has_method("is_boss_enemy") and enemy_ref.is_boss_enemy():
+			kill_kind = "boss"
+		elif enemy_ref != null and enemy_ref.has_method("is_elite_enemy") and enemy_ref.is_elite_enemy():
+			kill_kind = "elite"
+		achievement_manager.record_enemy_kill(kill_kind)
 	if enemy_ref != null and enemy_ref.has_method("is_boss_enemy") and enemy_ref.is_boss_enemy():
 		boss_enemy_ref = null
 		if boss_stairway != null and is_instance_valid(boss_stairway):

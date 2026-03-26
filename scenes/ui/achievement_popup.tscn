@@ -2,6 +2,20 @@
 
 [ext_resource type="Script" path="res://scripts/ui/achievement_popup.gd" id="1_popup"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gold"]
+bg_color = Color(0.95, 0.75, 0.18, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.95, 0.55, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.3, 0.18, 0.0, 0.45)
+shadow_size = 4
+
 [node name="AchievementPopup" type="Control"]
 layout_mode = 0
 anchors_preset = 10
@@ -43,17 +57,3 @@ layout_mode = 2
 autowrap_mode = 3
 theme_override_colors/font_color = Color(0.24, 0.16, 0.0, 1)
 text = ""
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gold"]
-bg_color = Color(0.95, 0.75, 0.18, 0.96)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.95, 0.55, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0.3, 0.18, 0.0, 0.45)
-shadow_size = 4

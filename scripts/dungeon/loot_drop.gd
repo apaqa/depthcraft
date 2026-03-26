@@ -174,6 +174,9 @@ func _on_body_entered(body: Node) -> void:
 	else:
 		did_add = inventory.add_item(item_id, quantity)
 	if did_add:
+		var achievement_manager = get_node_or_null("/root/AchievementManager")
+		if achievement_manager != null:
+			achievement_manager.record_currency_gain(item_id, quantity)
 		if body.has_method("record_dungeon_loot"):
 			body.record_dungeon_loot(item_id, quantity)
 		if body.has_method("_show_floating_text"):

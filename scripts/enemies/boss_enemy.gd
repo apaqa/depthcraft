@@ -118,6 +118,11 @@ func _grant_rewards_to_players() -> void:
 
 
 func _grant_item(inventory, item_id: String, amount: int) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null:
+		var achievement_manager = tree.root.get_node_or_null("/root/AchievementManager")
+		if achievement_manager != null:
+			achievement_manager.record_currency_gain(item_id, amount)
 	if inventory.add_item(item_id, amount):
 		return
 	var fallback_stack := {
@@ -163,4 +168,3 @@ func _get_normal_enemy_stats(floor_number: int) -> Dictionary:
 	if floor_number <= 10:
 		return {"hp": 80, "damage": 18}
 	return {"hp": 100 + floor_number * 5, "damage": 22 + floor_number * 2}
-
