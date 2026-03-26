@@ -18,6 +18,7 @@ const SOURCE_WALL_MID := 105
 
 const DUNGEON_GENERATOR := preload("res://scripts/dungeon/dungeon_generator.gd")
 const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
 const STAIRWAY_SCENE := preload("res://scenes/dungeon/stairway.tscn")
 const MELEE_ENEMY_SCENE := preload("res://scenes/enemies/melee_enemy.tscn")
 const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
@@ -29,6 +30,11 @@ const DUNGEON_CHEST_SCENE := preload("res://scenes/dungeon/dungeon_chest.tscn")
 const LOCKED_CHEST_SCENE := preload("res://scenes/dungeon/locked_chest.tscn")
 const SPIKE_TRAP_SCENE := preload("res://scenes/dungeon/spike_trap.tscn")
 const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
+const EVENT_ROOM_SCRIPT := preload("res://scripts/dungeon/event_room.gd")
+const CHALLENGE_ROOM_SCRIPT := preload("res://scripts/dungeon/challenge_room.gd")
+const PUZZLE_ROOM_SCRIPT := preload("res://scripts/dungeon/puzzle_room.gd")
+const SAFE_ROOM_SCRIPT := preload("res://scripts/dungeon/safe_room.gd")
+const DUNGEON_MERCHANT_SCRIPT := preload("res://scripts/dungeon/dungeon_merchant.gd")
 
 @export var current_floor: int = 1
 @export var level_seed: int = 1
@@ -170,10 +176,17 @@ func _spawn_features() -> void:
 
 	var rooms: Array = floor_data.get("rooms", [])
 	var room_types: Array = floor_data.get("room_types", [])
+	var room_features: Array = floor_data.get("room_features", [])
 	for room_index in range(rooms.size()):
 		if room_index >= room_types.size():
 			continue
 		var room: Rect2i = rooms[room_index]
+		var features: Dictionary = room_features[room_index] if room_index < room_features.size() else {}
+		_spawn_special_room_visuals(room, features)
+		if bool(features.get("event", false)):
+			_spawn_event_room(room, room_index)
+		if bool(features.get("challenge", false)):
+			_spawn_challenge_room(room, room_index)
 		match str(room_types[room_index]):
 			"treasure":
 				_spawn_treasure_room(room)
@@ -183,6 +196,12 @@ func _spawn_features() -> void:
 				_spawn_empty_room(room)
 			"boss":
 				_spawn_boss_room_visual(room)
+		if _room_has_feature(room_index, "puzzle"):
+			_spawn_puzzle_room(room, room_index)
+		if _room_has_feature(room_index, "safe"):
+			_spawn_safe_room(room)
+		if _room_has_feature(room_index, "boss_merchant"):
+			_spawn_boss_merchant(room, room_index)
 
 
 func _spawn_enemies() -> void:
@@ -201,6 +220,9 @@ func _spawn_enemies() -> void:
 	var eligible_rooms: Array[int] = []
 	for room_index in range(rooms.size()):
 		if room_index == int(floor_data.get("spawn_room_index", 0)) or room_index == int(floor_data.get("exit_room_index", 0)):
+			continue
+		var room_feature := _get_room_feature(room_index)
+		if bool(room_feature.get("safe", false)) or bool(room_feature.get("challenge", false)) or bool(room_feature.get("boss_merchant", false)):
 			continue
 		eligible_rooms.append(room_index)
 		var room: Rect2i = rooms[room_index]
@@ -294,6 +316,11 @@ func _random_point_in_room(room: Rect2i, rng: RandomNumberGenerator = null) -> V
 	)
 
 
+func _room_center_world(room: Rect2i) -> Vector2:
+	var center_tile := room.position + room.size / 2
+	return Vector2(center_tile.x * 16 + 8, center_tile.y * 16 + 8)
+
+
 func _random_edge_point_in_room(room: Rect2i, rng: RandomNumberGenerator = null) -> Vector2:
 	var side := _rng_range(rng, 0, 3)
 	var x: int
@@ -369,7 +396,8 @@ func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedS
 	return MELEE_ENEMY_SCENE
 
 
-func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNumberGenerator) -> void:
+func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNumberGenerator) -> Array[Enemy]:
+	var spawned_enemies: Array[Enemy] = []
 	var enemy: Enemy = enemy_scene.instantiate()
 	var min_group := int(enemy.get("group_spawn_min")) if enemy.get("group_spawn_min") != null else 1
 	var max_group := int(enemy.get("group_spawn_max")) if enemy.get("group_spawn_max") != null else 1
@@ -384,6 +412,8 @@ func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNu
 		spawned_enemy.configure_for_floor(player, current_floor, loot_root)
 		spawned_enemy.died.connect(_on_enemy_died.bind(spawned_enemy))
 		enemy_root.add_child(spawned_enemy)
+		spawned_enemies.append(spawned_enemy)
+	return spawned_enemies
 
 
 func _spawn_treasure_room(room: Rect2i) -> void:
@@ -410,6 +440,162 @@ func _spawn_trap_room(room: Rect2i) -> void:
 		var trap = SPIKE_TRAP_SCENE.instantiate()
 		trap.global_position = _random_point_in_room(room)
 		feature_root.add_child(trap)
+
+
+func _spawn_special_room_visuals(room: Rect2i, room_feature: Dictionary) -> void:
+	var has_event := bool(room_feature.get("event", false))
+	var has_challenge := bool(room_feature.get("challenge", false))
+	if not has_event and not has_challenge:
+		return
+
+	var fill_color := Color(0.36, 0.14, 0.44, 0.30)
+	var border_color := Color(0.78, 0.42, 0.96, 0.90)
+	if has_challenge and has_event:
+		fill_color = Color(0.50, 0.12, 0.22, 0.34)
+		border_color = Color(0.96, 0.48, 0.74, 0.94)
+	elif has_challenge:
+		fill_color = Color(0.58, 0.14, 0.14, 0.32)
+		border_color = Color(1.0, 0.42, 0.32, 0.95)
+
+	_spawn_room_tint(room, fill_color, border_color)
+
+
+func _spawn_room_tint(room: Rect2i, fill_color: Color, border_color: Color) -> void:
+	var room_start := Vector2(room.position.x * 16, room.position.y * 16)
+	var room_end := Vector2(room.end.x * 16, room.end.y * 16)
+
+	var fill := Polygon2D.new()
+	fill.z_index = -1
+	fill.color = fill_color
+	fill.polygon = PackedVector2Array([
+		room_start,
+		Vector2(room_end.x, room_start.y),
+		room_end,
+		Vector2(room_start.x, room_end.y),
+	])
+	feature_root.add_child(fill)
+
+	var border := Line2D.new()
+	border.z_index = -1
+	border.width = 2.0
+	border.default_color = border_color
+	border.closed = true
+	border.points = PackedVector2Array([
+		room_start + Vector2(2, 2),
+		Vector2(room_end.x - 2, room_start.y + 2),
+		room_end - Vector2(2, 2),
+		Vector2(room_start.x + 2, room_end.y - 2),
+	])
+	feature_root.add_child(border)
+
+
+func _spawn_event_room(room: Rect2i, room_index: int) -> void:
+	var event_room = EVENT_ROOM_SCRIPT.new()
+	if event_room.has_method("setup"):
+		event_room.setup(loot_root, current_floor, int(_create_room_rng(281, room_index).seed))
+	event_room.global_position = _room_center_world(room)
+	feature_root.add_child(event_room)
+
+
+func _spawn_challenge_room(room: Rect2i, room_index: int) -> void:
+	var challenge_room = CHALLENGE_ROOM_SCRIPT.new()
+	if challenge_room.has_method("setup"):
+		challenge_room.setup(self, room_index, room, _get_room_door_tiles(room))
+	feature_root.add_child(challenge_room)
+
+
+func spawn_challenge_room_wave(room_index: int) -> Array:
+	var rooms: Array = floor_data.get("rooms", [])
+	if room_index < 0 or room_index >= rooms.size():
+		return []
+	if player == null or not is_instance_valid(player):
+		return []
+
+	var room: Rect2i = rooms[room_index]
+	var rng := _create_room_rng(337, room_index)
+	var config := get_floor_spawn_config(current_floor, rng)
+	var enemy_count := max(2, rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"])) * 2)
+	var spawned_enemies: Array = []
+	for _enemy_index in range(enemy_count):
+		var enemy_scene: PackedScene = _pick_enemy_scene(current_floor, rng)
+		spawned_enemies.append_array(_spawn_enemy_instance(enemy_scene, room, rng))
+
+	set_gameplay_paused(gameplay_paused)
+	return spawned_enemies
+
+
+func spawn_challenge_room_reward(room_index: int) -> void:
+	var rooms: Array = floor_data.get("rooms", [])
+	if room_index < 0 or room_index >= rooms.size():
+		return
+
+	var room: Rect2i = rooms[room_index]
+	var center := _room_center_world(room)
+	var rng := _create_room_rng(389, room_index)
+
+	var copper_drop = LOOT_DROP_SCENE.instantiate()
+	copper_drop.global_position = center + Vector2(randf_range(-18.0, 18.0), randf_range(-14.0, 14.0))
+	copper_drop.setup("copper", rng.randi_range(18, 32) + current_floor * 3)
+	loot_root.add_child(copper_drop)
+
+	var shard_drop = LOOT_DROP_SCENE.instantiate()
+	shard_drop.global_position = center + Vector2(randf_range(-18.0, 18.0), randf_range(-14.0, 14.0))
+	shard_drop.setup("talent_shard", rng.randi_range(1, 2))
+	loot_root.add_child(shard_drop)
+
+	if rng.randf() <= 0.45:
+		var equipment_drop = LOOT_DROP_SCENE.instantiate()
+		equipment_drop.global_position = center + Vector2(randf_range(-18.0, 18.0), randf_range(-14.0, 14.0))
+		equipment_drop.setup_stack(DUNGEON_LOOT.generate_dungeon_equipment(max(current_floor, 1), rng))
+		loot_root.add_child(equipment_drop)
+
+
+func _get_room_door_tiles(room: Rect2i) -> Array[Vector2i]:
+	var door_tiles: Array[Vector2i] = []
+	var floor_lookup: Dictionary = {}
+	for floor_tile in floor_data.get("floor_tiles", []):
+		floor_lookup[floor_tile] = true
+
+	for y in range(room.position.y, room.end.y):
+		for x in range(room.position.x, room.end.x):
+			var tile_pos := Vector2i(x, y)
+			var is_perimeter := x == room.position.x or x == room.end.x - 1 or y == room.position.y or y == room.end.y - 1
+			if not is_perimeter:
+				continue
+			for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var neighbor := tile_pos + offset
+				if _is_tile_inside_room(neighbor, room):
+					continue
+				if floor_lookup.has(neighbor):
+					door_tiles.append(tile_pos)
+					break
+	return door_tiles
+
+
+func _is_tile_inside_room(tile_pos: Vector2i, room: Rect2i) -> bool:
+	return tile_pos.x >= room.position.x and tile_pos.x < room.end.x and tile_pos.y >= room.position.y and tile_pos.y < room.end.y
+
+
+func _spawn_puzzle_room(room: Rect2i, room_index: int) -> void:
+	var puzzle_room = PUZZLE_ROOM_SCRIPT.new()
+	if puzzle_room.has_method("setup"):
+		puzzle_room.setup(room, loot_root, current_floor, _create_room_rng(137, room_index))
+	feature_root.add_child(puzzle_room)
+
+
+func _spawn_safe_room(room: Rect2i) -> void:
+	var safe_room = SAFE_ROOM_SCRIPT.new()
+	if safe_room.has_method("setup"):
+		safe_room.setup(room)
+	feature_root.add_child(safe_room)
+
+
+func _spawn_boss_merchant(room: Rect2i, room_index: int) -> void:
+	var merchant = DUNGEON_MERCHANT_SCRIPT.new()
+	if merchant.has_method("setup"):
+		merchant.setup(current_floor, _create_room_rng(211, room_index))
+	merchant.position = _room_center_world(room)
+	feature_root.add_child(merchant)
 
 
 func _spawn_boss_room_visual(room: Rect2i) -> void:
@@ -504,12 +690,27 @@ func _rng_randf(rng: RandomNumberGenerator) -> float:
 	return rng.randf() if rng != null else randf()
 
 
+func _create_room_rng(offset: int, room_index: int) -> RandomNumberGenerator:
+	return _create_rng(offset + room_index * 37)
+
+
 func _shuffle_with_rng(values: Array[int], rng: RandomNumberGenerator) -> void:
 	for index in range(values.size() - 1, 0, -1):
 		var swap_index := rng.randi_range(0, index)
 		var current_value := values[index]
 		values[index] = values[swap_index]
 		values[swap_index] = current_value
+
+
+func _get_room_feature(room_index: int) -> Dictionary:
+	var room_features: Array = floor_data.get("room_features", [])
+	if room_index < 0 or room_index >= room_features.size():
+		return {}
+	return room_features[room_index] as Dictionary
+
+
+func _room_has_feature(room_index: int, feature_name: String) -> bool:
+	return bool(_get_room_feature(room_index).get(feature_name, false))
 
 
 func reveal_treasure_hunter(duration: float) -> void:

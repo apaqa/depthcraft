@@ -18,7 +18,7 @@ func _ready() -> void:
 	add_child(bg)
 
 	var title := Label.new()
-	title.text = "選擇職業"
+	title.text = LocaleManager.L("class_select_title")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	title.offset_top = 80.0
@@ -64,7 +64,7 @@ func _build_card(class_id: String, def: Dictionary) -> Control:
 	card.add_child(vbox)
 
 	var name_label := Label.new()
-	name_label.text = str(def.get("name", class_id))
+	name_label.text = LocaleManager.L(str(def.get("name_key", class_id)))
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 24)
 	name_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
@@ -82,9 +82,9 @@ func _build_card(class_id: String, def: Dictionary) -> Control:
 
 	for stat_text: String in [
 		_fmt_stat("HP", hp_delta),
-		_fmt_stat("攻擊", atk_delta),
-		_fmt_stat("速度", spd_delta),
-		_fmt_stat("技能CD", cd_delta),
+		_fmt_stat(LocaleManager.L("class_stat_atk"), atk_delta),
+		_fmt_stat(LocaleManager.L("class_stat_spd"), spd_delta),
+		_fmt_stat(LocaleManager.L("class_stat_cd"), cd_delta),
 	]:
 		var stat_label := Label.new()
 		stat_label.text = stat_text
@@ -94,7 +94,7 @@ func _build_card(class_id: String, def: Dictionary) -> Control:
 		vbox.add_child(stat_label)
 
 	var desc_label := Label.new()
-	desc_label.text = str(def.get("desc", ""))
+	desc_label.text = LocaleManager.L(str(def.get("desc_key", "")))
 	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc_label.add_theme_font_size_override("font_size", 11)

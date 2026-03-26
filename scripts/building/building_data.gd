@@ -10,16 +10,16 @@ const COOKING_BENCH_SCENE_PATH := "res://scenes/building/facilities/cooking_benc
 const FULL_TILE_ATLAS := Vector2i.ZERO
 const CATEGORY_ORDER := ["structure", "door_window", "facility", "defense"]
 const CATEGORY_DATA := {
-	"structure": {"name": "å»ºç?", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
-	"door_window": {"name": "?€çª?, "items": ["wood_door"]},
-	"facility": {"name": "è¨­æ–½", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot"]},
-	"defense": {"name": "?²ç¦¦", "items": []},
+	"structure": {"name": "build_cat_structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
+	"door_window": {"name": "build_cat_door_window", "items": ["wood_door"]},
+	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot"]},
+	"defense": {"name": "build_cat_defense", "items": []},
 }
 
 const BUILDINGS := {
 	"wood_wall": {
 		"id": "wood_wall",
-		"name": "?¨ç?",
+		"name": "wood_wall",
 		"category": "structure",
 		"kind": "tile",
 		"cost": {"wood": 2},
@@ -30,7 +30,7 @@ const BUILDINGS := {
 	},
 	"wood_floor": {
 		"id": "wood_floor",
-		"name": "?¨åœ°??,
+		"name": "wood_floor",
 		"category": "structure",
 		"kind": "tile",
 		"cost": {"wood": 1},
@@ -41,7 +41,7 @@ const BUILDINGS := {
 	},
 	"stone_wall": {
 		"id": "stone_wall",
-		"name": "?³ç?",
+		"name": "stone_wall",
 		"category": "structure",
 		"kind": "tile",
 		"cost": {"stone": 3},
@@ -52,7 +52,7 @@ const BUILDINGS := {
 	},
 	"stone_floor": {
 		"id": "stone_floor",
-		"name": "?³åœ°??,
+		"name": "stone_floor",
 		"category": "structure",
 		"kind": "tile",
 		"cost": {"stone": 2},
@@ -63,7 +63,7 @@ const BUILDINGS := {
 	},
 	"wood_door": {
 		"id": "wood_door",
-		"name": "?¨é?",
+		"name": "wood_door",
 		"category": "door_window",
 		"kind": "facility",
 		"cost": {"wood": 3},
@@ -74,7 +74,7 @@ const BUILDINGS := {
 	},
 	"workbench": {
 		"id": "workbench",
-		"name": "å·¥ä???,
+		"name": "workbench",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"wood": 5},
@@ -83,7 +83,7 @@ const BUILDINGS := {
 	},
 	"storage_chest": {
 		"id": "storage_chest",
-		"name": "?²ç‰©ç®?,
+		"name": "storage_chest",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"wood": 3},
@@ -92,7 +92,7 @@ const BUILDINGS := {
 	},
 	"repair_bench": {
 		"id": "repair_bench",
-		"name": "ä¿®ç???,
+		"name": "repair_bench",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"stone": 5, "iron_ore": 3},
@@ -101,7 +101,7 @@ const BUILDINGS := {
 	},
 	"talent_altar": {
 		"id": "talent_altar",
-		"name": "å¤©è³¦ç¥­å?",
+		"name": "talent_altar",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"stone": 10, "iron_ore": 5},
@@ -110,7 +110,7 @@ const BUILDINGS := {
 	},
 	"farm_plot": {
 		"id": "farm_plot",
-		"name": "è¾²ç”°",
+		"name": "farm_plot",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"wood": 2, "stone": 2},
@@ -119,7 +119,7 @@ const BUILDINGS := {
 	},
 	"cooking_bench": {
 		"id": "cooking_bench",
-		"name": "?¹é£ª??,
+		"name": "cooking_bench",
 		"category": "facility",
 		"kind": "facility",
 		"cost": {"stone": 3, "wood": 2},
@@ -149,7 +149,8 @@ static func get_category_ids() -> PackedStringArray:
 
 
 static func get_category_name(category_id: String) -> String:
-	return str((CATEGORY_DATA.get(category_id, {}) as Dictionary).get("name", category_id.capitalize()))
+	var key := str((CATEGORY_DATA.get(category_id, {}) as Dictionary).get("name", category_id))
+	return LocaleManager.L(key)
 
 
 static func get_buildings_for_category(category_id: String) -> Array[Dictionary]:
@@ -157,4 +158,3 @@ static func get_buildings_for_category(category_id: String) -> Array[Dictionary]
 	for building_id in (CATEGORY_DATA.get(category_id, {}) as Dictionary).get("items", []):
 		buildings.append(get_building(str(building_id)))
 	return buildings
-

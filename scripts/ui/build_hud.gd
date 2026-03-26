@@ -38,13 +38,13 @@ func refresh() -> void:
 		return
 
 	if bool(state.get("remove_mode", false)):
-		title_label.text = "[ %s ]" % str(state.get("category_name", "Build"))
+		title_label.text = "[ %s ]" % LocaleManager.L("build_mode")
 		cost_label.text = LocaleManager.L("build_remove_hint")
 		cost_label.modulate = Color(1.0, 0.7, 0.45, 1.0)
 		core_label.text = _format_category_items(state)
 	else:
 		var building: Dictionary = state.get("building", {})
-		title_label.text = "[ %s ]" % str(state.get("category_name", "Build"))
+		title_label.text = "[ %s ]" % LocaleManager.L("build_mode")
 		if bool(state.get("category_empty", false)):
 			cost_label.text = LocaleManager.L("category_empty")
 			cost_label.modulate = Color(0.75, 0.75, 0.8, 1.0)
@@ -57,14 +57,11 @@ func refresh() -> void:
 		core_label.text = _format_category_items(state, str(building.get("name", "")))
 
 	if bool(state.get("has_core", false)):
-	core_label.text += "
-" + LocaleManager.L("core_placed")
+		core_label.text += "\n" + LocaleManager.L("core_placed")
 	elif bool(state.get("debug_mode", false)):
-	core_label.text += "
-" + LocaleManager.L("core_debug")
+		core_label.text += "\n" + LocaleManager.L("core_debug")
 	else:
-	core_label.text += "
-" + LocaleManager.L("core_cost")
+		core_label.text += "\n" + LocaleManager.L("core_cost")
 	help_label.text = LocaleManager.L("build_help")
 	category_label.bbcode_enabled = true
 	category_label.text = _format_categories(int(state.get("category_index", 0)))
@@ -79,7 +76,7 @@ func _format_costs(costs: Dictionary) -> String:
 		var amount := int(costs[resource_id])
 		var owned: int = inventory.get_item_count(resource_id)
 		parts.append("%d/%d %s" % [owned, amount, _pretty_name(resource_id)])
-	return "?�費: %s" % ", ".join(parts)
+	return LocaleManager.L("build_cost_fmt") % ", ".join(parts)
 
 
 func _pretty_name(resource_id: String) -> String:
@@ -92,14 +89,14 @@ func _format_category_items(state: Dictionary, selected_name: String = "") -> St
 		var name := str(item_name)
 		parts.append("> %s <" % name if name == selected_name else name)
 	if parts.is_empty():
-		return "?�禦?��?: ?��??�出"
-	return "?��?: %s" % "  |  ".join(parts)
+		return LocaleManager.L("category_empty")
+	return LocaleManager.L("build_category_fmt") % "  |  ".join(parts)
 
 
 func _format_categories(active_index: int) -> String:
 	var labels := [
 		LocaleManager.L("build_cat_1"),
-		"[2] ?��?,
+		LocaleManager.L("build_cat_2"),
 		LocaleManager.L("build_cat_3"),
 		LocaleManager.L("build_cat_4"),
 	]
@@ -108,4 +105,3 @@ func _format_categories(active_index: int) -> String:
 		var color := "ffd86b" if index == active_index else "8a8f98"
 		parts.append("[color=#%s]%s[/color]" % [color, labels[index]])
 	return "  ".join(parts)
-

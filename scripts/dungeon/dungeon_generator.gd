@@ -5,6 +5,10 @@ const MAP_SIZE := Vector2i(50, 50)
 const MIN_ROOM_SIZE := Vector2i(5, 5)
 const MAX_ROOM_SIZE := Vector2i(10, 10)
 const CORRIDOR_HALF_WIDTH := 1
+const EVENT_ROOM_CHANCE := 0.07
+const CHALLENGE_ROOM_CHANCE := 0.07
+const PUZZLE_ROOM_CHANCE := 0.07
+const SAFE_ROOM_CHANCE := 0.07
 
 
 func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
@@ -49,10 +53,12 @@ func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dic
 	var exit_room_index := rooms.size() - 1
 	var is_boss_floor := floor_number > 0 and floor_number % 5 == 0
 	var boss_room_index := exit_room_index if is_boss_floor else -1
-	var elite_room_index := 0 if rooms.size() == 1 else _rng_range(rng, 1, rooms.size() - 1)
+	var boss_merchant_room_index := _get_boss_merchant_room_index(rooms.size(), exit_room_index, is_boss_floor)
+	var elite_room_index := _pick_elite_room_index(rooms.size(), spawn_room_index, exit_room_index, boss_merchant_room_index, floor_number, rng)
 	var spawn_point := _tile_to_world(_room_center(rooms[spawn_room_index]))
 	var exit_point := _tile_to_world(_room_center(rooms[exit_room_index]))
-	var room_types := _assign_room_types(rooms.size(), spawn_room_index, exit_room_index, elite_room_index, floor_number, is_boss_floor, rng)
+	var room_types := _assign_room_types(rooms.size(), spawn_room_index, exit_room_index, elite_room_index, boss_merchant_room_index, floor_number, is_boss_floor, rng)
+	var room_features := _assign_room_features(room_types, spawn_room_index, exit_room_index, boss_merchant_room_index, rng)
 
 	return {
 		"rooms": rooms,
@@ -61,8 +67,10 @@ func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dic
 		"exit_point": exit_point,
 		"elite_room_index": elite_room_index,
 		"boss_room_index": boss_room_index,
+		"boss_merchant_room_index": boss_merchant_room_index,
 		"is_boss_floor": is_boss_floor,
 		"room_types": room_types,
+		"room_features": room_features,
 		"spawn_room_index": spawn_room_index,
 		"exit_room_index": exit_room_index,
 		"floor_tiles": floor_tiles.keys(),
@@ -133,7 +141,30 @@ func _rng_range(rng: RandomNumberGenerator, min_value: int, max_value: int) -> i
 	return rng.randi_range(min_value, max_value) if rng != null else randi_range(min_value, max_value)
 
 
-func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index: int, elite_room_index: int, floor_number: int, is_boss_floor: bool, rng: RandomNumberGenerator = null) -> Array[String]:
+func _rng_randf(rng: RandomNumberGenerator) -> float:
+	return rng.randf() if rng != null else randf()
+
+
+func _get_boss_merchant_room_index(room_count: int, exit_room_index: int, is_boss_floor: bool) -> int:
+	if not is_boss_floor or room_count <= 1:
+		return -1
+	return maxi(exit_room_index - 1, 0)
+
+
+func _pick_elite_room_index(room_count: int, spawn_room_index: int, exit_room_index: int, boss_merchant_room_index: int, floor_number: int, rng: RandomNumberGenerator = null) -> int:
+	if floor_number < 4:
+		return -1
+	var candidates: Array[int] = []
+	for room_index in range(room_count):
+		if room_index == spawn_room_index or room_index == exit_room_index or room_index == boss_merchant_room_index:
+			continue
+		candidates.append(room_index)
+	if candidates.is_empty():
+		return -1
+	return candidates[_rng_range(rng, 0, candidates.size() - 1)]
+
+
+func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index: int, elite_room_index: int, boss_merchant_room_index: int, floor_number: int, is_boss_floor: bool, rng: RandomNumberGenerator = null) -> Array[String]:
 	var room_types: Array[String] = []
 	for room_index in range(room_count):
 		if room_index == spawn_room_index:
@@ -142,10 +173,13 @@ func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index:
 		if room_index == exit_room_index:
 			room_types.append("boss" if is_boss_floor else "normal")
 			continue
+		if room_index == boss_merchant_room_index:
+			room_types.append("normal")
+			continue
 		if room_index == elite_room_index and floor_number >= 4:
 			room_types.append("elite")
 			continue
-		var roll := rng.randf() if rng != null else randf()
+		var roll := _rng_randf(rng)
 		if floor_number >= 3 and roll <= 0.10:
 			room_types.append("trap")
 		elif roll <= 0.20:
@@ -155,4 +189,38 @@ func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index:
 		else:
 			room_types.append("normal")
 	return room_types
+
+
+func _assign_room_features(room_types: Array[String], spawn_room_index: int, exit_room_index: int, boss_merchant_room_index: int, rng: RandomNumberGenerator = null) -> Array[Dictionary]:
+	var room_features: Array[Dictionary] = []
+	for room_index in range(room_types.size()):
+		var features := {
+			"event": false,
+			"challenge": false,
+			"puzzle": false,
+			"safe": false,
+			"boss_merchant": room_index == boss_merchant_room_index,
+		}
+		var room_type := str(room_types[room_index])
+		if room_index == spawn_room_index or room_index == exit_room_index:
+			room_features.append(features)
+			continue
+		if room_index == boss_merchant_room_index or room_type != "normal":
+			room_features.append(features)
+			continue
+		features["event"] = _rng_randf(rng) <= EVENT_ROOM_CHANCE
+		features["challenge"] = _rng_randf(rng) <= CHALLENGE_ROOM_CHANCE
+		if not bool(features.get("event", false)) and not bool(features.get("challenge", false)):
+			var has_puzzle := _rng_randf(rng) <= PUZZLE_ROOM_CHANCE
+			var has_safe := _rng_randf(rng) <= SAFE_ROOM_CHANCE
+			# Resolve the rare overlap so the room keeps a single centerpiece mechanic.
+			if has_puzzle and has_safe:
+				if _rng_randf(rng) <= 0.5:
+					has_safe = false
+				else:
+					has_puzzle = false
+			features["puzzle"] = has_puzzle
+			features["safe"] = has_safe
+		room_features.append(features)
+	return room_features
 

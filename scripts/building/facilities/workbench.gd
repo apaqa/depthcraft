@@ -3,7 +3,7 @@ class_name WorkbenchFacility
 
 
 func get_interaction_prompt() -> String:
-	return "[E] 製作"
+	return "[E] " + LocaleManager.L("BTN_CRAFT")
 
 
 func interact(player) -> void:

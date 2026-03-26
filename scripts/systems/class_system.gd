@@ -23,8 +23,8 @@ const CLASS_DEFS := {
 	},
 	"ranger": {
 		"id": "ranger",
-		"name": "遊俠",
-		"desc": "敏捷的遠程射手，行動迅速。",
+		"name_key": "class_ranger_name",
+		"desc_key": "class_ranger_desc",
 		"hp_mult": 1.0,
 		"atk_mult": 1.1,
 		"spd_mult": 1.2,
@@ -80,7 +80,9 @@ func get_cd_multiplier() -> float:
 
 func get_class_display_name() -> String:
 	var def := get_class_def()
-	return str(def.get("name", ""))
+	if def.is_empty():
+		return ""
+	return LocaleManager.L(str(def.get("name_key", "")))
 
 
 func apply_to_stats(player_stats) -> void:

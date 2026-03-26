@@ -395,7 +395,7 @@ func get_ui_state() -> Dictionary:
 	var category_buildings: Array[Dictionary] = BUILDING_DATA.get_buildings_for_category(category_id)
 	var item_names: PackedStringArray = []
 	for category_building in category_buildings:
-		item_names.append(str(category_building.get("name", "")))
+		item_names.append(LocaleManager.L(str(category_building.get("name", ""))))
 	return {
 		"build_mode": is_build_mode_active(),
 		"remove_mode": is_remove_mode(),

@@ -17,6 +17,8 @@ func _initialize() -> void:
 	await test_talent_state_persists()
 	test_talent_pool_has_three_branches()
 	test_all_talent_nodes_have_data()
+	test_branch_layout_sizes()
+	await test_branch_unlock_requires_main_gate()
 	await test_support_talent_increases_gather_bonus()
 	await test_defense_talent_increases_hp()
 	PLAYER_SAVE.clear_save()
@@ -29,6 +31,32 @@ func test_talent_pool_has_three_branches() -> void:
 
 func test_all_talent_nodes_have_data() -> void:
 	_assert(TALENT_DATA.get_all_talents().size() == 78, "Talent tree should expose 78 configured nodes.")
+
+
+func test_branch_layout_sizes() -> void:
+	_assert(TALENT_DATA.get_sub_branch_talents("offense", "main").size() == 10, "Offense main line should have 10 nodes.")
+	_assert(TALENT_DATA.get_sub_branch_talents("offense", "crit").size() == 8, "Offense crit branch should have 8 nodes.")
+	_assert(TALENT_DATA.get_sub_branch_talents("offense", "dot").size() == 8, "Offense damage-over-time branch should have 8 nodes.")
+	_assert(TALENT_DATA.get_sub_branch_talents("defense", "main").size() == 10, "Defense main line should have 10 nodes.")
+	_assert(TALENT_DATA.get_sub_branch_talents("defense", "block").size() == 8, "Defense block branch should have 8 nodes.")
+	_assert(TALENT_DATA.get_sub_branch_talents("defense", "regen").size() == 8, "Defense regen branch should have 8 nodes.")
+	_assert(TALENT_DATA.get_sub_branch_talents("support", "main").size() == 10, "Support main line should have 10 nodes.")
+	_assert(TALENT_DATA.get_sub_branch_talents("support", "speed").size() == 8, "Support speed branch should have 8 nodes.")
+	_assert(TALENT_DATA.get_sub_branch_talents("support", "explore").size() == 8, "Support exploration branch should have 8 nodes.")
+
+
+func test_branch_unlock_requires_main_gate() -> void:
+	PLAYER_SAVE.clear_save()
+	var player = PLAYER_SCENE.instantiate()
+	root.add_child(player)
+	await process_frame
+	player.inventory.add_item("talent_shard", 20)
+	_assert(not player.unlock_talent("O11"), "Crit branch should stay locked until O5 is unlocked.")
+	for talent_id in ["O1", "O2", "O3", "O4", "O5"]:
+		_assert(player.unlock_talent(talent_id), "%s should unlock along the offense main line." % talent_id)
+	_assert(player.unlock_talent("O11"), "Crit branch should unlock after O5 is learned.")
+	player.queue_free()
+	await process_frame
 
 
 func test_unlocking_talent_requires_enough_shards() -> void:
@@ -146,4 +174,3 @@ func _report_results() -> void:
 	for failure in _failures:
 		push_error(failure)
 	quit(1)
-

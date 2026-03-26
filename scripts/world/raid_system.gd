@@ -84,7 +84,7 @@ func _start_raid() -> void:
 		core.set_raid_active(true)
 	if core.has_signal("destroyed") and not core.destroyed.is_connected(_on_core_destroyed):
 		core.destroyed.connect(_on_core_destroyed)
-	banner_requested.emit("è¥²æ??‹å?ï¼è?å®ˆè­·å®¶å??¸å?ï¼?, Color(1.0, 0.2, 0.2, 1.0), 2.0)
+	banner_requested.emit(LocaleManager.L("raid_start"), Color(1.0, 0.2, 0.2, 1.0), 2.0)
 	border_flash_requested.emit(Color(1.0, 0.12, 0.12, 1.0))
 	_spawn_raid_enemies(core)
 
@@ -130,7 +130,7 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	var core = building_system.get_home_core() if building_system != null else null
 	if core != null and core.has_method("set_raid_active"):
 		core.set_raid_active(false)
-	banner_requested.emit("?å??µç¦¦è¥²æ?ï¼ç²å¾?+5 å¤©è³¦ç¢Žç?", Color(0.45, 1.0, 0.45, 1.0), 3.0)
+	banner_requested.emit(LocaleManager.L("raid_victory"), Color(0.45, 1.0, 0.45, 1.0), 3.0)
 	if player != null and player.inventory != null:
 		player.inventory.add_item("talent_shard", 5)
 	_clear_enemy_root()
@@ -138,7 +138,7 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 
 func _on_core_destroyed() -> void:
 	raid_active = false
-	banner_requested.emit("å®¶å??¸å?å·²è¢«?§æ?ï¼?, Color(1.0, 0.3, 0.3, 1.0), 3.0)
+	banner_requested.emit(LocaleManager.L("core_destroyed"), Color(1.0, 0.3, 0.3, 1.0), 3.0)
 	for enemy in raid_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
@@ -160,7 +160,7 @@ func is_countdown_active() -> bool:
 
 func _emit_countdown() -> void:
 	var seconds_left := int(ceil(raid_countdown_remaining))
-	var message := "??%d ç§’å?è¥²æ? ?? % max(seconds_left, 0)
+	var message := LocaleManager.L("raid_countdown") % max(seconds_left, 0)
 	raid_countdown_changed.emit(message, Color(1.0, 0.15, 0.15, 1.0), true)
 
 
@@ -174,4 +174,3 @@ func _clear_enemy_root() -> void:
 	var enemy_root = get_parent().get_node_or_null("RaidEnemyRoot")
 	if enemy_root != null:
 		enemy_root.queue_free()
-

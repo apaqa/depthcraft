@@ -13,14 +13,14 @@ const SKILL_DEFS := {
 }
 const TALENT_TO_SKILL := {
 	"O5": "whirlwind",
-	"O10": "execute",
-	"O15": "blade_storm",
+	"O18": "execute",
+	"O26": "blade_storm",
 	"D5": "war_cry",
-	"D10": "undying_will",
-	"D15": "invincible",
+	"D18": "undying_will",
+	"D26": "invincible",
 	"S5": "treasure_hunter",
-	"S10": "sprint",
-	"S15": "time_warp",
+	"S18": "sprint",
+	"S26": "time_warp",
 }
 const SKILL_VFX_SCENE := preload("res://scripts/skills/skill_vfx.gd")
 
