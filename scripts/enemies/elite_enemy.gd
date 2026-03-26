@@ -97,7 +97,7 @@ func die() -> void:
 		shard_drop.global_position = global_position
 		loot_parent.add_child(shard_drop)
 		_drop_gold_loot()
-		if randf() <= 0.5:
+		if true:
 			print("equipment roll passed")
 			var equipment_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop
 			equipment_drop.global_position = global_position + Vector2(10, -4)
