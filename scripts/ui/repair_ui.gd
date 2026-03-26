@@ -2,6 +2,7 @@ extends Control
 
 signal close_requested
 
+@onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
 @onready var list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/ListContainer
 @onready var detail_label: Label = $PanelContainer/MarginContainer/VBoxContainer/DetailLabel
 
@@ -11,6 +12,7 @@ var player = null
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	title_label.text = LocaleManager.L("repair_bench")
 
 
 func open_for_player(target_player) -> void:

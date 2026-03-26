@@ -9,6 +9,9 @@ const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 @onready var inventory_list: ItemList = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryList
 @onready var stat_label: Label = $PanelContainer/MarginContainer/VBoxContainer/StatLabel
 @onready var comparison_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ComparisonLabel
+@onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
+@onready var slot_title: Label = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel/VBoxContainer/SlotTitle
+@onready var inventory_title: Label = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryTitle
 
 var player = null
 var _inventory_indices: Array[int] = []
@@ -26,6 +29,11 @@ func _ready() -> void:
 	_context_menu = PopupMenu.new()
 	add_child(_context_menu)
 	_context_menu.id_pressed.connect(_on_context_id_pressed)
+	
+	title_label.text = LocaleManager.L("equipment")
+	slot_title.text = LocaleManager.L("wearing")
+	inventory_title.text = LocaleManager.L("backpack_equipment")
+	
 	set_process(true)
 
 
@@ -75,40 +83,7 @@ func _refresh() -> void:
 				button.icon = icon
 		button.pressed.connect(_on_slot_pressed.bind(String(slot_name)))
 		slot_list.add_child(button)
-...
-func _apply_rarity_style(node: Control, base_color: Color) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.1, 0.8) # Dark background
-	
-	# Middle Layer: Original color border (2px)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = base_color
-	
-	# Outer Layer: Darkened color via shadow (2px size, 0 offset)
-	style.shadow_color = base_color.darkened(0.4)
-	style.shadow_size = 2
-	
-	node.add_theme_stylebox_override("normal", style)
-	node.add_theme_stylebox_override("hover", style.duplicate())
-	node.add_theme_stylebox_override("pressed", style.duplicate())
-	
-	# Inner Layer: Lightened color (1px) via a child decoration
-	var inner_border := ReferenceRect.new()
-	inner_border.name = "InnerBorder"
-	inner_border.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	inner_border.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	inner_border.grow_vertical = Control.GROW_DIRECTION_BOTH
-	inner_border.offset_left = 2
-	inner_border.offset_top = 2
-	inner_border.offset_right = -2
-	inner_border.offset_bottom = -2
-	inner_border.border_color = base_color.lightened(0.4)
-	inner_border.border_width = 1.0
-	inner_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	node.add_child(inner_border)
+
 	# Equipment in inventory
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
@@ -143,33 +118,68 @@ func _apply_rarity_style(node: Control, base_color: Color) -> void:
 		_inventory_indices.append(index)
 		_inventory_types.append("consumable")
 	var summary: Dictionary = player.get_stats_summary()
-	stat_label.text = LocaleManager.L("stat_summary") % [
-		int(summary.get("attack", 0)),
-		int(summary.get("defense", 0)),
-		int(summary.get("max_hp", 0)),
-		int(summary.get("speed", 0)),
+	stat_label.text = "%s: %d   %s: %d   %s: %d   %s: %d" % [
+		LocaleManager.L("atk"), int(summary.get("attack", 0)),
+		LocaleManager.L("def"), int(summary.get("defense", 0)),
+		LocaleManager.L("hp"), int(summary.get("max_hp", 0)),
+		LocaleManager.L("spd"), int(summary.get("speed", 0)),
 	]
-	comparison_label.text = LocaleManager.L("compare_hint")
+	comparison_label.text = LocaleManager.L("hover_to_compare")
+
+
+func _apply_rarity_style(node: Control, base_color: Color) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.1, 0.8) # Dark background
+	
+	# Middle Layer: Original color border (2px)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = base_color
+	
+	# Outer Layer: Darkened color via shadow (2px size, 0 offset)
+	style.shadow_color = base_color.darkened(0.4)
+	style.shadow_size = 2
+	
+	node.add_theme_stylebox_override("normal", style)
+	node.add_theme_stylebox_override("hover", style.duplicate())
+	node.add_theme_stylebox_override("pressed", style.duplicate())
+	
+	# Inner Layer: Lightened color (1px) via a child decoration
+	var inner_border := ReferenceRect.new()
+	inner_border.name = "InnerBorder"
+	inner_border.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	inner_border.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	inner_border.grow_vertical = Control.GROW_DIRECTION_BOTH
+	inner_border.offset_left = 2
+	inner_border.offset_top = 2
+	inner_border.offset_right = -2
+	inner_border.offset_bottom = -2
+	inner_border.border_color = base_color.lightened(0.4)
+	inner_border.border_width = 1.0
+	inner_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	node.add_child(inner_border)
 
 
 func _build_slot_text(slot_name: String, item: Dictionary) -> String:
 	var label := "[%s] " % _translate_slot(slot_name)
 	if item.is_empty():
-		return label + LocaleManager.L("slot_empty")
+		return label + LocaleManager.L("empty")
 	var durability := int(item.get("durability", 0))
 	var max_durability := int(item.get("max_durability", 0))
-	return "%s%s  %s" % [label, player.equipment_system.get_item_display_name(item), LocaleManager.L("slot_durability") % [durability, max_durability]]
+	return "%s%s  %s: %d/%d" % [label, player.equipment_system.get_item_display_name(item), LocaleManager.L("durability_label"), durability, max_durability]
 
 
 func _translate_slot(slot_name: String) -> String:
 	match slot_name:
-		"weapon": return "武器"
-		"helmet": return "頭盔"
-		"chest_armor": return "胸甲"
-		"boots": return "靴子"
-		"accessory": return "飾品"
-		"offhand": return "副手"
-		"tool": return "工具"
+		"weapon": return LocaleManager.L("weapon")
+		"helmet": return LocaleManager.L("helmet")
+		"chest_armor": return LocaleManager.L("chest_armor")
+		"boots": return LocaleManager.L("boots")
+		"accessory": return LocaleManager.L("accessory")
+		"offhand": return LocaleManager.L("offhand")
+		"tool": return LocaleManager.L("tool")
 	return slot_name.replace("_", " ").capitalize()
 
 
@@ -252,21 +262,21 @@ func _update_comparison_label() -> void:
 	if comparison_label == null or player == null:
 		return
 	if _hovered_inventory_index < 0 or _hovered_inventory_index >= _inventory_indices.size():
-		comparison_label.text = LocaleManager.L("compare_hint")
+		comparison_label.text = LocaleManager.L("hover_to_compare")
 		return
 	if _hovered_inventory_index < _inventory_types.size() and _inventory_types[_hovered_inventory_index] == "consumable":
 		comparison_label.text = LocaleManager.L("consumable_quickslot_hint")
 		return
 	var stack_index: int = _inventory_indices[_hovered_inventory_index]
 	if stack_index < 0 or stack_index >= player.inventory.items.size():
-		comparison_label.text = LocaleManager.L("compare_hint")
+		comparison_label.text = LocaleManager.L("hover_to_compare")
 		return
 	var item: Dictionary = player.inventory.items[stack_index]
 	var current_summary: Dictionary = player.get_stats_summary()
 	var preview_summary: Dictionary = player.get_stats_summary_for_item(item)
 	var lines = player.equipment_system.get_comparison_lines(current_summary, preview_summary)
-	var chinese_lines: Array[String] = []
+	var localized_lines: Array[String] = []
 	for line in lines:
-		var translated = line.replace("ATK", LocaleManager.L("stat_attack")).replace("DEF", LocaleManager.L("stat_defense")).replace("HP", LocaleManager.L("stat_hp")).replace("SPD", LocaleManager.L("stat_speed"))
-		chinese_lines.append(translated)
-	comparison_label.text = "\n".join(chinese_lines)
+		var translated = line.replace("ATK", LocaleManager.L("atk")).replace("DEF", LocaleManager.L("def")).replace("HP", LocaleManager.L("hp")).replace("SPD", LocaleManager.L("spd"))
+		localized_lines.append(translated)
+	comparison_label.text = "\n".join(localized_lines)

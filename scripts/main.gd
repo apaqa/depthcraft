@@ -246,7 +246,7 @@ func _on_player_died() -> void:
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, int(current_level.get("current_floor")))
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if player != null:
-			player.show_status_message("你失?��??�?�戰?��?，�??�已?��???, Color(1.0, 0.75, 0.45, 1.0), 3.0)
+			player.show_status_message("你失戰，已??, Color(1.0, 0.75, 0.45, 1.0), 3.0)
 		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 			current_level.trigger_progress_raid()
 		if hud.has_method("hide_death_screen"):

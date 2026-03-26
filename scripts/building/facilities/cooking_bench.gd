@@ -16,7 +16,7 @@ func get_recipe_ids() -> PackedStringArray:
 
 
 func get_menu_title() -> String:
-	return LocaleManager.L("UI_COOKING_BENCH")
+	return LocaleManager.L("cooking_station")
 
 
 func requires_home_core() -> bool:

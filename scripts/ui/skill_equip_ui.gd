@@ -191,6 +191,7 @@ func _refresh_slot_list() -> void:
 		else:
 			var cd := float(slot.get("current_cooldown", 0.0))
 			var name_str := LocaleManager.L(str(slot.get("name", "skill_name_fallback")))
+			if cd > 0.0:
 				btn.text = "[%s]  %s  (CD: %.1fs)" % [key_name, name_str, cd]
 				btn.modulate = Color(0.65, 0.65, 0.65, 1.0)
 			else:
