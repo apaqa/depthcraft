@@ -33,7 +33,7 @@ func interact(player) -> void:
 		player.in_menu = true
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if _shop_canvas == null:
 		return
 	if event.is_action_pressed("ui_cancel"):
@@ -51,6 +51,7 @@ func _open_shop() -> void:
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.offset_left = -210.0
 	panel.offset_top = -200.0
 	panel.offset_right = 210.0
@@ -178,6 +179,7 @@ func _close_shop() -> void:
 	if _shop_canvas != null:
 		_shop_canvas.queue_free()
 		_shop_canvas = null
+	get_tree().paused = false
 	if _current_player != null:
 		if _current_player.has_method("set_ui_blocked"):
 			_current_player.set_ui_blocked(false)

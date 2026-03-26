@@ -44,17 +44,19 @@ func _update_arrow() -> void:
 		visible = false
 		return
 
-	var viewport_rect := get_viewport_rect()
-	var screen_pos: Vector2 = camera.unproject_position(core.global_position)
-	var bounds := viewport_rect.grow(-EDGE_MARGIN)
-	if bounds.has_point(screen_pos):
+	var viewport_rect := Rect2(Vector2.ZERO, get_viewport_rect().size)
+	var screen_pos: Vector2 = core.global_position - camera.global_position + viewport_rect.size * 0.5
+	if viewport_rect.has_point(screen_pos):
 		visible = false
 		return
 
-	var center := viewport_rect.size * 0.5
-	var direction := screen_pos - center
+	var bounds := viewport_rect.grow(-EDGE_MARGIN)
+	var direction: Vector2 = core.global_position - camera.global_position
 	if direction.length_squared() <= 0.001:
 		direction = Vector2.UP
+	else:
+		direction = direction.normalized()
+	var center := viewport_rect.size * 0.5
 	var edge_point := _project_to_edge(center, direction, bounds)
 	position = edge_point - size * 0.5
 	rotation = direction.angle() + PI * 0.5
