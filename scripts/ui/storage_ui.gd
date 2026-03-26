@@ -60,7 +60,8 @@ func _unbind_inventory_signals() -> void:
 
 
 func _rebuild() -> void:
-	title_label.text = LocaleManager.L("storage_title")你�??��?"
+	title_label.text = LocaleManager.L("storage_title")
+	player_label.text = LocaleManager.L("your_inventory")
 	chest_label.text = LocaleManager.L("chest_label")
 	_rebuild_grid(player_grid, player_inventory, chest_inventory, true)
 	_rebuild_grid(chest_grid, chest_inventory, player_inventory, false)

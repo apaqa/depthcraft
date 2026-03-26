@@ -284,5 +284,18 @@
   "consumable_quickslot_hint": "右鍵指定 Q/R 快捷鍵",
   "ctx_discard": "丟棄",
   "ctx_set_q": "設為 Q 快捷",
-  "ctx_set_r": "設為 R 快捷"
+  "ctx_set_r": "設為 R 快捷",
+  "talent_branch_divider": "┌─ 分支點 ─┐",
+  "talent_branch_continue": "└─ 主線繼續 ─┘",
+  "class_select_title": "選擇職業",
+  "class_warrior_name": "戰士",
+  "class_warrior_desc": "堅韌的前線戰士，擅長近身作戰。",
+  "class_mage_name": "法師",
+  "class_mage_desc": "精通魔法的施法者，技能冷卻大幅縮短。",
+  "class_ranger_name": "遊俠",
+  "class_ranger_desc": "敏捷的遠程射手，行動迅速。",
+  "class_stat_hp": "HP",
+  "class_stat_atk": "攻擊",
+  "class_stat_spd": "速度",
+  "class_stat_cd": "技能CD"
 }

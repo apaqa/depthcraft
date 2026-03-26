@@ -20,24 +20,24 @@ var filtered_recipe_ids: PackedStringArray = []
 var menu_title: String = ""
 var recipe_buttons: Dictionary = {}
 
-const CATEGORY_MAP = {
-	"Armor": "護甲",
-	"Weapons": "武器",
-	"Consumables": "消耗品",
-	"Cooking": "烹飪",
-	"Tools": "工具"
+const CATEGORY_KEY_MAP = {
+	"Armor": "cat_armor",
+	"Weapons": "cat_weapons",
+	"Consumables": "cat_consumables",
+	"Cooking": "cat_cooking",
+	"Tools": "cat_tools"
 }
 
-const STAT_MAP = {
-	"Defense": "防禦",
-	"Attack": "攻擊",
-	"Slot": "欄位",
-	"Head": "頭部",
-	"Body": "身體",
-	"Hands": "手部",
-	"Feet": "腳部",
-	"Main Hand": "主手",
-	"Off Hand": "副手"
+const STAT_KEY_MAP = {
+	"Defense": "stat_defense_name",
+	"Attack": "stat_attack_name",
+	"Slot": "stat_slot",
+	"Head": "stat_head",
+	"Body": "stat_body",
+	"Hands": "stat_hands",
+	"Feet": "stat_feet",
+	"Main Hand": "stat_main_hand",
+	"Off Hand": "stat_off_hand"
 }
 
 
@@ -171,9 +171,23 @@ func _play_flash() -> void:
 	tween.tween_property(flash_rect, "color", Color(1, 1, 0.8, 0.0), 0.18)
 
 
+func _translate_category(category_name: String) -> String:
+	var key: String = CATEGORY_KEY_MAP.get(category_name, "")
+	if key != "":
+		return LocaleManager.L(key)
+	return category_name
+
+
+func _translate_stat(stat_name: String) -> String:
+	var key: String = STAT_KEY_MAP.get(stat_name, "")
+	if key != "":
+		return LocaleManager.L(key)
+	return stat_name
+
+
 func _pretty_name(value: String) -> String:
 	var name = value.replace("_", " ").capitalize()
-	return STAT_MAP.get(name, name)
+	return _translate_stat(name)
 
 
 func _format_cost_summary(recipe_id: String) -> String:

@@ -57,11 +57,14 @@ func refresh() -> void:
 		core_label.text = _format_category_items(state, str(building.get("name", "")))
 
 	if bool(state.get("has_core", false)):
-		core_label.text += "\n?��?: 已放�?
+	core_label.text += "
+" + LocaleManager.L("core_placed")
 	elif bool(state.get("debug_mode", false)):
-		core_label.text += "\n?��?: ??C (?�錯模�??�費)"
+	core_label.text += "
+" + LocaleManager.L("core_debug")
 	else:
-		core_label.text += "\n?��?: ??C (10?��?, 5?�頭)"
+	core_label.text += "
+" + LocaleManager.L("core_cost")
 	help_label.text = LocaleManager.L("build_help")
 	category_label.bbcode_enabled = true
 	category_label.text = _format_categories(int(state.get("category_index", 0)))

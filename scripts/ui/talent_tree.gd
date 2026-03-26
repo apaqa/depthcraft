@@ -76,7 +76,7 @@ func _refresh() -> void:
 		var sub_ids := TALENT_DATA.get_sub_branch_ids(branch_id)
 		if sub_ids.size() >= 2:
 			var divider := Label.new()
-			divider.text = "┌─ 分支點 ─┐"
+			divider.text = LocaleManager.L("talent_branch_divider")
 			divider.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			divider.add_theme_color_override("font_color", Color(0.8, 0.7, 0.3, 1.0))
@@ -108,7 +108,7 @@ func _refresh() -> void:
 		# Continuation divider
 		if main_bot.size() > 0:
 			var cont_lbl := Label.new()
-			cont_lbl.text = "└─ 主線繼續 ─┘"
+			cont_lbl.text = LocaleManager.L("talent_branch_continue")
 			cont_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			cont_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			cont_lbl.add_theme_color_override("font_color", Color(0.8, 0.7, 0.3, 1.0))
@@ -187,7 +187,7 @@ func _make_milestone_style(border_color: Color) -> StyleBoxFlat:
 func _build_talent_text(talent: Dictionary) -> String:
 	var talent_id := str(talent.get("id", ""))
 	var is_milestone := bool(talent.get("is_milestone", false))
-	var milestone_prefix := "[里程碑]\n" if is_milestone else ""
+	var milestone_prefix := LocaleManager.L("milestone_prefix") if is_milestone else ""
 	if player != null and player.has_talent(talent_id):
 		return "%s%s
 %s" % [milestone_prefix, LocaleManager.L(str(talent.get("name", talent_id))), LocaleManager.L("talent_unlocked")]

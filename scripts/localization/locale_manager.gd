@@ -1,44 +1,32 @@
 extends Node
 
-signal locale_changed
+signal locale_changed(new_locale: String)
 
-var _strings: Dictionary = {}
 var _locale: String = "zh"
-
+var _strings: Dictionary = {}
 
 func _ready() -> void:
-	var saved := _load_saved_locale()
-	_load_locale(saved if not saved.is_empty() else "zh")
+	load_locale(_locale)
 
 
-func _load_saved_locale() -> String:
-	var path := "user://settings.json"
-	if not FileAccess.file_exists(path):
-		return ""
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return ""
-	var data = JSON.parse_string(file.get_as_text())
-	file.close()
-	if data is Dictionary and data.has("locale"):
-		return str(data["locale"])
-	return ""
-
-
-func _load_locale(locale: String) -> void:
+func load_locale(locale: String) -> void:
 	var path := "res://locale/%s.json" % locale
 	if not FileAccess.file_exists(path):
-		push_warning("LocaleManager: locale file not found: " + path)
+		printerr("Locale file not found: ", path)
 		return
+
 	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return
-	var text := file.get_as_text()
+	var content := file.get_as_text()
 	file.close()
-	var parsed = JSON.parse_string(text)
-	if parsed is Dictionary:
-		_strings = parsed
+
+	var json = JSON.new()
+	var error = json.parse(content)
+	if error == OK:
+		_strings = json.data
 		_locale = locale
+		print("Loaded locale: ", locale)
+	else:
+		printerr("JSON Parse Error: ", json.get_error_message(), " at line ", json.get_error_line())
 
 
 func L(key: String) -> String:
@@ -46,10 +34,9 @@ func L(key: String) -> String:
 
 
 func set_locale(locale: String) -> void:
-	if locale == _locale:
-		return
-	_load_locale(locale)
-	locale_changed.emit()
+	_locale = locale
+	load_locale(locale)
+	locale_changed.emit(locale)
 
 
 func get_locale() -> String:

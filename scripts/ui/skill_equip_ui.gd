@@ -58,7 +58,7 @@ func _build_ui() -> void:
 	title_row.add_child(_title_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "??
+	close_btn.text = "X"
 	close_btn.custom_minimum_size = Vector2(28, 28)
 	close_btn.pressed.connect(close_menu)
 	title_row.add_child(close_btn)
@@ -85,7 +85,8 @@ func _build_ui() -> void:
 	left_panel.add_child(left_header)
 
 	var left_hint := Label.new()
-	left_hint.text = LocaleManager.L("slot_hint_left")font_size", 10)
+	left_hint.text = LocaleManager.L("slot_hint_left")
+	left_hint.add_theme_font_size_override("font_size", 10)
 	left_hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
 	left_panel.add_child(left_hint)
 
@@ -104,7 +105,8 @@ func _build_ui() -> void:
 	columns.add_child(right_panel)
 
 	var right_header := Label.new()
-	right_header.text = LocaleManager.L("unlocked_header")font_color", Color(0.7, 0.85, 1.0, 1.0))
+	right_header.text = LocaleManager.L("unlocked_header")
+	right_header.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0, 1.0))
 	right_header.add_theme_font_size_override("font_size", 12)
 	right_panel.add_child(right_header)
 
@@ -188,8 +190,7 @@ func _refresh_slot_list() -> void:
 			btn.modulate = Color(0.6, 0.6, 0.6, 1.0)
 		else:
 			var cd := float(slot.get("current_cooldown", 0.0))
-			var name_str := str(slot.get("name", "?�??))
-			if cd > 0.0:
+			var name_str := LocaleManager.L(str(slot.get("name", "skill_name_fallback")))
 				btn.text = "[%s]  %s  (CD: %.1fs)" % [key_name, name_str, cd]
 				btn.modulate = Color(0.65, 0.65, 0.65, 1.0)
 			else:
@@ -211,7 +212,8 @@ func _refresh_unlocked_list() -> void:
 
 	if skill_system.unlocked_skill_ids.is_empty():
 		var empty_label := Label.new()
-		empty_label.text = LocaleManager.L("no_skills_unlocked")font_size", 11)
+		empty_label.text = LocaleManager.L("no_skills_unlocked")
+		empty_label.add_theme_font_size_override("font_size", 11)
 		empty_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
 		_unlocked_list.add_child(empty_label)
 		return
@@ -271,14 +273,14 @@ func _on_skill_selected(skill_id: String) -> void:
 %s" % [name_str, LocaleManager.L("passive_info_fmt"), desc_str]
 		_selected_skill_id = ""
 	else:
-		var cd_text := "CD: %.0f �? % cd
+		var cd_text := LocaleManager.L("cd_format") % cd
 		var equipped_in := ""
 		for i in range(skill_system.equipped_skill_ids.size()):
 			if skill_system.equipped_skill_ids[i] == skill_id:
-				equipped_in = "  ???��??�槽�?%s" % KEY_NAMES[i]
+				equipped_in = LocaleManager.L("equipped_in_slot") % KEY_NAMES[i]
 				break
-		_info_label.text = "%s%s
-%s" % [name_str, LocaleManager.L("passive_info_fmt"), desc_str]
+		_info_label.text = "%s  [%s]%s
+%s" % [name_str, cd_text, equipped_in, desc_str]
 
 	_refresh_unlocked_list()
 
@@ -291,13 +293,14 @@ func _on_slot_pressed(slot_index: int) -> void:
 	if _selected_skill_id != "":
 		skill_system.equip_to_slot(_selected_skill_id, slot_index)
 		_selected_skill_id = ""
-		_info_label.text = "?�?�已裝�???
+		_info_label.text = LocaleManager.L("skill_equipped_msg")
 	else:
-		# No skill selected ??unequip the slot
+		# No skill selected -- unequip the slot
 		var equipped_id: String = skill_system.equipped_skill_ids[slot_index]
 		if equipped_id != "":
 			skill_system.unequip_slot(slot_index)
 			_info_label.text = LocaleManager.L("slot_unequipped_msg")
+		else:
 			_info_label.text = LocaleManager.L("slot_is_empty_msg")
 
 	_refresh()
