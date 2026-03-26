@@ -26,7 +26,7 @@ func interact(_player) -> void:
 
 
 func get_interaction_prompt() -> String:
-	return "" if is_open else "[E] ?��?寶箱"
+	return "" if is_open else "[E] ?��?寶箱"
 
 
 func setup(target_loot_root: Node, target_floor_number: int) -> void:
@@ -51,6 +51,6 @@ func _drop_loot() -> void:
 		loot_root.add_child(equip_drop)
 	var gold_drop = LOOT_DROP_SCENE.instantiate()
 	gold_drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
-	gold_drop.setup("gold", randi_range(5, 15))
+	gold_drop.setup("copper", randi_range(5, 15))
 	loot_root.add_child(gold_drop)
 

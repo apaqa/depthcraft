@@ -106,6 +106,36 @@ func get_item_count(item_id: String) -> int:
 	return count
 
 
+func get_total_copper() -> int:
+	return get_item_count("copper") + get_item_count("silver") * 10 + get_item_count("gold") * 100
+
+
+func pay_copper(amount: int) -> bool:
+	var total := get_total_copper()
+	if total < amount:
+		return false
+	var remainder := total - amount
+	var copper_held := get_item_count("copper")
+	var silver_held := get_item_count("silver")
+	var gold_held := get_item_count("gold")
+	if copper_held > 0:
+		remove_item("copper", copper_held)
+	if silver_held > 0:
+		remove_item("silver", silver_held)
+	if gold_held > 0:
+		remove_item("gold", gold_held)
+	var gold_back := remainder / 100
+	var silver_back := (remainder % 100) / 10
+	var copper_back := remainder % 10
+	if gold_back > 0:
+		add_item("gold", gold_back)
+	if silver_back > 0:
+		add_item("silver", silver_back)
+	if copper_back > 0:
+		add_item("copper", copper_back)
+	return true
+
+
 func get_free_slots() -> int:
 	return max(max_slots - items.size(), 0)
 

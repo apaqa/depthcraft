@@ -41,6 +41,10 @@ func is_elite_enemy() -> bool:
 	return true
 
 
+func _drop_gold_loot() -> void:
+	_drop_gold("silver", randi_range(1, 3))
+
+
 func _perform_attack() -> void:
 	if target == null or not is_instance_valid(target):
 		return

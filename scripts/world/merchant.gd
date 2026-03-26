@@ -2,6 +2,7 @@ extends Area2D
 class_name Merchant
 
 const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
+const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
 const SHOP_ITEMS := [
 	{"id": "bandage", "quantity": 1, "price": 5, "label": "繃帶"},
@@ -105,7 +106,7 @@ func _open_shop() -> void:
 func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable) -> void:
 	var row := HBoxContainer.new()
 	var lbl := Label.new()
-	lbl.text = "%s  ?? %d ?�幣" % [label_text, price]
+	lbl.text = "%s  %s" % [label_text, ITEM_DATABASE.format_currency(price)]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var btn := Button.new()
@@ -121,17 +122,16 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	var inv = _current_player.get("inventory")
 	if inv == null:
 		return
-	if not inv.has_item("gold", price):
-		_message_label.text = "?�幣不足"
+	if inv.get_total_copper() < price:
+		_message_label.text = "金幣不足"
 		return
-	if inv.remove_item("gold", price):
+	if inv.pay_copper(price):
 		if inv.add_item(item_id, quantity):
 			_message_label.text = ""
 			_update_gold_label()
 		else:
-			# Refund gold if bag is full
-			inv.add_item("gold", price)
-			_message_label.text = "?��?已滿"
+			inv.add_item("copper", price)
+			_message_label.text = "背包已滿"
 
 
 func _on_buy_equipment() -> void:
@@ -140,28 +140,27 @@ func _on_buy_equipment() -> void:
 	var inv = _current_player.get("inventory")
 	if inv == null:
 		return
-	if not inv.has_item("gold", 50):
-		_message_label.text = "?�幣不足"
+	if inv.get_total_copper() < 50:
+		_message_label.text = "金幣不足"
 		return
-	if inv.remove_item("gold", 50):
+	if inv.pay_copper(50):
 		var equip := DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
 		if inv.add_stack(equip):
 			_message_label.text = ""
 			_update_gold_label()
 		else:
-			# Refund gold if bag is full
-			inv.add_item("gold", 50)
-			_message_label.text = "?��?已滿"
+			inv.add_item("copper", 50)
+			_message_label.text = "背包已滿"
 
 
 func _update_gold_label() -> void:
 	if _gold_label == null or _current_player == null:
 		return
 	var inv = _current_player.get("inventory")
-	var gold_count := 0
+	var total := 0
 	if inv != null:
-		gold_count = inv.get_item_count("gold")
-	_gold_label.text = "?�幣: %d" % gold_count
+		total = inv.get_total_copper()
+	_gold_label.text = "持有: %s" % ITEM_DATABASE.format_currency(total)
 
 
 func _close_shop() -> void:

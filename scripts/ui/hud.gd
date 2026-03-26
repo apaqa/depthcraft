@@ -31,6 +31,7 @@ const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 @onready var raid_border: ColorRect = $RaidBorder
 @onready var status_label: Label = $StatusLabel
 @onready var transition_overlay: ColorRect = $TransitionOverlay
+@onready var transition_label: Label = $TransitionOverlay/TransitionLabel
 @onready var consumable_bar: Label = $ConsumableBar
 @onready var skill_slot_row: HBoxContainer = $SkillSlotRow
 
@@ -39,6 +40,7 @@ var inventory = null
 var current_level = null
 var current_level_id: String = ""
 var settings_menu: SettingsMenu = null
+var currency_label: Label = null
 
 
 func _ready() -> void:
@@ -49,6 +51,16 @@ func _ready() -> void:
 	skill_slot_row.offset_right = 150.0
 	skill_slot_row.offset_top = -50.0
 	skill_slot_row.offset_bottom = -10.0
+
+	currency_label = Label.new()
+	currency_label.position = Vector2(8, 62)
+	currency_label.size = Vector2(180, 16)
+	currency_label.add_theme_constant_override("outline_size", 2)
+	currency_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	currency_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4, 1.0))
+	currency_label.add_theme_font_size_override("font_size", 12)
+	currency_label.text = "0銅"
+	add_child(currency_label)
 
 	update_hp(100, 100)
 	update_bag_label(0, 20)
@@ -202,6 +214,8 @@ func _on_inventory_changed() -> void:
 		return
 
 	update_bag_label(inventory.items.size(), inventory.max_slots)
+	if currency_label != null:
+		currency_label.text = ITEM_DATABASE.format_currency(inventory.get_total_copper())
 	if player != null and player.has_method("get_consumable_slots"):
 		update_consumable_bar(player.get_consumable_slots())
 	rebuild_inventory_grid()
@@ -589,5 +603,22 @@ func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), 
 	var fade_out := create_tween()
 	fade_out.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0), fade_duration)
 	await fade_out.finished
+	transition_overlay.visible = false
+
+
+func fade_to_black(message: String, overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.5) -> void:
+	transition_label.text = message
+	transition_label.modulate = Color.WHITE
+	transition_overlay.color = Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0)
+	transition_overlay.visible = true
+	var tween := create_tween()
+	tween.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 1.0), fade_duration)
+	await tween.finished
+
+
+func fade_from_black(overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.5) -> void:
+	var tween := create_tween()
+	tween.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0), fade_duration)
+	await tween.finished
 	transition_overlay.visible = false
 

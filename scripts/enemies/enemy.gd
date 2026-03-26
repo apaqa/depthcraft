@@ -234,14 +234,14 @@ func _drop_loot() -> void:
 
 
 func _drop_gold_loot() -> void:
-	_drop_gold(randi_range(1, 3))
+	_drop_gold("copper", randi_range(1, 5))
 
 
-func _drop_gold(amount: int) -> void:
+func _drop_gold(coin_type: String, amount: int) -> void:
 	if loot_parent == null or amount <= 0:
 		return
 	var drop = LOOT_DROP_SCENE.instantiate()
-	drop.setup("gold", amount)
+	drop.setup(coin_type, amount)
 	drop.global_position = global_position + Vector2(randf_range(-6.0, 6.0), randf_range(-6.0, 6.0))
 	loot_parent.add_child(drop)
 

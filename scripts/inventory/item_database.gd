@@ -57,12 +57,28 @@ const ITEMS := {
 		"description": "Used at the Talent Altar",
 		"icon": preload("res://assets/icons/kyrise/shard_01a.png"),
 	},
+	"copper": {
+		"id": "copper",
+		"name": "Copper",
+		"max_stack": 9999,
+		"type": "resource",
+		"description": "Basic currency — 10 copper = 1 silver",
+		"icon": preload("res://assets/icons/kyrise/coin_03a.png"),
+	},
+	"silver": {
+		"id": "silver",
+		"name": "Silver",
+		"max_stack": 9999,
+		"type": "resource",
+		"description": "Mid-tier currency — 10 silver = 1 gold",
+		"icon": preload("res://assets/icons/kyrise/coin_02a.png"),
+	},
 	"gold": {
 		"id": "gold",
 		"name": "Gold",
 		"max_stack": 9999,
 		"type": "resource",
-		"description": "Currency for trading with merchants",
+		"description": "High-tier currency dropped by bosses",
 		"icon": preload("res://assets/icons/kyrise/coin_01a.png"),
 	},
 	"wood_sword": {
@@ -235,6 +251,12 @@ static func get_item_color(item_id: String, item_type: String = "") -> Color:
 			return Color(0.8, 0.7, 0.2, 1.0)
 		"wheat":
 			return Color(0.9, 0.8, 0.3, 1.0)
+		"copper":
+			return Color(0.80, 0.50, 0.20, 1.0)
+		"silver":
+			return Color(0.75, 0.75, 0.80, 1.0)
+		"gold":
+			return Color(1.0, 0.82, 0.20, 1.0)
 	if item_type == "":
 		item_type = str(get_item(item_id).get("type", "resource"))
 	match item_type:
@@ -244,6 +266,22 @@ static func get_item_color(item_id: String, item_type: String = "") -> Color:
 			return Color(0.32, 0.78, 0.42, 1.0)
 		_:
 			return Color(0.62, 0.42, 0.22, 1.0)
+
+
+static func format_currency(copper_total: int) -> String:
+	var g := copper_total / 100
+	var s := (copper_total % 100) / 10
+	var c := copper_total % 10
+	var parts: Array[String] = []
+	if g > 0:
+		parts.append("%d金" % g)
+	if s > 0:
+		parts.append("%d銀" % s)
+	if c > 0:
+		parts.append("%d銅" % c)
+	if parts.is_empty():
+		return "0銅"
+	return " ".join(parts)
 
 
 static func get_stack_color(stack: Dictionary) -> Color:

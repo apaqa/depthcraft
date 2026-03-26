@@ -174,10 +174,12 @@ func _on_player_portal_requested(target_level_id: String) -> void:
 		return
 	if current_level_id == "overworld" and target_level_id == "dungeon" and current_level != null and current_level.has_method("get_dungeon_entrance_position"):
 		overworld_return_position = current_level.get_dungeon_entrance_position()
-	if current_level_id == "overworld" and target_level_id == "dungeon" and hud.has_method("play_transition"):
-		await hud.play_transition("Entering Dungeon...", Color(0, 0, 0, 1), 0.3, 0.1)
+	if current_level_id == "overworld" and target_level_id == "dungeon":
+		await hud.fade_to_black("進入地牢...", Color(0, 0, 0, 1), 0.5)
 		current_level_seed = _create_level_seed()
 		_broadcast_scene_change(target_level_id, 1, current_level_seed)
+		await get_tree().process_frame
+		await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
 		return
 	call_deferred("_broadcast_scene_change", target_level_id, 1, current_level_seed)
 
@@ -202,8 +204,7 @@ func _on_return_to_surface_requested() -> void:
 	if player != null:
 		for entry in player.dungeon_run_loot:
 			item_count += int(entry.get("quantity", 0))
-	if hud.has_method("play_transition"):
-		await hud.play_transition("返�??�面�?..", Color(0, 0, 0, 1), 0.25, 0.15)
+	await hud.fade_to_black("返回地面...", Color(0, 0, 0, 1), 0.5)
 	if player != null:
 		player.finish_dungeon_run(true)
 	total_dungeon_runs_completed += 1
@@ -211,10 +212,12 @@ func _on_return_to_surface_requested() -> void:
 	current_day += 1
 	deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, floor_reached)
 	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
-	if player != null:
-		player.show_status_message("已抵?�第 %d �?| %d ?�殺 | %d ?��??��?" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
 	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 		current_level.trigger_progress_raid()
+	await get_tree().process_frame
+	await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
+	if player != null:
+		player.show_status_message("已抵達第 %d 層 | %d 擊殺 | %d 件戰利品" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
 
 
 func _on_player_died() -> void:
@@ -273,9 +276,10 @@ func _on_floor_transition_requested(next_floor: int) -> void:
 	if _is_multiplayer_enabled() and not _is_host():
 		request_next_floor.rpc_id(1, next_floor)
 		return
-	if hud.has_method("play_transition"):
-		await hud.play_transition("�?%d �? % next_floor, Color(0, 0, 0, 1), 0.25, 0.05)
+	await hud.fade_to_black("第 %d 層" % next_floor, Color(0, 0, 0, 1), 0.5)
 	_broadcast_scene_change("dungeon", next_floor, current_level_seed)
+	await get_tree().process_frame
+	await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
 
 
 @rpc("any_peer", "reliable")
@@ -358,6 +362,9 @@ func _place_players_in_current_level(spawn_override: Variant = null) -> void:
 		else:
 			spawned_player.reparent(level_root)
 			spawned_player.global_position = player_position
+		var cam := spawned_player.get_node_or_null("Camera2D")
+		if cam is Camera2D:
+			cam.reset_smoothing()
 
 
 func _resolve_base_spawn(spawn_override: Variant = null) -> Vector2:

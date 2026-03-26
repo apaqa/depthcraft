@@ -98,7 +98,7 @@ func _spawn_aoe_indicator() -> void:
 
 func _grant_rewards_to_players() -> void:
 	var equipment_reward := _generate_boss_equipment()
-	var gold_amount := 25 + floor_value * 5
+	var gold_amount := 1 + floor_value / 5
 	var shard_amount := 4 + int(floor_value / 5)
 	for player_ref in get_tree().get_nodes_in_group("player"):
 		if player_ref == null or not is_instance_valid(player_ref):
