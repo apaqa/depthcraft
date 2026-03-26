@@ -174,5 +174,3 @@ func _clear_enemy_root() -> void:
 	var enemy_root = get_parent().get_node_or_null("RaidEnemyRoot")
 	if enemy_root != null:
 		enemy_root.queue_free()
-()
-()

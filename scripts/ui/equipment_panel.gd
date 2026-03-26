@@ -138,9 +138,9 @@ func _update_comparison_label() -> void:
 	var item: Dictionary = player.inventory.items[stack_index]
 	var current_summary: Dictionary = player.get_stats_summary()
 	var preview_summary: Dictionary = player.get_stats_summary_for_item(item)
-	var lines := player.equipment_system.get_comparison_lines(current_summary, preview_summary)
+	var lines = player.equipment_system.get_comparison_lines(current_summary, preview_summary)
 	var chinese_lines: Array[String] = []
 	for line in lines:
-		var translated := line.replace("ATK", "攻擊").replace("DEF", "防禦").replace("HP", "血量").replace("SPD", "速度")
+		var translated = line.replace("ATK", "攻擊").replace("DEF", "防禦").replace("HP", "血量").replace("SPD", "速度")
 		chinese_lines.append(translated)
 	comparison_label.text = "\n".join(chinese_lines)

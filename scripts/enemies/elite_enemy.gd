@@ -95,9 +95,9 @@ func die() -> void:
 		_drop_gold_loot()
 		if randf() <= 0.5:
 			var equipment_drop = LOOT_DROP_SCENE.instantiate()
-			equipment_drop.setup_stack(DUNGEON_LOOT.generate_dungeon_equipment(floor_value))
 			equipment_drop.global_position = global_position + Vector2(10, -4)
 			loot_parent.add_child(equipment_drop)
+			equipment_drop.setup_stack(DUNGEON_LOOT.generate_dungeon_equipment(floor_value))
 	super.die()
 
 
