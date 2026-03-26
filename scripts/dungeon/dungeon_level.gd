@@ -24,6 +24,7 @@ const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
 const SHIELD_ORC_SCENE := preload("res://scenes/enemies/shield_orc_enemy.tscn")
 const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
 const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
+const BOSS_ENEMY_SCENE := preload("res://scenes/enemies/boss_enemy.tscn")
 const DUNGEON_CHEST_SCENE := preload("res://scenes/dungeon/dungeon_chest.tscn")
 const SPIKE_TRAP_SCENE := preload("res://scenes/dungeon/spike_trap.tscn")
 const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
@@ -43,6 +44,8 @@ var floor_data: Dictionary = {}
 var total_kills: int = 0
 var gameplay_paused: bool = false
 var treasure_reveal_time_left: float = 0.0
+var boss_stairway = null
+var boss_enemy_ref = null
 
 
 func _ready() -> void:
@@ -55,11 +58,11 @@ func _process(delta: float) -> void:
 		treasure_reveal_time_left = max(treasure_reveal_time_left - delta, 0.0)
 
 
-func place_player(new_player: Node2D, _spawn_override: Variant = null) -> void:
+func place_player(new_player: Node2D, spawn_override: Variant = null) -> void:
 	player = new_player
 	if player.get_parent() != self:
 		player.reparent(self)
-	player.global_position = get_spawn_position(_spawn_override)
+	player.global_position = get_spawn_position(spawn_override)
 	_update_player_ambient_light()
 	_spawn_enemies()
 
@@ -74,6 +77,8 @@ func descend_floor() -> void:
 func _generate_floor() -> void:
 	var generator := DUNGEON_GENERATOR.new()
 	floor_data = generator.generate_floor(current_floor, _create_rng(17))
+	boss_stairway = null
+	boss_enemy_ref = null
 	_draw_floor()
 	_spawn_features()
 	_spawn_enemies()
@@ -99,19 +104,15 @@ func _draw_floor() -> void:
 
 func _apply_biome_colors() -> void:
 	if current_floor >= 31:
-		# Abyss: everything dark and desaturated
 		tile_map_layer.modulate = Color(0.5, 0.5, 0.6)
 		wall_tile_map_layer.modulate = Color(0.5, 0.5, 0.6)
 	elif current_floor >= 21:
-		# Lava dungeon: floor warm orange-red, walls dark crimson
 		tile_map_layer.modulate = Color(0.9, 0.7, 0.6)
 		wall_tile_map_layer.modulate = Color(0.7, 0.4, 0.4)
 	elif current_floor >= 11:
-		# Dark dungeon: floor neutral, walls cold blue
 		tile_map_layer.modulate = Color(1.0, 1.0, 1.0)
 		wall_tile_map_layer.modulate = Color(0.7, 0.7, 0.9)
 	else:
-		# Stone dungeon: natural colours
 		tile_map_layer.modulate = Color(1.0, 1.0, 1.0)
 		wall_tile_map_layer.modulate = Color(1.0, 1.0, 1.0)
 
@@ -146,15 +147,18 @@ func _spawn_features() -> void:
 
 	var stairway = STAIRWAY_SCENE.instantiate()
 	stairway.global_position = floor_data.get("exit_point", Vector2.ZERO)
-	stairway.prompt_text = "[E] 前往第 %d 層" % (current_floor + 1)
+	stairway.prompt_text = "[E] Descend to Floor %d" % (current_floor + 1)
 	if stairway.has_method("set_stair_variant"):
 		stairway.set_stair_variant("down")
+	if _is_boss_floor():
+		stairway.set_locked(true, "[E] Descend to Floor %d" % (current_floor + 1), "[E] Defeat Boss to unlock")
+		boss_stairway = stairway
 	stairway.descend_requested.connect(_on_descend_requested)
 	feature_root.add_child(stairway)
 
 	var return_exit = STAIRWAY_SCENE.instantiate()
 	return_exit.global_position = floor_data.get("spawn_point", Vector2.ZERO)
-	return_exit.prompt_text = "[F] 返回地面 (保留戰利品)"
+	return_exit.prompt_text = "[F] Return to Surface"
 	return_exit.uses_secondary_input = true
 	if return_exit.has_method("set_stair_variant"):
 		return_exit.set_stair_variant("up")
@@ -167,19 +171,21 @@ func _spawn_features() -> void:
 		if room_index >= room_types.size():
 			continue
 		var room: Rect2i = rooms[room_index]
-		var room_type := str(room_types[room_index])
-		match room_type:
+		match str(room_types[room_index]):
 			"treasure":
 				_spawn_treasure_room(room)
 			"trap":
 				_spawn_trap_room(room)
 			"empty":
 				_spawn_empty_room(room)
+			"boss":
+				_spawn_boss_room_visual(room)
 
 
 func _spawn_enemies() -> void:
 	for child in enemy_root.get_children():
 		child.queue_free()
+	boss_enemy_ref = null
 
 	if player == null or not is_instance_valid(player):
 		return
@@ -207,6 +213,7 @@ func _spawn_enemies() -> void:
 			if room_type == "elite":
 				enemy_scene = BAT_SWARM_SCENE if rng.randf() <= 0.4 else SHIELD_ORC_SCENE
 			_spawn_enemy_instance(enemy_scene, room, rng)
+
 	var elite_count: int = min(int(config["elite_count"]), eligible_rooms.size())
 	_shuffle_with_rng(eligible_rooms, rng)
 	for elite_index in range(elite_count):
@@ -216,12 +223,23 @@ func _spawn_enemies() -> void:
 		elite.configure_for_floor(player, current_floor, loot_root)
 		elite.died.connect(_on_enemy_died.bind(elite))
 		enemy_root.add_child(elite)
+
+	if _is_boss_floor():
+		var boss_room_index := int(floor_data.get("boss_room_index", floor_data.get("exit_room_index", 0)))
+		if boss_room_index >= 0 and boss_room_index < rooms.size():
+			_spawn_boss_enemy(rooms[boss_room_index], rng)
+
 	set_gameplay_paused(gameplay_paused)
 
 
 func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	total_kills += 1
 	kills_changed.emit(total_kills)
+	if enemy_ref != null and enemy_ref.has_method("is_boss_enemy") and enemy_ref.is_boss_enemy():
+		boss_enemy_ref = null
+		if boss_stairway != null and is_instance_valid(boss_stairway):
+			boss_stairway.set_locked(false, "[E] Descend to Floor %d" % (current_floor + 1))
+		return
 	if enemy_ref != null and enemy_ref.has_method("is_elite_enemy") and enemy_ref.is_elite_enemy():
 		set_gameplay_paused(true)
 		buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())
@@ -310,14 +328,12 @@ func get_floor_spawn_config(floor_number: int, rng: RandomNumberGenerator = null
 		return {"enemy_min": 4, "enemy_max": 5, "allow_ranged": true, "ranged_ratio": 0.45, "elite_count": 1}
 	if floor_number <= 12:
 		return {"enemy_min": 5, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": _rng_range(rng, 1, 2)}
-	# Abyss (13+): more enemies, more elites
 	return {"enemy_min": 5, "enemy_max": 7, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": _rng_range(rng, 2, 3)}
 
 
 func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedScene:
 	var roll := _rng_randf(rng)
 	if floor_number >= 13:
-		# Abyss: all types mixed evenly
 		if roll <= 0.30:
 			return SHIELD_ORC_SCENE
 		if roll <= 0.55:
@@ -326,7 +342,6 @@ func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedS
 			return BAT_SWARM_SCENE
 		return MELEE_ENEMY_SCENE
 	if floor_number >= 9:
-		# Lava dungeon: orc dominant
 		if roll <= 0.50:
 			return SHIELD_ORC_SCENE
 		if roll <= 0.65:
@@ -335,7 +350,6 @@ func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedS
 			return BAT_SWARM_SCENE
 		return MELEE_ENEMY_SCENE
 	if floor_number >= 5:
-		# Dark dungeon: skeleton (ranged) dominant
 		if roll <= 0.55:
 			return RANGED_ENEMY_SCENE
 		if roll <= 0.70:
@@ -343,7 +357,6 @@ func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedS
 		if roll <= 0.85:
 			return SHIELD_ORC_SCENE
 		return MELEE_ENEMY_SCENE
-	# Stone dungeon (1-4): goblin dominant, occasional bats
 	if floor_number >= 3 and roll <= 0.20:
 		return BAT_SWARM_SCENE
 	return MELEE_ENEMY_SCENE
@@ -386,10 +399,46 @@ func _spawn_empty_room(room: Rect2i) -> void:
 
 
 func _spawn_trap_room(room: Rect2i) -> void:
-	for trap_index in range(randi_range(2, 4)):
+	for _trap_index in range(randi_range(2, 4)):
 		var trap = SPIKE_TRAP_SCENE.instantiate()
 		trap.global_position = _random_point_in_room(room)
 		feature_root.add_child(trap)
+
+
+func _spawn_boss_room_visual(room: Rect2i) -> void:
+	var room_start := Vector2(room.position.x * 16, room.position.y * 16)
+	var room_end := Vector2(room.end.x * 16, room.end.y * 16)
+
+	var fill := Polygon2D.new()
+	fill.color = Color(0.55, 0.12, 0.12, 0.22)
+	fill.polygon = PackedVector2Array([
+		room_start,
+		Vector2(room_end.x, room_start.y),
+		room_end,
+		Vector2(room_start.x, room_end.y),
+	])
+	feature_root.add_child(fill)
+
+	var border := Line2D.new()
+	border.width = 3.0
+	border.default_color = Color(1.0, 0.42, 0.18, 0.95)
+	border.closed = true
+	border.points = PackedVector2Array([
+		room_start + Vector2(2, 2),
+		Vector2(room_end.x - 2, room_start.y + 2),
+		room_end - Vector2(2, 2),
+		Vector2(room_start.x + 2, room_end.y - 2),
+	])
+	feature_root.add_child(border)
+
+
+func _spawn_boss_enemy(room: Rect2i, rng: RandomNumberGenerator) -> void:
+	var boss = BOSS_ENEMY_SCENE.instantiate()
+	boss.global_position = _random_point_in_room(room, rng)
+	boss.configure_for_floor(player, current_floor, loot_root)
+	boss.died.connect(_on_enemy_died.bind(boss))
+	enemy_root.add_child(boss)
+	boss_enemy_ref = boss
 
 
 func set_gameplay_paused(paused: bool) -> void:
@@ -407,9 +456,8 @@ func get_minimap_snapshot() -> Dictionary:
 		enemy_positions.append(enemy.global_position)
 	if treasure_reveal_time_left > 0.0:
 		for child in feature_root.get_children():
-			if child != null and is_instance_valid(child) and child.has_method("get_interaction_prompt") and child.has_method("get"):
-				if str(child.get_interaction_prompt()) == "[E] 開啟寶箱":
-					chest_positions.append(child.global_position)
+			if child is DungeonChest:
+				chest_positions.append(child.global_position)
 	return {
 		"map_size": DUNGEON_GENERATOR.MAP_SIZE,
 		"floor_tiles": floor_data.get("floor_tiles", []),
@@ -451,3 +499,7 @@ func _shuffle_with_rng(values: Array[int], rng: RandomNumberGenerator) -> void:
 
 func reveal_treasure_hunter(duration: float) -> void:
 	treasure_reveal_time_left = max(treasure_reveal_time_left, duration)
+
+
+func _is_boss_floor() -> bool:
+	return bool(floor_data.get("is_boss_floor", false))

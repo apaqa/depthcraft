@@ -9,7 +9,6 @@ const CORRIDOR_HALF_WIDTH := 1
 
 func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var room_count := clampi(4 + floor_number, 5, 8)
-	# Rooms grow slightly larger with depth: +1 tile per 4 floors, capped at +3
 	var size_bonus := mini(floor_number / 4, 3)
 	var min_room_size := MIN_ROOM_SIZE + Vector2i(size_bonus, size_bonus)
 	var max_room_size := MAX_ROOM_SIZE + Vector2i(size_bonus, size_bonus)
@@ -48,10 +47,12 @@ func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dic
 	var wall_tiles := _build_walls(floor_tiles)
 	var spawn_room_index := 0
 	var exit_room_index := rooms.size() - 1
+	var is_boss_floor := floor_number > 0 and floor_number % 5 == 0
+	var boss_room_index := exit_room_index if is_boss_floor else -1
 	var elite_room_index := 0 if rooms.size() == 1 else _rng_range(rng, 1, rooms.size() - 1)
 	var spawn_point := _tile_to_world(_room_center(rooms[spawn_room_index]))
 	var exit_point := _tile_to_world(_room_center(rooms[exit_room_index]))
-	var room_types := _assign_room_types(rooms.size(), spawn_room_index, exit_room_index, elite_room_index, floor_number, rng)
+	var room_types := _assign_room_types(rooms.size(), spawn_room_index, exit_room_index, elite_room_index, floor_number, is_boss_floor, rng)
 
 	return {
 		"rooms": rooms,
@@ -59,6 +60,8 @@ func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dic
 		"spawn_point": spawn_point,
 		"exit_point": exit_point,
 		"elite_room_index": elite_room_index,
+		"boss_room_index": boss_room_index,
+		"is_boss_floor": is_boss_floor,
 		"room_types": room_types,
 		"spawn_room_index": spawn_room_index,
 		"exit_room_index": exit_room_index,
@@ -130,11 +133,14 @@ func _rng_range(rng: RandomNumberGenerator, min_value: int, max_value: int) -> i
 	return rng.randi_range(min_value, max_value) if rng != null else randi_range(min_value, max_value)
 
 
-func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index: int, elite_room_index: int, floor_number: int, rng: RandomNumberGenerator = null) -> Array[String]:
+func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index: int, elite_room_index: int, floor_number: int, is_boss_floor: bool, rng: RandomNumberGenerator = null) -> Array[String]:
 	var room_types: Array[String] = []
 	for room_index in range(room_count):
-		if room_index == spawn_room_index or room_index == exit_room_index:
+		if room_index == spawn_room_index:
 			room_types.append("normal")
+			continue
+		if room_index == exit_room_index:
+			room_types.append("boss" if is_boss_floor else "normal")
 			continue
 		if room_index == elite_room_index and floor_number >= 4:
 			room_types.append("elite")
