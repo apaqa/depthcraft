@@ -3,7 +3,7 @@ class_name CookingBenchFacility
 
 
 const RECIPE_LEVELS := {
-	1: ["bread"],
+	1: ["bread", "stew"],
 	2: ["bread", "stew"],
 	3: ["bread", "stew", "herb_tea"],
 }

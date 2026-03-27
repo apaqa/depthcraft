@@ -14,8 +14,13 @@ const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 @onready var inventory_title: Label = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryTitle
 
 var player = null
+# Equipment rows (VBoxContainer-based 2-row layout)
+var _inv_scroll: ScrollContainer = null
+var _inv_vbox: VBoxContainer = null
+var _eq_indices: Array[int] = []
+var _hovered_eq_index: int = -1
+# Consumable entries in ItemList
 var _inventory_indices: Array[int] = []
-var _inventory_types: Array[String] = []
 var _hovered_inventory_index: int = -1
 var _context_menu: PopupMenu = null
 var _context_inv_index: int = -1
@@ -29,11 +34,23 @@ func _ready() -> void:
 	_context_menu = PopupMenu.new()
 	add_child(_context_menu)
 	_context_menu.id_pressed.connect(_on_context_id_pressed)
-	
+
+	# Build equipment VBoxContainer (2-row layout) before InventoryList
+	var panel_vbox: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer
+	_inv_scroll = ScrollContainer.new()
+	_inv_scroll.custom_minimum_size = Vector2(200, 180)
+	_inv_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_inv_vbox = VBoxContainer.new()
+	_inv_vbox.add_theme_constant_override("separation", 4)
+	_inv_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_inv_scroll.add_child(_inv_vbox)
+	panel_vbox.add_child(_inv_scroll)
+	panel_vbox.move_child(_inv_scroll, 1)  # After InventoryTitle
+
 	title_label.text = LocaleManager.L("equipment")
 	slot_title.text = LocaleManager.L("wearing")
 	inventory_title.text = LocaleManager.L("backpack_equipment")
-	
+
 	set_process(true)
 
 
@@ -60,15 +77,26 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _refresh() -> void:
+	# --- Equipped slots ---
 	for child in slot_list.get_children():
 		child.queue_free()
+
+	# --- Equipment inventory (2-row VBoxContainer) ---
+	for child in _inv_vbox.get_children():
+		child.queue_free()
+	_eq_indices.clear()
+	_hovered_eq_index = -1
+
+	# --- Consumables (ItemList) ---
 	inventory_list.clear()
 	inventory_list.fixed_icon_size = Vector2i(32, 32)
 	_inventory_indices.clear()
-	_inventory_types.clear()
 	_hovered_inventory_index = -1
+
 	if player == null:
 		return
+
+	# Build equipped slot buttons
 	for slot_name in player.equipment_system.get_slot_order():
 		var button := Button.new()
 		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
@@ -85,22 +113,16 @@ func _refresh() -> void:
 		button.pressed.connect(_on_slot_pressed.bind(String(slot_name)))
 		slot_list.add_child(button)
 
-	# Equipment in inventory
+	# Build equipment inventory rows (2-row layout)
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
 		if str(stack.get("type", "")) != "equipment":
 			continue
-		var slot_name := str(stack.get("slot", ""))
-		var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
-		inventory_list.add_item(_translate_slot(slot_name), icon)
-		var item_index := inventory_list.get_item_count() - 1
-		inventory_list.set_item_icon_mode(item_index, ItemList.ICON_MODE_TOP)
-		inventory_list.set_item_text_alignment(item_index, HORIZONTAL_ALIGNMENT_CENTER)
-		inventory_list.set_item_tooltip(item_index, "%s\n%s" % [_get_item_display_name(stack), LocaleManager.L("hint_right_click_discard")])
-		inventory_list.set_item_custom_fg_color(item_index, player.equipment_system.get_item_display_color(stack))
-		_inventory_indices.append(index)
-		_inventory_types.append("equipment")
-	# Consumables in inventory (for Q/R quickslot assignment)
+		var eq_list_index := _eq_indices.size()
+		_eq_indices.append(index)
+		_inv_vbox.add_child(_build_equipment_row(stack, eq_list_index))
+
+	# Build consumable entries in ItemList
 	var q_id: String = str(player.get("consumable_q_id")) if player != null else ""
 	var r_id: String = str(player.get("consumable_r_id")) if player != null else ""
 	for index in range(player.inventory.items.size()):
@@ -119,7 +141,7 @@ func _refresh() -> void:
 		inventory_list.add_item("%s x%d%s  %s" % [label, qty, tag, LocaleManager.L("hint_right_click_quickslot")], icon)
 		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, Color(0.32, 0.78, 0.42, 1.0))
 		_inventory_indices.append(index)
-		_inventory_types.append("consumable")
+
 	var summary: Dictionary = player.get_stats_summary()
 	stat_label.text = "%s: %d   %s: %d   %s: %d   %s: %d" % [
 		LocaleManager.L("atk"), int(summary.get("attack", 0)),
@@ -130,12 +152,96 @@ func _refresh() -> void:
 	comparison_label.text = LocaleManager.L("hover_to_compare")
 
 
+func _build_equipment_row(stack: Dictionary, eq_list_index: int) -> Button:
+	var btn := Button.new()
+	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.custom_minimum_size = Vector2(0, 54)
+	if not stack.is_empty():
+		_apply_rarity_style(btn, player.equipment_system.get_item_display_color(stack))
+
+	# Row content as VBoxContainer inside button
+	var content := VBoxContainer.new()
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_theme_constant_override("separation", 2)
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	# Row 1: 32×32 icon + item name (color-coded)
+	var row1 := HBoxContainer.new()
+	row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row1.add_theme_constant_override("separation", 6)
+	var icon_ctrl := _build_icon_control(stack, 32)
+	row1.add_child(icon_ctrl)
+	var name_lbl := Label.new()
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_lbl.text = _get_item_display_name(stack)
+	name_lbl.self_modulate = player.equipment_system.get_item_display_color(stack)
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.clip_text = true
+	row1.add_child(name_lbl)
+	content.add_child(row1)
+
+	# Row 2: slot type + durability (smaller gray text)
+	var slot_name := str(stack.get("slot", ""))
+	var dur := int(stack.get("durability", 0))
+	var max_dur := int(stack.get("max_durability", 0))
+	var info_lbl := Label.new()
+	info_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_lbl.text = "%s  %d/%d" % [_translate_slot(slot_name), dur, max_dur]
+	info_lbl.add_theme_font_size_override("font_size", 10)
+	info_lbl.modulate = Color(0.7, 0.7, 0.7, 1.0)
+	content.add_child(info_lbl)
+
+	btn.add_child(content)
+
+	btn.pressed.connect(_on_eq_inv_pressed.bind(eq_list_index))
+	btn.mouse_entered.connect(func():
+		_hovered_eq_index = eq_list_index
+		_update_comparison_label()
+	)
+	btn.mouse_exited.connect(func():
+		_hovered_eq_index = -1
+		_update_comparison_label()
+	)
+	btn.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			_context_inv_index = _eq_indices[eq_list_index] if eq_list_index < _eq_indices.size() else -1
+			if _context_inv_index < 0:
+				return
+			_context_menu.clear()
+			_context_menu.add_item(LocaleManager.L("ctx_discard"), 0)
+			_context_menu.position = Vector2i(get_global_mouse_position())
+			_context_menu.reset_size()
+			_context_menu.popup()
+	)
+	return btn
+
+
+func _build_icon_control(stack: Dictionary, size: int) -> Control:
+	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+	if icon != null:
+		var icon_rect := TextureRect.new()
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_rect.custom_minimum_size = Vector2(size, size)
+		icon_rect.size = Vector2(size, size)
+		icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_rect.texture = icon
+		return icon_rect
+	var swatch := ColorRect.new()
+	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	swatch.custom_minimum_size = Vector2(size, size)
+	swatch.color = ITEM_DATABASE.get_stack_color(stack)
+	return swatch
+
+
 func _apply_rarity_style(node: Control, base_color: Color) -> void:
 	# Clean up previous border decorations
 	for child in node.get_children():
 		if child.name == "RarityBorder":
 			child.queue_free()
-	
+
 	var border_drawer := Control.new()
 	border_drawer.name = "RarityBorder"
 	border_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -148,7 +254,7 @@ func _apply_rarity_style(node: Control, base_color: Color) -> void:
 		border_drawer.draw_rect(r.grow(-2), base_color.lightened(0.4), false, 1.0)
 	)
 	node.add_child(border_drawer)
-	
+
 	# Apply a dark background via StyleBox
 	var bg_style := StyleBoxFlat.new()
 	bg_style.bg_color = Color(0.12, 0.12, 0.12, 0.9)
@@ -192,12 +298,8 @@ func _translate_slot(slot_name: String) -> String:
 
 
 func _on_inventory_selected(index: int) -> void:
-	if player == null or index < 0 or index >= _inventory_indices.size():
-		return
-	if index < _inventory_types.size() and _inventory_types[index] == "consumable":
-		return
-	player.equipment_system.equip_from_inventory(player.inventory, _inventory_indices[index])
-	_refresh()
+	# ItemList now contains only consumables; selecting does nothing
+	pass
 
 
 func _on_inventory_item_clicked(index: int, _at_position: Vector2, mouse_button_index: int) -> void:
@@ -206,13 +308,9 @@ func _on_inventory_item_clicked(index: int, _at_position: Vector2, mouse_button_
 	if index < 0 or index >= _inventory_indices.size():
 		return
 	_context_inv_index = _inventory_indices[index]
-	var item_type := _inventory_types[index] if index < _inventory_types.size() else ""
 	_context_menu.clear()
-	if item_type == "equipment":
-		_context_menu.add_item(LocaleManager.L("ctx_discard"), 0)
-	elif item_type == "consumable":
-		_context_menu.add_item(LocaleManager.L("ctx_set_q"), 1)
-		_context_menu.add_item(LocaleManager.L("ctx_set_r"), 2)
+	_context_menu.add_item(LocaleManager.L("ctx_set_q"), 1)
+	_context_menu.add_item(LocaleManager.L("ctx_set_r"), 2)
 	if _context_menu.item_count > 0:
 		_context_menu.position = Vector2i(get_global_mouse_position())
 		_context_menu.reset_size()
@@ -224,6 +322,13 @@ func _on_context_id_pressed(id: int) -> void:
 		0: _discard_item(_context_inv_index)
 		1: _set_quickslot(_context_inv_index, 0)
 		2: _set_quickslot(_context_inv_index, 1)
+
+
+func _on_eq_inv_pressed(eq_list_index: int) -> void:
+	if player == null or eq_list_index < 0 or eq_list_index >= _eq_indices.size():
+		return
+	player.equipment_system.equip_from_inventory(player.inventory, _eq_indices[eq_list_index])
+	_refresh()
 
 
 func _discard_item(inv_index: int) -> void:
@@ -258,33 +363,36 @@ func _on_slot_pressed(slot_name: String) -> void:
 func _process(_delta: float) -> void:
 	if not visible or player == null:
 		return
+	# Track consumable hover in ItemList
 	var local_position := inventory_list.get_local_mouse_position()
 	var hovered := inventory_list.get_item_at_position(local_position, true)
-	if hovered == _hovered_inventory_index:
-		return
-	_hovered_inventory_index = hovered
-	_update_comparison_label()
+	if hovered != _hovered_inventory_index:
+		_hovered_inventory_index = hovered
+		if _hovered_eq_index < 0:
+			_update_comparison_label()
 
 
 func _update_comparison_label() -> void:
 	if comparison_label == null or player == null:
 		return
-	if _hovered_inventory_index < 0 or _hovered_inventory_index >= _inventory_indices.size():
-		comparison_label.text = LocaleManager.L("hover_to_compare")
+	# Equipment hover takes priority — show stat comparison
+	if _hovered_eq_index >= 0 and _hovered_eq_index < _eq_indices.size():
+		var stack_index: int = _eq_indices[_hovered_eq_index]
+		if stack_index < 0 or stack_index >= player.inventory.items.size():
+			comparison_label.text = LocaleManager.L("hover_to_compare")
+			return
+		var item: Dictionary = player.inventory.items[stack_index]
+		var current_summary: Dictionary = player.get_stats_summary()
+		var preview_summary: Dictionary = player.get_stats_summary_for_item(item)
+		var lines = player.equipment_system.get_comparison_lines(current_summary, preview_summary)
+		var localized_lines: Array[String] = []
+		for line in lines:
+			var translated = line.replace("ATK", LocaleManager.L("atk")).replace("DEF", LocaleManager.L("def")).replace("HP", LocaleManager.L("hp")).replace("SPD", LocaleManager.L("spd"))
+			localized_lines.append(translated)
+		comparison_label.text = "\n".join(localized_lines)
 		return
-	if _hovered_inventory_index < _inventory_types.size() and _inventory_types[_hovered_inventory_index] == "consumable":
+	# Consumable hover
+	if _hovered_inventory_index >= 0 and _hovered_inventory_index < _inventory_indices.size():
 		comparison_label.text = LocaleManager.L("consumable_quickslot_hint")
 		return
-	var stack_index: int = _inventory_indices[_hovered_inventory_index]
-	if stack_index < 0 or stack_index >= player.inventory.items.size():
-		comparison_label.text = LocaleManager.L("hover_to_compare")
-		return
-	var item: Dictionary = player.inventory.items[stack_index]
-	var current_summary: Dictionary = player.get_stats_summary()
-	var preview_summary: Dictionary = player.get_stats_summary_for_item(item)
-	var lines = player.equipment_system.get_comparison_lines(current_summary, preview_summary)
-	var localized_lines: Array[String] = []
-	for line in lines:
-		var translated = line.replace("ATK", LocaleManager.L("atk")).replace("DEF", LocaleManager.L("def")).replace("HP", LocaleManager.L("hp")).replace("SPD", LocaleManager.L("spd"))
-		localized_lines.append(translated)
-	comparison_label.text = "\n".join(localized_lines)
+	comparison_label.text = LocaleManager.L("hover_to_compare")
