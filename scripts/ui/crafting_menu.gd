@@ -27,11 +27,11 @@ var upgrade_label: Label = null
 var upgrade_button: Button = null
 
 const CATEGORY_KEY_MAP = {
-	"Armor": "CAT_ARMOR",
-	"Weapons": "CAT_WEAPONS",
-	"Consumables": "CAT_CONSUMABLES",
-	"Cooking": "CAT_COOKING",
-	"Tools": "CAT_TOOLS"
+	"Armor": "cat_armor",
+	"Weapons": "cat_weapons",
+	"Consumables": "cat_consumables",
+	"Cooking": "cat_cooking",
+	"Tools": "cat_tools"
 }
 
 const STAT_KEY_MAP = {

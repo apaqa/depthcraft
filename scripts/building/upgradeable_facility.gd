@@ -64,7 +64,7 @@ func _apply_upgrade_visuals() -> void:
 	super._apply_upgrade_visuals()
 	if _sprite == null:
 		return
-	var level_offset := max(upgrade_level - 1, 0)
+	var level_offset = max(upgrade_level - 1, 0)
 	_sprite.scale = _base_sprite_scale * (1.0 + float(level_offset) * 0.1)
 	_sprite.modulate = _base_sprite_modulate.lerp(Color(1.0, 1.0, 1.0, 1.0), min(float(level_offset) * 0.1, 0.2))
 
