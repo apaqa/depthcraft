@@ -31,6 +31,7 @@ const FILES = [
     "res://scripts/building/facilities/workbench.gd",
     "res://scripts/main.gd",
     "res://scripts/ui/buff_select.gd",
+    "res://scripts/enemies/necromancer_boss.gd",
 ]
 func _init() -> void:
     var had_error := false
