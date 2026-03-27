@@ -63,7 +63,7 @@ func _refresh() -> void:
 	for child in slot_list.get_children():
 		child.queue_free()
 	inventory_list.clear()
-	inventory_list.fixed_icon_size = Vector2i(24, 24)
+	inventory_list.fixed_icon_size = Vector2i(32, 32)
 	_inventory_indices.clear()
 	_inventory_types.clear()
 	_hovered_inventory_index = -1
@@ -89,13 +89,16 @@ func _refresh() -> void:
 		var stack: Dictionary = player.inventory.items[index]
 		if str(stack.get("type", "")) != "equipment":
 			continue
-		var display_name = player.equipment_system.get_item_display_name(stack)
 		var slot_name := str(stack.get("slot", ""))
 		var icon = stack.get("icon")
 		if not icon is Texture2D:
 			icon = null
-		inventory_list.add_item("%s [%s]  %s" % [display_name, _translate_slot(slot_name), LocaleManager.L("hint_right_click_discard")], icon)
-		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, player.equipment_system.get_item_display_color(stack))
+		inventory_list.add_item(_translate_slot(slot_name), icon)
+		var item_index := inventory_list.get_item_count() - 1
+		inventory_list.set_item_icon_mode(item_index, ItemList.ICON_MODE_TOP)
+		inventory_list.set_item_text_alignment(item_index, HORIZONTAL_ALIGNMENT_CENTER)
+		inventory_list.set_item_tooltip(item_index, "%s\n%s" % [_get_item_display_name(stack), LocaleManager.L("hint_right_click_discard")])
+		inventory_list.set_item_custom_fg_color(item_index, player.equipment_system.get_item_display_color(stack))
 		_inventory_indices.append(index)
 		_inventory_types.append("equipment")
 	# Consumables in inventory (for Q/R quickslot assignment)
@@ -168,7 +171,20 @@ func _build_slot_text(slot_name: String, item: Dictionary) -> String:
 		return label + LocaleManager.L("empty")
 	var durability := int(item.get("durability", 0))
 	var max_durability := int(item.get("max_durability", 0))
-	return "%s%s  %s" % [label, player.equipment_system.get_item_display_name(item), LocaleManager.L("slot_durability") % [durability, max_durability]]
+	return "%s%s  %s" % [label, _get_item_display_name(item), LocaleManager.L("slot_durability") % [durability, max_durability]]
+
+
+func _get_item_display_name(item_data: Dictionary) -> String:
+	if item_data.is_empty():
+		return ""
+	var base_name := str(item_data.get("name", item_data.get("id", "")))
+	if player != null and player.equipment_system.is_broken(str(item_data.get("slot", ""))) and player.equipment_system.get_equipped(str(item_data.get("slot", ""))).get("id", "") == item_data.get("id", ""):
+		return LocaleManager.L("broken_item_fmt") % base_name
+	var durability := int(item_data.get("durability", 0))
+	var max_durability := int(item_data.get("max_durability", 0))
+	if max_durability > 0 and durability <= 0:
+		return LocaleManager.L("broken_item_fmt") % base_name
+	return base_name
 
 
 func _translate_slot(slot_name: String) -> String:
