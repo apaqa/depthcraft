@@ -3,12 +3,13 @@ class_name DungeonLoot
 
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
-const PREFIXES := ["Ancient", "Runed", "Iron", "Storm", "Shadow", "Wild", "Sunforged", "Deepstone"]
-const WEAPON_NAMES := ["Blade", "Sword", "Cleaver", "Saber", "Edge"]
-const HELMET_NAMES := ["Helm", "Crown", "Hood", "Greathelm"]
-const CHEST_NAMES := ["Mail", "Cuirass", "Vest", "Armor"]
-const BOOT_NAMES := ["Boots", "Greaves", "Treads"]
-const ACCESSORY_NAMES := ["Ring", "Charm", "Talisman", "Band"]
+const PREFIXES := ["Ancient", "Runed", "Iron", "Storm", "Shadow", "Wild", "Sunforged", "Deepstone", "Cursed", "Radiant", "Vile", "Frostbound", "Emberlit", "Voidtouched", "Serrated"]
+const WEAPON_NAMES := ["Blade", "Sword", "Cleaver", "Saber", "Edge", "Dagger", "Staff", "Wand", "Axe", "Bow", "Reaper", "Fang"]
+const HELMET_NAMES := ["Helm", "Crown", "Hood", "Greathelm", "Visage", "Circlet"]
+const CHEST_NAMES := ["Mail", "Cuirass", "Vest", "Armor", "Plate", "Hauberk"]
+const BOOT_NAMES := ["Boots", "Greaves", "Treads", "Sabatons", "Striders"]
+const OFFHAND_NAMES := ["Shield", "Buckler", "Barrier", "Bulwark", "Ward"]
+const ACCESSORY_NAMES := ["Ring", "Charm", "Talisman", "Band", "Amulet", "Pendant", "Sigil"]
 
 const RARITY_ORDER := ["Common", "Uncommon", "Rare", "Epic", "Legendary"]
 const RARITY_ALIASES := {
@@ -33,6 +34,14 @@ const AFFIX_POOL := [
 	{"label": "Keen", "stat": "crit_chance", "min": 3, "max": 8, "scale": 0.01, "suffix": "%"},
 	{"label": "Leeching", "stat": "lifesteal_ratio", "min": 3, "max": 5, "scale": 0.01, "suffix": "%"},
 	{"label": "Gatherer's", "stat": "gather_bonus", "min": 1, "max": 3},
+	{"label": "Thorned", "stat": "thorns_damage", "min": 2, "max": 7},
+	{"label": "Elusive", "stat": "dodge_chance", "min": 3, "max": 8, "scale": 0.01, "suffix": "%"},
+	{"label": "Quickcast", "stat": "cooldown_reduction", "min": 3, "max": 10, "scale": 0.01, "suffix": "%"},
+	{"label": "Arcane", "stat": "spell_power", "min": 4, "max": 12},
+	{"label": "Brutal", "stat": "crit_damage_multiplier", "min": 10, "max": 30, "scale": 0.01, "suffix": "%"},
+	{"label": "Regenerating", "stat": "hp_regen", "min": 1, "max": 4},
+	{"label": "Piercing", "stat": "armor_penetration", "min": 2, "max": 6},
+	{"label": "Warding", "stat": "elemental_resistance", "min": 3, "max": 8},
 ]
 const QUALITY_MULTIPLIERS := {
 	"Common": 1.0,
@@ -138,12 +147,12 @@ static func _pick_quality(floor_number: int, rng: RandomNumberGenerator = null) 
 
 
 static func _pick_slot(rng: RandomNumberGenerator = null) -> String:
-	return str(_pick(["weapon", "helmet", "chest_armor", "boots", "accessory"], rng))
+	return str(_pick(["weapon", "helmet", "chest_armor", "boots", "accessory", "offhand"], rng))
 
 
 static func _generate_name(slot: String, quality: String = "Common", rng: RandomNumberGenerator = null) -> String:
-	var prefix_a := str(_pick(PREFIXES, rng))
-	var prefix_b := str(_pick(PREFIXES, rng))
+	var prefix_a: String = str(_pick(PREFIXES, rng))
+	var prefix_b: String = str(_pick(PREFIXES, rng))
 	var noun: String
 	match slot:
 		"weapon":
@@ -154,9 +163,11 @@ static func _generate_name(slot: String, quality: String = "Common", rng: Random
 			noun = str(_pick(CHEST_NAMES, rng))
 		"boots":
 			noun = str(_pick(BOOT_NAMES, rng))
+		"offhand":
+			noun = str(_pick(OFFHAND_NAMES, rng))
 		_:
 			noun = str(_pick(ACCESSORY_NAMES, rng))
-	var base_name := "%s %s %s" % [prefix_a, prefix_b, noun]
+	var base_name: String = "%s %s %s" % [prefix_a, prefix_b, noun]
 	if quality != "Common":
 		return "[%s] %s" % [quality, base_name]
 	return base_name
@@ -172,6 +183,8 @@ static func _generate_base_stats(slot: String, base_power: int) -> Dictionary:
 			return {"defense": base_power + 2, "max_hp": base_power * 3}
 		"boots":
 			return {"defense": max(base_power - 1, 1), "speed_multiplier": 0.05}
+		"offhand":
+			return {"defense": base_power + 1, "max_hp": base_power * 2, "thorns_damage": max(base_power / 3, 1)}
 		_:
 			return {"crit_chance": 0.02, "max_hp": base_power * 2}
 
