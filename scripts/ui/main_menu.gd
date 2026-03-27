@@ -11,6 +11,10 @@ extends Control
 @onready var status_label: Label = $Panel/MarginContainer/VBoxContainer/StatusLabel
 @onready var quit_button: Button = $Panel/MarginContainer/VBoxContainer/QuitButton
 
+const CONTINUE_GAME_ZH: String = "\u7e7c\u7e8c\u904a\u6232"
+const NO_SAVE_ZH: String = "\u6c92\u6709\u53ef\u7528\u5b58\u6a94\u3002"
+const SAVE_SUMMARY_ZH: String = "\u5b58\u6a94 1: \u7b2c %d \u5929 / \u6700\u6df1 %d \u5c64 / %dG %dS %dC"
+
 
 func _ready() -> void:
 	title_label.text = LocaleManager.L("main_title")
@@ -56,9 +60,7 @@ func _on_load_game_pressed() -> void:
 	var network_manager: Node = _get_network_manager()
 	if network_manager != null:
 		network_manager.disconnect_game()
-	if not SaveManager.queue_load_game(1):
-		status_label.text = _get_missing_save_text()
-		return
+	SaveManager.load_game(1)
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
@@ -101,11 +103,11 @@ func _get_network_manager() -> Node:
 
 
 func _get_load_button_text() -> String:
-	return "載入遊戲" if LocaleManager.get_locale().begins_with("zh") else "Load Game"
+	return CONTINUE_GAME_ZH if LocaleManager.get_locale().begins_with("zh") else "Continue Game"
 
 
 func _get_missing_save_text() -> String:
-	return "沒有可載入的存檔" if LocaleManager.get_locale().begins_with("zh") else "No save available."
+	return NO_SAVE_ZH if LocaleManager.get_locale().begins_with("zh") else "No save available."
 
 
 func _format_save_summary(meta: Dictionary) -> String:
@@ -117,6 +119,5 @@ func _format_save_summary(meta: Dictionary) -> String:
 	var silver: int = int(meta.get("silver", 0))
 	var copper: int = int(meta.get("copper", 0))
 	if LocaleManager.get_locale().begins_with("zh"):
-		return "存檔 1: 第 %d 天 / 最深 %d 層 / %dG %dS %dC" % [current_day, deepest_floor, gold, silver, copper]
+		return SAVE_SUMMARY_ZH % [current_day, deepest_floor, gold, silver, copper]
 	return "Slot 1: Day %d / Deepest Floor %d / %dG %dS %dC" % [current_day, deepest_floor, gold, silver, copper]
-

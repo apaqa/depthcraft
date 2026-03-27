@@ -1,6 +1,6 @@
 extends Node
 
-const FORMAT_VERSION: int = 1
+const FORMAT_VERSION: int = 2
 const SAVE_SLOT_TEMPLATE: String = "user://save_slot_%d.json"
 const BUILDING_SAVE = preload("res://scripts/building/building_save.gd")
 const PLAYER_SAVE = preload("res://scripts/player/player_save.gd")
@@ -35,6 +35,7 @@ func save_game(slot: int) -> void:
 		"equipment": _serialize_equipment(player),
 		"currency": _serialize_currency(player),
 		"buildings": _serialize_buildings(player),
+		"skills": _serialize_skills(player),
 		"progress": _serialize_progress(main_node),
 	}
 	_write_json(SAVE_SLOT_TEMPLATE % slot, payload)
@@ -58,12 +59,17 @@ func load_game(slot: int) -> void:
 		push_warning("SaveManager: slot %d not found or empty" % slot)
 		return
 	var player: Node = _get_player()
+	if player == null:
+		_synchronize_legacy_player_state(data)
+		_pending_load_slot = slot
+		return
 	var main_node: Node = get_tree().current_scene
 	var player_data: Dictionary = data.get("player", {}) as Dictionary
 	var inventory_data: Array = data.get("inventory", []) as Array
 	var equipment_data: Dictionary = data.get("equipment", {}) as Dictionary
 	var currency_data: Dictionary = data.get("currency", {}) as Dictionary
 	var building_data: Dictionary = data.get("buildings", {}) as Dictionary
+	var skill_data: Dictionary = data.get("skills", {}) as Dictionary
 	var progress_data: Dictionary = data.get("progress", {}) as Dictionary
 	_synchronize_legacy_player_state(data)
 	_restore_player(player_data, player)
@@ -71,6 +77,7 @@ func load_game(slot: int) -> void:
 	_restore_currency(currency_data, player)
 	_restore_equipment(equipment_data, player)
 	_restore_buildings(building_data, player)
+	_restore_skills(skill_data, player)
 	_restore_progress(progress_data, main_node)
 	_finalize_player_restore(player_data, player)
 	_refresh_loaded_scene(main_node)
@@ -99,10 +106,10 @@ func get_save_meta(slot: int) -> Dictionary:
 	return {
 		"timestamp": int(data.get("timestamp", 0)),
 		"current_day": int(progress.get("current_day", 1)),
-		"deepest_floor": int(progress.get("deepest_floor_reached", 1)),
-		"player_hp": int(player_data.get("current_hp", 0)),
+		"deepest_floor": int(progress.get("deepest_floor", progress.get("deepest_floor_reached", 1))),
+		"player_hp": int(player_data.get("hp", player_data.get("current_hp", 0))),
 		"player_max_hp": int(player_data.get("max_hp", 100)),
-		"class_id": str(player_data.get("current_class_id", "")),
+		"class_id": _extract_saved_class_id(player_data),
 		"gold": int(currency.get("gold", 0)),
 		"silver": int(currency.get("silver", 0)),
 		"copper": int(currency.get("copper", 0)),
@@ -124,6 +131,20 @@ func _serialize_player(player: Node) -> Dictionary:
 	var raw_pos: Variant = player.get("global_position")
 	if raw_pos is Vector2:
 		pos = raw_pos as Vector2
+	var attack_value: int = 0
+	var defense_value: int = 0
+	var speed_value: float = 0.0
+	var player_stats: Node = player.get_node_or_null("PlayerStats")
+	if player_stats != null:
+		if player_stats.has_method("get_total_attack"):
+			attack_value = int(player_stats.call("get_total_attack"))
+		if player_stats.has_method("get_total_defense"):
+			defense_value = int(player_stats.call("get_total_defense"))
+		if player_stats.has_method("get_total_speed"):
+			speed_value = float(player_stats.call("get_total_speed"))
+	var raw_speed: Variant = player.get("speed")
+	if is_zero_approx(speed_value) and raw_speed != null:
+		speed_value = float(raw_speed)
 	var talent_strings: Array[String] = []
 	var raw_talents: Variant = player.get("unlocked_talents")
 	if raw_talents is Array:
@@ -132,12 +153,18 @@ func _serialize_player(player: Node) -> Dictionary:
 	var raw_hp: Variant = player.get("current_hp")
 	var raw_max_hp: Variant = player.get("max_hp")
 	return {
+		"hp": int(raw_hp) if raw_hp != null else 100,
 		"current_hp": int(raw_hp) if raw_hp != null else 100,
 		"max_hp": int(raw_max_hp) if raw_max_hp != null else 100,
+		"position": [float(pos.x), float(pos.y)],
 		"position_x": float(pos.x),
 		"position_y": float(pos.y),
 		"unlocked_talents": talent_strings,
+		"class_id": class_id,
 		"current_class_id": class_id,
+		"attack": attack_value,
+		"defense": defense_value,
+		"speed": speed_value,
 	}
 
 
@@ -155,7 +182,12 @@ func _serialize_inventory(player: Node) -> Array:
 	for item_variant: Variant in state_arr:
 		if typeof(item_variant) != TYPE_DICTIONARY:
 			continue
-		result.append(_clean_stack(item_variant as Dictionary))
+		var clean_stack: Dictionary = _clean_stack(item_variant as Dictionary)
+		result.append({
+			"id": str(clean_stack.get("id", "")),
+			"quantity": int(clean_stack.get("quantity", 0)),
+			"stack_data": clean_stack,
+		})
 	return result
 
 
@@ -171,12 +203,20 @@ func _serialize_equipment(player: Node) -> Dictionary:
 	var state: Dictionary = raw_state as Dictionary
 	var equipped_raw: Dictionary = state.get("equipped", {}) as Dictionary
 	var equipped_clean: Dictionary = {}
-	for slot_name: Variant in equipped_raw.keys():
-		var item_variant: Variant = equipped_raw[slot_name]
+	var slot_order: PackedStringArray = PackedStringArray()
+	if equipment_system.has_method("get_slot_order"):
+		var slot_order_variant: Variant = equipment_system.call("get_slot_order")
+		if slot_order_variant is PackedStringArray:
+			slot_order = slot_order_variant as PackedStringArray
+	if slot_order.is_empty():
+		for slot_name_variant: Variant in equipped_raw.keys():
+			slot_order.append(str(slot_name_variant))
+	for slot_name: String in slot_order:
+		var item_variant: Variant = equipped_raw.get(slot_name, {})
 		if typeof(item_variant) == TYPE_DICTIONARY:
-			equipped_clean[str(slot_name)] = _clean_stack(item_variant as Dictionary)
+			equipped_clean[slot_name] = _clean_stack(item_variant as Dictionary)
 		else:
-			equipped_clean[str(slot_name)] = {}
+			equipped_clean[slot_name] = {}
 	return {"equipped": equipped_clean}
 
 
@@ -235,6 +275,7 @@ func _serialize_buildings(player: Node) -> Dictionary:
 				if live_node.has_method("serialize_data"):
 					record["data"] = live_node.call("serialize_data")
 			var record_data: Dictionary = record.get("data", {}) as Dictionary
+			record["type"] = str(record.get("id", ""))
 			record["position"] = [tile_x, tile_y]
 			record["level"] = int(record_data.get("upgrade_level", 1))
 			record["current_hp"] = int(record_data.get("current_hp", 0))
@@ -268,6 +309,7 @@ func _serialize_buildings(player: Node) -> Dictionary:
 				var finst_node: Node = finst_variant as Node
 				if finst_node.has_method("serialize_data"):
 					fac_rec["data"] = finst_node.call("serialize_data")
+			fac_rec["type"] = str(fac_rec.get("id", ""))
 			fac_rec["position"] = [fac_tile.x, fac_tile.y]
 			var facility_data: Dictionary = fac_rec.get("data", {}) as Dictionary
 			fac_rec["level"] = int(facility_data.get("upgrade_level", 1))
@@ -281,14 +323,60 @@ func _serialize_buildings(player: Node) -> Dictionary:
 	}
 
 
+func _serialize_skills(player: Node) -> Dictionary:
+	if player == null:
+		return {"equipped_skill_ids": ["", "", ""]}
+	var skill_system: Node = get_node_or_null("/root/SkillSystem")
+	if skill_system == null:
+		return {"equipped_skill_ids": ["", "", ""]}
+	var equipped_skill_ids: Array[String] = []
+	var raw_equipped: Variant = skill_system.get("equipped_skill_ids")
+	if raw_equipped is Array:
+		for skill_id: Variant in (raw_equipped as Array):
+			equipped_skill_ids.append(str(skill_id))
+	while equipped_skill_ids.size() < 3:
+		equipped_skill_ids.append("")
+	return {"equipped_skill_ids": equipped_skill_ids}
+
+
 func _serialize_progress(main_node: Node) -> Dictionary:
 	if main_node == null:
-		return {"current_day": 1, "deepest_floor_reached": 1}
+		return {
+			"current_day": 1,
+			"deepest_floor": 1,
+			"deepest_floor_reached": 1,
+			"total_kills": 0,
+			"achievements": [],
+			"achievement_stats": {},
+		}
 	var raw_day: Variant = main_node.get("current_day")
 	var raw_floor: Variant = main_node.get("deepest_dungeon_floor_reached")
+	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")
+	var total_kills: int = 0
+	var achievement_ids: Array[String] = []
+	var achievement_stats: Dictionary = {}
+	if achievement_manager != null:
+		var stats_variant: Variant = achievement_manager.get("stats")
+		if typeof(stats_variant) == TYPE_DICTIONARY:
+			var stats_data: Dictionary = stats_variant as Dictionary
+			for stat_name_variant: Variant in stats_data.keys():
+				var stat_name: String = str(stat_name_variant)
+				achievement_stats[stat_name] = int(stats_data.get(stat_name_variant, 0))
+			total_kills = int(achievement_stats.get("enemies_killed", 0))
+		var unlocked_variant: Variant = achievement_manager.get("unlocked_achievements")
+		if typeof(unlocked_variant) == TYPE_DICTIONARY:
+			var unlocked_data: Dictionary = unlocked_variant as Dictionary
+			for achievement_id_variant: Variant in unlocked_data.keys():
+				if bool(unlocked_data.get(achievement_id_variant, false)):
+					achievement_ids.append(str(achievement_id_variant))
+	achievement_ids.sort()
 	return {
 		"current_day": int(raw_day) if raw_day != null else 1,
+		"deepest_floor": int(raw_floor) if raw_floor != null else 1,
 		"deepest_floor_reached": int(raw_floor) if raw_floor != null else 1,
+		"total_kills": total_kills,
+		"achievements": achievement_ids,
+		"achievement_stats": achievement_stats,
 	}
 
 
@@ -297,9 +385,8 @@ func _serialize_progress(main_node: Node) -> Dictionary:
 func _restore_player(data: Dictionary, player: Node) -> void:
 	if data.is_empty() or player == null:
 		return
-	var px: float = float(data.get("position_x", 0.0))
-	var py: float = float(data.get("position_y", 0.0))
-	player.set("global_position", Vector2(px, py))
+	var player_position: Vector2 = _extract_saved_position(data)
+	player.set("global_position", player_position)
 	var talent_strings: Array[String] = []
 	var raw_talents: Variant = data.get("unlocked_talents", [])
 	if raw_talents is Array:
@@ -310,7 +397,9 @@ func _restore_player(data: Dictionary, player: Node) -> void:
 	var player_stats: Node = player.get_node_or_null("PlayerStats")
 	if player_stats != null and player_stats.has_method("rebuild_talent_bonuses"):
 		player_stats.call("rebuild_talent_bonuses", talent_strings)
-	var class_id: String = str(data.get("current_class_id", ""))
+	var saved_speed: float = float(data.get("speed", player.get("speed")))
+	player.set("speed", saved_speed)
+	var class_id: String = _extract_saved_class_id(data)
 	if class_id != "":
 		var class_system: Node = get_node_or_null("/root/ClassSystem")
 		if class_system != null and class_system.has_method("save_class"):
@@ -323,7 +412,22 @@ func _restore_inventory(data: Array, player: Node) -> void:
 	var inventory: Node = player.get_node_or_null("Inventory")
 	if inventory == null or not inventory.has_method("load_state"):
 		return
-	inventory.call("load_state", data)
+	var restored_items: Array = []
+	for entry_variant: Variant in data:
+		if typeof(entry_variant) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = entry_variant as Dictionary
+		var stack_variant: Variant = entry.get("stack_data", null)
+		if typeof(stack_variant) == TYPE_DICTIONARY:
+			var stack_data: Dictionary = (stack_variant as Dictionary).duplicate(true)
+			if not stack_data.has("id"):
+				stack_data["id"] = str(entry.get("id", ""))
+			if not stack_data.has("quantity"):
+				stack_data["quantity"] = int(entry.get("quantity", 0))
+			restored_items.append(stack_data)
+			continue
+		restored_items.append(entry.duplicate(true))
+	inventory.call("load_state", restored_items)
 
 
 func _restore_currency(data: Dictionary, player: Node) -> void:
@@ -376,6 +480,8 @@ func _restore_buildings(data: Dictionary, player: Node) -> void:
 		if typeof(rec_v) == TYPE_DICTIONARY:
 			var saved_record: Dictionary = (rec_v as Dictionary).duplicate(true)
 			var saved_record_data: Dictionary = saved_record.get("data", {}) as Dictionary
+			if not saved_record.has("id") and saved_record.has("type"):
+				saved_record["id"] = str(saved_record.get("type", ""))
 			if not saved_record_data.has("upgrade_level") and saved_record.has("level"):
 				saved_record_data["upgrade_level"] = int(saved_record.get("level", 1))
 			if not saved_record_data.has("current_hp") and saved_record.has("current_hp"):
@@ -420,6 +526,8 @@ func _restore_buildings(data: Dictionary, player: Node) -> void:
 			continue
 		var fac_tile: Vector2i = Vector2i(int(pos_arr[0]), int(pos_arr[1]))
 		var fac_rec: Dictionary = fac.duplicate(true)
+		if not fac_rec.has("id") and fac_rec.has("type"):
+			fac_rec["id"] = str(fac_rec.get("type", ""))
 		var fac_data: Dictionary = fac_rec.get("data", {}) as Dictionary
 		if not fac_data.has("upgrade_level") and fac_rec.has("level"):
 			fac_data["upgrade_level"] = int(fac_rec.get("level", 1))
@@ -447,11 +555,49 @@ func _restore_buildings(data: Dictionary, player: Node) -> void:
 		building_system.call("_apply_saved_state_to_level")
 
 
+func _restore_skills(data: Dictionary, player: Node) -> void:
+	if data.is_empty():
+		return
+	var skill_system: Node = get_node_or_null("/root/SkillSystem")
+	if skill_system == null:
+		return
+	if player != null and skill_system.has_method("bind_player"):
+		skill_system.call("bind_player", player)
+	var equipped_skill_ids: Array[String] = []
+	var raw_equipped: Variant = data.get("equipped_skill_ids", [])
+	if raw_equipped is Array:
+		for skill_id: Variant in (raw_equipped as Array):
+			equipped_skill_ids.append(str(skill_id))
+	if skill_system.has_method("set_equipped_skill_ids"):
+		skill_system.call("set_equipped_skill_ids", equipped_skill_ids)
+
+
 func _restore_progress(data: Dictionary, main_node: Node) -> void:
 	if data.is_empty() or main_node == null:
 		return
 	main_node.set("current_day", int(data.get("current_day", 1)))
-	main_node.set("deepest_dungeon_floor_reached", int(data.get("deepest_floor_reached", 1)))
+	main_node.set("deepest_dungeon_floor_reached", int(data.get("deepest_floor", data.get("deepest_floor_reached", 1))))
+	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")
+	if achievement_manager == null:
+		return
+	var stats_payload: Dictionary = {}
+	var raw_stats: Variant = data.get("achievement_stats", {})
+	if typeof(raw_stats) == TYPE_DICTIONARY:
+		for stat_name_variant: Variant in (raw_stats as Dictionary).keys():
+			var stat_name: String = str(stat_name_variant)
+			stats_payload[stat_name] = int((raw_stats as Dictionary).get(stat_name_variant, 0))
+	stats_payload["enemies_killed"] = int(data.get("total_kills", stats_payload.get("enemies_killed", 0)))
+	var unlocked_payload: Dictionary = {}
+	var raw_achievements: Variant = data.get("achievements", [])
+	if raw_achievements is Array:
+		for achievement_id: Variant in (raw_achievements as Array):
+			unlocked_payload[str(achievement_id)] = true
+	achievement_manager.set("stats", stats_payload)
+	achievement_manager.set("unlocked_achievements", unlocked_payload)
+	if achievement_manager.has_method("_refresh_all"):
+		achievement_manager.call("_refresh_all")
+	if achievement_manager.has_method("_save_data"):
+		achievement_manager.call("_save_data")
 
 
 func _finalize_player_restore(player_data: Dictionary, player: Node) -> void:
@@ -463,7 +609,7 @@ func _finalize_player_restore(player_data: Dictionary, player: Node) -> void:
 	if restored_max_hp <= 0:
 		restored_max_hp = int(player_data.get("max_hp", 100))
 		player.set("max_hp", restored_max_hp)
-	var restored_current_hp: int = clampi(int(player_data.get("current_hp", restored_max_hp)), 0, restored_max_hp)
+	var restored_current_hp: int = clampi(int(player_data.get("hp", player_data.get("current_hp", restored_max_hp))), 0, restored_max_hp)
 	player.set("current_hp", restored_current_hp)
 	if player.has_signal("stats_changed"):
 		player.emit_signal("stats_changed")
@@ -571,7 +717,7 @@ func _synchronize_legacy_player_state(data: Dictionary) -> void:
 		"unlocked_talents": unlocked_talents,
 		"equipment": equipment_data.duplicate(true),
 	})
-	var class_id: String = str(player_data.get("current_class_id", ""))
+	var class_id: String = _extract_saved_class_id(player_data)
 	if class_id == "":
 		return
 	var class_system: Node = get_node_or_null("/root/ClassSystem")
@@ -604,3 +750,21 @@ func _read_json(path: String) -> Dictionary:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return {}
 	return parsed as Dictionary
+
+
+func _extract_saved_class_id(player_data: Dictionary) -> String:
+	var class_id: String = str(player_data.get("class_id", ""))
+	if class_id != "":
+		return class_id
+	return str(player_data.get("current_class_id", ""))
+
+
+func _extract_saved_position(player_data: Dictionary) -> Vector2:
+	var position_variant: Variant = player_data.get("position", [])
+	if position_variant is Array:
+		var position_array: Array = position_variant as Array
+		if position_array.size() >= 2:
+			return Vector2(float(position_array[0]), float(position_array[1]))
+	var px: float = float(player_data.get("position_x", 0.0))
+	var py: float = float(player_data.get("position_y", 0.0))
+	return Vector2(px, py)
