@@ -79,7 +79,7 @@ func _ready() -> void:
 	class_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5, 1.0))
 	class_label.add_theme_constant_override("outline_size", 2)
 	class_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	var _cs := get_node_or_null("/root/ClassSystem")
+	var _cs: Node = get_node_or_null("/root/ClassSystem")
 	class_label.text = _cs.get_class_display_name() if _cs != null else ""
 	add_child(class_label)
 	_layout_static_hud()
@@ -230,9 +230,9 @@ func _on_inventory_changed() -> void:
 
 	update_bag_label(inventory.items.size(), inventory.max_slots)
 	if currency_label != null:
-		var _g := inventory.get_item_count("gold")
-		var _s := inventory.get_item_count("silver")
-		var _c := inventory.get_item_count("copper")
+		var _g: int = int(inventory.get_item_count("gold"))
+		var _s: int = int(inventory.get_item_count("silver"))
+		var _c: int = int(inventory.get_item_count("copper"))
 		currency_label.text = "%dG %dS %dC" % [_g, _s, _c]
 	if player != null and player.has_method("get_consumable_slots"):
 		update_consumable_bar(player.get_consumable_slots())
@@ -426,7 +426,7 @@ func rebuild_inventory_grid() -> void:
 		header.modulate = Color(0.95, 0.9, 0.7, 1.0)
 		inventory_list.add_child(header)
 		for stack in section_items:
-			var item_color := ITEM_DATABASE.get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))
+			var item_color: Color = ITEM_DATABASE.get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))
 			inventory_list.add_child(_build_item_row(stack, item_color))
 
 

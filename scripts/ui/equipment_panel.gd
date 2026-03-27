@@ -148,7 +148,7 @@ func _build_slot_row(slot_name: String, item: Dictionary) -> Button:
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	# Icon
-	var icon_src := item if not item.is_empty() else {}
+	var icon_src: Dictionary = item if not item.is_empty() else {}
 	var slot_icon: Texture2D = ITEM_DATABASE.get_stack_icon(icon_src)
 	if slot_icon == null:
 		slot_icon = ITEM_DATABASE.get_default_equipment_icon(str(slot_name))
@@ -197,7 +197,7 @@ func _build_eq_row(stack: Dictionary, eq_idx: int) -> PanelContainer:
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.12, 0.12, 0.14, 0.92)
-	var rarity_color := player.equipment_system.get_item_display_color(stack)
+	var rarity_color: Color = player.equipment_system.get_item_display_color(stack)
 	style.border_width_left = 2
 	style.border_width_top = 2
 	style.border_width_right = 2
