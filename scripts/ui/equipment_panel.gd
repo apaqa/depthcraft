@@ -14,14 +14,17 @@ const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
 @onready var inventory_title: Label = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryTitle
 
 var player = null
-# Equipment rows (VBoxContainer-based 2-row layout)
+
+# Right-panel scroll+vbox (replaces ItemList)
 var _inv_scroll: ScrollContainer = null
 var _inv_vbox: VBoxContainer = null
-var _eq_indices: Array[int] = []
+
+# Index tracking
+var _eq_indices: Array[int] = []    # inventory indices of equipment items
+var _cons_indices: Array[int] = []  # inventory indices of consumable items
 var _hovered_eq_index: int = -1
-# Consumable entries in ItemList
-var _inventory_indices: Array[int] = []
-var _hovered_inventory_index: int = -1
+
+# Context menu
 var _context_menu: PopupMenu = null
 var _context_inv_index: int = -1
 
@@ -29,23 +32,23 @@ var _context_inv_index: int = -1
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	inventory_list.item_selected.connect(_on_inventory_selected)
-	inventory_list.item_clicked.connect(_on_inventory_item_clicked)
+
+	# Hide the ItemList — replaced by _inv_vbox below
+	inventory_list.visible = false
+
 	_context_menu = PopupMenu.new()
 	add_child(_context_menu)
 	_context_menu.id_pressed.connect(_on_context_id_pressed)
 
-	# Build equipment VBoxContainer (2-row layout) before InventoryList
-	var panel_vbox: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer
+	# Build right-panel scroll container
+	var inv_panel_vbox: VBoxContainer = inventory_list.get_parent()
 	_inv_scroll = ScrollContainer.new()
-	_inv_scroll.custom_minimum_size = Vector2(200, 180)
 	_inv_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_inv_vbox = VBoxContainer.new()
 	_inv_vbox.add_theme_constant_override("separation", 4)
 	_inv_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_inv_scroll.add_child(_inv_vbox)
-	panel_vbox.add_child(_inv_scroll)
-	panel_vbox.move_child(_inv_scroll, 1)  # After InventoryTitle
+	inv_panel_vbox.add_child(_inv_scroll)
 
 	title_label.text = LocaleManager.L("equipment")
 	slot_title.text = LocaleManager.L("wearing")
@@ -77,71 +80,47 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _refresh() -> void:
-	# --- Equipped slots ---
+	# --- Clear left panel (wearing) ---
 	for child in slot_list.get_children():
 		child.queue_free()
 
-	# --- Equipment inventory (2-row VBoxContainer) ---
+	# --- Clear right panel (inventory) ---
 	for child in _inv_vbox.get_children():
 		child.queue_free()
 	_eq_indices.clear()
+	_cons_indices.clear()
 	_hovered_eq_index = -1
-
-	# --- Consumables (ItemList) ---
-	inventory_list.clear()
-	inventory_list.fixed_icon_size = Vector2i(32, 32)
-	_inventory_indices.clear()
-	_hovered_inventory_index = -1
 
 	if player == null:
 		return
 
-	# Build equipped slot buttons
+	# --- Left panel: equipped slots (2-row per slot) ---
 	for slot_name in player.equipment_system.get_slot_order():
-		var button := Button.new()
 		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
-		button.text = _build_slot_text(slot_name, item)
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.expand_icon = true
-		var slot_icon: Texture2D = ITEM_DATABASE.get_stack_icon(item)
-		if slot_icon == null:
-			slot_icon = ITEM_DATABASE.get_default_equipment_icon(str(slot_name))
-		button.icon = slot_icon
-		if not item.is_empty():
-			var color = player.equipment_system.get_item_display_color(item)
-			_apply_rarity_style(button, color)
-		button.pressed.connect(_on_slot_pressed.bind(String(slot_name)))
-		slot_list.add_child(button)
+		var btn := _build_slot_row(slot_name, item)
+		slot_list.add_child(btn)
 
-	# Build equipment inventory rows (2-row layout)
+	# --- Right panel: equipment items (2-row PanelContainer) ---
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
 		if str(stack.get("type", "")) != "equipment":
 			continue
-		var eq_list_index := _eq_indices.size()
+		var eq_idx := _eq_indices.size()
 		_eq_indices.append(index)
-		_inv_vbox.add_child(_build_equipment_row(stack, eq_list_index))
+		_inv_vbox.add_child(_build_eq_row(stack, eq_idx))
 
-	# Build consumable entries in ItemList
+	# --- Right panel: consumable items (1-row PanelContainer) ---
 	var q_id: String = str(player.get("consumable_q_id")) if player != null else ""
 	var r_id: String = str(player.get("consumable_r_id")) if player != null else ""
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
 		if str(stack.get("type", "")) != "consumable":
 			continue
-		var id := str(stack.get("id", ""))
-		var label := ITEM_DATABASE.get_stack_display_name(stack)
-		var qty := int(stack.get("quantity", 0))
-		var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
-		var tag := ""
-		if id == q_id:
-			tag = " [Q]"
-		elif id == r_id:
-			tag = " [R]"
-		inventory_list.add_item("%s x%d%s  %s" % [label, qty, tag, LocaleManager.L("hint_right_click_quickslot")], icon)
-		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, Color(0.32, 0.78, 0.42, 1.0))
-		_inventory_indices.append(index)
+		var cons_idx := _cons_indices.size()
+		_cons_indices.append(index)
+		_inv_vbox.add_child(_build_cons_row(stack, cons_idx, q_id, r_id))
 
+	# --- Stats ---
 	var summary: Dictionary = player.get_stats_summary()
 	stat_label.text = "%s: %d   %s: %d   %s: %d   %s: %d" % [
 		LocaleManager.L("atk"), int(summary.get("attack", 0)),
@@ -152,131 +131,248 @@ func _refresh() -> void:
 	comparison_label.text = LocaleManager.L("hover_to_compare")
 
 
-func _build_equipment_row(stack: Dictionary, eq_list_index: int) -> Button:
+# ---- Left panel: equipped slot row ----
+
+func _build_slot_row(slot_name: String, item: Dictionary) -> Button:
 	var btn := Button.new()
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.custom_minimum_size = Vector2(0, 64)
-	if not stack.is_empty():
-		_apply_rarity_style(btn, player.equipment_system.get_item_display_color(stack))
+	btn.custom_minimum_size = Vector2(0, 56)
 
-	# Row content as VBoxContainer inside button
-	var content := VBoxContainer.new()
+	if not item.is_empty():
+		_apply_rarity_style(btn, player.equipment_system.get_item_display_color(item))
+
+	var content := HBoxContainer.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_theme_constant_override("separation", 2)
+	content.add_theme_constant_override("separation", 6)
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	# Row 1: 48×48 icon + item name (color-coded)
-	var row1 := HBoxContainer.new()
-	row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row1.add_theme_constant_override("separation", 6)
-	var icon_ctrl := _build_icon_control(stack, 48)
-	row1.add_child(icon_ctrl)
-	var name_lbl := Label.new()
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	name_lbl.text = _get_item_display_name(stack)
-	name_lbl.self_modulate = player.equipment_system.get_item_display_color(stack)
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.clip_text = true
-	row1.add_child(name_lbl)
-	content.add_child(row1)
+	# Icon
+	var icon_src := item if not item.is_empty() else {}
+	var slot_icon: Texture2D = ITEM_DATABASE.get_stack_icon(icon_src)
+	if slot_icon == null:
+		slot_icon = ITEM_DATABASE.get_default_equipment_icon(str(slot_name))
+	var icon_ctrl := _make_icon_ctrl(slot_icon, ITEM_DATABASE.get_stack_color(icon_src), 32)
+	content.add_child(icon_ctrl)
 
-	# Row 2: quality tag + slot type + durability (smaller gray text)
+	# Text column
+	var info := VBoxContainer.new()
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 2)
+
+	var lbl1 := Label.new()
+	lbl1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl1.clip_text = true
+	if item.is_empty():
+		lbl1.text = "[%s] %s" % [_translate_slot(slot_name), LocaleManager.L("empty")]
+		lbl1.modulate = Color(0.6, 0.6, 0.6, 1.0)
+	else:
+		lbl1.text = "[%s] %s" % [_translate_slot(slot_name), _get_item_display_name(item)]
+		lbl1.self_modulate = player.equipment_system.get_item_display_color(item)
+	info.add_child(lbl1)
+
+	if not item.is_empty():
+		var dur := int(item.get("durability", 0))
+		var max_dur := int(item.get("max_durability", 0))
+		var lbl2 := Label.new()
+		lbl2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		lbl2.text = LocaleManager.L("slot_durability") % [dur, max_dur]
+		lbl2.add_theme_font_size_override("font_size", 10)
+		lbl2.modulate = Color(0.7, 0.7, 0.7, 1.0)
+		info.add_child(lbl2)
+
+	content.add_child(info)
+	btn.add_child(content)
+	btn.pressed.connect(_on_slot_pressed.bind(String(slot_name)))
+	return btn
+
+
+# ---- Right panel: equipment inventory row ----
+
+func _build_eq_row(stack: Dictionary, eq_idx: int) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(0, 64)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.12, 0.14, 0.92)
+	var rarity_color := player.equipment_system.get_item_display_color(stack)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = rarity_color
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	panel.add_theme_stylebox_override("panel", style)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 6)
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	# 48×48 icon
+	var icon_tex: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+	hbox.add_child(_make_icon_ctrl(icon_tex, ITEM_DATABASE.get_stack_color(stack), 48))
+
+	# Text column
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 2)
+
+	var lbl_name := Label.new()
+	lbl_name.text = _get_item_display_name(stack)
+	lbl_name.self_modulate = rarity_color
+	lbl_name.clip_text = true
+	info.add_child(lbl_name)
+
 	var slot_name := str(stack.get("slot", ""))
 	var dur := int(stack.get("durability", 0))
 	var max_dur := int(stack.get("max_durability", 0))
 	var rarity := str(stack.get("rarity", ""))
 	var rarity_tag := _translate_rarity(rarity)
-	var row2_text := ""
+	var line2 := ""
 	if rarity_tag != "":
-		row2_text = "[%s] %s  %d/%d" % [rarity_tag, _translate_slot(slot_name), dur, max_dur]
+		line2 = "[%s] %s  %d/%d" % [rarity_tag, _translate_slot(slot_name), dur, max_dur]
 	else:
-		row2_text = "%s  %d/%d" % [_translate_slot(slot_name), dur, max_dur]
-	var info_lbl := Label.new()
-	info_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_lbl.text = row2_text
-	info_lbl.add_theme_font_size_override("font_size", 10)
-	info_lbl.modulate = Color(0.7, 0.7, 0.7, 1.0)
-	content.add_child(info_lbl)
+		line2 = "%s  %d/%d" % [_translate_slot(slot_name), dur, max_dur]
+	var lbl_info := Label.new()
+	lbl_info.text = line2
+	lbl_info.add_theme_font_size_override("font_size", 10)
+	lbl_info.modulate = Color(0.7, 0.7, 0.7, 1.0)
+	lbl_info.clip_text = true
+	info.add_child(lbl_info)
 
-	btn.add_child(content)
+	hbox.add_child(info)
+	panel.add_child(hbox)
 
-	btn.pressed.connect(_on_eq_inv_pressed.bind(eq_list_index))
-	btn.mouse_entered.connect(func():
-		_hovered_eq_index = eq_list_index
+	panel.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed:
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				_on_eq_inv_pressed(eq_idx)
+			elif event.button_index == MOUSE_BUTTON_RIGHT:
+				_context_inv_index = _eq_indices[eq_idx] if eq_idx < _eq_indices.size() else -1
+				if _context_inv_index < 0:
+					return
+				_context_menu.clear()
+				_context_menu.add_item(LocaleManager.L("ctx_discard"), 0)
+				_context_menu.position = Vector2i(get_global_mouse_position())
+				_context_menu.reset_size()
+				_context_menu.popup()
+	)
+	panel.mouse_entered.connect(func():
+		_hovered_eq_index = eq_idx
 		_update_comparison_label()
 	)
-	btn.mouse_exited.connect(func():
+	panel.mouse_exited.connect(func():
 		_hovered_eq_index = -1
 		_update_comparison_label()
 	)
-	btn.gui_input.connect(func(event: InputEvent):
-		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-			_context_inv_index = _eq_indices[eq_list_index] if eq_list_index < _eq_indices.size() else -1
+	return panel
+
+
+# ---- Right panel: consumable inventory row ----
+
+func _build_cons_row(stack: Dictionary, cons_idx: int, q_id: String, r_id: String) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(0, 40)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.10, 0.14, 0.10, 0.88)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(0.30, 0.75, 0.35, 1.0)
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	panel.add_theme_stylebox_override("panel", style)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 6)
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var icon_tex: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+	hbox.add_child(_make_icon_ctrl(icon_tex, ITEM_DATABASE.get_stack_color(stack), 32))
+
+	var id := str(stack.get("id", ""))
+	var label := ITEM_DATABASE.get_stack_display_name(stack)
+	var qty := int(stack.get("quantity", 0))
+	var tag := ""
+	if id == q_id:
+		tag = " [Q]"
+	elif id == r_id:
+		tag = " [R]"
+
+	var lbl := Label.new()
+	lbl.text = "%s x%d%s" % [label, qty, tag]
+	lbl.self_modulate = Color(0.32, 0.78, 0.42, 1.0)
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.clip_text = true
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hbox.add_child(lbl)
+	panel.add_child(hbox)
+
+	panel.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+			_context_inv_index = _cons_indices[cons_idx] if cons_idx < _cons_indices.size() else -1
 			if _context_inv_index < 0:
 				return
 			_context_menu.clear()
-			_context_menu.add_item(LocaleManager.L("ctx_discard"), 0)
+			_context_menu.add_item(LocaleManager.L("ctx_set_q"), 1)
+			_context_menu.add_item(LocaleManager.L("ctx_set_r"), 2)
 			_context_menu.position = Vector2i(get_global_mouse_position())
 			_context_menu.reset_size()
 			_context_menu.popup()
 	)
-	return btn
+	return panel
 
 
-func _build_icon_control(stack: Dictionary, size: int) -> Control:
-	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+# ---- Helpers ----
+
+func _make_icon_ctrl(icon: Texture2D, fallback_color: Color, size: int) -> Control:
 	if icon != null:
-		var icon_rect := TextureRect.new()
-		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon_rect.custom_minimum_size = Vector2(size, size)
-		icon_rect.size = Vector2(size, size)
-		icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		icon_rect.texture = icon
-		return icon_rect
-	var swatch := ColorRect.new()
-	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	swatch.custom_minimum_size = Vector2(size, size)
-	swatch.color = ITEM_DATABASE.get_stack_color(stack)
-	return swatch
+		var tr := TextureRect.new()
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tr.custom_minimum_size = Vector2(size, size)
+		tr.size = Vector2(size, size)
+		tr.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		tr.texture = icon
+		return tr
+	var cr := ColorRect.new()
+	cr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cr.custom_minimum_size = Vector2(size, size)
+	cr.color = fallback_color
+	return cr
 
 
 func _apply_rarity_style(node: Control, base_color: Color) -> void:
-	# Clean up previous border decorations
 	for child in node.get_children():
 		if child.name == "RarityBorder":
 			child.queue_free()
-
 	var border_drawer := Control.new()
 	border_drawer.name = "RarityBorder"
 	border_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	border_drawer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	border_drawer.draw.connect(func():
 		var r := border_drawer.get_rect()
-		# Triple-layer border: Outer(2px darkened), Middle(2px original), Inner(1px lightened)
 		border_drawer.draw_rect(r.grow(2), base_color.darkened(0.4), false, 2.0)
 		border_drawer.draw_rect(r, base_color, false, 2.0)
 		border_drawer.draw_rect(r.grow(-2), base_color.lightened(0.4), false, 1.0)
 	)
 	node.add_child(border_drawer)
-
-	# Apply a dark background via StyleBox
 	var bg_style := StyleBoxFlat.new()
 	bg_style.bg_color = Color(0.12, 0.12, 0.12, 0.9)
 	node.add_theme_stylebox_override("normal", bg_style)
 	node.add_theme_stylebox_override("hover", bg_style.duplicate())
 	node.add_theme_stylebox_override("pressed", bg_style.duplicate())
-
-
-func _build_slot_text(slot_name: String, item: Dictionary) -> String:
-	var label := "[%s] " % _translate_slot(slot_name)
-	if item.is_empty():
-		return label + LocaleManager.L("empty")
-	var durability := int(item.get("durability", 0))
-	var max_durability := int(item.get("max_durability", 0))
-	return "%s%s  %s" % [label, _get_item_display_name(item), LocaleManager.L("slot_durability") % [durability, max_durability]]
 
 
 func _get_item_display_name(item_data: Dictionary) -> String:
@@ -292,16 +388,6 @@ func _get_item_display_name(item_data: Dictionary) -> String:
 	return base_name
 
 
-func _translate_rarity(rarity: String) -> String:
-	match rarity:
-		"common": return LocaleManager.L("rarity_common")
-		"uncommon": return LocaleManager.L("rarity_uncommon")
-		"rare": return LocaleManager.L("rarity_rare")
-		"epic": return LocaleManager.L("rarity_epic")
-		"legendary": return LocaleManager.L("rarity_legendary")
-	return ""
-
-
 func _translate_slot(slot_name: String) -> String:
 	match slot_name:
 		"weapon": return LocaleManager.L("weapon")
@@ -314,24 +400,30 @@ func _translate_slot(slot_name: String) -> String:
 	return slot_name.replace("_", " ").capitalize()
 
 
-func _on_inventory_selected(index: int) -> void:
-	# ItemList now contains only consumables; selecting does nothing
-	pass
+func _translate_rarity(rarity: String) -> String:
+	match rarity:
+		"common": return LocaleManager.L("rarity_common")
+		"uncommon": return LocaleManager.L("rarity_uncommon")
+		"rare": return LocaleManager.L("rarity_rare")
+		"epic": return LocaleManager.L("rarity_epic")
+		"legendary": return LocaleManager.L("rarity_legendary")
+	return ""
 
 
-func _on_inventory_item_clicked(index: int, _at_position: Vector2, mouse_button_index: int) -> void:
-	if mouse_button_index != MOUSE_BUTTON_RIGHT:
+# ---- Event handlers ----
+
+func _on_slot_pressed(slot_name: String) -> void:
+	if player == null:
 		return
-	if index < 0 or index >= _inventory_indices.size():
+	player.equipment_system.unequip(slot_name, player.inventory)
+	_refresh()
+
+
+func _on_eq_inv_pressed(eq_idx: int) -> void:
+	if player == null or eq_idx < 0 or eq_idx >= _eq_indices.size():
 		return
-	_context_inv_index = _inventory_indices[index]
-	_context_menu.clear()
-	_context_menu.add_item(LocaleManager.L("ctx_set_q"), 1)
-	_context_menu.add_item(LocaleManager.L("ctx_set_r"), 2)
-	if _context_menu.item_count > 0:
-		_context_menu.position = Vector2i(get_global_mouse_position())
-		_context_menu.reset_size()
-		_context_menu.popup()
+	player.equipment_system.equip_from_inventory(player.inventory, _eq_indices[eq_idx])
+	_refresh()
 
 
 func _on_context_id_pressed(id: int) -> void:
@@ -339,13 +431,6 @@ func _on_context_id_pressed(id: int) -> void:
 		0: _discard_item(_context_inv_index)
 		1: _set_quickslot(_context_inv_index, 0)
 		2: _set_quickslot(_context_inv_index, 1)
-
-
-func _on_eq_inv_pressed(eq_list_index: int) -> void:
-	if player == null or eq_list_index < 0 or eq_list_index >= _eq_indices.size():
-		return
-	player.equipment_system.equip_from_inventory(player.inventory, _eq_indices[eq_list_index])
-	_refresh()
 
 
 func _discard_item(inv_index: int) -> void:
@@ -370,29 +455,15 @@ func _set_quickslot(inv_index: int, slot_index: int) -> void:
 	_refresh()
 
 
-func _on_slot_pressed(slot_name: String) -> void:
-	if player == null:
-		return
-	player.equipment_system.unequip(slot_name, player.inventory)
-	_refresh()
-
+# ---- Comparison hover ----
 
 func _process(_delta: float) -> void:
-	if not visible or player == null:
-		return
-	# Track consumable hover in ItemList
-	var local_position := inventory_list.get_local_mouse_position()
-	var hovered := inventory_list.get_item_at_position(local_position, true)
-	if hovered != _hovered_inventory_index:
-		_hovered_inventory_index = hovered
-		if _hovered_eq_index < 0:
-			_update_comparison_label()
+	pass
 
 
 func _update_comparison_label() -> void:
 	if comparison_label == null or player == null:
 		return
-	# Equipment hover takes priority — show stat comparison
 	if _hovered_eq_index >= 0 and _hovered_eq_index < _eq_indices.size():
 		var stack_index: int = _eq_indices[_hovered_eq_index]
 		if stack_index < 0 or stack_index >= player.inventory.items.size():
@@ -407,9 +478,5 @@ func _update_comparison_label() -> void:
 			var translated = line.replace("ATK", LocaleManager.L("atk")).replace("DEF", LocaleManager.L("def")).replace("HP", LocaleManager.L("hp")).replace("SPD", LocaleManager.L("spd"))
 			localized_lines.append(translated)
 		comparison_label.text = "\n".join(localized_lines)
-		return
-	# Consumable hover
-	if _hovered_inventory_index >= 0 and _hovered_inventory_index < _inventory_indices.size():
-		comparison_label.text = LocaleManager.L("consumable_quickslot_hint")
 		return
 	comparison_label.text = LocaleManager.L("hover_to_compare")

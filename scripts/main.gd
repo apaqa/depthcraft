@@ -64,17 +64,22 @@ func _input(event: InputEvent) -> void:
 
 
 func _debug_give_resources() -> void:
-	if player == null:
-		return
-	player.inventory.add_item("gold", 100)
-	player.inventory.add_item("silver", 100)
-	player.inventory.add_item("copper", 100)
-	player.inventory.add_item("wood", 99)
-	player.inventory.add_item("stone", 99)
-	player.inventory.add_item("iron_ore", 99)
-	player.inventory.add_item("fiber", 99)
-	player.inventory.add_item("wheat", 99)
-	player.inventory.add_item("talent_shard", 99)
+	var targets := get_tree().get_nodes_in_group("player")
+	if targets.is_empty() and player != null:
+		targets = [player]
+	for p in targets:
+		var inv = p.get("inventory")
+		if inv == null or not inv.has_method("add_item"):
+			continue
+		inv.add_item("gold", 100)
+		inv.add_item("silver", 100)
+		inv.add_item("copper", 100)
+		inv.add_item("wood", 99)
+		inv.add_item("stone", 99)
+		inv.add_item("iron_ore", 99)
+		inv.add_item("fiber", 99)
+		inv.add_item("wheat", 99)
+		inv.add_item("talent_shard", 99)
 
 
 func change_level(level_id: String, spawn_override: Variant = null) -> void:

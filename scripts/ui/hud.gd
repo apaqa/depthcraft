@@ -230,7 +230,10 @@ func _on_inventory_changed() -> void:
 
 	update_bag_label(inventory.items.size(), inventory.max_slots)
 	if currency_label != null:
-		currency_label.text = ITEM_DATABASE.format_currency(inventory.get_total_copper())
+		var _g := inventory.get_item_count("gold")
+		var _s := inventory.get_item_count("silver")
+		var _c := inventory.get_item_count("copper")
+		currency_label.text = "%dG %dS %dC" % [_g, _s, _c]
 	if player != null and player.has_method("get_consumable_slots"):
 		update_consumable_bar(player.get_consumable_slots())
 	_sync_achievement_equipment_state()
