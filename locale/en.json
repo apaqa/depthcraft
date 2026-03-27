@@ -54,6 +54,8 @@
   "milestone_prefix": "[Milestone]\n",
   "talent_unlocked": "Unlocked",
   "talent_cost": "Cost: %d",
+  "title_talents": "Talent Tree",
+  "unlock_button": "Unlock",
   "build_mode": "Build Mode",
   "build_remove_hint": "Click placed objects to reclaim 50% resources",
   "category_empty": "Category Empty",

@@ -157,7 +157,7 @@ const BRANCH_DATA := {
 
 
 static func get_all_talents() -> Array[Dictionary]:
-	var built_talents := _build_talents()
+	var built_talents: Dictionary = _build_talents()
 	var talents: Array[Dictionary] = []
 	for talent_data in built_talents.values():
 		talents.append((talent_data as Dictionary).duplicate(true))
@@ -166,7 +166,7 @@ static func get_all_talents() -> Array[Dictionary]:
 
 
 static func get_talent(talent_id: String) -> Dictionary:
-	var built_talents := _build_talents()
+	var built_talents: Dictionary = _build_talents()
 	if not built_talents.has(talent_id):
 		return {}
 	return (built_talents[talent_id] as Dictionary).duplicate(true)
@@ -210,14 +210,14 @@ static func get_sub_branch_talents(branch_id: String, sub_branch_id: String) -> 
 
 
 static func can_unlock(unlocked_talents: Array[String], talent_shards: int, talent_id: String) -> bool:
-	var talent := get_talent(talent_id)
+	var talent: Dictionary = get_talent(talent_id)
 	if talent.is_empty():
 		return false
 	if unlocked_talents.has(talent_id):
 		return false
 	if talent_shards < int(talent.get("cost", 0)):
 		return false
-	var prerequisite := str(talent.get("prerequisite", ""))
+	var prerequisite: String = str(talent.get("prerequisite", ""))
 	return prerequisite == "" or unlocked_talents.has(prerequisite)
 
 
@@ -225,26 +225,26 @@ static func _build_talents() -> Dictionary:
 	var talents: Dictionary = {}
 	for branch_id in BRANCH_ORDER:
 		var branch_data: Dictionary = BRANCH_DATA.get(branch_id, {})
-		var prefix := str(branch_data.get("prefix", branch_id.substr(0, 1).to_upper()))
+		var prefix: String = str(branch_data.get("prefix", branch_id.substr(0, 1).to_upper()))
 		var main_nodes: Array = branch_data.get("main", [])
 		for index in range(main_nodes.size()):
-			var sequence := index + 1
-			var id := "%s%d" % [prefix, sequence]
-			var prerequisite := "" if sequence == 1 else "%s%d" % [prefix, sequence - 1]
+			var sequence: int = index + 1
+			var id: String = "%s%d" % [prefix, sequence]
+			var prerequisite: String = "" if sequence == 1 else "%s%d" % [prefix, sequence - 1]
 			talents[id] = _create_talent_entry(id, branch_id, "main", sequence, _main_cost(sequence), prerequisite, main_nodes[index] as Dictionary)
 
-		var sub_branch_index := 0
+		var sub_branch_index: int = 0
 		var sub_branch_order: Array = SUB_BRANCH_ORDER.get(branch_id, [])
 		var sub_branch_map: Dictionary = branch_data.get("sub_branches", {})
 		for sub_branch_id_variant in sub_branch_order:
-			var sub_branch_id := str(sub_branch_id_variant)
+			var sub_branch_id: String = str(sub_branch_id_variant)
 			var sub_branch_data: Dictionary = sub_branch_map.get(sub_branch_id, {})
 			var nodes: Array = sub_branch_data.get("nodes", [])
-			var start_number := 11 + sub_branch_index * 8
+			var start_number: int = 11 + sub_branch_index * 8
 			for index in range(nodes.size()):
-				var sequence := index + 1
-				var id := "%s%d" % [prefix, start_number + index]
-				var prerequisite := "%s5" % prefix if sequence == 1 else "%s%d" % [prefix, start_number + index - 1]
+				var sequence: int = index + 1
+				var id: String = "%s%d" % [prefix, start_number + index]
+				var prerequisite: String = "%s5" % prefix if sequence == 1 else "%s%d" % [prefix, start_number + index - 1]
 				talents[id] = _create_talent_entry(id, branch_id, sub_branch_id, sequence, _sub_cost(sequence), prerequisite, nodes[index] as Dictionary)
 			sub_branch_index += 1
 	return talents
@@ -259,15 +259,17 @@ static func _create_talent_entry(
 		prerequisite: String,
 		node_data: Dictionary
 	) -> Dictionary:
-	var talent := {
+	var fallback_name: String = "未命名天賦 %s" % talent_id
+	var fallback_description: String = "尚無描述"
+	var talent: Dictionary = {
 		"id": talent_id,
-		"name": str(node_data.get("name", "talent_%s_name" % talent_id)),
+		"name": str(node_data.get("name", fallback_name)),
 		"branch": branch_id,
 		"sub_branch": sub_branch_id,
 		"sequence": sequence,
 		"cost": cost,
 		"prerequisite": prerequisite,
-		"description": str(node_data.get("description", "talent_%s_desc" % talent_id)),
+		"description": str(node_data.get("description", fallback_description)),
 		"effects": (node_data.get("effects", {}) as Dictionary).duplicate(true),
 	}
 	if bool(node_data.get("is_milestone", false)):
@@ -286,10 +288,10 @@ static func _sub_cost(sequence: int) -> int:
 
 
 static func _sort_value(talent: Dictionary) -> int:
-	var branch_id := str(talent.get("branch", ""))
-	var branch_index := BRANCH_ORDER.find(branch_id)
-	var sub_branch_id := str(talent.get("sub_branch", "main"))
-	var sub_branch_index := 0
+	var branch_id: String = str(talent.get("branch", ""))
+	var branch_index: int = BRANCH_ORDER.find(branch_id)
+	var sub_branch_id: String = str(talent.get("sub_branch", "main"))
+	var sub_branch_index: int = 0
 	if sub_branch_id != "main":
 		sub_branch_index = (SUB_BRANCH_ORDER.get(branch_id, []) as Array).find(sub_branch_id) + 1
 	return branch_index * 1000 + sub_branch_index * 100 + int(talent.get("sequence", 0))

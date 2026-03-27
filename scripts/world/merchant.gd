@@ -14,7 +14,7 @@ const SHOP_ITEMS := [
 
 var _shop_canvas: CanvasLayer = null
 var _shop_root: Control = null
-var _current_player = null
+var _current_player: Variant = null
 var _gold_label: Label = null
 var _message_label: Label = null
 
@@ -23,7 +23,7 @@ func get_interaction_prompt() -> String:
 	return LocaleManager.L("merchant_interact")
 
 
-func interact(player) -> void:
+func interact(player: Variant) -> void:
 	if _shop_canvas != null:
 		return
 	_current_player = player
@@ -52,7 +52,7 @@ func _open_shop() -> void:
 	_shop_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_shop_canvas.add_child(_shop_root)
 
-	var panel := Panel.new()
+	var panel: Panel = Panel.new()
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
@@ -64,29 +64,31 @@ func _open_shop() -> void:
 	panel.offset_bottom = 200.0
 	_shop_root.add_child(panel)
 
-	var x_btn = Button.new()
+	var x_btn: Button = Button.new()
 	x_btn.name = "CloseButton"
 	x_btn.text = "X"
 	x_btn.custom_minimum_size = Vector2(32, 32)
 	x_btn.size = Vector2(32, 32)
 	x_btn.position = panel.position + Vector2(8, 8)
 	x_btn.z_index = 100
+	x_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	x_btn.pressed.connect(_close_shop)
 	_shop_root.add_child(x_btn)
 
-	var margin := MarginContainer.new()
+	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_right", 12)
 	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_bottom", 10)
 	panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
+	var vbox: VBoxContainer = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	margin.add_child(vbox)
 
-	var title := Label.new()
+	var title: Label = Label.new()
 	title.text = LocaleManager.L("merchant")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
@@ -113,12 +115,12 @@ func _open_shop() -> void:
 	_message_label.text = ""
 	vbox.add_child(_message_label)
 
-	var footer := HBoxContainer.new()
+	var footer: HBoxContainer = HBoxContainer.new()
 	_gold_label = Label.new()
 	_gold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_update_gold_label()
 	footer.add_child(_gold_label)
-	var close_btn := Button.new()
+	var close_btn: Button = Button.new()
 	close_btn.text = LocaleManager.L("close_button")
 	close_btn.pressed.connect(_close_shop)
 	footer.add_child(close_btn)
@@ -126,15 +128,15 @@ func _open_shop() -> void:
 
 
 func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
-	var row := HBoxContainer.new()
+	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	if icon != null:
 		row.add_child(_make_icon_rect(icon))
-	var lbl := Label.new()
+	var lbl: Label = Label.new()
 	lbl.text = "%s  %s" % [label_text, ITEM_DATABASE.format_currency(price)]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
-	var btn := Button.new()
+	var btn: Button = Button.new()
 	btn.text = LocaleManager.L("buy")
 	btn.pressed.connect(callback)
 	row.add_child(btn)
@@ -144,7 +146,7 @@ func _add_shop_row(parent: Control, label_text: String, price: int, callback: Ca
 func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	if _current_player == null:
 		return
-	var inv = _current_player.get("inventory")
+	var inv: Variant = _current_player.get("inventory")
 	if inv == null:
 		return
 	var payment: Dictionary = inv.get_exact_currency_payment(price)
@@ -165,7 +167,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 func _on_buy_equipment() -> void:
 	if _current_player == null:
 		return
-	var inv = _current_player.get("inventory")
+	var inv: Variant = _current_player.get("inventory")
 	if inv == null:
 		return
 	var payment: Dictionary = inv.get_exact_currency_payment(50)
@@ -187,8 +189,8 @@ func _on_buy_equipment() -> void:
 func _update_gold_label() -> void:
 	if _gold_label == null or _current_player == null:
 		return
-	var inv = _current_player.get("inventory")
-	var total := 0
+	var inv: Variant = _current_player.get("inventory")
+	var total: int = 0
 	if inv != null:
 		total = inv.get_total_copper()
 	_gold_label.text = LocaleManager.L("gold_label") % total

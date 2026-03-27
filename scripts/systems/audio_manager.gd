@@ -126,10 +126,10 @@ func _build_sound_dictionary() -> void:
 ## Play a background music track by name with a crossfade.
 ## If the same track is already playing nothing happens.
 func play_bgm(theme_name: String) -> void:
-	if theme_name == _current_bgm_name:
+	if not _bgm_dict.has(theme_name) or _bgm_dict[theme_name] == null:
+		push_warning("AudioManager: missing sound: " + str(theme_name))
 		return
-	if not _bgm_dict.has(theme_name):
-		push_warning("AudioManager.play_bgm: unknown theme '%s'" % theme_name)
+	if theme_name == _current_bgm_name:
 		return
 
 	_current_bgm_name = theme_name
@@ -206,14 +206,11 @@ func _stop_all_bgm_players() -> void:
 ## Pass a non-zero `position` for a spatialised 2-D sound;
 ## omit (or pass Vector2.ZERO) for a global / UI sound.
 func play_sfx(sound_name: String, position: Vector2 = Vector2.ZERO) -> void:
-	if not _sfx_dict.has(sound_name):
-		push_warning("AudioManager.play_sfx: unknown sound '%s'" % sound_name)
+	if not _sfx_dict.has(sound_name) or _sfx_dict[sound_name] == null:
+		push_warning("AudioManager: missing sound: " + str(sound_name))
 		return
 
 	var stream: AudioStream = _sfx_dict[sound_name] as AudioStream
-	if stream == null:
-		# Placeholder — silently skip (asset not yet assigned)
-		return
 
 	if position == Vector2.ZERO:
 		_play_ui_sfx_stream(stream)

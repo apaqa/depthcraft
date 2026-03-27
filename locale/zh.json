@@ -54,6 +54,8 @@
   "milestone_prefix": "[里程碑]\n",
   "talent_unlocked": "已解鎖",
   "talent_cost": "費用: %d",
+  "title_talents": "天賦樹",
+  "unlock_button": "解鎖",
   "build_mode": "建造模式",
   "build_remove_hint": "點選已放置物件以收回50%資源",
   "category_empty": "類別為空",
