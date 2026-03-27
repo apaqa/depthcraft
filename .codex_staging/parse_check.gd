@@ -27,6 +27,7 @@ const FILES = [
     "res://scripts/world/merchant.gd",
     "res://scripts/world/tutorial_manager.gd",
     "res://scripts/building/facilities/talent_altar.gd",
+    "res://scripts/building/facilities/repair_bench.gd",
 ]
 func _init() -> void:
     var had_error := false

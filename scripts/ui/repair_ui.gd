@@ -91,7 +91,9 @@ func _refresh() -> void:
 		var info := Label.new()
 		info.text = LocaleManager.L("durability_label") % [durability, max_durability]
 		row.add_child(info)
-		var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name, repair_cost_multiplier)
+		var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name).duplicate()
+		for _k in cost.keys():
+			cost[_k] = maxi(int(ceil(float(cost[_k]) * repair_cost_multiplier)), 1)
 		if not cost.is_empty():
 			repairable_any = true
 			var cost_parts: PackedStringArray = []
@@ -165,7 +167,7 @@ func _on_repair_pressed(slot_name: String) -> void:
 	if player == null:
 		return
 	var repair_cost_multiplier: float = facility.get_repair_cost_multiplier() if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
-	if player.equipment_system.repair_slot(slot_name, player.inventory, repair_cost_multiplier):
+	if player.equipment_system.repair_slot(slot_name, player.inventory):
 		_refresh()
 
 
