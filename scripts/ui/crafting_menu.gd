@@ -25,6 +25,9 @@ var menu_title: String = ""
 var recipe_buttons: Dictionary = {}
 var upgrade_label: Label = null
 var upgrade_button: Button = null
+var _current_category: String = "all"
+var _category_tab_buttons: Dictionary = {}
+var _tabs_built: bool = false
 
 const CATEGORY_KEY_MAP = {
 	"Armor": "cat_armor",
@@ -63,9 +66,11 @@ func open_for_player(target_player, available_recipe_ids: PackedStringArray = Pa
 	facility = target_facility
 	filtered_recipe_ids = available_recipe_ids
 	menu_title = title if title != "" else LocaleManager.L("crafting_title")
+	_current_category = "all"
 	visible = true
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
+	_build_category_tabs()
 	_rebuild_recipe_list()
 	if not recipe_ids.is_empty():
 		_on_recipe_button_pressed(recipe_ids[0])
@@ -100,26 +105,29 @@ func _rebuild_recipe_list() -> void:
 	var recipes: Array[Dictionary] = CRAFTING_SYSTEM.get_available_recipes_for_ids(filtered_recipe_ids) if not filtered_recipe_ids.is_empty() else CRAFTING_SYSTEM.get_available_recipes()
 	var grouped: Dictionary = {}
 	for recipe in recipes:
-		var category := str(recipe.get("category", "Crafting"))
+		var category: String = str(recipe.get("category", "Crafting"))
 		if not grouped.has(category):
 			grouped[category] = []
 		grouped[category].append(recipe)
-	var category_names := grouped.keys()
+	var category_names: Array = grouped.keys()
 	category_names.sort()
 	for category_name in category_names:
-		var header := Label.new()
-		var translated_name = _translate_category(category_name)
+		# Skip categories not matching the active tab (unless "all" is selected)
+		if _current_category != "all" and str(category_name) != _current_category:
+			continue
+		var header: Label = Label.new()
+		var translated_name: String = _translate_category(str(category_name))
 		header.text = LocaleManager.L("crafting_category_header") % translated_name
 		header.modulate = Color(0.95, 0.9, 0.65, 1.0)
 		recipe_list_container.add_child(header)
 		for recipe in grouped[category_name]:
-			var recipe_id := str(recipe["id"])
+			var recipe_id: String = str(recipe["id"])
 			recipe_ids.append(recipe_id)
-			var row := HBoxContainer.new()
+			var row: HBoxContainer = HBoxContainer.new()
 			row.add_theme_constant_override("separation", 6)
-			var icon_holder := _build_item_icon_holder(ITEM_DATABASE.get_item(str(recipe.get("result_item_id", ""))))
+			var icon_holder: Control = _build_item_icon_holder(ITEM_DATABASE.get_item(str(recipe.get("result_item_id", ""))))
 			row.add_child(icon_holder)
-			var button := Button.new()
+			var button: Button = Button.new()
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.text = "%s (%s)" % [str(recipe["name"]), _format_cost_summary(recipe_id)]
@@ -127,6 +135,7 @@ func _rebuild_recipe_list() -> void:
 			recipe_buttons[recipe_id] = button
 			row.add_child(button)
 			recipe_list_container.add_child(row)
+	_refresh_category_tab_visuals()
 
 
 func _on_recipe_button_pressed(recipe_id: String) -> void:
@@ -315,9 +324,9 @@ func _refresh_upgrade_controls() -> void:
 		return
 	var cost: Dictionary = facility.get_upgrade_cost() if facility.has_method("get_upgrade_cost") else {}
 	var parts: PackedStringArray = []
-	var can_afford := true
+	var can_afford: bool = true
 	for resource_id in cost.keys():
-		var required := int(cost[resource_id])
+		var required: int = int(cost[resource_id])
 		var owned: int = player_inventory.get_item_count(str(resource_id)) if player_inventory != null else 0
 		parts.append("%s %d/%d" % [_pretty_name(str(resource_id)), owned, required])
 		if owned < required:
@@ -327,3 +336,60 @@ func _refresh_upgrade_controls() -> void:
 	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else "Upgrade"
 	upgrade_button.disabled = not can_afford
 	upgrade_button.visible = true
+
+
+# ---------------------------------------------------------------------------
+# Category tab bar
+# ---------------------------------------------------------------------------
+func _build_category_tabs() -> void:
+	if _tabs_built:
+		_refresh_category_tab_visuals()
+		return
+	var recipe_scroll: ScrollContainer = recipe_list_container.get_parent() as ScrollContainer
+	if recipe_scroll == null:
+		return
+	var recipe_panel: Control = recipe_scroll.get_parent() as Control
+	if recipe_panel == null:
+		return
+	_tabs_built = true
+
+	var tab_bar: HBoxContainer = HBoxContainer.new()
+	tab_bar.name = "CategoryTabs"
+	tab_bar.add_theme_constant_override("separation", 4)
+
+	var cat_keys: Array = ["all", "Weapons", "Armor", "Consumables", "Tools"]
+	for cat_key in cat_keys:
+		var btn: Button = Button.new()
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if cat_key == "all":
+			btn.text = "All"
+		else:
+			btn.text = _translate_category(str(cat_key))
+		btn.pressed.connect(_on_category_tab_pressed.bind(str(cat_key)))
+		_category_tab_buttons[str(cat_key)] = btn
+		tab_bar.add_child(btn)
+
+	recipe_panel.add_child(tab_bar)
+	recipe_panel.move_child(tab_bar, 0)
+	_refresh_category_tab_visuals()
+
+
+func _on_category_tab_pressed(category: String) -> void:
+	_current_category = category
+	_rebuild_recipe_list()
+	if not recipe_ids.is_empty():
+		_on_recipe_button_pressed(recipe_ids[0])
+	else:
+		selected_recipe_id = ""
+		_refresh_details()
+
+
+func _refresh_category_tab_visuals() -> void:
+	for cat_key in _category_tab_buttons.keys():
+		var btn: Button = _category_tab_buttons[cat_key] as Button
+		if btn == null:
+			continue
+		if str(cat_key) == _current_category:
+			btn.modulate = Color(1.0, 0.85, 0.2, 1.0)
+		else:
+			btn.modulate = Color(0.75, 0.75, 0.75, 1.0)

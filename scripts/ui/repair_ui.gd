@@ -64,103 +64,157 @@ func _refresh() -> void:
 	if player == null:
 		detail_label.text = LocaleManager.L("repair_no_player")
 		return
-	var repair_cost_multiplier: float = facility.get_repair_cost_multiplier() if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
-	var equipped_any := false
-	var repairable_any := false
+	var repair_cost_multiplier: float = facility.get_repair_cost_multiplier() \
+		if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
+	var equipped_any: bool = false
+	var repairable_any: bool = false
+
+	# === Equipped (slot) items ===
 	for slot_name in player.equipment_system.get_slot_order():
 		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
 		if item.is_empty():
 			continue
 		equipped_any = true
-		var durability := int(item.get("durability", 0))
-		var max_durability := int(item.get("max_durability", 0))
-		var row := VBoxContainer.new()
-		row.add_theme_constant_override("separation", 4)
-		var title_row: HBoxContainer = HBoxContainer.new()
-		title_row.add_theme_constant_override("separation", 6)
-		row.add_child(title_row)
-		title_row.add_child(_build_item_icon(item))
-		var title := Label.new()
-		title.text = LocaleManager.L("repair_equipped_item_fmt") % [player.equipment_system.get_item_display_name(item), _translate_slot_name(slot_name)]
-		title.self_modulate = player.equipment_system.get_item_display_color(item)
-		title_row.add_child(title)
-		var bar_bg := ColorRect.new()
-		bar_bg.custom_minimum_size = Vector2(280, 10)
-		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
-		var bar_fill := ColorRect.new()
-		bar_fill.custom_minimum_size = Vector2(280.0 * clampf(float(durability) / float(max(max_durability, 1)), 0.0, 1.0), 10)
-		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if durability <= 0 else (Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0))
-		bar_bg.add_child(bar_fill)
-		row.add_child(bar_bg)
-		var info := Label.new()
-		info.text = LocaleManager.L("durability_label") % [durability, max_durability]
-		row.add_child(info)
+		var durability: int = int(item.get("durability", 0))
+		var max_durability: int = int(item.get("max_durability", 0))
+		var dur_ratio: float = clampf(float(durability) / float(maxi(max_durability, 1)), 0.0, 1.0)
+
+		# Pre-compute repair cost
 		var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name).duplicate()
 		for _k in cost.keys():
 			cost[_k] = maxi(int(ceil(float(cost[_k]) * repair_cost_multiplier)), 1)
+
+		# Outer row: left info | right actions
+		var outer_row: HBoxContainer = HBoxContainer.new()
+		outer_row.add_theme_constant_override("separation", 8)
+
+		# Left column: icon + name, durability bar
+		var left_col: VBoxContainer = VBoxContainer.new()
+		left_col.add_theme_constant_override("separation", 4)
+		left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+		var title_row: HBoxContainer = HBoxContainer.new()
+		title_row.add_theme_constant_override("separation", 6)
+		title_row.add_child(_build_item_icon(item))
+		var name_lbl: Label = Label.new()
+		name_lbl.text = "%s  [%s]" % [_get_display_name(item), _translate_slot_name(slot_name)]
+		name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.clip_text = true
+		title_row.add_child(name_lbl)
+		left_col.add_child(title_row)
+
+		var bar_bg: ColorRect = ColorRect.new()
+		bar_bg.custom_minimum_size = Vector2(200, 10)
+		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
+		var bar_fill: ColorRect = ColorRect.new()
+		bar_fill.custom_minimum_size = Vector2(200.0 * dur_ratio, 10)
+		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if durability <= 0 else \
+			(Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0))
+		bar_bg.add_child(bar_fill)
+		left_col.add_child(bar_bg)
+
+		var info_lbl: Label = Label.new()
+		info_lbl.text = LocaleManager.L("durability_label") % [durability, max_durability]
+		left_col.add_child(info_lbl)
+		outer_row.add_child(left_col)
+
+		# Right column: cost + repair button (shrinks to content, right-side)
+		var right_col: VBoxContainer = VBoxContainer.new()
+		right_col.add_theme_constant_override("separation", 4)
+		right_col.size_flags_horizontal = Control.SIZE_SHRINK_END
+
 		if not cost.is_empty():
 			repairable_any = true
 			var cost_parts: PackedStringArray = []
-			var can_afford := true
+			var can_afford: bool = true
 			for resource_id in cost.keys():
 				cost_parts.append("%d %s" % [int(cost[resource_id]), ITEM_DATABASE.get_display_name(str(resource_id))])
 				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
 					can_afford = false
-			var cost_label := Label.new()
-			cost_label.text = LocaleManager.L("repair_cost_fmt") % ", ".join(cost_parts)
-			row.add_child(cost_label)
-			var button := Button.new()
-			button.text = LocaleManager.L("repair")
-			button.disabled = not can_afford
-			button.pressed.connect(_on_repair_pressed.bind(slot_name))
-			row.add_child(button)
-		list_container.add_child(row)
-	# Inventory (unequipped) equipment
+			var cost_lbl: Label = Label.new()
+			cost_lbl.text = LocaleManager.L("repair_cost_fmt") % ", ".join(cost_parts)
+			cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			right_col.add_child(cost_lbl)
+			var repair_btn: Button = Button.new()
+			repair_btn.text = LocaleManager.L("repair")
+			repair_btn.disabled = not can_afford
+			repair_btn.pressed.connect(_on_repair_pressed.bind(slot_name))
+			right_col.add_child(repair_btn)
+
+		outer_row.add_child(right_col)
+		list_container.add_child(outer_row)
+		list_container.add_child(HSeparator.new())
+
+	# === Inventory (unequipped) equipment ===
 	for index in range(player.inventory.items.size()):
 		var item: Dictionary = player.inventory.items[index]
 		if str(item.get("type", "")) != "equipment":
 			continue
-		var durability := int(item.get("durability", 0))
-		var max_durability := int(item.get("max_durability", 0))
+		var max_durability: int = int(item.get("max_durability", 0))
+		var durability: int = int(item.get("durability", max_durability))
 		if max_durability <= 0:
 			continue
 		equipped_any = true
-		var row := VBoxContainer.new()
-		row.add_theme_constant_override("separation", 4)
+		var dur_ratio: float = clampf(float(durability) / float(maxi(max_durability, 1)), 0.0, 1.0)
+		var lost: int = maxi(max_durability - durability, 0)
+
+		var outer_row: HBoxContainer = HBoxContainer.new()
+		outer_row.add_theme_constant_override("separation", 8)
+
+		var left_col: VBoxContainer = VBoxContainer.new()
+		left_col.add_theme_constant_override("separation", 4)
+		left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
 		var title_row: HBoxContainer = HBoxContainer.new()
 		title_row.add_theme_constant_override("separation", 6)
-		row.add_child(title_row)
 		title_row.add_child(_build_item_icon(item))
-		var title := Label.new()
-		title.text = LocaleManager.L("repair_inventory_item_fmt") % [player.equipment_system.get_item_display_name(item), LocaleManager.L("inventory_short")]
-		title.self_modulate = player.equipment_system.get_item_display_color(item)
-		title_row.add_child(title)
-		var bar_bg := ColorRect.new()
-		bar_bg.custom_minimum_size = Vector2(280, 10)
+		var name_lbl: Label = Label.new()
+		name_lbl.text = "%s  [%s]" % [_get_display_name(item), LocaleManager.L("inventory_short")]
+		name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.clip_text = true
+		title_row.add_child(name_lbl)
+		left_col.add_child(title_row)
+
+		var bar_bg: ColorRect = ColorRect.new()
+		bar_bg.custom_minimum_size = Vector2(200, 10)
 		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
-		var bar_fill := ColorRect.new()
-		bar_fill.custom_minimum_size = Vector2(280.0 * clampf(float(durability) / float(max(max_durability, 1)), 0.0, 1.0), 10)
-		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if durability <= 0 else (Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0))
+		var bar_fill: ColorRect = ColorRect.new()
+		bar_fill.custom_minimum_size = Vector2(200.0 * dur_ratio, 10)
+		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if durability <= 0 else \
+			(Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0))
 		bar_bg.add_child(bar_fill)
-		row.add_child(bar_bg)
-		var info := Label.new()
-		info.text = LocaleManager.L("durability_label") % [durability, max_durability]
-		row.add_child(info)
-		var lost = max(max_durability - durability, 0)
+		left_col.add_child(bar_bg)
+
+		var info_lbl: Label = Label.new()
+		info_lbl.text = LocaleManager.L("durability_label") % [durability, max_durability]
+		left_col.add_child(info_lbl)
+		outer_row.add_child(left_col)
+
+		var right_col: VBoxContainer = VBoxContainer.new()
+		right_col.add_theme_constant_override("separation", 4)
+		right_col.size_flags_horizontal = Control.SIZE_SHRINK_END
+
 		if lost > 0:
 			repairable_any = true
-			var material = player.equipment_system.get_repair_material("", item)
-			var cost_amount = max(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
-			var can_afford = player.inventory.get_item_count(material) >= cost_amount
-			var cost_label := Label.new()
-			cost_label.text = LocaleManager.L("repair_cost_single_fmt") % [cost_amount, ITEM_DATABASE.get_display_name(material)]
-			row.add_child(cost_label)
-			var button := Button.new()
-			button.text = LocaleManager.L("repair")
-			button.disabled = not can_afford
-			button.pressed.connect(_on_repair_inventory_pressed.bind(index))
-			row.add_child(button)
-		list_container.add_child(row)
+			var material: String = str(player.equipment_system.get_repair_material("", item))
+			var cost_amount: int = maxi(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
+			var can_afford: bool = player.inventory.get_item_count(material) >= cost_amount
+			var cost_lbl: Label = Label.new()
+			cost_lbl.text = LocaleManager.L("repair_cost_single_fmt") % [cost_amount, ITEM_DATABASE.get_display_name(material)]
+			cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			right_col.add_child(cost_lbl)
+			var repair_btn: Button = Button.new()
+			repair_btn.text = LocaleManager.L("repair")
+			repair_btn.disabled = not can_afford
+			repair_btn.pressed.connect(_on_repair_inventory_pressed.bind(index))
+			right_col.add_child(repair_btn)
+
+		outer_row.add_child(right_col)
+		list_container.add_child(outer_row)
+		list_container.add_child(HSeparator.new())
+
 	if not equipped_any:
 		detail_label.text = LocaleManager.L("repair_none_equipped")
 		return
@@ -174,7 +228,6 @@ func _refresh() -> void:
 func _on_repair_pressed(slot_name: String) -> void:
 	if player == null:
 		return
-	var repair_cost_multiplier: float = facility.get_repair_cost_multiplier() if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
 	if player.equipment_system.repair_slot(slot_name, player.inventory):
 		_refresh()
 
@@ -183,20 +236,32 @@ func _on_repair_inventory_pressed(inv_index: int) -> void:
 	if player == null or inv_index < 0 or inv_index >= player.inventory.items.size():
 		return
 	var item: Dictionary = player.inventory.items[inv_index]
-	var max_dur := int(item.get("max_durability", 0))
-	var dur := int(item.get("durability", max_dur))
-	var lost = max(max_dur - dur, 0)
+	var max_dur: int = int(item.get("max_durability", 0))
+	var dur: int = int(item.get("durability", max_dur))
+	var lost: int = maxi(max_dur - dur, 0)
 	if lost <= 0:
 		return
-	var material = player.equipment_system.get_repair_material("", item)
-	var repair_cost_multiplier: float = facility.get_repair_cost_multiplier() if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
-	var cost_amount = max(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
+	var material: String = str(player.equipment_system.get_repair_material("", item))
+	var repair_cost_multiplier: float = facility.get_repair_cost_multiplier() \
+		if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
+	var cost_amount: int = maxi(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
 	if player.inventory.get_item_count(material) < cost_amount:
 		return
 	player.inventory.remove_item(material, cost_amount)
 	item["durability"] = max_dur
 	player.inventory.inventory_changed.emit()
 	_refresh()
+
+
+func _get_display_name(item: Dictionary) -> String:
+	var raw_name: String = str(item.get("name", ""))
+	if raw_name != "":
+		return raw_name
+	var item_id: String = str(item.get("id", str(item.get("item_id", ""))))
+	var db_name: String = ITEM_DATABASE.get_display_name(item_id)
+	if db_name != "" and db_name != item_id:
+		return db_name
+	return item_id.replace("_", " ").capitalize()
 
 
 func _translate_slot_name(slot_name: String) -> String:
@@ -246,7 +311,7 @@ func _resize_panel() -> void:
 	if viewport_size.x > 0.0:
 		panel_container.offset_left = maxf(8.0, (viewport_size.x - panel_width) * 0.5)
 		panel_container.offset_right = panel_container.offset_left + panel_width
-	var close_btn := get_node_or_null("CloseButton") as Button
+	var close_btn: Button = get_node_or_null("CloseButton") as Button
 	if close_btn != null:
 		close_btn.position = panel_container.position + Vector2(8, 8)
 
@@ -254,7 +319,7 @@ func _resize_panel() -> void:
 func _ensure_close_button() -> void:
 	if get_node_or_null("CloseButton") != null:
 		return
-	var close_btn = Button.new()
+	var close_btn: Button = Button.new()
 	close_btn.name = "CloseButton"
 	close_btn.text = "X"
 	close_btn.custom_minimum_size = Vector2(32, 32)
@@ -288,9 +353,9 @@ func _refresh_upgrade_controls() -> void:
 		return
 	var cost: Dictionary = facility.get_upgrade_cost() if facility.has_method("get_upgrade_cost") else {}
 	var parts: PackedStringArray = []
-	var can_afford := true
+	var can_afford: bool = true
 	for resource_id in cost.keys():
-		var need := int(cost[resource_id])
+		var need: int = int(cost[resource_id])
 		var have: int = player.inventory.get_item_count(str(resource_id)) if player != null and player.inventory != null else 0
 		parts.append("%s %d/%d" % [ITEM_DATABASE.get_display_name(str(resource_id)), have, need])
 		if have < need:

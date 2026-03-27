@@ -149,7 +149,21 @@ func _setup_detail_panel() -> void:
 	detail_desc.bbcode_enabled = true
 	detail_desc.fit_content = true
 	detail_unlock_button.pressed.connect(_on_detail_unlock_pressed)
+	detail_unlock_button.custom_minimum_size = Vector2(120, 36)
 	detail_panel.visible = false
+	# Style the detail panel for visual clarity
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.10, 0.12, 0.16, 0.96)
+	panel_style.border_color = Color(0.60, 0.44, 0.22, 0.9)
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.corner_radius_top_left = 6
+	panel_style.corner_radius_top_right = 6
+	panel_style.corner_radius_bottom_left = 6
+	panel_style.corner_radius_bottom_right = 6
+	detail_panel.add_theme_stylebox_override("panel", panel_style)
 
 
 func _refresh() -> void:
@@ -404,20 +418,34 @@ func _show_talent_detail(talent_id: String) -> void:
 		detail_panel.visible = false
 		return
 
+	# Title — enlarged font for prominence
 	detail_title.text = LocaleManager.L(str(talent.get("name", talent_id)))
-	detail_desc.text = LocaleManager.L(str(talent.get("description", "")))
-	detail_cost.text = LocaleManager.L("talent_cost") % int(talent.get("cost", 0))
+	detail_title.add_theme_font_size_override("font_size", 20)
 
+	# Description via BBCode
+	var description: String = LocaleManager.L(str(talent.get("description", "")))
+	detail_desc.text = "[p]%s[/p]" % description
+
+	# Cost — colour-coded by affordability
+	var cost_shards: int = int(talent.get("cost", 0))
+	var current_shards: int = player.inventory.get_item_count("talent_shard") if player != null else 0
+	detail_cost.text = "%s  (%d / %d)" % [LocaleManager.L("talent_cost") % cost_shards, current_shards, cost_shards]
+	detail_cost.modulate = Color(0.45, 1.0, 0.45, 1.0) if current_shards >= cost_shards else Color(1.0, 0.45, 0.45, 1.0)
+
+	# Unlock button — state-driven styling
 	var state: String = _get_talent_state(talent_id)
 	if state == "unlocked":
 		detail_unlock_button.text = LocaleManager.L("talent_unlocked")
 		detail_unlock_button.disabled = true
+		detail_unlock_button.modulate = Color(0.6, 0.6, 0.6, 1.0)
 	elif state == "available":
 		detail_unlock_button.text = LocaleManager.L("unlock_button")
 		detail_unlock_button.disabled = false
+		detail_unlock_button.modulate = Color(0.45, 1.0, 0.45, 1.0)
 	else:
 		detail_unlock_button.text = LocaleManager.L("unlock_button")
 		detail_unlock_button.disabled = true
+		detail_unlock_button.modulate = Color(0.55, 0.55, 0.55, 1.0)
 
 	detail_panel.visible = true
 
@@ -437,7 +465,7 @@ func _refresh_upgrade_controls() -> void:
 
 	var cost: Dictionary = facility.get_upgrade_cost() if facility.has_method("get_upgrade_cost") else {}
 	var parts: PackedStringArray = []
-	var can_afford := true
+	var can_afford: bool = true
 	for resource_id_variant in cost.keys():
 		var resource_id: String = str(resource_id_variant)
 		var need: int = int(cost[resource_id_variant])
