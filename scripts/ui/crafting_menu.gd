@@ -50,6 +50,7 @@ const STAT_KEY_MAP = {
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	flash_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	craft_button.pressed.connect(_on_craft_pressed)
 	craft_button.text = LocaleManager.L("craft")
 	_ensure_close_button()

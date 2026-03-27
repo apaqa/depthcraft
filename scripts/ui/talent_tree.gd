@@ -12,12 +12,12 @@ class TalentMapCanvas:
 
 const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
 
-const BASE_MAP_SIZE := Vector2(2400, 2400)
-const MAP_CENTER := Vector2(1200, 1200)
+const BASE_MAP_SIZE := Vector2(4000, 4000)
+const MAP_CENTER := Vector2(2000, 2000)
 const NODE_SIZE := 68.0
 const GLOW_SIZE := 92.0
-const MAIN_STEP := 170.0
-const SUB_STEP := 150.0
+const MAIN_STEP := 150.0
+const SUB_STEP := 110.0
 const MIN_ZOOM := 0.5
 const MAX_ZOOM := 2.0
 const MAP_BACKGROUND := Color(0.08, 0.09, 0.12, 0.98)
@@ -406,7 +406,7 @@ func _show_talent_detail(talent_id: String) -> void:
 
 	detail_title.text = LocaleManager.L(str(talent.get("name", talent_id)))
 	detail_desc.text = LocaleManager.L(str(talent.get("description", "")))
-	detail_cost.text = "%s %d" % [LocaleManager.L("talent_cost"), int(talent.get("cost", 0))]
+	detail_cost.text = LocaleManager.L("talent_cost") % int(talent.get("cost", 0))
 
 	var state: String = _get_talent_state(talent_id)
 	if state == "unlocked":

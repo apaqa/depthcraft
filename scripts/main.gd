@@ -58,6 +58,23 @@ func _input(event: InputEvent) -> void:
 		BUILDING_SAVE.clear_save()
 		get_tree().reload_current_scene()
 		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_8:
+		_debug_give_resources()
+		get_viewport().set_input_as_handled()
+
+
+func _debug_give_resources() -> void:
+	if player == null:
+		return
+	player.inventory.add_item("gold", 100)
+	player.inventory.add_item("silver", 100)
+	player.inventory.add_item("copper", 100)
+	player.inventory.add_item("wood", 99)
+	player.inventory.add_item("stone", 99)
+	player.inventory.add_item("iron_ore", 99)
+	player.inventory.add_item("fiber", 99)
+	player.inventory.add_item("wheat", 99)
+	player.inventory.add_item("talent_shard", 99)
 
 
 func change_level(level_id: String, spawn_override: Variant = null) -> void:

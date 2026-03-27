@@ -8,6 +8,12 @@ signal buff_chosen(buff_id: String)
 
 var active_options: Array[Dictionary] = []
 
+const DEFAULT_CARD_COLORS := [
+	Color(1.0, 0.82, 0.20, 1.0),
+	Color(0.58, 0.22, 0.90, 1.0),
+	Color(0.22, 0.55, 0.95, 1.0),
+]
+
 
 func _ready() -> void:
 	visible = false
@@ -22,7 +28,9 @@ func open_with_options(options: Array[Dictionary]) -> void:
 	title_label.text = LocaleManager.L("buff_select_title")
 	for child in card_container.get_children():
 		child.queue_free()
-	for option in active_options:
+	for i in range(active_options.size()):
+		var option: Dictionary = active_options[i]
+		var card_color := _get_option_color(option, i)
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(160, 132)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -37,14 +45,14 @@ func open_with_options(options: Array[Dictionary]) -> void:
 		panel_style.border_width_top = 2
 		panel_style.border_width_right = 2
 		panel_style.border_width_bottom = 2
-		panel_style.border_color = _get_option_color(option)
+		panel_style.border_color = card_color
 		panel_style.corner_radius_top_left = 8
 		panel_style.corner_radius_top_right = 8
 		panel_style.corner_radius_bottom_left = 8
 		panel_style.corner_radius_bottom_right = 8
 		button.add_theme_stylebox_override("normal", panel_style)
-		button.add_theme_stylebox_override("hover", _make_card_style(_get_option_color(option).lightened(0.2)))
-		button.add_theme_stylebox_override("pressed", _make_card_style(_get_option_color(option).darkened(0.15)))
+		button.add_theme_stylebox_override("hover", _make_card_style(card_color.lightened(0.2)))
+		button.add_theme_stylebox_override("pressed", _make_card_style(card_color.darkened(0.15)))
 		button.text = "%s\n[%s]\n%s" % [
 			LocaleManager.L(str(option.get("name", ""))),
 			LocaleManager.L(str(option.get("category", ""))),
@@ -80,9 +88,11 @@ func _on_auto_timer_timeout() -> void:
 	_choose_buff(str(random_option.get("id", "")))
 
 
-func _get_option_color(option: Dictionary) -> Color:
-	var color = option.get("color", Color.WHITE)
-	return color if color is Color else Color.WHITE
+func _get_option_color(option: Dictionary, fallback_index: int = 0) -> Color:
+	var color = option.get("color", null)
+	if color is Color:
+		return color
+	return DEFAULT_CARD_COLORS[fallback_index % DEFAULT_CARD_COLORS.size()]
 
 
 func _make_card_style(border_color: Color) -> StyleBoxFlat:

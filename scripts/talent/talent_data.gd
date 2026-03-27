@@ -261,13 +261,13 @@ static func _create_talent_entry(
 	) -> Dictionary:
 	var talent := {
 		"id": talent_id,
-		"name": "talent_%s_name" % talent_id,
+		"name": str(node_data.get("name", "talent_%s_name" % talent_id)),
 		"branch": branch_id,
 		"sub_branch": sub_branch_id,
 		"sequence": sequence,
 		"cost": cost,
 		"prerequisite": prerequisite,
-		"description": "talent_%s_desc" % talent_id,
+		"description": str(node_data.get("description", "talent_%s_desc" % talent_id)),
 		"effects": (node_data.get("effects", {}) as Dictionary).duplicate(true),
 	}
 	if bool(node_data.get("is_milestone", false)):

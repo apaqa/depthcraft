@@ -156,7 +156,7 @@ func _build_equipment_row(stack: Dictionary, eq_list_index: int) -> Button:
 	var btn := Button.new()
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.custom_minimum_size = Vector2(0, 54)
+	btn.custom_minimum_size = Vector2(0, 64)
 	if not stack.is_empty():
 		_apply_rarity_style(btn, player.equipment_system.get_item_display_color(stack))
 
@@ -166,11 +166,11 @@ func _build_equipment_row(stack: Dictionary, eq_list_index: int) -> Button:
 	content.add_theme_constant_override("separation", 2)
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	# Row 1: 32×32 icon + item name (color-coded)
+	# Row 1: 48×48 icon + item name (color-coded)
 	var row1 := HBoxContainer.new()
 	row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row1.add_theme_constant_override("separation", 6)
-	var icon_ctrl := _build_icon_control(stack, 32)
+	var icon_ctrl := _build_icon_control(stack, 48)
 	row1.add_child(icon_ctrl)
 	var name_lbl := Label.new()
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -181,13 +181,20 @@ func _build_equipment_row(stack: Dictionary, eq_list_index: int) -> Button:
 	row1.add_child(name_lbl)
 	content.add_child(row1)
 
-	# Row 2: slot type + durability (smaller gray text)
+	# Row 2: quality tag + slot type + durability (smaller gray text)
 	var slot_name := str(stack.get("slot", ""))
 	var dur := int(stack.get("durability", 0))
 	var max_dur := int(stack.get("max_durability", 0))
+	var rarity := str(stack.get("rarity", ""))
+	var rarity_tag := _translate_rarity(rarity)
+	var row2_text := ""
+	if rarity_tag != "":
+		row2_text = "[%s] %s  %d/%d" % [rarity_tag, _translate_slot(slot_name), dur, max_dur]
+	else:
+		row2_text = "%s  %d/%d" % [_translate_slot(slot_name), dur, max_dur]
 	var info_lbl := Label.new()
 	info_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_lbl.text = "%s  %d/%d" % [_translate_slot(slot_name), dur, max_dur]
+	info_lbl.text = row2_text
 	info_lbl.add_theme_font_size_override("font_size", 10)
 	info_lbl.modulate = Color(0.7, 0.7, 0.7, 1.0)
 	content.add_child(info_lbl)
@@ -283,6 +290,16 @@ func _get_item_display_name(item_data: Dictionary) -> String:
 	if max_durability > 0 and durability <= 0:
 		return LocaleManager.L("broken_item_fmt") % base_name
 	return base_name
+
+
+func _translate_rarity(rarity: String) -> String:
+	match rarity:
+		"common": return LocaleManager.L("rarity_common")
+		"uncommon": return LocaleManager.L("rarity_uncommon")
+		"rare": return LocaleManager.L("rarity_rare")
+		"epic": return LocaleManager.L("rarity_epic")
+		"legendary": return LocaleManager.L("rarity_legendary")
+	return ""
 
 
 func _translate_slot(slot_name: String) -> String:
