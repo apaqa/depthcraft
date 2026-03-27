@@ -1,43 +1,94 @@
 extends Control
 
+class TalentMapCanvas:
+	extends Control
+
+	var owner_ui = null
+
+	func _draw() -> void:
+		if owner_ui != null:
+			owner_ui._draw_talent_map(self)
+
+
 const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
 
-const PANEL_WIDTH := 372.0
-const MAIN_BUTTON_SIZE := Vector2(216, 60)
-const MILESTONE_BUTTON_SIZE := Vector2(216, 82)
-const SUB_BUTTON_SIZE := Vector2(160, 78)
-const CONNECTOR_COLOR := Color(0.82, 0.72, 0.38, 0.9)
+const BASE_MAP_SIZE := Vector2(2400, 2400)
+const MAP_CENTER := Vector2(1200, 1200)
+const NODE_SIZE := 68.0
+const GLOW_SIZE := 92.0
+const MAIN_STEP := 170.0
+const SUB_STEP := 150.0
+const MIN_ZOOM := 0.5
+const MAX_ZOOM := 2.0
+const MAP_BACKGROUND := Color(0.08, 0.09, 0.12, 0.98)
+const LINE_LOCKED := Color(0.28, 0.31, 0.36, 0.95)
+const LINE_AVAILABLE := Color(0.76, 0.86, 0.95, 0.95)
+const LINE_UNLOCKED := Color(1.0, 0.82, 0.34, 1.0)
+
+const BRANCH_MAIN_DIRECTIONS := {
+	"offense": Vector2(-0.88, -0.62),
+	"defense": Vector2(0.88, -0.62),
+	"support": Vector2(0.0, 1.0),
+}
+
+const BRANCH_SPLIT_ANGLES := {
+	"offense": [-0.55, 0.38],
+	"defense": [0.55, -0.38],
+	"support": [0.55, -0.55],
+}
+
+const BRANCH_COLORS := {
+	"offense": Color(0.94, 0.42, 0.34, 1.0),
+	"defense": Color(0.34, 0.66, 0.98, 1.0),
+	"support": Color(0.42, 0.88, 0.56, 1.0),
+}
 
 signal close_requested
 
 @onready var panel_container: PanelContainer = $PanelContainer
-
-@onready var shard_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ShardLabel
-@onready var branch_row: HBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/BranchRow
-@onready var content_vbox: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer
+@onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
+@onready var upgrade_summary_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TopBar/UpgradeBox/UpgradeSummary
+@onready var upgrade_button: Button = $PanelContainer/MarginContainer/VBoxContainer/TopBar/UpgradeBox/UpgradeButton
+@onready var offense_jump_button: Button = $PanelContainer/MarginContainer/VBoxContainer/TopBar/BranchButtons/OffenseButton
+@onready var defense_jump_button: Button = $PanelContainer/MarginContainer/VBoxContainer/TopBar/BranchButtons/DefenseButton
+@onready var support_jump_button: Button = $PanelContainer/MarginContainer/VBoxContainer/TopBar/BranchButtons/SupportButton
+@onready var shard_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TopBar/ShardLabel
+@onready var map_scroll: ScrollContainer = $PanelContainer/MarginContainer/VBoxContainer/MapPanel/ScrollContainer
+@onready var map_root: Control = $PanelContainer/MarginContainer/VBoxContainer/MapPanel/ScrollContainer/MapRoot
+@onready var detail_panel: PanelContainer = $PanelContainer/TalentDetail
+@onready var detail_title: Label = $PanelContainer/TalentDetail/MarginContainer/VBoxContainer/TitleLabel
+@onready var detail_desc: RichTextLabel = $PanelContainer/TalentDetail/MarginContainer/VBoxContainer/DescriptionLabel
+@onready var detail_cost: Label = $PanelContainer/TalentDetail/MarginContainer/VBoxContainer/CostLabel
+@onready var detail_unlock_button: Button = $PanelContainer/TalentDetail/MarginContainer/VBoxContainer/UnlockButton
 
 var player = null
 var facility = null
-var upgrade_label: Label = null
-var upgrade_button: Button = null
+var selected_talent_id: String = ""
+var map_canvas: TalentMapCanvas = null
+var node_positions: Dictionary = {}
+var node_widgets: Dictionary = {}
+var branch_focus_points: Dictionary = {}
+var zoom_level: float = 1.0
+var dragging_map: bool = false
+var last_drag_position: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	title_label.text = LocaleManager.L("title_talents")
+	map_root.custom_minimum_size = BASE_MAP_SIZE
+	map_root.size = BASE_MAP_SIZE
+	_build_map_canvas()
+	_setup_top_controls()
+	_setup_detail_panel()
 	_ensure_close_button()
-	_ensure_upgrade_controls()
+	_update_zoom()
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_update_close_btn_pos()
-
-
-func _update_close_btn_pos() -> void:
-	var close_btn := get_node_or_null("CloseButton") as Button
-	if close_btn != null and panel_container != null:
-		close_btn.position = panel_container.position + Vector2(8, 8)
 
 
 func open_for_player(target_player, target_facility = null) -> void:
@@ -47,12 +98,16 @@ func open_for_player(target_player, target_facility = null) -> void:
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
 	_refresh()
+	_center_on_point.call_deferred(MAP_CENTER)
 
 
 func close_menu() -> void:
 	if not visible:
 		return
 	visible = false
+	dragging_map = false
+	selected_talent_id = ""
+	detail_panel.visible = false
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(false)
 	release_focus()
@@ -67,224 +122,407 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func _build_map_canvas() -> void:
+	if map_canvas != null:
+		map_canvas.queue_free()
+	map_canvas = TalentMapCanvas.new()
+	map_canvas.name = "MapCanvas"
+	map_canvas.owner_ui = self
+	map_canvas.custom_minimum_size = BASE_MAP_SIZE
+	map_canvas.size = BASE_MAP_SIZE
+	map_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
+	map_root.add_child(map_canvas)
+
+
+func _setup_top_controls() -> void:
+	upgrade_button.pressed.connect(_on_upgrade_pressed)
+	offense_jump_button.pressed.connect(_jump_to_branch.bind("offense"))
+	defense_jump_button.pressed.connect(_jump_to_branch.bind("defense"))
+	support_jump_button.pressed.connect(_jump_to_branch.bind("support"))
+	offense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("offense"))
+	defense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("defense"))
+	support_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("support"))
+	map_scroll.gui_input.connect(_on_map_gui_input)
+
+
+func _setup_detail_panel() -> void:
+	detail_desc.bbcode_enabled = true
+	detail_desc.fit_content = true
+	detail_unlock_button.pressed.connect(_on_detail_unlock_pressed)
+	detail_panel.visible = false
+
+
 func _refresh() -> void:
-	for child in branch_row.get_children():
-		child.queue_free()
 	if player == null:
 		return
-
 	shard_label.text = LocaleManager.L("talent_shards") % player.inventory.get_item_count("talent_shard")
 	_refresh_upgrade_controls()
+	_rebuild_map()
+	if selected_talent_id != "":
+		_show_talent_detail(selected_talent_id)
+	else:
+		detail_panel.visible = false
 
+
+func _rebuild_map() -> void:
+	for child in map_canvas.get_children():
+		child.queue_free()
+	node_positions.clear()
+	node_widgets.clear()
+	branch_focus_points.clear()
+
+	_build_branch_positions()
+	_add_branch_markers()
+	_add_nodes()
+	map_canvas.queue_redraw()
+
+
+func _build_branch_positions() -> void:
 	for branch_id in TALENT_DATA.get_branch_ids():
-		var panel := PanelContainer.new()
-		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		panel.custom_minimum_size = Vector2(PANEL_WIDTH, 0.0)
-		panel.mouse_filter = Control.MOUSE_FILTER_PASS
-
-		var branch_box := VBoxContainer.new()
-		branch_box.add_theme_constant_override("separation", 6)
-		branch_box.mouse_filter = Control.MOUSE_FILTER_PASS
-		panel.add_child(branch_box)
-
-		var title := Label.new()
-		title.text = LocaleManager.L(TALENT_DATA.get_branch_label(branch_id))
-		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title.add_theme_font_size_override("font_size", 16)
-		title.add_theme_color_override("font_color", Color(1.0, 0.94, 0.72, 1.0))
-		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		branch_box.add_child(title)
-
-		var main_talents := TALENT_DATA.get_sub_branch_talents(branch_id, "main")
-		var main_top: Array[Dictionary] = []
-		var main_bot: Array[Dictionary] = []
+		var main_direction: Vector2 = (BRANCH_MAIN_DIRECTIONS.get(branch_id, Vector2.UP) as Vector2).normalized()
+		var main_talents: Array[Dictionary] = TALENT_DATA.get_sub_branch_talents(branch_id, "main")
+		if main_talents.is_empty():
+			continue
 		for talent in main_talents:
-			if int(talent.get("sequence", 0)) <= 5:
-				main_top.append(talent)
-			else:
-				main_bot.append(talent)
+			var sequence: int = int(talent.get("sequence", 0))
+			node_positions[str(talent.get("id", ""))] = MAP_CENTER + main_direction * MAIN_STEP * float(sequence)
 
-		for talent in main_top:
-			branch_box.add_child(_make_talent_button(talent, false))
-
-		var sub_ids := TALENT_DATA.get_sub_branch_ids(branch_id)
-		if sub_ids.size() >= 2:
-			branch_box.add_child(_make_split_connector())
-			branch_box.add_child(_make_info_label(LocaleManager.L("talent_branch_divider")))
-
-			var fork_row := HBoxContainer.new()
-			fork_row.add_theme_constant_override("separation", 8)
-			fork_row.mouse_filter = Control.MOUSE_FILTER_PASS
-			branch_box.add_child(fork_row)
-
-			for sub_id in sub_ids:
-				var sub_col := VBoxContainer.new()
-				sub_col.add_theme_constant_override("separation", 4)
-				sub_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				sub_col.mouse_filter = Control.MOUSE_FILTER_PASS
-				fork_row.add_child(sub_col)
-
-				var sub_title := Label.new()
-				sub_title.text = TALENT_DATA.get_sub_branch_label(branch_id, str(sub_id))
-				sub_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				sub_title.add_theme_font_size_override("font_size", 12)
-				sub_title.add_theme_color_override("font_color", Color(0.82, 0.90, 1.0, 1.0))
-				sub_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				sub_col.add_child(sub_title)
-
-				var sub_talents := TALENT_DATA.get_sub_branch_talents(branch_id, str(sub_id))
-				for talent in sub_talents:
-					sub_col.add_child(_make_talent_button(talent, true))
-
-		if main_bot.size() > 0:
-			if sub_ids.size() >= 2:
-				branch_box.add_child(_make_merge_connector())
-			branch_box.add_child(_make_info_label(LocaleManager.L("talent_branch_continue")))
-			for talent in main_bot:
-				branch_box.add_child(_make_talent_button(talent, false))
-
-		branch_row.add_child(panel)
+		var fork_talent_id: String = "%s5" % _branch_prefix(branch_id)
+		var fork_position: Vector2 = MAP_CENTER + main_direction * MAIN_STEP * 5.0
+		if node_positions.has(fork_talent_id):
+			fork_position = node_positions[fork_talent_id]
+		branch_focus_points[branch_id] = MAP_CENTER + main_direction * MAIN_STEP * 6.0
+		var split_angles: Array = BRANCH_SPLIT_ANGLES.get(branch_id, [0.45, -0.45])
+		var sub_branch_ids: PackedStringArray = TALENT_DATA.get_sub_branch_ids(branch_id)
+		for index in range(sub_branch_ids.size()):
+			var sub_branch_id: String = sub_branch_ids[index]
+			var branch_direction: Vector2 = main_direction.rotated(float(split_angles[index])).normalized()
+			var sub_talents: Array[Dictionary] = TALENT_DATA.get_sub_branch_talents(branch_id, sub_branch_id)
+			for talent in sub_talents:
+				var sequence: int = int(talent.get("sequence", 0))
+				node_positions[str(talent.get("id", ""))] = fork_position + branch_direction * SUB_STEP * float(sequence)
 
 
-func _make_info_label(text_value: String) -> Label:
-	var label := Label.new()
-	label.text = text_value
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", Color(0.8, 0.7, 0.3, 1.0))
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return label
+func _add_branch_markers() -> void:
+	for branch_id in TALENT_DATA.get_branch_ids():
+		var label := Label.new()
+		var branch_color: Color = Color.WHITE
+		if BRANCH_COLORS.has(branch_id):
+			branch_color = BRANCH_COLORS[branch_id]
+		var branch_point: Vector2 = MAP_CENTER
+		if branch_focus_points.has(branch_id):
+			branch_point = branch_focus_points[branch_id]
+		label.text = LocaleManager.L(TALENT_DATA.get_branch_label(branch_id))
+		label.add_theme_font_size_override("font_size", 28)
+		label.add_theme_color_override("font_color", branch_color)
+		label.position = branch_point - Vector2(80, 120)
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		map_canvas.add_child(label)
 
 
-func _make_split_connector() -> Control:
-	var root := Control.new()
-	root.custom_minimum_size = Vector2(PANEL_WIDTH - 36.0, 28.0)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var width: float = root.custom_minimum_size.x
-	var center_x: float = floor(width * 0.5)
-	root.add_child(_make_line(Vector2(center_x, 0.0), Vector2(2.0, 10.0)))
-	root.add_child(_make_line(Vector2(36.0, 10.0), Vector2(width - 72.0, 2.0)))
-	root.add_child(_make_line(Vector2(36.0, 10.0), Vector2(2.0, 18.0)))
-	root.add_child(_make_line(Vector2(width - 38.0, 10.0), Vector2(2.0, 18.0)))
-	return root
+func _add_nodes() -> void:
+	for talent in TALENT_DATA.get_all_talents():
+		_create_node_widget(talent)
 
 
-func _make_merge_connector() -> Control:
-	var root := Control.new()
-	root.custom_minimum_size = Vector2(PANEL_WIDTH - 36.0, 28.0)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var width: float = root.custom_minimum_size.x
-	var center_x: float = floor(width * 0.5)
-	root.add_child(_make_line(Vector2(36.0, 0.0), Vector2(2.0, 18.0)))
-	root.add_child(_make_line(Vector2(width - 38.0, 0.0), Vector2(2.0, 18.0)))
-	root.add_child(_make_line(Vector2(36.0, 18.0), Vector2(width - 72.0, 2.0)))
-	root.add_child(_make_line(Vector2(center_x, 18.0), Vector2(2.0, 10.0)))
-	return root
+func _create_node_widget(talent: Dictionary) -> void:
+	var talent_id: String = str(talent.get("id", ""))
+	if not node_positions.has(talent_id):
+		return
 
+	var wrapper := Control.new()
+	wrapper.name = "%sWrapper" % talent_id
+	wrapper.custom_minimum_size = Vector2(148, 122)
+	wrapper.size = wrapper.custom_minimum_size
+	wrapper.position = (node_positions[talent_id] as Vector2) - Vector2(wrapper.size.x * 0.5, 40.0)
+	wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
 
-func _make_line(position_value: Vector2, size_value: Vector2) -> ColorRect:
-	var line := ColorRect.new()
-	line.position = position_value
-	line.custom_minimum_size = size_value
-	line.size = size_value
-	line.color = CONNECTOR_COLOR
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return line
+	var glow := Panel.new()
+	glow.name = "Glow"
+	glow.position = Vector2((wrapper.size.x - GLOW_SIZE) * 0.5, -12.0)
+	glow.custom_minimum_size = Vector2(GLOW_SIZE, GLOW_SIZE)
+	glow.size = Vector2(GLOW_SIZE, GLOW_SIZE)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.add_theme_stylebox_override("panel", _make_circle_style(Color(1.0, 0.82, 0.34, 0.18), Color(1.0, 0.82, 0.34, 0.4), 2))
+	glow.visible = false
+	wrapper.add_child(glow)
 
-
-func _make_talent_button(talent: Dictionary, is_sub: bool) -> Button:
 	var button := Button.new()
-	var talent_id := str(talent.get("id", ""))
-	var is_milestone := bool(talent.get("is_milestone", false))
-
-	button.text = _build_talent_text(talent)
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.name = "NodeButton"
+	button.flat = true
+	button.text = ""
 	button.focus_mode = Control.FOCUS_ALL
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	button.custom_minimum_size = Vector2(NODE_SIZE, NODE_SIZE)
+	button.size = Vector2(NODE_SIZE, NODE_SIZE)
+	button.position = Vector2((wrapper.size.x - NODE_SIZE) * 0.5, 0.0)
+	button.pressed.connect(_on_talent_selected.bind(talent_id))
+	wrapper.add_child(button)
 
-	if is_sub:
-		button.custom_minimum_size = SUB_BUTTON_SIZE
-	elif is_milestone:
-		button.custom_minimum_size = MILESTONE_BUTTON_SIZE
-	else:
-		button.custom_minimum_size = MAIN_BUTTON_SIZE
+	var name_label := Label.new()
+	name_label.name = "NameLabel"
+	name_label.custom_minimum_size = Vector2(wrapper.size.x, 44)
+	name_label.size = name_label.custom_minimum_size
+	name_label.position = Vector2(0.0, NODE_SIZE + 6.0)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.text = LocaleManager.L(str(talent.get("name", talent_id)))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(name_label)
 
-	var shards: int = player.inventory.get_item_count("talent_shard") if player != null else 0
-	var unlocked: Array[String] = player.get_unlocked_talents() if player != null else []
-	var prerequisite := str(talent.get("prerequisite", ""))
-	var prereq_met := prerequisite == "" or unlocked.has(prerequisite)
-	var can_afford := shards >= int(talent.get("cost", 0))
-
-	if player != null and player.has_talent(talent_id):
-		button.modulate = Color(1.0, 0.92, 0.4, 1.0)
-		if is_milestone:
-			button.add_theme_stylebox_override("normal", _make_milestone_style(Color(0.96, 0.82, 0.26, 1.0)))
-	elif prereq_met and can_afford:
-		button.modulate = Color(0.55, 0.95, 0.55, 1.0)
-		if is_milestone:
-			button.add_theme_stylebox_override("normal", _make_milestone_style(Color(0.3, 0.8, 0.3, 1.0)))
-	elif prereq_met and not can_afford:
-		button.modulate = Color(1.0, 0.5, 0.45, 1.0)
-		if is_milestone:
-			button.add_theme_stylebox_override("normal", _make_milestone_style(Color(0.85, 0.3, 0.3, 1.0)))
-	else:
-		button.modulate = Color(0.55, 0.55, 0.55, 1.0)
-		if is_milestone:
-			button.add_theme_stylebox_override("normal", _make_milestone_style(Color(0.4, 0.4, 0.4, 1.0)))
-
-	button.pressed.connect(_on_talent_pressed.bind(talent_id))
-	return button
+	map_canvas.add_child(wrapper)
+	node_widgets[talent_id] = wrapper
+	_apply_node_visuals(talent)
 
 
-func _make_milestone_style(border_color: Color) -> StyleBoxFlat:
+func _apply_node_visuals(talent: Dictionary) -> void:
+	var talent_id: String = str(talent.get("id", ""))
+	var wrapper: Control = node_widgets.get(talent_id, null)
+	if wrapper == null:
+		return
+	var button := wrapper.get_node("NodeButton") as Button
+	var glow := wrapper.get_node("Glow") as Panel
+	var name_label := wrapper.get_node("NameLabel") as Label
+	var state: String = _get_talent_state(talent_id)
+	var branch_id: String = str(talent.get("branch", ""))
+	var branch_color: Color = Color(0.75, 0.75, 0.75, 1.0)
+	if BRANCH_COLORS.has(branch_id):
+		branch_color = BRANCH_COLORS[branch_id]
+
+	var fill_color: Color = Color(0.26, 0.28, 0.32, 1.0)
+	var border_color: Color = Color(0.42, 0.46, 0.52, 1.0)
+	var label_color: Color = Color(0.58, 0.60, 0.66, 1.0)
+	glow.visible = false
+
+	if state == "available":
+		fill_color = branch_color.lerp(Color.WHITE, 0.18)
+		border_color = branch_color.lightened(0.28)
+		label_color = Color.WHITE
+	elif state == "unlocked":
+		fill_color = Color(0.94, 0.76, 0.26, 1.0)
+		border_color = Color(1.0, 0.93, 0.66, 1.0)
+		label_color = Color(1.0, 0.88, 0.46, 1.0)
+		glow.visible = true
+
+	if selected_talent_id == talent_id:
+		border_color = Color.WHITE
+
+	button.add_theme_stylebox_override("normal", _make_circle_style(fill_color, border_color, 3))
+	button.add_theme_stylebox_override("hover", _make_circle_style(fill_color.lightened(0.08), Color.WHITE, 3))
+	button.add_theme_stylebox_override("pressed", _make_circle_style(fill_color.darkened(0.08), Color.WHITE, 3))
+	button.add_theme_stylebox_override("focus", _make_circle_style(fill_color, Color.WHITE, 4))
+	name_label.add_theme_color_override("font_color", label_color)
+	name_label.add_theme_font_size_override("font_size", 13)
+
+
+func _make_circle_style(fill_color: Color, border_color: Color, border_width: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.10, 0.06, 1.0)
-	style.border_width_left = 3
-	style.border_width_top = 3
-	style.border_width_right = 3
-	style.border_width_bottom = 3
+	style.bg_color = fill_color
 	style.border_color = border_color
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
+	style.border_width_left = border_width
+	style.border_width_top = border_width
+	style.border_width_right = border_width
+	style.border_width_bottom = border_width
+	style.corner_radius_top_left = 999
+	style.corner_radius_top_right = 999
+	style.corner_radius_bottom_left = 999
+	style.corner_radius_bottom_right = 999
 	return style
 
 
-func _build_talent_text(talent: Dictionary) -> String:
-	var talent_id := str(talent.get("id", ""))
-	var is_milestone := bool(talent.get("is_milestone", false))
-	var milestone_prefix := LocaleManager.L("milestone_prefix") if is_milestone else ""
-	var talent_name := LocaleManager.L(str(talent.get("name", talent_id)))
-	if player != null and player.has_talent(talent_id):
-		return "%s%s\n%s" % [milestone_prefix, talent_name, LocaleManager.L("talent_unlocked")]
-	return "%s%s\n%s\n%s" % [
-		milestone_prefix,
-		talent_name,
-		LocaleManager.L(str(talent.get("description", ""))),
-		LocaleManager.L("talent_cost") % int(talent.get("cost", 0)),
-	]
+func _draw_talent_map(canvas: Control) -> void:
+	canvas.draw_rect(Rect2(Vector2.ZERO, BASE_MAP_SIZE), MAP_BACKGROUND, true)
+	canvas.draw_circle(MAP_CENTER, 28.0, Color(0.22, 0.24, 0.30, 1.0))
+	canvas.draw_circle(MAP_CENTER, 22.0, Color(0.95, 0.95, 0.98, 0.18))
+
+	for branch_id in TALENT_DATA.get_branch_ids():
+		var first_talent: Dictionary = TALENT_DATA.get_talent("%s1" % _branch_prefix(branch_id))
+		if not first_talent.is_empty():
+			_draw_connection(canvas, "", str(first_talent.get("id", "")), branch_id)
+
+	for talent in TALENT_DATA.get_all_talents():
+		var talent_id: String = str(talent.get("id", ""))
+		var prerequisite: String = str(talent.get("prerequisite", ""))
+		if prerequisite == "":
+			continue
+		_draw_connection(canvas, prerequisite, talent_id, str(talent.get("branch", "")))
 
 
-func _on_talent_pressed(talent_id: String) -> void:
+func _draw_connection(canvas: Control, from_id: String, to_id: String, branch_id: String) -> void:
+	var from_point: Vector2 = MAP_CENTER
+	if from_id != "" and node_positions.has(from_id):
+		from_point = node_positions[from_id]
+	var to_point: Vector2 = MAP_CENTER
+	if node_positions.has(to_id):
+		to_point = node_positions[to_id]
+	var color: Color = LINE_LOCKED
+	if player != null and (from_id == "" or player.has_talent(from_id)):
+		color = LINE_AVAILABLE
+	if player != null and player.has_talent(to_id):
+		color = LINE_UNLOCKED
+	canvas.draw_line(from_point, to_point, color, 6.0, true)
+	var branch_color: Color = LINE_LOCKED
+	if BRANCH_COLORS.has(branch_id):
+		branch_color = BRANCH_COLORS[branch_id]
+	canvas.draw_circle(to_point, 4.0, branch_color)
+
+
+func _branch_prefix(branch_id: String) -> String:
+	match branch_id:
+		"offense":
+			return "O"
+		"defense":
+			return "D"
+		"support":
+			return "S"
+	return branch_id.left(1).to_upper()
+
+
+func _get_talent_state(talent_id: String) -> String:
 	if player == null:
-		return
-	var data: Dictionary = TALENT_DATA.get_talent(talent_id)
-	var shards: int = player.inventory.get_item_count("talent_shard")
+		return "locked"
 	if player.has_talent(talent_id):
-		print("Talent already unlocked: ", talent_id)
+		return "unlocked"
+	var unlocked: Array[String] = player.get_unlocked_talents()
+	var shards: int = player.inventory.get_item_count("talent_shard")
+	if TALENT_DATA.can_unlock(unlocked, shards, talent_id):
+		return "available"
+	return "locked"
+
+
+func _on_talent_selected(talent_id: String) -> void:
+	selected_talent_id = talent_id
+	_show_talent_detail(talent_id)
+	for talent in TALENT_DATA.get_all_talents():
+		_apply_node_visuals(talent)
+	map_canvas.queue_redraw()
+
+
+func _show_talent_detail(talent_id: String) -> void:
+	var talent: Dictionary = TALENT_DATA.get_talent(talent_id)
+	if talent.is_empty():
+		detail_panel.visible = false
 		return
-	if shards < int(data.get("cost", 0)):
-		print("Not enough shards: have ", shards, " need ", int(data.get("cost", 0)))
+
+	detail_title.text = LocaleManager.L(str(talent.get("name", talent_id)))
+	detail_desc.text = LocaleManager.L(str(talent.get("description", "")))
+	detail_cost.text = "%s %d" % [LocaleManager.L("talent_cost"), int(talent.get("cost", 0))]
+
+	var state: String = _get_talent_state(talent_id)
+	if state == "unlocked":
+		detail_unlock_button.text = LocaleManager.L("talent_unlocked")
+		detail_unlock_button.disabled = true
+	elif state == "available":
+		detail_unlock_button.text = LocaleManager.L("unlock_button")
+		detail_unlock_button.disabled = false
+	else:
+		detail_unlock_button.text = LocaleManager.L("unlock_button")
+		detail_unlock_button.disabled = true
+
+	detail_panel.visible = true
+
+
+func _on_detail_unlock_pressed() -> void:
+	if selected_talent_id == "" or player == null:
 		return
-	var prerequisite := str(data.get("prerequisite", ""))
-	if prerequisite != "" and not player.has_talent(prerequisite):
-		print("Prerequisite not met for ", talent_id)
-		return
-	if player.unlock_talent(talent_id):
-		print("Unlocked talent: ", talent_id)
+	if player.unlock_talent(selected_talent_id):
 		_refresh()
+
+
+func _refresh_upgrade_controls() -> void:
+	if facility == null or not facility.has_method("can_upgrade") or not facility.can_upgrade():
+		upgrade_summary_label.visible = false
+		upgrade_button.visible = false
+		return
+
+	var cost: Dictionary = facility.get_upgrade_cost() if facility.has_method("get_upgrade_cost") else {}
+	var parts: PackedStringArray = []
+	var can_afford := true
+	for resource_id_variant in cost.keys():
+		var resource_id: String = str(resource_id_variant)
+		var need: int = int(cost[resource_id_variant])
+		var have: int = player.inventory.get_item_count(resource_id) if player != null and player.inventory != null else 0
+		parts.append("%s %d/%d" % [resource_id.replace("_", " ").capitalize(), have, need])
+		if have < need:
+			can_afford = false
+
+	var summary: String = facility.get_upgrade_summary() if facility.has_method("get_upgrade_summary") else ""
+	upgrade_summary_label.text = "%s %s" % [summary, ", ".join(parts)]
+	upgrade_summary_label.visible = true
+	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else "Upgrade to Lv2"
+	upgrade_button.disabled = not can_afford
+	upgrade_button.visible = true
+
+
+func _on_upgrade_pressed() -> void:
+	if facility == null or player == null or not facility.has_method("try_upgrade"):
+		return
+	if facility.try_upgrade(player):
+		_refresh()
+
+
+func _jump_to_branch(branch_id: String) -> void:
+	var branch_point: Vector2 = MAP_CENTER
+	if branch_focus_points.has(branch_id):
+		branch_point = branch_focus_points[branch_id]
+	_center_on_point(branch_point)
+
+
+func _on_map_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse_button := event as InputEventMouseButton
+		if mouse_button.button_index == MOUSE_BUTTON_LEFT:
+			dragging_map = mouse_button.pressed
+			last_drag_position = mouse_button.position
+		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_apply_zoom(zoom_level * 1.1, mouse_button.position)
+		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_apply_zoom(zoom_level / 1.1, mouse_button.position)
+	elif event is InputEventMouseMotion and dragging_map:
+		var mouse_motion := event as InputEventMouseMotion
+		var delta: Vector2 = mouse_motion.position - last_drag_position
+		last_drag_position = mouse_motion.position
+		_set_scroll(Vector2(map_scroll.scroll_horizontal, map_scroll.scroll_vertical) - delta)
+
+
+func _apply_zoom(target_zoom: float, pivot_in_scroll: Vector2) -> void:
+	var old_zoom: float = zoom_level
+	zoom_level = clampf(target_zoom, MIN_ZOOM, MAX_ZOOM)
+	if is_equal_approx(old_zoom, zoom_level):
+		return
+	var content_point: Vector2 = (Vector2(map_scroll.scroll_horizontal, map_scroll.scroll_vertical) + pivot_in_scroll) / old_zoom
+	_update_zoom()
+	_set_scroll(content_point * zoom_level - pivot_in_scroll)
+
+
+func _update_zoom() -> void:
+	if map_canvas == null:
+		return
+	var scaled_size: Vector2 = BASE_MAP_SIZE * zoom_level
+	map_root.custom_minimum_size = scaled_size
+	map_root.size = scaled_size
+	map_canvas.scale = Vector2.ONE * zoom_level
+	map_canvas.size = BASE_MAP_SIZE
+	map_canvas.position = Vector2.ZERO
+	map_canvas.queue_redraw()
+
+
+func _center_on_point(map_point: Vector2) -> void:
+	var viewport_size: Vector2 = map_scroll.size
+	_set_scroll(map_point * zoom_level - viewport_size * 0.5)
+
+
+func _set_scroll(target_scroll: Vector2) -> void:
+	var max_scroll_x: float = maxf(0.0, map_root.size.x - map_scroll.size.x)
+	var max_scroll_y: float = maxf(0.0, map_root.size.y - map_scroll.size.y)
+	map_scroll.scroll_horizontal = int(clampf(target_scroll.x, 0.0, max_scroll_x))
+	map_scroll.scroll_vertical = int(clampf(target_scroll.y, 0.0, max_scroll_y))
+
+
+func _update_close_btn_pos() -> void:
+	var close_btn := get_node_or_null("CloseButton") as Button
+	if close_btn != null:
+		close_btn.position = panel_container.position + Vector2(8, 8)
 
 
 func _ensure_close_button() -> void:
@@ -300,49 +538,3 @@ func _ensure_close_button() -> void:
 	close_button.pressed.connect(close_menu)
 	add_child(close_button)
 	_update_close_btn_pos.call_deferred()
-
-
-func _ensure_upgrade_controls() -> void:
-	if content_vbox == null or upgrade_label != null:
-		return
-	upgrade_label = Label.new()
-	upgrade_label.visible = false
-	upgrade_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content_vbox.add_child(upgrade_label)
-	content_vbox.move_child(upgrade_label, 1)
-
-	upgrade_button = Button.new()
-	upgrade_button.visible = false
-	upgrade_button.pressed.connect(_on_upgrade_pressed)
-	content_vbox.add_child(upgrade_button)
-	content_vbox.move_child(upgrade_button, 2)
-
-
-func _refresh_upgrade_controls() -> void:
-	if upgrade_label == null or upgrade_button == null:
-		return
-	if facility == null or not facility.has_method("can_upgrade") or not facility.can_upgrade():
-		upgrade_label.visible = false
-		upgrade_button.visible = false
-		return
-	var cost: Dictionary = facility.get_upgrade_cost() if facility.has_method("get_upgrade_cost") else {}
-	var parts: PackedStringArray = []
-	var can_afford := true
-	for resource_id in cost.keys():
-		var need := int(cost[resource_id])
-		var have: int = player.inventory.get_item_count(str(resource_id)) if player != null and player.inventory != null else 0
-		parts.append("%s %d/%d" % [resource_id.replace("_", " ").capitalize(), have, need])
-		if have < need:
-			can_afford = false
-	upgrade_label.text = "%s\nUpgrade Cost: %s" % [facility.get_upgrade_summary() if facility.has_method("get_upgrade_summary") else "", ", ".join(parts)]
-	upgrade_label.visible = true
-	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else "Upgrade"
-	upgrade_button.disabled = not can_afford
-	upgrade_button.visible = true
-
-
-func _on_upgrade_pressed() -> void:
-	if facility == null or player == null or not facility.has_method("try_upgrade"):
-		return
-	if facility.try_upgrade(player):
-		_refresh()

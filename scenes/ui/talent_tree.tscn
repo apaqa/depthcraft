@@ -16,16 +16,16 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.55)
+color = Color(0, 0, 0, 0.6)
 mouse_filter = 1
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.05
-anchor_top = 0.05
-anchor_right = 0.95
-anchor_bottom = 0.95
+anchor_left = 0.04
+anchor_top = 0.04
+anchor_right = 0.96
+anchor_bottom = 0.96
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
@@ -40,25 +40,121 @@ mouse_filter = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 mouse_filter = 1
 
 [node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Choose a Power"
+text = "Talent Tree"
 mouse_filter = 2
 
-[node name="ShardLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+[node name="TopBar" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Talent Shards: 0"
-mouse_filter = 2
+theme_override_constants/separation = 12
 
-[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+[node name="UpgradeBox" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 1
+theme_override_constants/separation = 2
+
+[node name="UpgradeSummary" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/TopBar/UpgradeBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+visible = false
+
+[node name="UpgradeButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/TopBar/UpgradeBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Upgrade to Lv2"
+custom_minimum_size = Vector2(110, 24)
+visible = false
+
+[node name="BranchButtons" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="OffenseButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/TopBar/BranchButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 32)
+text = "Offense"
+
+[node name="DefenseButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/TopBar/BranchButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 32)
+text = "Defense"
+
+[node name="SupportButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/TopBar/BranchButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 32)
+text = "Support"
+
+[node name="ShardLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/TopBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.94, 0.72, 1)
+horizontal_alignment = 2
+text = "Talent Shards: 0"
+
+[node name="MapPanel" type="PanelContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-horizontal_scroll_mode = 0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/MarginContainer/VBoxContainer/MapPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 1
 mouse_filter = 1
 
-[node name="BranchRow" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/ScrollContainer"]
-theme_override_constants/separation = 10
+[node name="MapRoot" type="Control" parent="PanelContainer/MarginContainer/VBoxContainer/MapPanel/ScrollContainer"]
+custom_minimum_size = Vector2(2400, 2400)
+layout_mode = 2
 mouse_filter = 1
+
+[node name="TalentDetail" type="PanelContainer" parent="PanelContainer"]
+visible = false
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -320.0
+offset_top = 86.0
+offset_right = -16.0
+offset_bottom = 330.0
+mouse_filter = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer/TalentDetail"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/TalentDetail/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/TalentDetail/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Talent"
+
+[node name="DescriptionLabel" type="RichTextLabel" parent="PanelContainer/TalentDetail/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 108)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="CostLabel" type="Label" parent="PanelContainer/TalentDetail/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Cost"
+
+[node name="UnlockButton" type="Button" parent="PanelContainer/TalentDetail/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Unlock"
