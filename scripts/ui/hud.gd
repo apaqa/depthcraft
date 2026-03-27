@@ -47,7 +47,9 @@ const HP_LABEL_SIZE := Vector2(120.0, 18.0)
 const CLASS_LABEL_SIZE := Vector2(140.0, 18.0)
 const INFO_LABEL_SIZE := Vector2(220.0, 18.0)
 const BUFF_ROW_SIZE := Vector2(220.0, 24.0)
-const SKILL_ROW_BOTTOM_MARGIN := 12.0
+const SKILL_ROW_BOTTOM_MARGIN := 56.0
+const CONSUMABLE_BAR_BOTTOM_MARGIN := 24.0
+const BOTTOM_UI_GAP := 10.0
 
 var player = null
 var inventory = null
@@ -81,7 +83,7 @@ func _ready() -> void:
 	class_label.text = _cs.get_class_display_name() if _cs != null else ""
 	add_child(class_label)
 	_layout_static_hud()
-	_center_skill_slot_row()
+	_layout_bottom_hud()
 
 	update_hp(100, 100)
 	update_bag_label(0, 20)
@@ -552,6 +554,7 @@ func update_consumable_bar(slots: Array) -> void:
 			continue
 		labels.append("[%s] %s x%d" % [key_name, ITEM_DATABASE.get_stack_display_name(slot), int(slot.get("quantity", 0))])
 	consumable_bar.text = " | ".join(labels)
+	_layout_bottom_hud()
 
 
 func _refresh_skill_slots() -> void:
@@ -636,7 +639,7 @@ func _refresh_skill_slots() -> void:
 		hint.add_theme_constant_override("outline_size", 2)
 		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		skill_slot_row.add_child(hint)
-	_center_skill_slot_row.call_deferred()
+	_layout_bottom_hud.call_deferred()
 
 
 func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.25, hold_duration: float = 0.0) -> void:
@@ -716,13 +719,27 @@ func _center_skill_slot_row() -> void:
 	var row_size := skill_slot_row.get_combined_minimum_size()
 	row_size.x = maxf(row_size.x, 210.0)
 	row_size.y = maxf(row_size.y, 36.0)
-	skill_slot_row.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	skill_slot_row.position = Vector2(
-		floorf((size.x - row_size.x) * 0.5),
-		size.y - SKILL_ROW_BOTTOM_MARGIN - row_size.y
-	)
+	skill_slot_row.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	skill_slot_row.position = Vector2(-row_size.x * 0.5, -SKILL_ROW_BOTTOM_MARGIN - row_size.y)
 	skill_slot_row.size = row_size
 
 
+func _layout_bottom_hud() -> void:
+	_center_skill_slot_row()
+	if consumable_bar == null:
+		return
+	var bar_size := consumable_bar.get_combined_minimum_size()
+	bar_size.x = maxf(bar_size.x, 220.0)
+	bar_size.y = maxf(bar_size.y, 24.0)
+	consumable_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	consumable_bar.position = Vector2(-bar_size.x * 0.5, -CONSUMABLE_BAR_BOTTOM_MARGIN - bar_size.y)
+	consumable_bar.size = bar_size
+	if skill_slot_row != null:
+		var skill_bottom := skill_slot_row.position.y + skill_slot_row.size.y
+		var consumable_top := consumable_bar.position.y
+		if consumable_top < skill_bottom + BOTTOM_UI_GAP:
+			consumable_bar.position.y = skill_bottom + BOTTOM_UI_GAP
+
+
 func _on_hud_resized() -> void:
-	_center_skill_slot_row.call_deferred()
+	_layout_bottom_hud.call_deferred()

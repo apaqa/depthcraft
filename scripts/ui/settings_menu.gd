@@ -16,6 +16,7 @@ var _menu_buttons_root: VBoxContainer = null
 var _settings_panel: PanelContainer = null
 var _paused_game: bool = false
 var _i18n_nodes: Dictionary = {}
+var _reset_class_button: Button = null
 
 
 func _ready() -> void:
@@ -74,6 +75,8 @@ func _build_ui() -> void:
 	_menu_buttons_root.add_child(_make_i18n_button("settings_resume", close_menu))
 	_menu_buttons_root.add_child(_make_i18n_button("settings_save", _on_save_pressed))
 	_menu_buttons_root.add_child(_make_i18n_button("settings_label", _show_settings_page))
+	_reset_class_button = _make_menu_button(_get_reset_class_button_text(), _on_reset_class_pressed)
+	_menu_buttons_root.add_child(_reset_class_button)
 	_menu_buttons_root.add_child(_make_i18n_button("settings_main_menu", _go_to_main_menu))
 	_menu_buttons_root.add_child(_make_i18n_button("settings_quit", close_menu))
 
@@ -255,6 +258,8 @@ func _refresh_locale(_new_locale: String = "") -> void:
 		_lang_button.text = LocaleManager.L("lang_current")
 	if _notice_label != null:
 		_notice_label.text = LocaleManager.L("settings_multiplayer_notice")
+	if _reset_class_button != null:
+		_reset_class_button.text = _get_reset_class_button_text()
 
 
 func open_menu(camera: Camera2D = null) -> void:
@@ -313,6 +318,17 @@ func _go_to_main_menu() -> void:
 		get_tree().paused = false
 	_paused_game = false
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+
+
+func _on_reset_class_pressed() -> void:
+	var class_system = get_node_or_null("/root/ClassSystem")
+	if class_system != null and class_system.has_method("reset_class_selection"):
+		class_system.reset_class_selection()
+	_save_settings()
+	if _paused_game:
+		get_tree().paused = false
+	_paused_game = false
+	get_tree().reload_current_scene()
 
 
 func _on_volume_changed(bus_name: String, db_value: float) -> void:
@@ -410,3 +426,7 @@ func _save_settings() -> void:
 	if file != null:
 		file.store_string(JSON.stringify(data))
 		file.close()
+
+
+func _get_reset_class_button_text() -> String:
+	return "重選職業" if LocaleManager.get_locale().begins_with("zh") else "Reset Class"

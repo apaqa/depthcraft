@@ -139,7 +139,8 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	var inv = _current_player.get("inventory")
 	if inv == null:
 		return
-	if inv.get_total_copper() < price:
+	var payment := inv.get_exact_currency_payment(price)
+	if payment.is_empty():
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
 	if inv.pay_copper(price):
@@ -147,8 +148,10 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 			_message_label.text = ""
 			_update_gold_label()
 		else:
-			inv.add_item("copper", price)
+			inv.refund_currency(payment)
 			_message_label.text = LocaleManager.L("bag_full")
+	else:
+		_message_label.text = LocaleManager.L("insufficient_gold")
 
 
 func _on_buy_equipment() -> void:
@@ -157,7 +160,8 @@ func _on_buy_equipment() -> void:
 	var inv = _current_player.get("inventory")
 	if inv == null:
 		return
-	if inv.get_total_copper() < 50:
+	var payment := inv.get_exact_currency_payment(50)
+	if payment.is_empty():
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
 	if inv.pay_copper(50):
@@ -166,8 +170,10 @@ func _on_buy_equipment() -> void:
 			_message_label.text = ""
 			_update_gold_label()
 		else:
-			inv.add_item("copper", 50)
+			inv.refund_currency(payment)
 			_message_label.text = LocaleManager.L("bag_full")
+	else:
+		_message_label.text = LocaleManager.L("insufficient_gold")
 
 
 func _update_gold_label() -> void:

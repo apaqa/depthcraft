@@ -2,6 +2,7 @@ extends Enemy
 class_name BossEnemy
 
 const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
+const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 
 const AOE_COOLDOWN := 5.0
 const AOE_RADIUS := 56.0
@@ -55,6 +56,7 @@ func die() -> void:
 		return
 	rewards_granted = true
 	_grant_rewards_to_players()
+	_request_buff_selection()
 	super.die()
 
 
@@ -168,3 +170,13 @@ func _get_normal_enemy_stats(floor_number: int) -> Dictionary:
 	if floor_number <= 10:
 		return {"hp": 80, "damage": 18}
 	return {"hp": 100 + floor_number * 5, "damage": 22 + floor_number * 2}
+
+
+func _request_buff_selection() -> void:
+	var level := get_parent()
+	while level != null and not level.has_signal("buff_selection_requested"):
+		level = level.get_parent()
+	if level != null and level.has_method("set_gameplay_paused"):
+		level.set_gameplay_paused(true)
+	if level != null and level.has_signal("buff_selection_requested"):
+		level.buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())

@@ -37,18 +37,18 @@ func open_with_options(options: Array[Dictionary]) -> void:
 		panel_style.border_width_top = 2
 		panel_style.border_width_right = 2
 		panel_style.border_width_bottom = 2
-		panel_style.border_color = Color.WHITE
+		panel_style.border_color = _get_option_color(option)
 		panel_style.corner_radius_top_left = 8
 		panel_style.corner_radius_top_right = 8
 		panel_style.corner_radius_bottom_left = 8
 		panel_style.corner_radius_bottom_right = 8
 		button.add_theme_stylebox_override("normal", panel_style)
-		button.add_theme_stylebox_override("hover", panel_style)
-		button.add_theme_stylebox_override("pressed", panel_style)
+		button.add_theme_stylebox_override("hover", _make_card_style(_get_option_color(option).lightened(0.2)))
+		button.add_theme_stylebox_override("pressed", _make_card_style(_get_option_color(option).darkened(0.15)))
 		button.text = "%s\n[%s]\n%s" % [
-			str(option.get("name", "")),
-			str(option.get("category", "")),
-			str(option.get("description", "")),
+			LocaleManager.L(str(option.get("name", ""))),
+			LocaleManager.L(str(option.get("category", ""))),
+			LocaleManager.L(str(option.get("description", ""))),
 		]
 		button.pressed.connect(_choose_buff.bind(str(option.get("id", ""))))
 		card_container.add_child(button)
@@ -78,3 +78,23 @@ func _on_auto_timer_timeout() -> void:
 		return
 	var random_option: Dictionary = active_options[randi() % active_options.size()]
 	_choose_buff(str(random_option.get("id", "")))
+
+
+func _get_option_color(option: Dictionary) -> Color:
+	var color := option.get("color", Color.WHITE)
+	return color if color is Color else Color.WHITE
+
+
+func _make_card_style(border_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.16, 0.18, 0.24, 0.96)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = border_color
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	return style

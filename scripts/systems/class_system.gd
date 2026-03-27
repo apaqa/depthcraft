@@ -61,6 +61,12 @@ func save_class(class_id: String) -> void:
 	file.close()
 
 
+func reset_class_selection() -> void:
+	current_class_id = ""
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+
+
 func has_chosen_class() -> bool:
 	return current_class_id != "" and CLASS_DEFS.has(current_class_id)
 

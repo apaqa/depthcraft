@@ -111,29 +111,28 @@ func get_total_copper() -> int:
 
 
 func pay_copper(amount: int) -> bool:
+	var payment := get_exact_currency_payment(amount)
+	if payment.is_empty():
+		return false
+	for coin_type in ["gold", "silver", "copper"]:
+		var coin_count := int(payment.get(coin_type, 0))
+		if coin_count > 0 and not remove_item(coin_type, coin_count):
+			return false
+	return true
+
+
+func get_exact_currency_payment(amount: int) -> Dictionary:
 	var total := get_total_copper()
 	if total < amount:
-		return false
-	var remainder := total - amount
-	var copper_held := get_item_count("copper")
-	var silver_held := get_item_count("silver")
-	var gold_held := get_item_count("gold")
-	if copper_held > 0:
-		remove_item("copper", copper_held)
-	if silver_held > 0:
-		remove_item("silver", silver_held)
-	if gold_held > 0:
-		remove_item("gold", gold_held)
-	var gold_back := remainder / 100
-	var silver_back := (remainder % 100) / 10
-	var copper_back := remainder % 10
-	if gold_back > 0:
-		add_item("gold", gold_back)
-	if silver_back > 0:
-		add_item("silver", silver_back)
-	if copper_back > 0:
-		add_item("copper", copper_back)
-	return true
+		return {}
+	return _get_exact_currency_payment(amount)
+
+
+func refund_currency(payment: Dictionary) -> void:
+	for coin_type in ["gold", "silver", "copper"]:
+		var coin_count := int(payment.get(coin_type, 0))
+		if coin_count > 0:
+			add_item(coin_type, coin_count)
 
 
 func get_free_slots() -> int:
@@ -178,3 +177,24 @@ func _duplicate_items(source_items: Array[Dictionary]) -> Array[Dictionary]:
 		copied_items.append(stack.duplicate())
 	return copied_items
 
+
+func _get_exact_currency_payment(amount: int) -> Dictionary:
+	var remaining := amount
+	var payment := {
+		"gold": 0,
+		"silver": 0,
+		"copper": 0,
+	}
+	var gold_needed := min(get_item_count("gold"), remaining / 100)
+	payment["gold"] = gold_needed
+	remaining -= gold_needed * 100
+
+	var silver_needed := min(get_item_count("silver"), remaining / 10)
+	payment["silver"] = silver_needed
+	remaining -= silver_needed * 10
+
+	var copper_needed := min(get_item_count("copper"), remaining)
+	payment["copper"] = copper_needed
+	remaining -= copper_needed
+
+	return payment if remaining == 0 else {}
