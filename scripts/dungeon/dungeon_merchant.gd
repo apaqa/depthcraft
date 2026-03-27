@@ -15,6 +15,7 @@ var _shop_root: Control = null
 var _current_player = null
 var _gold_label: Label = null
 var _message_label: Label = null
+var _equipment_icon: TextureRect = null
 var _equipment_label: Label = null
 var _equipment_button: Button = null
 var _equipment_offer: Dictionary = {}
@@ -180,11 +181,14 @@ func _add_item_row(parent: Control, item_offer: Dictionary) -> void:
 	var name := str(item_data.get("name", ITEM_DATABASE.get_display_name(str(item_offer.get("id", "")))))
 	if quantity > 1:
 		name = "%s x%d" % [name, quantity]
-	_add_shop_row(parent, name, int(item_offer.get("price", 0)), _on_buy_item.bind(str(item_offer.get("id", "")), quantity, int(item_offer.get("price", 0))))
+	_add_shop_row(parent, name, int(item_offer.get("price", 0)), _on_buy_item.bind(str(item_offer.get("id", "")), quantity, int(item_offer.get("price", 0))), ITEM_DATABASE.get_stack_icon(item_data))
 
 
 func _add_equipment_row(parent: Control) -> void:
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	_equipment_icon = _make_icon_rect(ITEM_DATABASE.get_default_equipment_icon("weapon"))
+	row.add_child(_equipment_icon)
 	_equipment_label = Label.new()
 	_equipment_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(_equipment_label)
@@ -194,8 +198,11 @@ func _add_equipment_row(parent: Control) -> void:
 	parent.add_child(row)
 
 
-func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable) -> void:
+func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	if icon != null:
+		row.add_child(_make_icon_rect(icon))
 	var label := Label.new()
 	label.text = "%s  %s" % [label_text, ITEM_DATABASE.format_currency(price)]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -213,7 +220,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	var inventory = _current_player.get("inventory")
 	if inventory == null:
 		return
-	var payment = inventory.get_exact_currency_payment(price)
+	var payment: Dictionary = inventory.get_exact_currency_payment(price)
 	if payment.is_empty():
 		_set_message(LocaleManager.L("insufficient_gold"))
 		return
@@ -234,7 +241,7 @@ func _on_buy_equipment() -> void:
 	var inventory = _current_player.get("inventory")
 	if inventory == null:
 		return
-	var payment = inventory.get_exact_currency_payment(_equipment_price)
+	var payment: Dictionary = inventory.get_exact_currency_payment(_equipment_price)
 	if payment.is_empty():
 		_set_message(LocaleManager.L("insufficient_gold"))
 		return
@@ -253,14 +260,16 @@ func _on_buy_equipment() -> void:
 
 
 func _refresh_equipment_offer_row() -> void:
-	if _equipment_label == null or _equipment_button == null:
+	if _equipment_label == null or _equipment_button == null or _equipment_icon == null:
 		return
 	if _equipment_offer.is_empty():
+		_equipment_icon.texture = ITEM_DATABASE.get_default_equipment_icon("weapon")
 		_equipment_label.text = "%s  %s" % [LocaleManager.L("mystery_equipment"), LocaleManager.L("sold_out")]
 		_equipment_label.remove_theme_color_override("font_color")
 		_equipment_button.text = LocaleManager.L("sold_button")
 		_equipment_button.disabled = true
 		return
+	_equipment_icon.texture = ITEM_DATABASE.get_stack_icon(_equipment_offer)
 	_equipment_label.text = "%s  %s" % [ITEM_DATABASE.get_stack_display_name(_equipment_offer), ITEM_DATABASE.format_currency(_equipment_price)]
 	_equipment_label.add_theme_color_override("font_color", DUNGEON_LOOT.get_item_display_color(_equipment_offer))
 	_equipment_button.text = LocaleManager.L("buy")
@@ -283,6 +292,17 @@ func _set_message(message: String) -> void:
 	_message_label.text = message
 
 
+func _make_icon_rect(icon: Texture2D) -> TextureRect:
+	var icon_rect: TextureRect = TextureRect.new()
+	icon_rect.custom_minimum_size = Vector2(16, 16)
+	icon_rect.size = Vector2(16, 16)
+	icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon_rect.texture = icon
+	return icon_rect
+
+
 func _close_shop() -> void:
 	if _shop_canvas != null:
 		_shop_canvas.queue_free()
@@ -297,6 +317,7 @@ func _close_shop() -> void:
 	_current_player = null
 	_gold_label = null
 	_message_label = null
+	_equipment_icon = null
 	_equipment_label = null
 	_equipment_button = null
 

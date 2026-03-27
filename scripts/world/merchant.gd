@@ -95,10 +95,15 @@ func _open_shop() -> void:
 	vbox.add_child(HSeparator.new())
 
 	for item in SHOP_ITEMS:
-		_add_shop_row(vbox, LocaleManager.L(str(item["label_key"])), int(item["price"]),
-				_on_buy_item.bind(str(item["id"]), int(item["quantity"]), int(item["price"])))
+		_add_shop_row(
+			vbox,
+			LocaleManager.L(str(item["label_key"])),
+			int(item["price"]),
+			_on_buy_item.bind(str(item["id"]), int(item["quantity"]), int(item["price"])),
+			ITEM_DATABASE.get_item_icon(str(item["id"]))
+		)
 
-	_add_shop_row(vbox, LocaleManager.L("mystery_equipment"), 50, _on_buy_equipment)
+	_add_shop_row(vbox, LocaleManager.L("mystery_equipment"), 50, _on_buy_equipment, ITEM_DATABASE.get_default_equipment_icon("weapon"))
 
 	vbox.add_child(HSeparator.new())
 
@@ -120,8 +125,11 @@ func _open_shop() -> void:
 	vbox.add_child(footer)
 
 
-func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable) -> void:
+func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	if icon != null:
+		row.add_child(_make_icon_rect(icon))
 	var lbl := Label.new()
 	lbl.text = "%s  %s" % [label_text, ITEM_DATABASE.format_currency(price)]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -139,7 +147,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	var inv = _current_player.get("inventory")
 	if inv == null:
 		return
-	var payment = inv.get_exact_currency_payment(price)
+	var payment: Dictionary = inv.get_exact_currency_payment(price)
 	if payment.is_empty():
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
@@ -160,12 +168,12 @@ func _on_buy_equipment() -> void:
 	var inv = _current_player.get("inventory")
 	if inv == null:
 		return
-	var payment = inv.get_exact_currency_payment(50)
+	var payment: Dictionary = inv.get_exact_currency_payment(50)
 	if payment.is_empty():
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
 	if inv.pay_copper(50):
-		var equip = DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
+		var equip: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
 		if inv.add_stack(equip):
 			_message_label.text = ""
 			_update_gold_label()
@@ -184,6 +192,17 @@ func _update_gold_label() -> void:
 	if inv != null:
 		total = inv.get_total_copper()
 	_gold_label.text = LocaleManager.L("gold_label") % total
+
+
+func _make_icon_rect(icon: Texture2D) -> TextureRect:
+	var icon_rect: TextureRect = TextureRect.new()
+	icon_rect.custom_minimum_size = Vector2(16, 16)
+	icon_rect.size = Vector2(16, 16)
+	icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon_rect.texture = icon
+	return icon_rect
 
 
 func _close_shop() -> void:

@@ -76,10 +76,14 @@ func _refresh() -> void:
 		var max_durability := int(item.get("max_durability", 0))
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
+		var title_row: HBoxContainer = HBoxContainer.new()
+		title_row.add_theme_constant_override("separation", 6)
+		row.add_child(title_row)
+		title_row.add_child(_build_item_icon(item))
 		var title := Label.new()
 		title.text = LocaleManager.L("repair_equipped_item_fmt") % [player.equipment_system.get_item_display_name(item), _translate_slot_name(slot_name)]
 		title.self_modulate = player.equipment_system.get_item_display_color(item)
-		row.add_child(title)
+		title_row.add_child(title)
 		var bar_bg := ColorRect.new()
 		bar_bg.custom_minimum_size = Vector2(280, 10)
 		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
@@ -123,10 +127,14 @@ func _refresh() -> void:
 		equipped_any = true
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
+		var title_row: HBoxContainer = HBoxContainer.new()
+		title_row.add_theme_constant_override("separation", 6)
+		row.add_child(title_row)
+		title_row.add_child(_build_item_icon(item))
 		var title := Label.new()
 		title.text = LocaleManager.L("repair_inventory_item_fmt") % [player.equipment_system.get_item_display_name(item), LocaleManager.L("inventory_short")]
 		title.self_modulate = player.equipment_system.get_item_display_color(item)
-		row.add_child(title)
+		title_row.add_child(title)
 		var bar_bg := ColorRect.new()
 		bar_bg.custom_minimum_size = Vector2(280, 10)
 		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
@@ -208,6 +216,23 @@ func _translate_slot_name(slot_name: String) -> String:
 		"tool":
 			return LocaleManager.L("slot_tool")
 	return slot_name.replace("_", " ").capitalize()
+
+
+func _build_item_icon(item: Dictionary) -> Control:
+	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item)
+	if icon != null:
+		var icon_rect: TextureRect = TextureRect.new()
+		icon_rect.custom_minimum_size = Vector2(16, 16)
+		icon_rect.size = Vector2(16, 16)
+		icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_rect.texture = icon
+		return icon_rect
+	var swatch: ColorRect = ColorRect.new()
+	swatch.custom_minimum_size = Vector2(16, 16)
+	swatch.color = ITEM_DATABASE.get_stack_color(item)
+	return swatch
 
 
 func _resize_panel() -> void:

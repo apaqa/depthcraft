@@ -75,12 +75,13 @@ func _refresh() -> void:
 		button.text = _build_slot_text(slot_name, item)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.expand_icon = true
+		var slot_icon: Texture2D = ITEM_DATABASE.get_stack_icon(item)
+		if slot_icon == null:
+			slot_icon = ITEM_DATABASE.get_default_equipment_icon(str(slot_name))
+		button.icon = slot_icon
 		if not item.is_empty():
 			var color = player.equipment_system.get_item_display_color(item)
 			_apply_rarity_style(button, color)
-			var icon = item.get("icon")
-			if icon is Texture2D:
-				button.icon = icon
 		button.pressed.connect(_on_slot_pressed.bind(String(slot_name)))
 		slot_list.add_child(button)
 
@@ -90,9 +91,7 @@ func _refresh() -> void:
 		if str(stack.get("type", "")) != "equipment":
 			continue
 		var slot_name := str(stack.get("slot", ""))
-		var icon = stack.get("icon")
-		if not icon is Texture2D:
-			icon = null
+		var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
 		inventory_list.add_item(_translate_slot(slot_name), icon)
 		var item_index := inventory_list.get_item_count() - 1
 		inventory_list.set_item_icon_mode(item_index, ItemList.ICON_MODE_TOP)
@@ -111,12 +110,13 @@ func _refresh() -> void:
 		var id := str(stack.get("id", ""))
 		var label := ITEM_DATABASE.get_stack_display_name(stack)
 		var qty := int(stack.get("quantity", 0))
+		var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
 		var tag := ""
 		if id == q_id:
 			tag = " [Q]"
 		elif id == r_id:
 			tag = " [R]"
-		inventory_list.add_item("%s x%d%s  %s" % [label, qty, tag, LocaleManager.L("hint_right_click_quickslot")])
+		inventory_list.add_item("%s x%d%s  %s" % [label, qty, tag, LocaleManager.L("hint_right_click_quickslot")], icon)
 		inventory_list.set_item_custom_fg_color(inventory_list.get_item_count() - 1, Color(0.32, 0.78, 0.42, 1.0))
 		_inventory_indices.append(index)
 		_inventory_types.append("consumable")

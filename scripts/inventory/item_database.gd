@@ -287,8 +287,23 @@ static func get_item_icon(item_id: String) -> Texture2D:
 static func get_stack_icon(stack: Dictionary) -> Texture2D:
 	if stack.is_empty():
 		return null
-	var icon = stack.get("icon", null)
-	return icon if icon is Texture2D else null
+	var direct_icon: Variant = stack.get("icon", null)
+	if direct_icon is Texture2D:
+		return direct_icon
+	var item_id: String = str(stack.get("id", ""))
+	if item_id != "" and ITEMS.has(item_id):
+		var item_icon: Variant = ITEMS[item_id].get("icon", null)
+		if item_icon is Texture2D:
+			return item_icon
+	var item_type: String = str(stack.get("type", ""))
+	if item_type == "" and item_id != "" and ITEMS.has(item_id):
+		item_type = str(ITEMS[item_id].get("type", ""))
+	if item_type == "equipment":
+		var slot_name: String = str(stack.get("slot", ""))
+		if slot_name == "" and item_id != "" and ITEMS.has(item_id):
+			slot_name = str(ITEMS[item_id].get("slot", ""))
+		return get_default_equipment_icon(slot_name)
+	return null
 
 
 static func get_default_equipment_icon(slot_name: String) -> Texture2D:
@@ -297,12 +312,14 @@ static func get_default_equipment_icon(slot_name: String) -> Texture2D:
 			return preload("res://assets/icons/kyrise/sword_01a.png")
 		"helmet":
 			return preload("res://assets/icons/kyrise/helmet_01a.png")
-		"chest_armor", "offhand":
+		"chest_armor":
 			return preload("res://assets/icons/kyrise/armor_01a.png")
+		"offhand":
+			return preload("res://assets/icons/kyrise/shield_01a.png")
 		"boots":
 			return preload("res://assets/icons/kyrise/boots_01a.png")
 		"accessory":
-			return preload("res://assets/icons/ring_01a.png")
+			return preload("res://assets/icons/kyrise/ring_01a.png")
 		"tool":
 			return preload("res://assets/icons/kyrise/ingot_01b.png")
 		_:
