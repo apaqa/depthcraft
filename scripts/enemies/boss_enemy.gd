@@ -125,7 +125,7 @@ func _grant_rewards_to_players() -> void:
 func _grant_item(inventory, item_id: String, amount: int) -> void:
 	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	if tree != null:
-		var achievement_manager: Node = tree.root.get_node_or_null("/root/AchievementManager")
+		var achievement_manager: Variant = tree.root.get_node_or_null("/root/AchievementManager")
 		if achievement_manager != null:
 			achievement_manager.record_currency_gain(item_id, amount)
 	if inventory.add_item(item_id, amount):
@@ -178,7 +178,7 @@ func _get_normal_enemy_stats(floor_number: int) -> Dictionary:
 func _request_buff_selection() -> void:
 	if buff_selection_requested:
 		return
-	var level: Node = get_parent()
+	var level: Variant = get_parent()
 	while level != null and not level.has_signal("buff_selection_requested"):
 		level = level.get_parent()
 	if level == null or not level.has_signal("buff_selection_requested"):

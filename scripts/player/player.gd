@@ -214,19 +214,6 @@ func _physics_process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
 		return
-	if event.is_action_pressed("debug_toggle"):
-		building_system.toggle_debug_mode()
-		if building_system.is_debug_mode_enabled():
-			inventory.add_item("wood", 99)
-			inventory.add_item("stone", 99)
-			inventory.add_item("iron_ore", 99)
-			inventory.add_item("fiber", 99)
-			inventory.add_item("talent_shard", 99)
-			inventory.add_item("seed", 99)
-			inventory.add_item("wheat", 99)
-			print("DEBUG: Added full test resources")
-		get_viewport().set_input_as_handled()
-		return
 
 	if event.is_action_pressed("dev_reset") or event.is_action_pressed("dev_reset_save"):
 		return
@@ -285,6 +272,10 @@ func _input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
 		return
+	if event.is_action_pressed("debug_toggle"):
+		_toggle_debug_mode_and_grant_resources()
+		get_viewport().set_input_as_handled()
+		return
 	if build_mode or ui_blocked:
 		return
 
@@ -294,6 +285,28 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("enter"):
 		_try_secondary_interact()
 		get_viewport().set_input_as_handled()
+
+
+func _toggle_debug_mode_and_grant_resources() -> void:
+	if building_system != null:
+		building_system.toggle_debug_mode()
+	var debug_resource_entries: Array[Dictionary] = [
+		{"id": "gold", "amount": 100},
+		{"id": "silver", "amount": 100},
+		{"id": "copper", "amount": 100},
+		{"id": "wood", "amount": 99},
+		{"id": "stone", "amount": 99},
+		{"id": "iron_ore", "amount": 99},
+		{"id": "fiber", "amount": 99},
+		{"id": "wheat", "amount": 99},
+		{"id": "talent_shard", "amount": 99},
+	]
+	for entry: Dictionary in debug_resource_entries:
+		var item_id: String = str(entry.get("id", ""))
+		var amount: int = int(entry.get("amount", 0))
+		if item_id != "" and amount > 0:
+			inventory.add_item(item_id, amount)
+	print("DEBUG: Added currency and test resources")
 
 
 func _try_interact() -> void:

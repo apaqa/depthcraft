@@ -8,6 +8,9 @@ signal buff_chosen(buff_id: String)
 
 var active_options: Array[Dictionary] = []
 
+const ATTACK_CARD_COLOR: Color = Color(0.92, 0.34, 0.30, 1.0)
+const DEFENSE_CARD_COLOR: Color = Color(0.30, 0.55, 0.92, 1.0)
+const SUPPORT_CARD_COLOR: Color = Color(0.32, 0.78, 0.42, 1.0)
 const DEFAULT_CARD_COLORS: Array[Color] = [
 	Color(1.0, 0.82, 0.20, 1.0),
 	Color(0.58, 0.22, 0.90, 1.0),
@@ -83,6 +86,13 @@ func _on_auto_timer_timeout() -> void:
 
 
 func _get_option_color(option: Dictionary, fallback_index: int = 0) -> Color:
+	var category_key: String = str(option.get("category", ""))
+	if category_key == "buff_atk_up_1_cat" or category_key == "buff_atk_up_2_cat" or category_key == "buff_crit_chance_cat" or category_key == "buff_atk_speed_cat" or category_key == "buff_lifesteal_cat" or category_key == "buff_aoe_attack_cat":
+		return ATTACK_CARD_COLOR
+	if category_key == "buff_hp_up_cat" or category_key == "buff_armor_cat" or category_key == "buff_dodge_chance_cat" or category_key == "buff_regen_cat":
+		return DEFENSE_CARD_COLOR
+	if category_key == "buff_speed_up_cat" or category_key == "buff_loot_up_cat":
+		return SUPPORT_CARD_COLOR
 	var color: Variant = option.get("color", null)
 	if color is Color:
 		return color

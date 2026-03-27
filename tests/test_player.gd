@@ -1,7 +1,7 @@
 extends SceneTree
 
-const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
-const PLAYER_SCRIPT := preload("res://scripts/player/player.gd")
+const PLAYER_SCENE = preload("res://scenes/player/player.tscn")
+const PLAYER_SCRIPT = preload("res://scripts/player/player.gd")
 
 var _failures: PackedStringArray = []
 var _holders: Node = null
@@ -15,6 +15,7 @@ func _initialize() -> void:
 	test_default_sprint_speed()
 	test_collision_shape_uses_feet_box()
 	await test_player_is_in_player_group()
+	await test_debug_toggle_grants_requested_resources()
 	test_diagonal_normalization()
 	test_zero_input_returns_zero_vector()
 	test_velocity_zero_when_idle()
@@ -24,22 +25,22 @@ func _initialize() -> void:
 
 
 func test_initial_position() -> void:
-	var player := PLAYER_SCENE.instantiate()
+	var player: Variant = PLAYER_SCENE.instantiate()
 	_assert(player.position == Vector2.ZERO, "Player should start at Vector2.ZERO in its own scene.")
 
 
 func test_default_speed() -> void:
-	var player := PLAYER_SCENE.instantiate()
+	var player: Variant = PLAYER_SCENE.instantiate()
 	_assert(is_equal_approx(player.speed, 80.0), "Player speed should default to 80.0.")
 
 
 func test_default_sprint_speed() -> void:
-	var player := PLAYER_SCENE.instantiate()
+	var player: Variant = PLAYER_SCENE.instantiate()
 	_assert(is_equal_approx(player.sprint_speed, 140.0), "Player sprint speed should default to 140.0.")
 
 
 func test_collision_shape_uses_feet_box() -> void:
-	var player := PLAYER_SCENE.instantiate()
+	var player: Variant = PLAYER_SCENE.instantiate()
 	var collision_shape: CollisionShape2D = player.get_node("CollisionShape2D")
 	var rectangle: RectangleShape2D = collision_shape.shape
 	_assert(collision_shape.position == Vector2(0, 3), "Player collision should sit slightly below center for tight wall contact.")
@@ -47,7 +48,7 @@ func test_collision_shape_uses_feet_box() -> void:
 
 
 func test_player_is_in_player_group() -> void:
-	var player := PLAYER_SCENE.instantiate()
+	var player: Variant = PLAYER_SCENE.instantiate()
 	_holders.add_child(player)
 	await process_frame
 	_assert(player.is_in_group("player"), "Player should register itself in the player group for enemy targeting.")
@@ -55,30 +56,52 @@ func test_player_is_in_player_group() -> void:
 	await process_frame
 
 
+func test_debug_toggle_grants_requested_resources() -> void:
+	var player: Variant = PLAYER_SCENE.instantiate()
+	player.load_persistent_state_on_ready = false
+	_holders.add_child(player)
+	await process_frame
+	var debug_event: InputEventAction = InputEventAction.new()
+	debug_event.action = "debug_toggle"
+	debug_event.pressed = true
+	player._unhandled_input(debug_event)
+	_assert(player.inventory.get_item_count("gold") == 100, "Debug key should grant 100 gold.")
+	_assert(player.inventory.get_item_count("silver") == 100, "Debug key should grant 100 silver.")
+	_assert(player.inventory.get_item_count("copper") == 100, "Debug key should grant 100 copper.")
+	_assert(player.inventory.get_item_count("wood") == 99, "Debug key should grant 99 wood.")
+	_assert(player.inventory.get_item_count("stone") == 99, "Debug key should grant 99 stone.")
+	_assert(player.inventory.get_item_count("iron_ore") == 99, "Debug key should grant 99 iron ore.")
+	_assert(player.inventory.get_item_count("fiber") == 99, "Debug key should grant 99 fiber.")
+	_assert(player.inventory.get_item_count("wheat") == 99, "Debug key should grant 99 wheat.")
+	_assert(player.inventory.get_item_count("talent_shard") == 99, "Debug key should grant 99 talent shards.")
+	player.queue_free()
+	await process_frame
+
+
 func test_diagonal_normalization() -> void:
-	var input_vector := PLAYER_SCRIPT.compute_input_vector(0.0, 1.0, 1.0, 0.0)
+	var input_vector: Vector2 = PLAYER_SCRIPT.compute_input_vector(0.0, 1.0, 1.0, 0.0)
 	_assert(is_equal_approx(input_vector.length(), 1.0), "Diagonal input should normalize to length 1.0.")
 
 
 func test_zero_input_returns_zero_vector() -> void:
-	var input_vector := PLAYER_SCRIPT.compute_input_vector(0.0, 0.0, 0.0, 0.0)
+	var input_vector: Vector2 = PLAYER_SCRIPT.compute_input_vector(0.0, 0.0, 0.0, 0.0)
 	_assert(input_vector == Vector2.ZERO, "Zero input should return Vector2.ZERO.")
 
 
 func test_velocity_zero_when_idle() -> void:
-	var player := PLAYER_SCENE.instantiate()
+	var player: Variant = PLAYER_SCENE.instantiate()
 	player.apply_input_direction(Vector2.ZERO)
 	_assert(player.velocity == Vector2.ZERO, "Player velocity should be zero with no input.")
 
 
 func test_velocity_uses_custom_speed() -> void:
-	var player := PLAYER_SCENE.instantiate()
+	var player: Variant = PLAYER_SCENE.instantiate()
 	player.apply_input_direction(Vector2.RIGHT, player.sprint_speed)
 	_assert(player.velocity == Vector2.RIGHT * player.sprint_speed, "Player velocity should use the provided sprint speed.")
 
 
 func test_sprite_flips_left() -> void:
-	var player := PLAYER_SCENE.instantiate()
+	var player: Variant = PLAYER_SCENE.instantiate()
 	player.apply_input_direction(Vector2.LEFT)
 	_assert(player.get_node("AnimatedSprite2D").flip_h, "Player sprite should flip when moving left.")
 
