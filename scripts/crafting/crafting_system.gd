@@ -1,9 +1,9 @@
 extends Node
 class_name CraftingSystem
 
-const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
 
-const RECIPES := {
+const RECIPES = {
 	"wood_sword": {
 		"id": "wood_sword",
 		"name": "Wood Sword",
@@ -117,6 +117,16 @@ const RECIPES := {
 		"stats": {"attack": 10},
 		"slot": "weapon",
 	},
+	"iron_shield": {
+		"id": "iron_shield",
+		"name": "Iron Shield",
+		"category": "Armor",
+		"result_item_id": "iron_shield",
+		"result_type": "equipment",
+		"cost": {"iron_ore": 5, "wood": 2},
+		"stats": {"defense": 8, "max_hp": 10},
+		"slot": "offhand",
+	},
 }
 
 
@@ -131,7 +141,7 @@ static func get_available_recipes() -> Array[Dictionary]:
 static func get_available_recipes_for_ids(recipe_ids: PackedStringArray) -> Array[Dictionary]:
 	var recipes: Array[Dictionary] = []
 	for recipe_id in recipe_ids:
-		var recipe := get_recipe(recipe_id)
+		var recipe: Dictionary = get_recipe(recipe_id)
 		if not recipe.is_empty():
 			recipes.append(recipe)
 	recipes.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["name"]) < str(b["name"]))
@@ -142,19 +152,19 @@ static func get_recipe(recipe_id: String) -> Dictionary:
 	if not RECIPES.has(recipe_id):
 		return {}
 	var recipe: Dictionary = RECIPES[recipe_id].duplicate(true)
-	var result_item_id := str(recipe.get("result_item_id", ""))
+	var result_item_id: String = str(recipe.get("result_item_id", ""))
 	if result_item_id != "":
 		recipe["name"] = ITEM_DATABASE.get_display_name(result_item_id)
 	return recipe
 
 
 static func get_recipe_cost(recipe_id: String, cost_multiplier: float = 1.0) -> Dictionary:
-	var recipe := get_recipe(recipe_id)
+	var recipe: Dictionary = get_recipe(recipe_id)
 	if recipe.is_empty():
 		return {}
-	var adjusted_cost := {}
+	var adjusted_cost: Dictionary = {}
 	for resource_id in recipe.get("cost", {}).keys():
-		var base_cost := int(recipe["cost"][resource_id])
+		var base_cost: int = int(recipe["cost"][resource_id])
 		adjusted_cost[resource_id] = max(int(ceil(float(base_cost) * cost_multiplier)), 1)
 	return adjusted_cost
 
@@ -163,7 +173,7 @@ static func can_craft(recipe_id: String, inventory, cost_multiplier: float = 1.0
 	if inventory == null:
 		return false
 
-	var recipe := get_recipe(recipe_id)
+	var recipe: Dictionary = get_recipe(recipe_id)
 	if recipe.is_empty():
 		return false
 
@@ -177,15 +187,15 @@ static func craft(recipe_id: String, inventory, cost_multiplier: float = 1.0) ->
 	if not can_craft(recipe_id, inventory, cost_multiplier):
 		return false
 
-	var recipe := get_recipe(recipe_id)
+	var recipe: Dictionary = get_recipe(recipe_id)
 	for resource_id in get_recipe_cost(recipe_id, cost_multiplier).keys():
 		inventory.remove_item(resource_id, int(get_recipe_cost(recipe_id, cost_multiplier)[resource_id]))
 
 	var crafted: bool = inventory.add_item(str(recipe["result_item_id"]), 1)
 	if crafted:
-		var tree := Engine.get_main_loop() as SceneTree
+		var tree: SceneTree = Engine.get_main_loop() as SceneTree
 		if tree != null:
-			var achievement_manager = tree.root.get_node_or_null("/root/AchievementManager")
+			var achievement_manager: Node = tree.root.get_node_or_null("/root/AchievementManager")
 			if achievement_manager != null:
 				achievement_manager.record_recipe_crafted(recipe)
 	return crafted

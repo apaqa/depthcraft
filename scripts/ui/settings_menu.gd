@@ -3,8 +3,8 @@ class_name SettingsMenu
 
 signal close_requested
 
-const SETTINGS_PATH := "user://settings.json"
-const TUTORIAL_PATH := "user://tutorial_save.json"
+const SETTINGS_PATH = "user://settings.json"
+const TUTORIAL_PATH = "user://tutorial_save.json"
 
 var _sliders: Dictionary = {}
 var _lang_button: Button = null
@@ -304,12 +304,13 @@ func _can_pause_game() -> bool:
 
 
 func _on_save_pressed() -> void:
-	var players := get_tree().get_nodes_in_group("player")
+	SaveManager.save_game(1)
+	var players: Array = get_tree().get_nodes_in_group("player")
 	if not players.is_empty() and players[0].has_method("_save_persistent_state"):
 		players[0]._save_persistent_state()
-		print("Game saved.")
+		print("Game saved to slot 1.")
 		return
-	print("Save placeholder: no save hook available.")
+	print("Game saved to slot 1.")
 
 
 func _go_to_main_menu() -> void:

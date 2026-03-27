@@ -1,15 +1,16 @@
 extends Enemy
 class_name BossEnemy
 
-const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
-const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
+const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
 
-const AOE_COOLDOWN := 5.0
-const AOE_RADIUS := 56.0
+const AOE_COOLDOWN: float = 5.0
+const AOE_RADIUS: float = 56.0
 
 var floor_value: int = 1
 var aoe_cooldown_left: float = AOE_COOLDOWN
 var rewards_granted: bool = false
+var buff_selection_requested: bool = false
 
 
 func _ready() -> void:
@@ -23,7 +24,7 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	target = player_target
 	loot_parent = loot_root
 	floor_value = floor_number
-	var normal_stats := _get_normal_enemy_stats(floor_number)
+	var normal_stats: Dictionary = _get_normal_enemy_stats(floor_number)
 	max_hp = int(normal_stats["hp"]) * 10
 	current_hp = max_hp
 	damage = int(round(float(int(normal_stats["damage"])) * 1.8))
@@ -56,8 +57,8 @@ func die() -> void:
 		return
 	rewards_granted = true
 	_grant_rewards_to_players()
-	_request_buff_selection()
 	super.die()
+	_request_buff_selection()
 
 
 func _drop_loot() -> void:
@@ -69,6 +70,8 @@ func _drop_gold_loot() -> void:
 
 
 func _perform_aoe() -> void:
+	if target == null or not is_instance_valid(target):
+		return
 	if global_position.distance_to(target.global_position) > detection_range * 1.1:
 		return
 	_spawn_aoe_indicator()
@@ -82,30 +85,30 @@ func _perform_aoe() -> void:
 
 
 func _spawn_aoe_indicator() -> void:
-	var ring := Line2D.new()
+	var ring: Line2D = Line2D.new()
 	ring.width = 3.0
 	ring.default_color = Color(1.0, 0.78, 0.2, 0.95)
 	ring.closed = true
-	var points := PackedVector2Array()
+	var points: PackedVector2Array = PackedVector2Array()
 	for index in range(24):
-		var angle := TAU * float(index) / 24.0
+		var angle: float = TAU * float(index) / 24.0
 		points.append(Vector2.RIGHT.rotated(angle) * AOE_RADIUS)
 	ring.points = points
 	ring.global_position = global_position
 	get_parent().add_child(ring)
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(ring, "modulate:a", 0.0, 0.35)
 	tween.tween_callback(ring.queue_free)
 
 
 func _grant_rewards_to_players() -> void:
-	var equipment_reward := _generate_boss_equipment()
-	var gold_amount := 1 + floor_value / 5
-	var shard_amount := 4 + int(floor_value / 5)
+	var equipment_reward: Dictionary = _generate_boss_equipment()
+	var gold_amount: int = 1 + int(floor_value / 5)
+	var shard_amount: int = 4 + int(floor_value / 5)
 	for player_ref in get_tree().get_nodes_in_group("player"):
 		if player_ref == null or not is_instance_valid(player_ref):
 			continue
-		var inventory = player_ref.get("inventory")
+		var inventory: Variant = player_ref.get("inventory")
 		if inventory == null:
 			continue
 		_grant_stack(inventory, equipment_reward.duplicate(true))
@@ -120,14 +123,14 @@ func _grant_rewards_to_players() -> void:
 
 
 func _grant_item(inventory, item_id: String, amount: int) -> void:
-	var tree := Engine.get_main_loop() as SceneTree
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	if tree != null:
-		var achievement_manager = tree.root.get_node_or_null("/root/AchievementManager")
+		var achievement_manager: Node = tree.root.get_node_or_null("/root/AchievementManager")
 		if achievement_manager != null:
 			achievement_manager.record_currency_gain(item_id, amount)
 	if inventory.add_item(item_id, amount):
 		return
-	var fallback_stack := {
+	var fallback_stack: Dictionary = {
 		"id": item_id,
 		"name": item_id.replace("_", " ").capitalize(),
 		"type": "resource",
@@ -149,14 +152,14 @@ func _force_add_stack(inventory, stack: Dictionary) -> void:
 
 
 func _generate_boss_equipment() -> Dictionary:
-	var rng := RandomNumberGenerator.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash("%s:%s:%s" % [name, floor_value, Time.get_ticks_usec()])
 	for _attempt in range(16):
-		var reward := DUNGEON_LOOT.generate_dungeon_equipment(floor_value + 2, rng)
-		var rarity := str(reward.get("rarity", "Common"))
+		var reward: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment(floor_value + 2, rng)
+		var rarity: String = str(reward.get("rarity", "Common"))
 		if rarity == "Epic" or rarity == "Legendary":
 			return reward
-	var fallback := DUNGEON_LOOT.generate_dungeon_equipment(floor_value + 3, rng)
+	var fallback: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment(floor_value + 3, rng)
 	fallback["rarity"] = "Epic"
 	fallback["color"] = DUNGEON_LOOT.get_rarity_color("Epic")
 	return fallback
@@ -173,10 +176,15 @@ func _get_normal_enemy_stats(floor_number: int) -> Dictionary:
 
 
 func _request_buff_selection() -> void:
-	var level := get_parent()
+	if buff_selection_requested:
+		return
+	var level: Node = get_parent()
 	while level != null and not level.has_signal("buff_selection_requested"):
 		level = level.get_parent()
-	if level != null and level.has_method("set_gameplay_paused"):
+	if level == null or not level.has_signal("buff_selection_requested"):
+		return
+	buff_selection_requested = true
+	if level.has_method("set_gameplay_paused"):
 		level.set_gameplay_paused(true)
-	if level != null and level.has_signal("buff_selection_requested"):
-		level.buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())
+	var buff_options: Array[Dictionary] = BUFF_SYSTEM.generate_random_buffs(3)
+	level.buff_selection_requested.emit(buff_options)

@@ -2,10 +2,10 @@ extends "res://scripts/building/upgradeable_facility.gd"
 class_name WorkbenchFacility
 
 
-const RECIPE_LEVELS := {
+const RECIPE_LEVELS = {
 	1: ["wood_sword", "wood_shield", "stone_pickaxe", "leather_cap", "leather_vest", "bandage", "torch"],
 	2: ["wood_sword", "wood_shield", "stone_pickaxe", "leather_cap", "leather_vest", "bandage", "torch", "iron_sword"],
-	3: ["wood_sword", "wood_shield", "stone_pickaxe", "leather_cap", "leather_vest", "bandage", "torch", "iron_sword"],
+	3: ["wood_sword", "wood_shield", "stone_pickaxe", "leather_cap", "leather_vest", "bandage", "torch", "iron_sword", "iron_shield"],
 }
 
 

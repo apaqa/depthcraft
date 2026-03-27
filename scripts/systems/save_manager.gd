@@ -3,6 +3,23 @@ extends Node
 const FORMAT_VERSION: int = 1
 const SAVE_SLOT_TEMPLATE: String = "user://save_slot_%d.json"
 const BUILDING_SAVE = preload("res://scripts/building/building_save.gd")
+const PLAYER_SAVE = preload("res://scripts/player/player_save.gd")
+
+var _pending_load_slot: int = 0
+
+
+func _ready() -> void:
+	set_process(true)
+
+
+func _process(_delta: float) -> void:
+	if _pending_load_slot <= 0:
+		return
+	if _get_player() == null:
+		return
+	var slot_to_load: int = _pending_load_slot
+	_pending_load_slot = 0
+	load_game(slot_to_load)
 
 
 # ─── Public API ────────────────────────────────────────────────────────────────
@@ -24,6 +41,17 @@ func save_game(slot: int) -> void:
 	print("SaveManager: saved slot %d" % slot)
 
 
+func queue_load_game(slot: int) -> bool:
+	var data: Dictionary = _read_json(SAVE_SLOT_TEMPLATE % slot)
+	if data.is_empty():
+		push_warning("SaveManager: slot %d not found or empty" % slot)
+		_pending_load_slot = 0
+		return false
+	_synchronize_legacy_player_state(data)
+	_pending_load_slot = slot
+	return true
+
+
 func load_game(slot: int) -> void:
 	var data: Dictionary = _read_json(SAVE_SLOT_TEMPLATE % slot)
 	if data.is_empty():
@@ -31,11 +59,21 @@ func load_game(slot: int) -> void:
 		return
 	var player: Node = _get_player()
 	var main_node: Node = get_tree().current_scene
-	_restore_player(data.get("player", {}) as Dictionary, player)
-	_restore_inventory(data.get("inventory", []) as Array, player)
-	_restore_equipment(data.get("equipment", {}) as Dictionary, player)
-	_restore_buildings(data.get("buildings", {}) as Dictionary, player)
-	_restore_progress(data.get("progress", {}) as Dictionary, main_node)
+	var player_data: Dictionary = data.get("player", {}) as Dictionary
+	var inventory_data: Array = data.get("inventory", []) as Array
+	var equipment_data: Dictionary = data.get("equipment", {}) as Dictionary
+	var currency_data: Dictionary = data.get("currency", {}) as Dictionary
+	var building_data: Dictionary = data.get("buildings", {}) as Dictionary
+	var progress_data: Dictionary = data.get("progress", {}) as Dictionary
+	_synchronize_legacy_player_state(data)
+	_restore_player(player_data, player)
+	_restore_inventory(inventory_data, player)
+	_restore_currency(currency_data, player)
+	_restore_equipment(equipment_data, player)
+	_restore_buildings(building_data, player)
+	_restore_progress(progress_data, main_node)
+	_finalize_player_restore(player_data, player)
+	_refresh_loaded_scene(main_node)
 	print("SaveManager: loaded slot %d" % slot)
 
 
@@ -196,6 +234,10 @@ func _serialize_buildings(player: Node) -> Dictionary:
 				var live_node: Node = live_inst as Node
 				if live_node.has_method("serialize_data"):
 					record["data"] = live_node.call("serialize_data")
+			var record_data: Dictionary = record.get("data", {}) as Dictionary
+			record["position"] = [tile_x, tile_y]
+			record["level"] = int(record_data.get("upgrade_level", 1))
+			record["current_hp"] = int(record_data.get("current_hp", 0))
 			buildings_out["%d,%d" % [tile_x, tile_y]] = record
 
 	# Core position
@@ -227,6 +269,9 @@ func _serialize_buildings(player: Node) -> Dictionary:
 				if finst_node.has_method("serialize_data"):
 					fac_rec["data"] = finst_node.call("serialize_data")
 			fac_rec["position"] = [fac_tile.x, fac_tile.y]
+			var facility_data: Dictionary = fac_rec.get("data", {}) as Dictionary
+			fac_rec["level"] = int(facility_data.get("upgrade_level", 1))
+			fac_rec["current_hp"] = int(facility_data.get("current_hp", 0))
 			facilities_out.append(fac_rec)
 
 	return {
@@ -252,12 +297,6 @@ func _serialize_progress(main_node: Node) -> Dictionary:
 func _restore_player(data: Dictionary, player: Node) -> void:
 	if data.is_empty() or player == null:
 		return
-	var max_h: int = int(data.get("max_hp", 100))
-	var cur_h: int = clampi(int(data.get("current_hp", max_h)), 0, max_h)
-	player.set("max_hp", max_h)
-	player.set("current_hp", cur_h)
-	if player.has_signal("hp_changed"):
-		player.emit_signal("hp_changed", cur_h, max_h)
 	var px: float = float(data.get("position_x", 0.0))
 	var py: float = float(data.get("position_y", 0.0))
 	player.set("global_position", Vector2(px, py))
@@ -271,14 +310,11 @@ func _restore_player(data: Dictionary, player: Node) -> void:
 	var player_stats: Node = player.get_node_or_null("PlayerStats")
 	if player_stats != null and player_stats.has_method("rebuild_talent_bonuses"):
 		player_stats.call("rebuild_talent_bonuses", talent_strings)
-	# Restore class
 	var class_id: String = str(data.get("current_class_id", ""))
 	if class_id != "":
 		var class_system: Node = get_node_or_null("/root/ClassSystem")
 		if class_system != null and class_system.has_method("save_class"):
 			class_system.call("save_class", class_id)
-		if player_stats != null and class_system != null and class_system.has_method("apply_to_stats"):
-			class_system.call("apply_to_stats", player_stats)
 
 
 func _restore_inventory(data: Array, player: Node) -> void:
@@ -288,6 +324,23 @@ func _restore_inventory(data: Array, player: Node) -> void:
 	if inventory == null or not inventory.has_method("load_state"):
 		return
 	inventory.call("load_state", data)
+
+
+func _restore_currency(data: Dictionary, player: Node) -> void:
+	if player == null:
+		return
+	var inventory: Node = player.get_node_or_null("Inventory")
+	if inventory == null:
+		return
+	if not inventory.has_method("get_item_count") or not inventory.has_method("remove_item") or not inventory.has_method("add_item"):
+		return
+	for coin_id: String in ["gold", "silver", "copper"]:
+		var existing_amount: int = int(inventory.call("get_item_count", coin_id))
+		if existing_amount > 0:
+			inventory.call("remove_item", coin_id, existing_amount)
+		var target_amount: int = int(data.get(coin_id, 0))
+		if target_amount > 0:
+			inventory.call("add_item", coin_id, target_amount)
 
 
 func _restore_equipment(data: Dictionary, player: Node) -> void:
@@ -321,7 +374,17 @@ func _restore_buildings(data: Dictionary, player: Node) -> void:
 		var tile_pos: Vector2i = Vector2i(int(parts[0]), int(parts[1]))
 		var rec_v: Variant = buildings_raw[key_v]
 		if typeof(rec_v) == TYPE_DICTIONARY:
-			placed_buildings[tile_pos] = (rec_v as Dictionary).duplicate(true)
+			var saved_record: Dictionary = (rec_v as Dictionary).duplicate(true)
+			var saved_record_data: Dictionary = saved_record.get("data", {}) as Dictionary
+			if not saved_record_data.has("upgrade_level") and saved_record.has("level"):
+				saved_record_data["upgrade_level"] = int(saved_record.get("level", 1))
+			if not saved_record_data.has("current_hp") and saved_record.has("current_hp"):
+				saved_record_data["current_hp"] = int(saved_record.get("current_hp", 0))
+			saved_record["data"] = saved_record_data
+			saved_record.erase("position")
+			saved_record.erase("level")
+			saved_record.erase("current_hp")
+			placed_buildings[tile_pos] = saved_record
 
 	# Core position
 	var core_v: Variant = data.get("home_core_position", [0.0, 0.0])
@@ -357,7 +420,15 @@ func _restore_buildings(data: Dictionary, player: Node) -> void:
 			continue
 		var fac_tile: Vector2i = Vector2i(int(pos_arr[0]), int(pos_arr[1]))
 		var fac_rec: Dictionary = fac.duplicate(true)
+		var fac_data: Dictionary = fac_rec.get("data", {}) as Dictionary
+		if not fac_data.has("upgrade_level") and fac_rec.has("level"):
+			fac_data["upgrade_level"] = int(fac_rec.get("level", 1))
+		if not fac_data.has("current_hp") and fac_rec.has("current_hp"):
+			fac_data["current_hp"] = int(fac_rec.get("current_hp", 0))
+		fac_rec["data"] = fac_data
 		fac_rec.erase("position")
+		fac_rec.erase("level")
+		fac_rec.erase("current_hp")
 		placed_facilities[fac_tile] = fac_rec
 
 	# Apply directly to BuildingSystem
@@ -381,6 +452,50 @@ func _restore_progress(data: Dictionary, main_node: Node) -> void:
 		return
 	main_node.set("current_day", int(data.get("current_day", 1)))
 	main_node.set("deepest_dungeon_floor_reached", int(data.get("deepest_floor_reached", 1)))
+
+
+func _finalize_player_restore(player_data: Dictionary, player: Node) -> void:
+	if player == null:
+		return
+	if player.has_method("_refresh_all_stats"):
+		player.call("_refresh_all_stats")
+	var restored_max_hp: int = int(player.get("max_hp"))
+	if restored_max_hp <= 0:
+		restored_max_hp = int(player_data.get("max_hp", 100))
+		player.set("max_hp", restored_max_hp)
+	var restored_current_hp: int = clampi(int(player_data.get("current_hp", restored_max_hp)), 0, restored_max_hp)
+	player.set("current_hp", restored_current_hp)
+	if player.has_signal("stats_changed"):
+		player.emit_signal("stats_changed")
+	if player.has_signal("hp_changed"):
+		player.emit_signal("hp_changed", restored_current_hp, restored_max_hp)
+	if player.has_method("_save_persistent_state"):
+		player.call("_save_persistent_state")
+
+
+func _refresh_loaded_scene(main_node: Node) -> void:
+	if main_node == null:
+		return
+	var current_day: int = int(main_node.get("current_day"))
+	var deepest_floor: int = int(main_node.get("deepest_dungeon_floor_reached"))
+	QuestManager.set_day(current_day)
+	var hud_value: Variant = main_node.get("hud")
+	if hud_value is Node:
+		var hud_node: Node = hud_value as Node
+		if hud_node.has_method("update_day_label"):
+			hud_node.call("update_day_label", current_day)
+		var class_label_value: Variant = hud_node.get("class_label")
+		if class_label_value is Label:
+			var class_label: Label = class_label_value as Label
+			var class_system: Node = get_node_or_null("/root/ClassSystem")
+			class_label.text = class_system.call("get_class_display_name") if class_system != null and class_system.has_method("get_class_display_name") else ""
+	var current_level_value: Variant = main_node.get("current_level")
+	if current_level_value is Node:
+		var current_level: Node = current_level_value as Node
+		if current_level.has_method("set_day_count"):
+			current_level.call("set_day_count", current_day)
+		if current_level.has_method("set_deepest_floor_reached"):
+			current_level.call("set_deepest_floor_reached", deepest_floor)
 
 
 # ─── JSON Cleaning ─────────────────────────────────────────────────────────────
@@ -442,6 +557,26 @@ func _get_player() -> Node:
 	if players.is_empty():
 		return null
 	return players[0] as Node
+
+
+func _synchronize_legacy_player_state(data: Dictionary) -> void:
+	var player_data: Dictionary = data.get("player", {}) as Dictionary
+	var unlocked_talents: Array[String] = []
+	var raw_talents: Variant = player_data.get("unlocked_talents", [])
+	if raw_talents is Array:
+		for talent_id: Variant in raw_talents:
+			unlocked_talents.append(str(talent_id))
+	var equipment_data: Dictionary = data.get("equipment", {}) as Dictionary
+	PLAYER_SAVE.save_state({
+		"unlocked_talents": unlocked_talents,
+		"equipment": equipment_data.duplicate(true),
+	})
+	var class_id: String = str(player_data.get("current_class_id", ""))
+	if class_id == "":
+		return
+	var class_system: Node = get_node_or_null("/root/ClassSystem")
+	if class_system != null and class_system.has_method("save_class"):
+		class_system.call("save_class", class_id)
 
 
 func _write_json(path: String, data: Dictionary) -> void:

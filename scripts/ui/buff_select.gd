@@ -8,7 +8,7 @@ signal buff_chosen(buff_id: String)
 
 var active_options: Array[Dictionary] = []
 
-const DEFAULT_CARD_COLORS := [
+const DEFAULT_CARD_COLORS: Array[Color] = [
 	Color(1.0, 0.82, 0.20, 1.0),
 	Color(0.58, 0.22, 0.90, 1.0),
 	Color(0.22, 0.55, 0.95, 1.0),
@@ -26,33 +26,27 @@ func open_with_options(options: Array[Dictionary]) -> void:
 	active_options = options.duplicate(true)
 	visible = true
 	title_label.text = LocaleManager.L("buff_select_title")
-	for child in card_container.get_children():
+	for child: Node in card_container.get_children():
 		child.queue_free()
 	for i in range(active_options.size()):
 		var option: Dictionary = active_options[i]
-		var card_color := _get_option_color(option, i)
-		var button := Button.new()
+		var card_color: Color = _get_option_color(option, i)
+		var button: Button = Button.new()
 		button.custom_minimum_size = Vector2(160, 132)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+		button.focus_mode = Control.FOCUS_NONE
 
-		var panel_style := StyleBoxFlat.new()
-		panel_style.bg_color = Color(0.16, 0.18, 0.24, 0.96)
-		panel_style.border_width_left = 2
-		panel_style.border_width_top = 2
-		panel_style.border_width_right = 2
-		panel_style.border_width_bottom = 2
-		panel_style.border_color = card_color
-		panel_style.corner_radius_top_left = 8
-		panel_style.corner_radius_top_right = 8
-		panel_style.corner_radius_bottom_left = 8
-		panel_style.corner_radius_bottom_right = 8
-		button.add_theme_stylebox_override("normal", panel_style)
-		button.add_theme_stylebox_override("hover", _make_card_style(card_color.lightened(0.2)))
-		button.add_theme_stylebox_override("pressed", _make_card_style(card_color.darkened(0.15)))
+		button.add_theme_stylebox_override("normal", _make_card_style(card_color))
+		button.add_theme_stylebox_override("hover", _make_card_style(card_color.lightened(0.18), 0.16))
+		button.add_theme_stylebox_override("pressed", _make_card_style(card_color.darkened(0.1), 0.08))
+		button.add_theme_stylebox_override("focus", _make_card_style(card_color.lightened(0.1), 0.14))
+		button.add_theme_stylebox_override("hover_pressed", _make_card_style(card_color.darkened(0.1), 0.08))
+		button.add_theme_stylebox_override("disabled", _make_card_style(card_color.darkened(0.2), 0.06))
+		button.add_theme_color_override("font_color", Color(0.96, 0.97, 1.0, 1.0))
 		button.text = "%s\n[%s]\n%s" % [
 			LocaleManager.L(str(option.get("name", ""))),
 			LocaleManager.L(str(option.get("category", ""))),
@@ -89,22 +83,26 @@ func _on_auto_timer_timeout() -> void:
 
 
 func _get_option_color(option: Dictionary, fallback_index: int = 0) -> Color:
-	var color = option.get("color", null)
+	var color: Variant = option.get("color", null)
 	if color is Color:
 		return color
 	return DEFAULT_CARD_COLORS[fallback_index % DEFAULT_CARD_COLORS.size()]
 
 
-func _make_card_style(border_color: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.16, 0.18, 0.24, 0.96)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
+func _make_card_style(border_color: Color, tint_strength: float = 0.12) -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	var base_background: Color = Color(0.15, 0.17, 0.23, 0.96)
+	var tinted_background: Color = Color(border_color.r * 0.18, border_color.g * 0.18, border_color.b * 0.18, 0.96)
+	style.bg_color = base_background.lerp(tinted_background, clampf(tint_strength, 0.0, 1.0))
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
 	style.border_color = border_color
 	style.corner_radius_top_left = 8
 	style.corner_radius_top_right = 8
 	style.corner_radius_bottom_left = 8
 	style.corner_radius_bottom_right = 8
+	style.shadow_color = Color(border_color.r, border_color.g, border_color.b, 0.25)
+	style.shadow_size = 2
 	return style
