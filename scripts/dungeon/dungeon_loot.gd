@@ -1,32 +1,32 @@
 extends RefCounted
 class_name DungeonLoot
 
-const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
 
-const PREFIXES := ["Ancient", "Runed", "Iron", "Storm", "Shadow", "Wild", "Sunforged", "Deepstone", "Cursed", "Radiant", "Vile", "Frostbound", "Emberlit", "Voidtouched", "Serrated"]
-const WEAPON_NAMES := ["Blade", "Sword", "Cleaver", "Saber", "Edge", "Dagger", "Staff", "Wand", "Axe", "Bow", "Reaper", "Fang"]
-const HELMET_NAMES := ["Helm", "Crown", "Hood", "Greathelm", "Visage", "Circlet"]
-const CHEST_NAMES := ["Mail", "Cuirass", "Vest", "Armor", "Plate", "Hauberk"]
-const BOOT_NAMES := ["Boots", "Greaves", "Treads", "Sabatons", "Striders"]
-const OFFHAND_NAMES := ["Shield", "Buckler", "Barrier", "Bulwark", "Ward"]
-const ACCESSORY_NAMES := ["Ring", "Charm", "Talisman", "Band", "Amulet", "Pendant", "Sigil"]
+const PREFIXES = ["Ancient", "Runed", "Iron", "Storm", "Shadow", "Wild", "Sunforged", "Deepstone", "Cursed", "Radiant", "Vile", "Frostbound", "Emberlit", "Voidtouched", "Serrated"]
+const WEAPON_NAMES = ["Blade", "Sword", "Cleaver", "Saber", "Edge", "Dagger", "Staff", "Wand", "Axe", "Bow", "Reaper", "Fang"]
+const HELMET_NAMES = ["Helm", "Crown", "Hood", "Greathelm", "Visage", "Circlet"]
+const CHEST_NAMES = ["Mail", "Cuirass", "Vest", "Armor", "Plate", "Hauberk"]
+const BOOT_NAMES = ["Boots", "Greaves", "Treads", "Sabatons", "Striders"]
+const OFFHAND_NAMES = ["Shield", "Buckler", "Barrier", "Bulwark", "Ward"]
+const ACCESSORY_NAMES = ["Ring", "Charm", "Talisman", "Band", "Amulet", "Pendant", "Sigil"]
 
-const RARITY_ORDER := ["Common", "Uncommon", "Rare", "Epic", "Legendary"]
-const RARITY_ALIASES := {
+const RARITY_ORDER = ["Common", "Uncommon", "Rare", "Epic", "Legendary"]
+const RARITY_ALIASES = {
 	"Common": "Common",
 	"Uncommon": "Uncommon",
 	"Rare": "Rare",
 	"Epic": "Epic",
 	"Legendary": "Legendary",
 }
-const RARITY_COLORS := {
-	"Common": Color(1.0, 1.0, 1.0, 1.0),
-	"Uncommon": Color(0.45, 0.95, 0.45, 1.0),
-	"Rare": Color(0.42, 0.68, 1.0, 1.0),
-	"Epic": Color(0.82, 0.45, 1.0, 1.0),
-	"Legendary": Color(1.0, 0.65, 0.1, 1.0),
+const RARITY_COLORS = {
+	"Common": Color(0.8, 0.8, 0.8, 1.0),
+	"Uncommon": Color(0.0, 0.8, 0.0, 1.0),
+	"Rare": Color(0.0, 0.4, 1.0, 1.0),
+	"Epic": Color(0.6, 0.0, 0.8, 1.0),
+	"Legendary": Color(1.0, 0.5, 0.0, 1.0),
 }
-const AFFIX_POOL := [
+const AFFIX_POOL = [
 	{"label": "Savage", "stat": "attack", "min": 3, "max": 8},
 	{"label": "Bulwark", "stat": "defense", "min": 2, "max": 6},
 	{"label": "Vital", "stat": "max_hp", "min": 10, "max": 30},
@@ -43,14 +43,14 @@ const AFFIX_POOL := [
 	{"label": "Piercing", "stat": "armor_penetration", "min": 2, "max": 6},
 	{"label": "Warding", "stat": "elemental_resistance", "min": 3, "max": 8},
 ]
-const QUALITY_MULTIPLIERS := {
+const QUALITY_MULTIPLIERS = {
 	"Common": 1.0,
 	"Uncommon": 1.3,
 	"Rare": 1.6,
 	"Epic": 2.0,
 	"Legendary": 2.5,
 }
-const QUALITY_AFFIX_COUNT := {
+const QUALITY_AFFIX_COUNT = {
 	"Common": 0,
 	"Uncommon": 1,
 	"Rare": 2,
@@ -80,10 +80,10 @@ static func get_item_display_color(stack: Dictionary) -> Color:
 
 
 static func generate_dungeon_equipment_min_rarity(floor_number: int, min_rarity: String, rng: RandomNumberGenerator = null) -> Dictionary:
-	var normalized_min := _normalize_rarity(min_rarity)
-	var min_index := maxi(RARITY_ORDER.find(normalized_min), 0)
-	var quality := _pick_quality(floor_number, rng)
-	var quality_index := maxi(RARITY_ORDER.find(quality), 0)
+	var normalized_min: String = _normalize_rarity(min_rarity)
+	var min_index: int = maxi(RARITY_ORDER.find(normalized_min), 0)
+	var quality: String = _pick_quality(floor_number, rng)
+	var quality_index: int = maxi(RARITY_ORDER.find(quality), 0)
 	if quality_index < min_index:
 		quality = RARITY_ORDER[min_index]
 	return _build_equipment(_pick_slot(rng), quality, floor_number, rng)
@@ -91,12 +91,12 @@ static func generate_dungeon_equipment_min_rarity(floor_number: int, min_rarity:
 
 static func _build_equipment(slot: String, quality: String, floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var resolved_floor: int = maxi(floor_number, 1)
-	var normalized_quality := _normalize_rarity(quality)
-	var quality_mult := float(QUALITY_MULTIPLIERS.get(normalized_quality, 1.0))
-	var base_power := int(round((3 + resolved_floor * 2) * quality_mult))
+	var normalized_quality: String = _normalize_rarity(quality)
+	var quality_mult: float = float(QUALITY_MULTIPLIERS.get(normalized_quality, 1.0))
+	var base_power: int = int(round((3 + resolved_floor * 2) * quality_mult))
 	var num_affixes: int = int(QUALITY_AFFIX_COUNT.get(normalized_quality, 0))
 	var durability: int = 50 + resolved_floor * 5
-	var item := {
+	var item: Dictionary = {
 		"id": "dungeon_%s_%d" % [slot, _randi(rng)],
 		"name": _generate_name(slot, normalized_quality, rng),
 		"slot": slot,
@@ -121,22 +121,22 @@ static func _build_equipment(slot: String, quality: String, floor_number: int, r
 
 static func _pick_quality(floor_number: int, rng: RandomNumberGenerator = null) -> String:
 	var resolved_floor: int = maxi(floor_number, 1)
-	var min_floors := [1, 3, 5, 8, 12]
-	var weights := [
+	var min_floors: Array[int] = [1, 3, 5, 8, 12]
+	var weights: Array[float] = [
 		max(70.0 - float(resolved_floor) * 4.0, 5.0),
 		25.0,
 		max(5.0 + float(resolved_floor) * 2.0, 0.0),
 		max(float(resolved_floor - 7) * 3.0, 0.0),
 		max(float(resolved_floor - 11) * 2.0, 0.0),
 	]
-	var total := 0.0
+	var total: float = 0.0
 	for index in range(RARITY_ORDER.size()):
 		if resolved_floor >= min_floors[index]:
 			total += weights[index]
 	if total <= 0.0:
 		return "Common"
-	var roll := _randf(rng) * total
-	var running := 0.0
+	var roll: float = _randf(rng) * total
+	var running: float = 0.0
 	for index in range(RARITY_ORDER.size()):
 		if resolved_floor < min_floors[index]:
 			continue
@@ -210,7 +210,7 @@ static func _generate_affixes(num_affixes: int, _floor_number: int, rng: RandomN
 static func _apply_affixes_to_stats(item: Dictionary) -> void:
 	var stats: Dictionary = (item.get("stats", {}) as Dictionary).duplicate(true)
 	for affix in item.get("affixes", []):
-		var stat_name := str((affix as Dictionary).get("stat", ""))
+		var stat_name: String = str((affix as Dictionary).get("stat", ""))
 		stats[stat_name] = float(stats.get(stat_name, 0.0)) + float((affix as Dictionary).get("value", 0.0))
 	item["stats"] = stats
 
@@ -241,8 +241,8 @@ static func _pick(values: Array, rng: RandomNumberGenerator = null):
 
 static func _shuffle(values: Array, rng: RandomNumberGenerator = null) -> void:
 	for index in range(values.size() - 1, 0, -1):
-		var swap_index := _randi_range(rng, 0, index)
-		var temp = values[index]
+		var swap_index: int = _randi_range(rng, 0, index)
+		var temp: Variant = values[index]
 		values[index] = values[swap_index]
 		values[swap_index] = temp
 

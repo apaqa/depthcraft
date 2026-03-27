@@ -82,7 +82,7 @@ func _add_switches() -> void:
 	var center := _room_center_world()
 	var room_radius := minf(_room.size.x * TILE_SIZE, _room.size.y * TILE_SIZE) * 0.3
 	var offset_radius := clampf(room_radius, 18.0, 32.0)
-	var offsets := [
+	var offsets: Array[Vector2] = [
 		Vector2(0.0, -offset_radius),
 		Vector2(offset_radius, 0.0),
 		Vector2(0.0, offset_radius),

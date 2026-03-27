@@ -1,6 +1,6 @@
 extends Node
 
-const ITEM_NAME_KEYS := {
+const ITEM_NAME_KEYS = {
 	"wood": "item_wood_name",
 	"stone": "item_stone_name",
 	"iron_ore": "item_iron_ore_name",
@@ -23,7 +23,7 @@ const ITEM_NAME_KEYS := {
 	"stew": "item_stew_name",
 }
 
-const ITEM_DESC_KEYS := {
+const ITEM_DESC_KEYS = {
 	"wood": "item_wood_desc",
 	"stone": "item_stone_desc",
 	"iron_ore": "item_iron_ore_desc",
@@ -46,7 +46,7 @@ const ITEM_DESC_KEYS := {
 	"stew": "item_stew_desc",
 }
 
-const ITEMS := {
+const ITEMS = {
 	"wood": {
 		"id": "wood",
 		"name": "Wood",
@@ -465,10 +465,10 @@ static func get_item(item_id: String) -> Dictionary:
 	if not ITEMS.has(item_id):
 		return {}
 	var item: Dictionary = ITEMS[item_id].duplicate(true)
-	var name_key := str(ITEM_NAME_KEYS.get(item_id, ""))
+	var name_key: String = str(ITEM_NAME_KEYS.get(item_id, ""))
 	if name_key != "":
 		item["name"] = LocaleManager.L(name_key)
-	var description_key := str(ITEM_DESC_KEYS.get(item_id, ""))
+	var description_key: String = str(ITEM_DESC_KEYS.get(item_id, ""))
 	if description_key != "":
 		item["description"] = LocaleManager.L(description_key)
 	return item
@@ -481,7 +481,7 @@ static func get_display_name(item_id: String) -> String:
 static func get_stack_display_name(stack: Dictionary) -> String:
 	if stack.is_empty():
 		return ""
-	var item_id := str(stack.get("id", ""))
+	var item_id: String = str(stack.get("id", ""))
 	if item_id == "":
 		return str(stack.get("name", ""))
 	return get_display_name(item_id)
@@ -568,9 +568,9 @@ static func get_item_color(item_id: String, item_type: String = "") -> Color:
 
 
 static func format_currency(copper_total: int) -> String:
-	var g := copper_total / 100
-	var s := (copper_total % 100) / 10
-	var c := copper_total % 10
+	var g: int = copper_total / 100
+	var s: int = (copper_total % 100) / 10
+	var c: int = copper_total % 10
 	var parts: Array[String] = []
 	if g > 0:
 		parts.append("%d%s" % [g, LocaleManager.L("currency_gold")])
@@ -583,20 +583,32 @@ static func format_currency(copper_total: int) -> String:
 	return " ".join(parts)
 
 
+static func get_equipment_rarity_color(rarity: String = "Common") -> Color:
+	var normalized: String = rarity.strip_edges().to_lower()
+	match normalized:
+		"uncommon":
+			return Color(0.0, 0.8, 0.0, 1.0)
+		"rare":
+			return Color(0.0, 0.4, 1.0, 1.0)
+		"epic":
+			return Color(0.6, 0.0, 0.8, 1.0)
+		"legendary":
+			return Color(1.0, 0.5, 0.0, 1.0)
+		_:
+			return Color(0.8, 0.8, 0.8, 1.0)
+
+
 static func get_stack_color(stack: Dictionary) -> Color:
-	var max_durability := int(stack.get("max_durability", stack.get("durability_max", 0)))
-	var durability := int(stack.get("durability", stack.get("durability_current", max_durability)))
+	var max_durability: int = int(stack.get("max_durability", stack.get("durability_max", 0)))
+	var durability: int = int(stack.get("durability", stack.get("durability_current", max_durability)))
 	if max_durability > 0 and durability <= 0:
 		return Color(1.0, 0.3, 0.3, 1.0)
-	if str(stack.get("source", "")) == "dungeon":
-		var rarity := str(stack.get("rarity", "Common"))
-		match rarity:
-			"Uncommon":
-				return Color(0.45, 0.95, 0.45, 1.0)
-			"Rare":
-				return Color(0.42, 0.68, 1.0, 1.0)
-			"Epic":
-				return Color(0.82, 0.45, 1.0, 1.0)
-			_:
-				return Color.WHITE
+	var item_type: String = str(stack.get("type", ""))
+	if item_type == "":
+		var item_id: String = str(stack.get("id", ""))
+		if item_id != "" and ITEMS.has(item_id):
+			item_type = str(ITEMS[item_id].get("type", ""))
+	if item_type == "equipment":
+		var rarity: String = str(stack.get("rarity", "Common"))
+		return get_equipment_rarity_color(rarity)
 	return get_item_color(str(stack.get("id", "")), str(stack.get("type", "")))

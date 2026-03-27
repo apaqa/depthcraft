@@ -1,8 +1,8 @@
 extends Area2D
 class_name LootDrop
 
-const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
-const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
+const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
 
 @export var item_id: String = "talent_shard"
 @export var quantity: int = 1
@@ -28,8 +28,22 @@ func _ready() -> void:
 	_find_player.call_deferred()
 
 
+func _draw() -> void:
+	if not _is_equipment():
+		return
+	var border_color: Color = _get_rarity_border_color()
+	var icon_size: Vector2 = Vector2(24.0, 24.0)
+	if sprite != null and sprite.texture != null:
+		var scaled_size: Vector2 = sprite.texture.get_size() * sprite.scale
+		icon_size = Vector2(maxf(scaled_size.x, 16.0), maxf(scaled_size.y, 16.0)) + Vector2(8.0, 8.0)
+	var border_rect: Rect2 = Rect2(-icon_size * 0.5, icon_size)
+	draw_rect(border_rect.grow(2.0), border_color.darkened(0.4), false, 2.0)
+	draw_rect(border_rect, border_color, false, 2.0)
+	draw_rect(border_rect.grow(-2.0), border_color.lightened(0.4), false, 1.0)
+
+
 func _find_player() -> void:
-	var players := get_tree().get_nodes_in_group("player")
+	var players: Array = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		_player_ref = players[0]
 
@@ -45,12 +59,12 @@ func _physics_process(delta: float) -> void:
 		return
 	if _player_ref == null or not is_instance_valid(_player_ref):
 		return
-	var dist := global_position.distance_to(_player_ref.global_position)
-	var pickup_range := 30.0
+	var dist: float = global_position.distance_to(_player_ref.global_position)
+	var pickup_range: float = 30.0
 	if _player_ref.has_method("get_loot_pickup_range"):
 		pickup_range = _player_ref.get_loot_pickup_range()
 	if dist < pickup_range and dist > 1.0:
-		var dir = (_player_ref.global_position - global_position).normalized()
+		var dir: Vector2 = (_player_ref.global_position - global_position).normalized()
 		global_position += dir * min(150.0 * delta, dist)
 
 
@@ -81,7 +95,7 @@ func setup_discard(drop_stack: Dictionary) -> void:
 
 
 func _is_equipment() -> bool:
-	var data := stack_data if not stack_data.is_empty() else ITEM_DATABASE.get_item(item_id)
+	var data: Dictionary = stack_data if not stack_data.is_empty() else ITEM_DATABASE.get_item(item_id)
 	return str(data.get("type", "")) == "equipment"
 
 
@@ -89,14 +103,18 @@ func _get_rarity() -> String:
 	return str(stack_data.get("rarity", "Common"))
 
 
+func _get_rarity_border_color() -> Color:
+	return DUNGEON_LOOT.get_rarity_color(_get_rarity())
+
+
 func _setup_equipment_visuals() -> void:
 	if get_node_or_null("LootPillarOuter") != null:
 		return
-	var base_color := DUNGEON_LOOT.get_rarity_color(_get_rarity())
+	var base_color: Color = _get_rarity_border_color()
 	
 	# Triple-layer pillar for relief effect
 	# Outer (darkened)
-	var pillar_outer := Polygon2D.new()
+	var pillar_outer: Polygon2D = Polygon2D.new()
 	pillar_outer.name = "LootPillarOuter"
 	pillar_outer.polygon = PackedVector2Array([
 		Vector2(-4, -46), Vector2(4, -46),
@@ -106,7 +124,7 @@ func _setup_equipment_visuals() -> void:
 	add_child(pillar_outer)
 	
 	# Middle (original)
-	var pillar_mid := Polygon2D.new()
+	var pillar_mid: Polygon2D = Polygon2D.new()
 	pillar_mid.name = "LootPillarMid"
 	pillar_mid.polygon = PackedVector2Array([
 		Vector2(-2, -44), Vector2(2, -44),
@@ -116,7 +134,7 @@ func _setup_equipment_visuals() -> void:
 	add_child(pillar_mid)
 	
 	# Inner (lightened)
-	var pillar_inner := Polygon2D.new()
+	var pillar_inner: Polygon2D = Polygon2D.new()
 	pillar_inner.name = "LootPillarInner"
 	pillar_inner.polygon = PackedVector2Array([
 		Vector2(-0.5, -42), Vector2(0.5, -42),
@@ -125,7 +143,8 @@ func _setup_equipment_visuals() -> void:
 	pillar_inner.color = base_color.lightened(0.4)
 	add_child(pillar_inner)
 	
-	var tween := create_tween().set_loops()
+	var tween: Tween = create_tween()
+	tween.set_loops()
 	for p in [pillar_outer, pillar_mid, pillar_inner]:
 		tween.parallel().tween_property(p, "modulate:a", 0.8, 0.6)
 	tween.tween_interval(0.1)
@@ -145,6 +164,7 @@ func _update_icon() -> void:
 	if item_data.is_empty():
 		sprite.texture = null
 		sprite.modulate = DUNGEON_LOOT.get_item_display_color(stack_data)
+		queue_redraw()
 		return
 	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item_data)
 	if icon != null:
@@ -155,9 +175,11 @@ func _update_icon() -> void:
 		if item_id == "talent_shard":
 			sprite.scale = sprite.scale * 0.5
 		sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data)
+		queue_redraw()
 		return
 	sprite.texture = null
 	sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data)
+	queue_redraw()
 
 
 func _on_body_entered(body: Node) -> void:
@@ -165,24 +187,24 @@ func _on_body_entered(body: Node) -> void:
 		return
 	if body == null or not body.has_method("get"):
 		return
-	var inventory = body.get("inventory")
+	var inventory: Variant = body.get("inventory")
 	if inventory == null:
 		return
-	var did_add := false
+	var did_add: bool = false
 	if not stack_data.is_empty():
 		did_add = inventory.add_stack(stack_data)
 	else:
 		did_add = inventory.add_item(item_id, quantity)
 	if did_add:
-		var achievement_manager = get_node_or_null("/root/AchievementManager")
+		var achievement_manager: Node = get_node_or_null("/root/AchievementManager") as Node
 		if achievement_manager != null:
 			achievement_manager.record_currency_gain(item_id, quantity)
 		if body.has_method("record_dungeon_loot"):
 			body.record_dungeon_loot(item_id, quantity)
 		if body.has_method("_show_floating_text"):
-			var item_name := ITEM_DATABASE.get_stack_display_name(stack_data if not stack_data.is_empty() else ITEM_DATABASE.get_item(item_id))
-			var text_color := Color(1.0, 0.95, 0.45, 1.0)
+			var item_name: String = ITEM_DATABASE.get_stack_display_name(stack_data if not stack_data.is_empty() else ITEM_DATABASE.get_item(item_id))
+			var text_color: Color = Color(1.0, 0.95, 0.45, 1.0)
 			if _is_equipment():
-				text_color = DUNGEON_LOOT.get_rarity_color(_get_rarity())
+				text_color = _get_rarity_border_color()
 			body._show_floating_text(global_position, "+%d %s" % [quantity, item_name], text_color)
 		queue_free()

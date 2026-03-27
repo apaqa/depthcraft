@@ -436,7 +436,7 @@ func _spawn_treasure_room(room: Rect2i) -> void:
 
 func _spawn_empty_room(room: Rect2i) -> void:
 	var pickup_count := randi_range(1, 3)
-	var resources := ["wood", "stone", "fiber"]
+	var resources: Array[String] = ["wood", "stone", "fiber"]
 	for _idx in range(pickup_count):
 		var drop = LOOT_DROP_SCENE.instantiate()
 		drop.setup(resources.pick_random(), 1)
