@@ -82,7 +82,6 @@ func setup_stack(drop_stack: Dictionary) -> void:
 	quantity = int(stack_data.get("quantity", 1))
 	_update_icon()
 	_spawn_delay = 1.5
-	print("LOOT COLOR DEBUG: ", stack_data.get("rarity", "none"), " color: ", DUNGEON_LOOT.get_item_display_color(stack_data))
 
 
 func setup_discard(drop_stack: Dictionary) -> void:

@@ -105,6 +105,8 @@
   "gold_label": "Gold: %d",
   "gold_price_fmt": "🪙 %d gold",
   "close_button": "Close",
+  "merchant_exchange": "Currency Exchange",
+  "exchange_button": "Exchange",
   "shop_bandage": "Bandage",
   "shop_bread": "Bread",
   "shop_seed": "Seeds x3",

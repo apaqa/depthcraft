@@ -1,15 +1,21 @@
 extends Area2D
 class_name Merchant
 
-const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
-const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
+const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
 
-const SHOP_ITEMS := [
+const SHOP_ITEMS = [
 	{"id": "bandage", "quantity": 1, "price": 5, "label_key": "shop_bandage"},
 	{"id": "bread", "quantity": 1, "price": 8, "label_key": "shop_bread"},
 	{"id": "seed", "quantity": 3, "price": 3, "label_key": "shop_seed"},
 	{"id": "iron_ore", "quantity": 5, "price": 15, "label_key": "shop_iron_ore"},
 	{"id": "torch", "quantity": 3, "price": 6, "label_key": "shop_torch"},
+]
+const EXCHANGE_RECIPES = [
+	{"from_id": "copper", "from_amount": 10, "to_id": "silver", "to_amount": 1},
+	{"from_id": "silver", "from_amount": 10, "to_id": "gold", "to_amount": 1},
+	{"from_id": "silver", "from_amount": 1, "to_id": "copper", "to_amount": 10},
+	{"from_id": "gold", "from_amount": 1, "to_id": "silver", "to_amount": 10},
 ]
 
 var _shop_canvas: CanvasLayer = null
@@ -17,6 +23,7 @@ var _shop_root: Control = null
 var _current_player: Variant = null
 var _gold_label: Label = null
 var _message_label: Label = null
+var _exchange_buttons: Array[Dictionary] = []
 
 
 func get_interaction_prompt() -> String:
@@ -59,9 +66,9 @@ func _open_shop() -> void:
 	panel.anchor_bottom = 0.5
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.offset_left = -210.0
-	panel.offset_top = -200.0
+	panel.offset_top = -250.0
 	panel.offset_right = 210.0
-	panel.offset_bottom = 200.0
+	panel.offset_bottom = 250.0
 	_shop_root.add_child(panel)
 
 	var x_btn: Button = Button.new()
@@ -108,6 +115,24 @@ func _open_shop() -> void:
 	_add_shop_row(vbox, LocaleManager.L("mystery_equipment"), 50, _on_buy_equipment, ITEM_DATABASE.get_default_equipment_icon("weapon"))
 
 	vbox.add_child(HSeparator.new())
+	_exchange_buttons.clear()
+
+	var exchange_title: Label = Label.new()
+	exchange_title.text = LocaleManager.L("merchant_exchange")
+	exchange_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	exchange_title.add_theme_font_size_override("font_size", 15)
+	vbox.add_child(exchange_title)
+
+	for recipe: Dictionary in EXCHANGE_RECIPES:
+		_add_exchange_row(
+			vbox,
+			str(recipe.get("from_id", "")),
+			int(recipe.get("from_amount", 0)),
+			str(recipe.get("to_id", "")),
+			int(recipe.get("to_amount", 0))
+		)
+
+	vbox.add_child(HSeparator.new())
 
 	_message_label = Label.new()
 	_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -125,6 +150,7 @@ func _open_shop() -> void:
 	close_btn.pressed.connect(_close_shop)
 	footer.add_child(close_btn)
 	vbox.add_child(footer)
+	_refresh_shop_state()
 
 
 func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
@@ -143,6 +169,36 @@ func _add_shop_row(parent: Control, label_text: String, price: int, callback: Ca
 	parent.add_child(row)
 
 
+func _add_exchange_row(parent: Control, from_id: String, from_amount: int, to_id: String, to_amount: int) -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(_make_icon_rect(ITEM_DATABASE.get_item_icon(from_id)))
+	var label: Label = Label.new()
+	label.text = _format_exchange_text(from_id, from_amount, to_id, to_amount)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	var button: Button = Button.new()
+	button.text = LocaleManager.L("exchange_button")
+	button.pressed.connect(_on_exchange_currency.bind(from_id, from_amount, to_id, to_amount))
+	row.add_child(button)
+	parent.add_child(row)
+	_exchange_buttons.append({
+		"button": button,
+		"from_id": from_id,
+		"from_amount": from_amount,
+	})
+
+
+func _format_exchange_text(from_id: String, from_amount: int, to_id: String, to_amount: int) -> String:
+	return "%d %s -> %d %s" % [
+		from_amount,
+		ITEM_DATABASE.get_display_name(from_id),
+		to_amount,
+		ITEM_DATABASE.get_display_name(to_id),
+	]
+
+
 func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	if _current_player == null:
 		return
@@ -156,12 +212,13 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	if inv.pay_copper(price):
 		if inv.add_item(item_id, quantity):
 			_message_label.text = ""
-			_update_gold_label()
+			_refresh_shop_state()
 		else:
 			inv.refund_currency(payment)
 			_message_label.text = LocaleManager.L("bag_full")
 	else:
 		_message_label.text = LocaleManager.L("insufficient_gold")
+	_refresh_shop_state()
 
 
 func _on_buy_equipment() -> void:
@@ -178,22 +235,79 @@ func _on_buy_equipment() -> void:
 		var equip: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
 		if inv.add_stack(equip):
 			_message_label.text = ""
-			_update_gold_label()
+			_refresh_shop_state()
 		else:
 			inv.refund_currency(payment)
 			_message_label.text = LocaleManager.L("bag_full")
 	else:
 		_message_label.text = LocaleManager.L("insufficient_gold")
+	_refresh_shop_state()
+
+
+func _on_exchange_currency(from_id: String, from_amount: int, to_id: String, to_amount: int) -> void:
+	if _current_player == null:
+		return
+	var inv: Variant = _current_player.get("inventory")
+	if inv == null:
+		return
+	if not _can_exchange(inv, from_id, from_amount):
+		_message_label.text = LocaleManager.L("insufficient_gold")
+		_refresh_shop_state()
+		return
+	if not inv.remove_item(from_id, from_amount):
+		_message_label.text = LocaleManager.L("insufficient_gold")
+		_refresh_shop_state()
+		return
+	if not inv.add_item(to_id, to_amount):
+		inv.add_item(from_id, from_amount)
+		_message_label.text = LocaleManager.L("bag_full")
+		_refresh_shop_state()
+		return
+	_message_label.text = ""
+	_refresh_shop_state()
+
+
+func _can_exchange(inv: Variant, from_id: String, from_amount: int) -> bool:
+	return inv != null and int(inv.get_item_count(from_id)) >= from_amount
+
+
+func _refresh_shop_state() -> void:
+	_update_gold_label()
+	_update_exchange_buttons()
+
+
+func _update_exchange_buttons() -> void:
+	if _current_player == null:
+		return
+	var inv: Variant = _current_player.get("inventory")
+	for entry: Dictionary in _exchange_buttons:
+		var button: Button = entry.get("button", null) as Button
+		if button == null:
+			continue
+		var from_id: String = str(entry.get("from_id", ""))
+		var from_amount: int = int(entry.get("from_amount", 0))
+		button.disabled = not _can_exchange(inv, from_id, from_amount)
 
 
 func _update_gold_label() -> void:
 	if _gold_label == null or _current_player == null:
 		return
 	var inv: Variant = _current_player.get("inventory")
-	var total: int = 0
+	var gold_count: int = 0
+	var silver_count: int = 0
+	var copper_count: int = 0
 	if inv != null:
-		total = inv.get_total_copper()
-	_gold_label.text = LocaleManager.L("gold_label") % total
+		gold_count = int(inv.get_item_count("gold"))
+		silver_count = int(inv.get_item_count("silver"))
+		copper_count = int(inv.get_item_count("copper"))
+	_gold_label.text = "%s: %d   %s: %d   %s: %d" % [
+		ITEM_DATABASE.get_display_name("gold"),
+		gold_count,
+		ITEM_DATABASE.get_display_name("silver"),
+		silver_count,
+		ITEM_DATABASE.get_display_name("copper"),
+		copper_count,
+	]
 
 
 func _make_icon_rect(icon: Texture2D) -> TextureRect:
@@ -212,6 +326,7 @@ func _close_shop() -> void:
 		_shop_canvas.queue_free()
 		_shop_canvas = null
 	_shop_root = null
+	_exchange_buttons.clear()
 	get_tree().paused = false
 	if _current_player != null:
 		if _current_player.has_method("set_ui_blocked"):

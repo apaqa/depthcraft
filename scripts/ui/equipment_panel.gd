@@ -109,7 +109,7 @@ func _build_slot_row(slot_name: String, item: Dictionary) -> Button:
 	button.custom_minimum_size = Vector2(0, 56)
 
 	if not item.is_empty():
-		_apply_rarity_style(button, player.equipment_system.get_item_display_color(item))
+		_apply_rarity_style(button, _get_rarity_border_color(item))
 
 	var content: HBoxContainer = HBoxContainer.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -159,14 +159,9 @@ func _build_eq_row(stack: Dictionary, eq_idx: int) -> PanelContainer:
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.custom_minimum_size = Vector2(0, 64)
 
-	var rarity_color: Color = player.equipment_system.get_item_display_color(stack)
+	var rarity_color: Color = _get_rarity_border_color(stack)
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = Color(0.11, 0.12, 0.14, 0.96)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = rarity_color
 	style.corner_radius_top_left = 4
 	style.corner_radius_top_right = 4
 	style.corner_radius_bottom_left = 4
@@ -190,9 +185,10 @@ func _build_eq_row(stack: Dictionary, eq_idx: int) -> PanelContainer:
 	row_one.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var icon_texture: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
 	row_one.add_child(_make_icon_ctrl(icon_texture, ITEM_DATABASE.get_stack_color(stack), 22))
+	var text_color: Color = ITEM_DATABASE.get_stack_color(stack)
 	var name_label: Label = Label.new()
 	name_label.text = _get_item_display_name(stack)
-	name_label.self_modulate = rarity_color
+	name_label.self_modulate = text_color
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.clip_text = true
 	row_one.add_child(name_label)
@@ -250,6 +246,7 @@ func _build_eq_row(stack: Dictionary, eq_idx: int) -> PanelContainer:
 		_hovered_eq_index = -1
 		_update_comparison_label()
 	)
+	_apply_panel_rarity_style(panel, rarity_color)
 	return panel
 
 
@@ -355,17 +352,43 @@ func _apply_rarity_style(node: Control, base_color: Color) -> void:
 	border_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	border_drawer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	border_drawer.draw.connect(func() -> void:
-		var rect: Rect2 = border_drawer.get_rect()
+		var rect: Rect2 = border_drawer.get_rect().grow(-2.0)
 		border_drawer.draw_rect(rect.grow(2), base_color.darkened(0.4), false, 2.0)
 		border_drawer.draw_rect(rect, base_color, false, 2.0)
 		border_drawer.draw_rect(rect.grow(-2), base_color.lightened(0.4), false, 1.0)
 	)
+	border_drawer.resized.connect(border_drawer.queue_redraw)
 	node.add_child(border_drawer)
 	var background_style: StyleBoxFlat = StyleBoxFlat.new()
 	background_style.bg_color = Color(0.12, 0.12, 0.12, 0.9)
 	node.add_theme_stylebox_override("normal", background_style)
 	node.add_theme_stylebox_override("hover", background_style.duplicate())
 	node.add_theme_stylebox_override("pressed", background_style.duplicate())
+	node.add_theme_stylebox_override("focus", background_style.duplicate())
+
+
+func _apply_panel_rarity_style(panel: PanelContainer, base_color: Color) -> void:
+	for child: Node in panel.get_children():
+		if child.name == "RarityBorder":
+			child.queue_free()
+	var border_drawer: Control = Control.new()
+	border_drawer.name = "RarityBorder"
+	border_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border_drawer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	border_drawer.draw.connect(func() -> void:
+		var rect: Rect2 = border_drawer.get_rect().grow(-2.0)
+		border_drawer.draw_rect(rect.grow(2), base_color.darkened(0.4), false, 2.0)
+		border_drawer.draw_rect(rect, base_color, false, 2.0)
+		border_drawer.draw_rect(rect.grow(-2), base_color.lightened(0.4), false, 1.0)
+	)
+	border_drawer.resized.connect(border_drawer.queue_redraw)
+	panel.add_child(border_drawer)
+
+
+func _get_rarity_border_color(item: Dictionary) -> Color:
+	if item.is_empty():
+		return ITEM_DATABASE.get_equipment_rarity_color("Common")
+	return ITEM_DATABASE.get_equipment_rarity_color(str(item.get("rarity", "Common")))
 
 
 func _get_item_display_name(item_data: Dictionary) -> String:

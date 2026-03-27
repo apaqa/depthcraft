@@ -105,6 +105,8 @@
   "gold_label": "金幣: %d",
   "gold_price_fmt": "🪙 %d 金幣",
   "close_button": "關閉",
+  "merchant_exchange": "貨幣兌換",
+  "exchange_button": "兌換",
   "shop_bandage": "繃帶",
   "shop_bread": "麵包",
   "shop_seed": "種子 x3",

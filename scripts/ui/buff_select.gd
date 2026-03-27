@@ -55,6 +55,7 @@ func open_with_options(options: Array[Dictionary]) -> void:
 			LocaleManager.L(str(option.get("category", ""))),
 			LocaleManager.L(str(option.get("description", ""))),
 		]
+		_apply_card_border(button, card_color)
 		button.pressed.connect(_choose_buff.bind(str(option.get("id", ""))))
 		card_container.add_child(button)
 
@@ -104,15 +105,24 @@ func _make_card_style(border_color: Color, tint_strength: float = 0.12) -> Style
 	var base_background: Color = Color(0.15, 0.17, 0.23, 0.96)
 	var tinted_background: Color = Color(border_color.r * 0.18, border_color.g * 0.18, border_color.b * 0.18, 0.96)
 	style.bg_color = base_background.lerp(tinted_background, clampf(tint_strength, 0.0, 1.0))
-	style.border_width_left = 3
-	style.border_width_top = 3
-	style.border_width_right = 3
-	style.border_width_bottom = 3
-	style.border_color = border_color
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
 	style.shadow_color = Color(border_color.r, border_color.g, border_color.b, 0.25)
 	style.shadow_size = 2
 	return style
+
+
+func _apply_card_border(button: Button, base_color: Color) -> void:
+	for child: Node in button.get_children():
+		if child.name == "CardBorder":
+			child.queue_free()
+	var border_drawer: Control = Control.new()
+	border_drawer.name = "CardBorder"
+	border_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border_drawer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	border_drawer.draw.connect(func() -> void:
+		var rect: Rect2 = border_drawer.get_rect().grow(-2.0)
+		border_drawer.draw_rect(rect.grow(2), base_color.darkened(0.4), false, 2.0)
+		border_drawer.draw_rect(rect, base_color, false, 2.0)
+		border_drawer.draw_rect(rect.grow(-2), base_color.lightened(0.4), false, 1.0)
+	)
+	border_drawer.resized.connect(border_drawer.queue_redraw)
+	button.add_child(border_drawer)
