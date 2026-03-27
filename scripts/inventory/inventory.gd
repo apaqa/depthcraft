@@ -185,15 +185,15 @@ func _get_exact_currency_payment(amount: int) -> Dictionary:
 		"silver": 0,
 		"copper": 0,
 	}
-	var gold_needed := min(get_item_count("gold"), remaining / 100)
+	var gold_needed = min(get_item_count("gold"), remaining / 100)
 	payment["gold"] = gold_needed
 	remaining -= gold_needed * 100
 
-	var silver_needed := min(get_item_count("silver"), remaining / 10)
+	var silver_needed = min(get_item_count("silver"), remaining / 10)
 	payment["silver"] = silver_needed
 	remaining -= silver_needed * 10
 
-	var copper_needed := min(get_item_count("copper"), remaining)
+	var copper_needed = min(get_item_count("copper"), remaining)
 	payment["copper"] = copper_needed
 	remaining -= copper_needed
 

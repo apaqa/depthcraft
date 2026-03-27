@@ -139,7 +139,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	var inv = _current_player.get("inventory")
 	if inv == null:
 		return
-	var payment := inv.get_exact_currency_payment(price)
+	var payment = inv.get_exact_currency_payment(price)
 	if payment.is_empty():
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
@@ -160,12 +160,12 @@ func _on_buy_equipment() -> void:
 	var inv = _current_player.get("inventory")
 	if inv == null:
 		return
-	var payment := inv.get_exact_currency_payment(50)
+	var payment = inv.get_exact_currency_payment(50)
 	if payment.is_empty():
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
 	if inv.pay_copper(50):
-		var equip := DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
+		var equip = DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
 		if inv.add_stack(equip):
 			_message_label.text = ""
 			_update_gold_label()

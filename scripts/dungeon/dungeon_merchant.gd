@@ -213,7 +213,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	var inventory = _current_player.get("inventory")
 	if inventory == null:
 		return
-	var payment := inventory.get_exact_currency_payment(price)
+	var payment = inventory.get_exact_currency_payment(price)
 	if payment.is_empty():
 		_set_message(LocaleManager.L("insufficient_gold"))
 		return
@@ -234,7 +234,7 @@ func _on_buy_equipment() -> void:
 	var inventory = _current_player.get("inventory")
 	if inventory == null:
 		return
-	var payment := inventory.get_exact_currency_payment(_equipment_price)
+	var payment = inventory.get_exact_currency_payment(_equipment_price)
 	if payment.is_empty():
 		_set_message(LocaleManager.L("insufficient_gold"))
 		return

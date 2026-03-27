@@ -131,38 +131,30 @@ func _refresh() -> void:
 
 
 func _apply_rarity_style(node: Control, base_color: Color) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.1, 0.8) # Dark background
+	# Clean up previous border decorations
+	for child in node.get_children():
+		if child.name == "RarityBorder":
+			child.queue_free()
 	
-	# Middle Layer: Original color border (2px)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = base_color
+	var border_drawer := Control.new()
+	border_drawer.name = "RarityBorder"
+	border_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border_drawer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	border_drawer.draw.connect(func():
+		var r := border_drawer.get_rect()
+		# Triple-layer border: Outer(2px darkened), Middle(2px original), Inner(1px lightened)
+		border_drawer.draw_rect(r.grow(2), base_color.darkened(0.4), false, 2.0)
+		border_drawer.draw_rect(r, base_color, false, 2.0)
+		border_drawer.draw_rect(r.grow(-2), base_color.lightened(0.4), false, 1.0)
+	)
+	node.add_child(border_drawer)
 	
-	# Outer Layer: Darkened color via shadow (2px size, 0 offset)
-	style.shadow_color = base_color.darkened(0.4)
-	style.shadow_size = 2
-	
-	node.add_theme_stylebox_override("normal", style)
-	node.add_theme_stylebox_override("hover", style.duplicate())
-	node.add_theme_stylebox_override("pressed", style.duplicate())
-	
-	# Inner Layer: Lightened color (1px) via a child decoration
-	var inner_border := ReferenceRect.new()
-	inner_border.name = "InnerBorder"
-	inner_border.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	inner_border.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	inner_border.grow_vertical = Control.GROW_DIRECTION_BOTH
-	inner_border.offset_left = 2
-	inner_border.offset_top = 2
-	inner_border.offset_right = -2
-	inner_border.offset_bottom = -2
-	inner_border.border_color = base_color.lightened(0.4)
-	inner_border.border_width = 1.0
-	inner_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	node.add_child(inner_border)
+	# Apply a dark background via StyleBox
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.12, 0.12, 0.12, 0.9)
+	node.add_theme_stylebox_override("normal", bg_style)
+	node.add_theme_stylebox_override("hover", bg_style.duplicate())
+	node.add_theme_stylebox_override("pressed", bg_style.duplicate())
 
 
 func _build_slot_text(slot_name: String, item: Dictionary) -> String:

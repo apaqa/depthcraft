@@ -81,7 +81,7 @@ func _on_auto_timer_timeout() -> void:
 
 
 func _get_option_color(option: Dictionary) -> Color:
-	var color := option.get("color", Color.WHITE)
+	var color = option.get("color", Color.WHITE)
 	return color if color is Color else Color.WHITE
 
 
