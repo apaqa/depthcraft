@@ -55,22 +55,19 @@ func place_player(player: Node2D, spawn_override: Variant = null) -> void:
 
 func build_ground() -> void:
 	tile_map_layer.clear()
-	var map_size := WorldGenerator.MAP_SIZE
-	var center := WorldGenerator.CENTER
-	var entrance_tile := _generator.dungeon_entrance_tile
+	var map_size: Vector2i = WorldGenerator.MAP_SIZE
 
 	for y in range(map_size.y):
 		for x in range(map_size.x):
-			var coords := Vector2i(x, y)
-			# Road runs between spawn (center) and dungeon entrance, 2 tiles wide
-			var on_road := (x >= center.x - 1 and x <= center.x) \
-					and (y >= entrance_tile.y and y <= center.y)
-			if on_road:
+			var coords: Vector2i = Vector2i(x, y)
+			# Use generator road data (supports winding roads)
+			if _generator.is_road_tile(coords):
 				tile_map_layer.set_cell(coords, SOURCE_ROAD, Vector2i.ZERO)
 				continue
-			var tile_type := _generator.get_tile_type(coords)
-			if tile_type == "water" or tile_type == "lake":
-				var src := SOURCE_WATER if (x + y) % 2 == 0 else SOURCE_WATER_ALT
+			var tile_type: String = _generator.get_tile_type(coords)
+			# Border and water tiles both render as impassable water
+			if tile_type == "water" or tile_type == "lake" or tile_type == "border":
+				var src: int = SOURCE_WATER if (x + y) % 2 == 0 else SOURCE_WATER_ALT
 				tile_map_layer.set_cell(coords, src, Vector2i.ZERO)
 			else:
 				tile_map_layer.set_cell(coords, SOURCE_GRASS, Vector2i.ZERO)
@@ -129,6 +126,17 @@ func _spawn_resource_layout() -> void:
 		add_child(node)
 		idx += 1
 
+	# Scatter decorative objects (flowers, grass tufts, pebbles) across plains
+	for tile_pos in _generator.get_decoration_positions():
+		var px: Vector2 = Vector2(Vector2i(tile_pos) * WorldGenerator.TILE_SIZE)
+		if not _is_valid_resource_pos(px, spawn_px, entrance_px, safe_dist, entrance_clear):
+			continue
+		var deco := GRASS_SCENE.instantiate()
+		deco.name = "AutoResource_%d" % idx
+		deco.position = px
+		add_child(deco)
+		idx += 1
+
 
 func _is_valid_resource_pos(pos: Vector2, spawn_px: Vector2, entrance_px: Vector2,
 		safe_dist: float, entrance_clear: float) -> bool:
@@ -138,7 +146,7 @@ func _is_valid_resource_pos(pos: Vector2, spawn_px: Vector2, entrance_px: Vector
 		return false
 	var tile := Vector2i(int(pos.x) / WorldGenerator.TILE_SIZE, int(pos.y) / WorldGenerator.TILE_SIZE)
 	var tile_type := _generator.get_tile_type(tile)
-	return tile_type != "water" and tile_type != "lake"
+	return tile_type != "water" and tile_type != "lake" and tile_type != "border"
 
 
 func _spawn_merchant() -> void:
