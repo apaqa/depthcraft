@@ -26,6 +26,7 @@ ClassSystem="*res://scripts/systems/class_system.gd"
 SkillSystem="*res://scripts/skills/skill_system.gd"
 AchievementManager="*res://scripts/systems/achievement_manager.gd"
 AudioManager="*res://scripts/systems/audio_manager.gd"
+QuestManager="*res://scripts/systems/quest_manager.gd"
 
 [display]
 
