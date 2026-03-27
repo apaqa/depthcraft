@@ -10,6 +10,7 @@ var _slot_list: VBoxContainer = null
 var _unlocked_list: VBoxContainer = null
 var _info_label: Label = null
 var _title_label: Label = null
+var _main_panel: Control = null
 
 
 func _ready() -> void:
@@ -34,6 +35,7 @@ func _build_ui() -> void:
 	panel.offset_right = 280.0
 	panel.offset_bottom = 220.0
 	add_child(panel)
+	_main_panel = panel
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
@@ -60,12 +62,12 @@ func _build_ui() -> void:
 	var close_btn := Button.new()
 	close_btn.name = "CloseButton"
 	close_btn.text = "X"
-	close_btn.position = panel.position + Vector2(8, 8)
 	close_btn.custom_minimum_size = Vector2(32, 32)
 	close_btn.size = Vector2(32, 32)
 	close_btn.z_index = 100
 	close_btn.pressed.connect(close_menu)
 	add_child(close_btn)
+	_update_close_btn_pos.call_deferred()
 
 	var sep := HSeparator.new()
 	root_vbox.add_child(sep)
@@ -141,6 +143,17 @@ func _build_ui() -> void:
 	_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_info_label.custom_minimum_size = Vector2(0, 36)
 	root_vbox.add_child(_info_label)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_update_close_btn_pos()
+
+
+func _update_close_btn_pos() -> void:
+	var close_btn := get_node_or_null("CloseButton") as Button
+	if close_btn != null and _main_panel != null:
+		close_btn.position = _main_panel.position + Vector2(8, 8)
 
 
 func open_for_player(_player) -> void:

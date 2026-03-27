@@ -61,12 +61,6 @@ var home_arrow: Control = null
 
 func _ready() -> void:
 	skill_slot_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	skill_slot_row.anchor_left = 0.5
-	skill_slot_row.anchor_right = 0.5
-	skill_slot_row.anchor_top = 1.0
-	skill_slot_row.anchor_bottom = 1.0
-	skill_slot_row.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	skill_slot_row.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	if not resized.is_connected(_on_hud_resized):
 		resized.connect(_on_hud_resized)
 
@@ -687,16 +681,19 @@ func _ensure_home_arrow() -> void:
 
 
 func _layout_static_hud() -> void:
+	# Row 0: HP label text | HP bar | class label (all on same top line)
 	var hp_y := HUD_TOP_MARGIN
-	var hp_bar_x := HUD_LEFT_MARGIN + HP_LABEL_SIZE.x + 6.0
-	var info_y := hp_y + HUD_LINE_HEIGHT + 4.0
-
-	_set_control_rect(hp_label, Vector2(HUD_LEFT_MARGIN, hp_y), HP_LABEL_SIZE)
+	var hp_label_w := 160.0
+	var hp_bar_x := HUD_LEFT_MARGIN + hp_label_w + 4.0
+	var class_x := hp_bar_x + HP_BAR_SIZE.x + 6.0
+	_set_control_rect(hp_label, Vector2(HUD_LEFT_MARGIN, hp_y), Vector2(hp_label_w, HUD_LINE_HEIGHT))
 	_set_control_rect(hp_bar_bg, Vector2(hp_bar_x, hp_y + 4.0), HP_BAR_SIZE)
-	_set_control_rect(class_label, Vector2(hp_bar_x + HP_BAR_SIZE.x + 8.0, hp_y), CLASS_LABEL_SIZE)
+	_set_control_rect(class_label, Vector2(class_x, hp_y), CLASS_LABEL_SIZE)
 	hp_bar_fill.position = Vector2.ZERO
 	hp_bar_fill.size = Vector2(HP_BAR_SIZE.x, HP_BAR_SIZE.y)
 
+	# Info rows start below HP row — each on its own line, no overlap
+	var info_y := hp_y + HUD_LINE_HEIGHT + 4.0
 	_set_control_rect(bag_label, Vector2(HUD_LEFT_MARGIN, info_y), INFO_LABEL_SIZE)
 	_set_control_rect(floor_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT), INFO_LABEL_SIZE)
 	_set_control_rect(kills_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 2.0), INFO_LABEL_SIZE)
@@ -719,10 +716,12 @@ func _center_skill_slot_row() -> void:
 	var row_size := skill_slot_row.get_combined_minimum_size()
 	row_size.x = maxf(row_size.x, 210.0)
 	row_size.y = maxf(row_size.y, 36.0)
-	skill_slot_row.offset_left = -row_size.x * 0.5
-	skill_slot_row.offset_right = row_size.x * 0.5
-	skill_slot_row.offset_bottom = -SKILL_ROW_BOTTOM_MARGIN
-	skill_slot_row.offset_top = skill_slot_row.offset_bottom - row_size.y
+	skill_slot_row.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	skill_slot_row.position = Vector2(
+		floorf((size.x - row_size.x) * 0.5),
+		size.y - SKILL_ROW_BOTTOM_MARGIN - row_size.y
+	)
+	skill_slot_row.size = row_size
 
 
 func _on_hud_resized() -> void:

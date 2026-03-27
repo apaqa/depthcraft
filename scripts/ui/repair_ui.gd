@@ -213,8 +213,12 @@ func _resize_panel() -> void:
 		return
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var panel_height: float = maxf(500.0, viewport_size.y * 0.7)
+	var panel_width: float = maxf(440.0, viewport_size.x * 0.36)
 	panel_container.offset_top = maxf(24.0, (viewport_size.y - panel_height) * 0.5)
 	panel_container.offset_bottom = panel_container.offset_top + panel_height
+	if viewport_size.x > 0.0:
+		panel_container.offset_left = maxf(8.0, (viewport_size.x - panel_width) * 0.5)
+		panel_container.offset_right = panel_container.offset_left + panel_width
 	var close_btn := get_node_or_null("CloseButton") as Button
 	if close_btn != null:
 		close_btn.position = panel_container.position + Vector2(8, 8)

@@ -29,6 +29,17 @@ func _ready() -> void:
 	_ensure_upgrade_controls()
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_update_close_btn_pos()
+
+
+func _update_close_btn_pos() -> void:
+	var close_btn := get_node_or_null("CloseButton") as Button
+	if close_btn != null and panel_container != null:
+		close_btn.position = panel_container.position + Vector2(8, 8)
+
+
 func open_for_player(target_player, target_facility = null) -> void:
 	player = target_player
 	facility = target_facility
@@ -288,6 +299,7 @@ func _ensure_close_button() -> void:
 	close_button.z_index = 100
 	close_button.pressed.connect(close_menu)
 	add_child(close_button)
+	_update_close_btn_pos.call_deferred()
 
 
 func _ensure_upgrade_controls() -> void:
