@@ -7,13 +7,14 @@ const WOOD_DOOR_SCENE_PATH := "res://scenes/building/facilities/wood_door.tscn"
 const TALENT_ALTAR_SCENE_PATH := "res://scenes/building/facilities/talent_altar.tscn"
 const FARM_PLOT_SCENE_PATH := "res://scenes/building/facilities/farm_plot.tscn"
 const COOKING_BENCH_SCENE_PATH := "res://scenes/building/facilities/cooking_bench.tscn"
+const BOUNTY_BOARD_SCENE_PATH := "res://scenes/building/facilities/bounty_board.tscn"
 const HOME_CORE_SCENE_PATH := "res://scenes/building/home_core.tscn"
 const FULL_TILE_ATLAS := Vector2i.ZERO
 const CATEGORY_ORDER := ["structure", "door_window", "facility", "defense"]
 const CATEGORY_DATA := {
 	"structure": {"name": "build_cat_structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
 	"door_window": {"name": "build_cat_door_window", "items": ["wood_door"]},
-	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot", "home_core"]},
+	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot", "bounty_board", "home_core"]},
 	"defense": {"name": "build_cat_defense", "items": []},
 }
 
@@ -127,6 +128,16 @@ const BUILDINGS := {
 		"scene_path": COOKING_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/torch_no_flame.png"),
 	},
+	"bounty_board": {
+		"id": "bounty_board",
+		"name": "Bounty Board",
+		"category": "facility",
+		"kind": "facility",
+		"cost": {"wood": 8, "stone": 4},
+		"base_max_hp": 60,
+		"scene_path": BOUNTY_BOARD_SCENE_PATH,
+		"preview_texture": preload("res://assets/wall_banner_yellow.png"),
+	},
 	"home_core": {
 		"id": "home_core",
 		"name": "home_core",
@@ -138,7 +149,7 @@ const BUILDINGS := {
 	},
 }
 
-const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench", "home_core"]
+const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "home_core"]
 
 
 static func get_building(building_id: String) -> Dictionary:
@@ -171,12 +182,14 @@ static func get_buildings_for_category(category_id: String) -> Array[Dictionary]
 
 
 static func get_default_max_hp(building_id: String) -> int:
-	var building := get_building(building_id)
+	var building: Dictionary = get_building(building_id)
 	if building.is_empty():
 		return 1
+	if building.has("base_max_hp"):
+		return maxi(int(building.get("base_max_hp", 1)), 1)
 	if str(building.get("kind", "")) == "core":
 		return 500
-	var category := str(building.get("category", "facility"))
+	var category: String = str(building.get("category", "facility"))
 	match category:
 		"structure":
 			return 100

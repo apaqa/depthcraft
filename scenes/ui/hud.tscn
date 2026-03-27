@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_0mwgc"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skill_equip_ui.tscn" id="12_skilleq"]
@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/equipment_panel.tscn" id="11_equip"]
 [ext_resource type="PackedScene" path="res://scenes/ui/achievement_popup.tscn" id="13_achpopup"]
 [ext_resource type="PackedScene" path="res://scenes/ui/achievement_panel.tscn" id="14_achpanel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/quest_board_ui.tscn" id="15_questboard"]
 
 [node name="HUDCanvas" type="CanvasLayer" unique_id=1278126834]
 
@@ -150,6 +151,8 @@ script = ExtResource("3_ysik2")
 [node name="AchievementPopup" parent="HUD" instance=ExtResource("13_achpopup")]
 
 [node name="AchievementPanel" parent="HUD" instance=ExtResource("14_achpanel")]
+
+[node name="QuestBoardUI" parent="HUD" instance=ExtResource("15_questboard")]
 
 [node name="Minimap" type="Control" parent="HUD"]
 visible = false

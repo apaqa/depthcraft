@@ -196,6 +196,9 @@ func die() -> void:
 	is_dead = true
 	debug_state = "dead"
 	velocity = Vector2.ZERO
+	var enemy_type: String = enemy_kind
+	if enemy_type != "":
+		QuestManager.update_quest_progress("kill_enemies", enemy_type, 1)
 	if hp_bar_root != null:
 		hp_bar_root.visible = false
 	died.emit(global_position)
@@ -291,4 +294,3 @@ func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
 func apply_slow(multiplier: float, duration: float) -> void:
 	slow_multiplier = clampf(multiplier, 0.1, 1.0)
 	slow_time_left = max(duration, 0.0)
-

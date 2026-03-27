@@ -13,7 +13,7 @@ class_name BountyBoardFacility
 ##       "base_max_hp": 60,
 ##   }
 
-const INTERACTION_PROMPT: String = "E: Quest Board"
+const INTERACTION_PROMPT: String = "[E] Quest Board"
 
 
 func get_interaction_prompt() -> String:

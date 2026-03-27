@@ -77,7 +77,11 @@ func _ready() -> void:
 
 ## Set the current in-game day so difficulty scales correctly.
 func set_day(day: int) -> void:
-	_current_day = maxi(1, day)
+	var normalized_day: int = maxi(1, day)
+	if _current_day == normalized_day:
+		return
+	_current_day = normalized_day
+	_save()
 
 
 ## Regenerate the pool of available quests shown on the board.
@@ -88,6 +92,10 @@ func generate_available_quests(day: int) -> void:
 	for slot: int in range(MAX_AVAILABLE_QUESTS):
 		_available_quests.append(_generate_quest(_current_day, slot))
 	_save()
+
+
+func refresh_available_quests() -> void:
+	generate_available_quests(_current_day)
 
 
 func _generate_quest(day: int, slot: int) -> Dictionary:

@@ -101,11 +101,11 @@ func _get_network_manager() -> Node:
 
 
 func _get_load_button_text() -> String:
-	return "Load Game"
+	return "載入遊戲" if LocaleManager.get_locale().begins_with("zh") else "Load Game"
 
 
 func _get_missing_save_text() -> String:
-	return "No save available."
+	return "沒有可載入的存檔" if LocaleManager.get_locale().begins_with("zh") else "No save available."
 
 
 func _format_save_summary(meta: Dictionary) -> String:
@@ -116,5 +116,7 @@ func _format_save_summary(meta: Dictionary) -> String:
 	var gold: int = int(meta.get("gold", 0))
 	var silver: int = int(meta.get("silver", 0))
 	var copper: int = int(meta.get("copper", 0))
+	if LocaleManager.get_locale().begins_with("zh"):
+		return "存檔 1: 第 %d 天 / 最深 %d 層 / %dG %dS %dC" % [current_day, deepest_floor, gold, silver, copper]
 	return "Slot 1: Day %d / Deepest Floor %d / %dG %dS %dC" % [current_day, deepest_floor, gold, silver, copper]
 

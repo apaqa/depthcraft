@@ -48,6 +48,10 @@ func _exit_tree() -> void:
 		network_manager.connection_status_changed.disconnect(_on_connection_status_changed)
 
 
+func _sync_quest_day() -> void:
+	QuestManager.set_day(current_day)
+
+
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("dev_reset"):
 		get_tree().paused = false
@@ -240,6 +244,7 @@ func _on_return_to_surface_requested() -> void:
 	total_dungeon_runs_completed += 1
 	dungeon_returns_since_raid += 1
 	current_day += 1
+	_sync_quest_day()
 	deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, floor_reached)
 	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
@@ -271,6 +276,7 @@ func _on_player_died() -> void:
 		total_dungeon_runs_completed += 1
 		dungeon_returns_since_raid += 1
 		current_day += 1
+		_sync_quest_day()
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, int(current_level.get("current_floor")))
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if player != null:

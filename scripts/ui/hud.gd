@@ -26,6 +26,7 @@ const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
 @onready var skill_equip_ui: Control = $SkillEquipUI
 @onready var achievement_popup: Control = $AchievementPopup
 @onready var achievement_panel: Control = $AchievementPanel
+@onready var quest_board_ui: Control = $QuestBoardUI
 @onready var minimap: Control = $Minimap
 @onready var buff_select: Control = $BuffSelect
 @onready var death_overlay: Control = $DeathOverlay
@@ -105,6 +106,8 @@ func _ready() -> void:
 		skill_equip_ui.close_requested.connect(_on_menu_closed)
 	if achievement_panel.has_signal("close_requested") and not achievement_panel.close_requested.is_connected(_on_menu_closed):
 		achievement_panel.close_requested.connect(_on_menu_closed)
+	if quest_board_ui.has_signal("close_requested") and not quest_board_ui.close_requested.is_connected(_on_menu_closed):
+		quest_board_ui.close_requested.connect(_on_menu_closed)
 	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
 		buff_select.buff_chosen.connect(_on_buff_chosen)
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
@@ -353,6 +356,8 @@ func _close_all_menus() -> void:
 	equipment_panel.close_menu()
 	skill_equip_ui.close_menu()
 	achievement_panel.close_panel()
+	if quest_board_ui.has_method("close_menu"):
+		quest_board_ui.call("close_menu")
 	buff_select.close_menu()
 	if settings_menu != null and settings_menu.visible:
 		settings_menu.close_menu()
@@ -367,7 +372,7 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or buff_select.visible or (settings_menu != null and settings_menu.visible)
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or quest_board_ui.visible or buff_select.visible or (settings_menu != null and settings_menu.visible)
 
 
 func _on_achievement_unlocked(id: String) -> void:

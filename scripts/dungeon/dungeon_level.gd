@@ -92,6 +92,7 @@ func _generate_floor() -> void:
 	_spawn_features()
 	_spawn_enemies()
 	floor_changed.emit(current_floor)
+	QuestManager.update_quest_progress("reach_floor", "", current_floor)
 	kills_changed.emit(total_kills)
 
 
