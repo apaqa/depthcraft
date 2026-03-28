@@ -173,7 +173,7 @@ func _update_icon() -> void:
 			sprite.scale = Vector2(16.0 / icon.get_width(), 16.0 / icon.get_height())
 		if item_id == "talent_shard":
 			sprite.scale = sprite.scale * 0.5
-		sprite.modulate = DUNGEON_LOOT.get_item_display_color(item_data)
+		sprite.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		queue_redraw()
 		return
 	sprite.texture = null

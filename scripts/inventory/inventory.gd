@@ -8,6 +8,24 @@ signal inventory_changed
 @export var max_slots: int = 20
 var items: Array[Dictionary] = []
 
+var _dirty: bool = false
+var _refresh_timer: float = 0.0
+
+
+func _process(delta: float) -> void:
+	if _dirty:
+		_refresh_timer += delta
+		if _refresh_timer >= 0.1:
+			_dirty = false
+			_refresh_timer = 0.0
+			inventory_changed.emit()
+
+
+func _mark_dirty() -> void:
+	if not _dirty:
+		_dirty = true
+		_refresh_timer = 0.0
+
 
 func add_item(item_id: String, quantity: int = 1) -> bool:
 	if quantity <= 0:
@@ -60,7 +78,7 @@ func add_stack_data(stack_template: Dictionary, quantity: int = 1) -> bool:
 		remaining -= stack_quantity
 
 	items = working_items
-	inventory_changed.emit()
+	_mark_dirty()
 	return true
 
 
@@ -90,7 +108,7 @@ func remove_item(item_id: String, quantity: int = 1) -> bool:
 			break
 
 	items = working_items
-	inventory_changed.emit()
+	_mark_dirty()
 	return true
 
 
@@ -169,7 +187,7 @@ func add_items_batch(batch: Dictionary) -> void:
 			remaining -= stack_size
 		did_add = true
 	if did_add:
-		inventory_changed.emit()
+		_mark_dirty()
 
 
 func get_free_slots() -> int:
@@ -191,7 +209,7 @@ func move_stack_to(target_inventory: Inventory, stack_index: int) -> bool:
 		return false
 
 	items.remove_at(stack_index)
-	inventory_changed.emit()
+	_mark_dirty()
 	return true
 
 
