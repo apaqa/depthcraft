@@ -311,6 +311,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	if event.is_action_pressed("pickup_loot") and not build_mode and not is_dead:
+		_pickup_nearby_loot()
+		get_viewport().set_input_as_handled()
+		return
+
 	if build_mode:
 		if building_system.handle_input(event):
 			get_viewport().set_input_as_handled()
@@ -335,9 +340,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("enter"):
 		_try_secondary_interact()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("pickup_loot"):
-		_pickup_nearby_loot()
 		get_viewport().set_input_as_handled()
 
 
@@ -385,13 +387,16 @@ func _try_secondary_interact() -> void:
 func _pickup_nearby_loot() -> void:
 	var pickup_radius: float = 64.0
 	var drops: Array = get_tree().get_nodes_in_group("loot_drop")
+	print("F pressed, searching loot... found ", drops.size(), " drops in group")
 	for drop in drops:
 		if not is_instance_valid(drop):
 			continue
 		var drop_node: Node2D = drop as Node2D
 		if drop_node == null:
 			continue
-		if global_position.distance_to(drop_node.global_position) <= pickup_radius:
+		var dist: float = global_position.distance_to(drop_node.global_position)
+		print("Found loot: ", drop_node.name, " dist=", dist, " radius=", pickup_radius)
+		if dist <= pickup_radius:
 			if drop_node.has_method("try_pickup"):
 				drop_node.try_pickup(self)
 

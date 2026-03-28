@@ -28,6 +28,16 @@ var upgrade_button: Button = null
 var _current_category: String = "all"
 var _category_tab_buttons: Dictionary = {}
 var _tabs_built: bool = false
+var _repair_selected_slot: String = ""
+var _repair_selected_inv_index: int = -1
+var _repair_placeholder: Label = null
+var _repair_name_lbl: Label = null
+var _repair_dur_bg: ColorRect = null
+var _repair_dur_fill: ColorRect = null
+var _repair_dur_lbl: Label = null
+var _repair_cost_lbl: Label = null
+var _repair_action_btn: Button = null
+var _repair_widgets_built: bool = false
 
 const CATEGORY_KEY_MAP = {
 	"Armor": "cat_armor",
@@ -114,6 +124,13 @@ func _rebuild_recipe_list() -> void:
 	recipe_buttons.clear()
 	title_label.text = menu_title
 	title_label.add_theme_font_size_override("font_size", 22)
+	if _current_category == "repair":
+		_apply_repair_mode_layout(true)
+		_ensure_repair_widgets()
+		_build_repair_list()
+		_refresh_category_tab_visuals()
+		return
+	_apply_repair_mode_layout(false)
 	var recipes: Array[Dictionary] = CRAFTING_SYSTEM.get_available_recipes_for_ids(filtered_recipe_ids) if not filtered_recipe_ids.is_empty() else CRAFTING_SYSTEM.get_available_recipes()
 	var grouped: Dictionary = {}
 	for recipe in recipes:
@@ -379,12 +396,18 @@ func _build_category_tabs() -> void:
 	if facility != null and facility is CookingBenchFacility:
 		cat_keys = ["all", "Cooking"]
 	else:
-		cat_keys = ["all", "Weapons", "Armor", "Consumables", "Tools"]
+		cat_keys = ["all", "Weapons", "Armor", "Consumables", "Tools", "repair"]
 	for cat_key: String in cat_keys:
 		var btn: Button = Button.new()
 		btn.custom_minimum_size = Vector2(0, 40)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.text = "All" if cat_key == "all" else _translate_category(cat_key)
+		var btn_text: String = "All"
+		if cat_key != "all":
+			if cat_key == "repair":
+				btn_text = LocaleManager.L("repair")
+			else:
+				btn_text = _translate_category(cat_key)
+		btn.text = btn_text
 		btn.pressed.connect(_on_category_tab_pressed.bind(cat_key))
 		_category_tab_buttons[cat_key] = btn
 		category_vbox.add_child(btn)
@@ -410,3 +433,318 @@ func _refresh_category_tab_visuals() -> void:
 			btn.modulate = Color(1.0, 0.85, 0.2, 1.0)
 		else:
 			btn.modulate = Color(0.75, 0.75, 0.75, 1.0)
+
+
+# ---------------------------------------------------------------------------
+# Repair tab
+# ---------------------------------------------------------------------------
+func _apply_repair_mode_layout(is_repair: bool) -> void:
+	detail_text.visible = not is_repair
+	materials_container.visible = not is_repair
+	craft_button.visible = not is_repair
+	if upgrade_label != null:
+		upgrade_label.visible = false
+	if upgrade_button != null:
+		upgrade_button.visible = false
+	if not _repair_widgets_built:
+		return
+	_repair_placeholder.visible = is_repair
+	_repair_name_lbl.visible = false
+	_repair_dur_bg.visible = false
+	_repair_dur_lbl.visible = false
+	_repair_cost_lbl.visible = false
+	_repair_action_btn.visible = false
+
+
+func _ensure_repair_widgets() -> void:
+	if _repair_widgets_built:
+		return
+	_repair_placeholder = Label.new()
+	_repair_placeholder.text = LocaleManager.L("repair_prompt")
+	_repair_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_repair_placeholder.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_repair_placeholder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_vbox.add_child(_repair_placeholder)
+
+	_repair_name_lbl = Label.new()
+	_repair_name_lbl.visible = false
+	_repair_name_lbl.add_theme_font_size_override("font_size", 18)
+	detail_vbox.add_child(_repair_name_lbl)
+
+	_repair_dur_bg = ColorRect.new()
+	_repair_dur_bg.visible = false
+	_repair_dur_bg.custom_minimum_size = Vector2(0, 14)
+	_repair_dur_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_repair_dur_bg.color = Color(0.18, 0.18, 0.2, 1.0)
+	_repair_dur_fill = ColorRect.new()
+	_repair_dur_fill.anchor_top = 0.0
+	_repair_dur_fill.anchor_bottom = 1.0
+	_repair_dur_fill.anchor_left = 0.0
+	_repair_dur_fill.anchor_right = 0.0
+	_repair_dur_fill.color = Color(0.45, 1.0, 0.45, 1.0)
+	_repair_dur_bg.add_child(_repair_dur_fill)
+	detail_vbox.add_child(_repair_dur_bg)
+
+	_repair_dur_lbl = Label.new()
+	_repair_dur_lbl.visible = false
+	_repair_dur_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_vbox.add_child(_repair_dur_lbl)
+
+	_repair_cost_lbl = Label.new()
+	_repair_cost_lbl.visible = false
+	_repair_cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_vbox.add_child(_repair_cost_lbl)
+
+	_repair_action_btn = Button.new()
+	_repair_action_btn.visible = false
+	_repair_action_btn.text = LocaleManager.L("repair")
+	_repair_action_btn.pressed.connect(_on_repair_detail_pressed)
+	detail_vbox.add_child(_repair_action_btn)
+
+	_repair_widgets_built = true
+
+
+func _build_repair_list() -> void:
+	if player == null:
+		_populate_repair_detail()
+		return
+	for slot_name: String in player.equipment_system.get_slot_order():
+		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
+		if item.is_empty():
+			continue
+		recipe_list_container.add_child(_build_repair_row(item, slot_name, -1))
+	for index: int in range(player.inventory.items.size()):
+		var item: Dictionary = player.inventory.items[index]
+		if str(item.get("type", "")) != "equipment":
+			continue
+		if int(item.get("max_durability", 0)) <= 0:
+			continue
+		recipe_list_container.add_child(_build_repair_row(item, "", index))
+	_populate_repair_detail()
+
+
+func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> Button:
+	var row_btn: Button = Button.new()
+	row_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	row_btn.flat = true
+
+	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_child(_build_item_icon_holder(item))
+
+	var info_col: VBoxContainer = VBoxContainer.new()
+	info_col.add_theme_constant_override("separation", 4)
+	info_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var label_text: String = _repair_get_display_name(item)
+	if slot_name != "":
+		label_text = "%s [%s]" % [label_text, _repair_translate_slot(slot_name)]
+	else:
+		label_text = "%s [%s]" % [label_text, LocaleManager.L("inventory_short")]
+	var name_lbl: Label = Label.new()
+	name_lbl.text = label_text
+	name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+	name_lbl.clip_text = true
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_col.add_child(name_lbl)
+
+	var max_dur: int = int(item.get("max_durability", 0))
+	var dur: int = int(item.get("durability", max_dur))
+	var dur_ratio: float = clampf(float(dur) / float(maxi(max_dur, 1)), 0.0, 1.0)
+	var bar_bg: ColorRect = ColorRect.new()
+	bar_bg.custom_minimum_size = Vector2(0, 8)
+	bar_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
+	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bar_fill: ColorRect = ColorRect.new()
+	bar_fill.anchor_top = 0.0
+	bar_fill.anchor_bottom = 1.0
+	bar_fill.anchor_left = 0.0
+	bar_fill.anchor_right = dur_ratio
+	bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if dur <= 0:
+		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0)
+	elif dur >= max_dur:
+		bar_fill.color = Color(0.45, 1.0, 0.45, 1.0)
+	else:
+		bar_fill.color = Color(1.0, 0.75, 0.3, 1.0)
+	bar_bg.add_child(bar_fill)
+	info_col.add_child(bar_bg)
+	hbox.add_child(info_col)
+	row_btn.add_child(hbox)
+
+	if slot_name != "":
+		var sn: String = slot_name
+		row_btn.pressed.connect(func() -> void: _set_repair_selection(sn, -1))
+	else:
+		var idx: int = inv_idx
+		row_btn.pressed.connect(func() -> void: _set_repair_selection("", idx))
+	return row_btn
+
+
+func _set_repair_selection(slot: String, inv_idx: int) -> void:
+	_repair_selected_slot = slot
+	_repair_selected_inv_index = inv_idx
+	_populate_repair_detail()
+
+
+func _populate_repair_detail() -> void:
+	if not _repair_widgets_built:
+		return
+	var has_selection: bool = _repair_selected_slot != "" or _repair_selected_inv_index >= 0
+	if not has_selection or player == null:
+		_repair_placeholder.text = LocaleManager.L("repair_prompt")
+		_repair_placeholder.visible = true
+		_repair_name_lbl.visible = false
+		_repair_dur_bg.visible = false
+		_repair_dur_lbl.visible = false
+		_repair_cost_lbl.visible = false
+		_repair_action_btn.visible = false
+		return
+
+	var item: Dictionary = {}
+	var slot_label: String = ""
+	var repair_cost_multiplier: float = _get_repair_cost_multiplier()
+
+	if _repair_selected_slot != "":
+		item = player.equipment_system.get_equipped(_repair_selected_slot)
+		slot_label = _repair_translate_slot(_repair_selected_slot)
+	elif _repair_selected_inv_index >= 0 and _repair_selected_inv_index < player.inventory.items.size():
+		item = player.inventory.items[_repair_selected_inv_index]
+		slot_label = LocaleManager.L("inventory_short")
+
+	if item.is_empty():
+		_repair_selected_slot = ""
+		_repair_selected_inv_index = -1
+		_populate_repair_detail()
+		return
+
+	var max_dur: int = int(item.get("max_durability", 0))
+	var dur: int = int(item.get("durability", max_dur))
+	var dur_ratio: float = clampf(float(dur) / float(maxi(max_dur, 1)), 0.0, 1.0)
+
+	_repair_placeholder.visible = false
+	_repair_name_lbl.text = "%s [%s]" % [_repair_get_display_name(item), slot_label]
+	_repair_name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+	_repair_name_lbl.visible = true
+	_repair_dur_fill.anchor_right = dur_ratio
+	if dur <= 0:
+		_repair_dur_fill.color = Color(1.0, 0.3, 0.3, 1.0)
+	elif dur >= max_dur:
+		_repair_dur_fill.color = Color(0.45, 1.0, 0.45, 1.0)
+	else:
+		_repair_dur_fill.color = Color(1.0, 0.75, 0.3, 1.0)
+	_repair_dur_bg.visible = true
+	_repair_dur_lbl.text = LocaleManager.L("durability_label") % [dur, max_dur]
+	_repair_dur_lbl.visible = true
+
+	if _repair_selected_slot != "":
+		var cost: Dictionary = player.equipment_system.get_repair_cost(_repair_selected_slot).duplicate()
+		for k: String in cost.keys():
+			cost[k] = maxi(int(ceil(float(cost[k]) * repair_cost_multiplier)), 1)
+		if not cost.is_empty():
+			var cost_parts: PackedStringArray = []
+			var can_afford: bool = true
+			for resource_id: String in cost.keys():
+				cost_parts.append("%d %s" % [int(cost[resource_id]), ITEM_DATABASE.get_display_name(str(resource_id))])
+				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
+					can_afford = false
+			_repair_cost_lbl.text = LocaleManager.L("repair_cost_fmt") % ", ".join(cost_parts)
+			_repair_cost_lbl.visible = true
+			_repair_action_btn.disabled = not can_afford
+			_repair_action_btn.visible = dur < max_dur
+		else:
+			_repair_cost_lbl.visible = false
+			_repair_action_btn.visible = false
+	else:
+		var lost: int = maxi(max_dur - dur, 0)
+		if lost > 0:
+			var material: String = str(player.equipment_system.get_repair_material("", item))
+			var cost_amount: int = maxi(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
+			var can_afford: bool = player.inventory.get_item_count(material) >= cost_amount
+			_repair_cost_lbl.text = LocaleManager.L("repair_cost_single_fmt") % [cost_amount, ITEM_DATABASE.get_display_name(material)]
+			_repair_cost_lbl.visible = true
+			_repair_action_btn.disabled = not can_afford
+			_repair_action_btn.visible = true
+		else:
+			_repair_cost_lbl.visible = false
+			_repair_action_btn.visible = false
+
+
+func _on_repair_detail_pressed() -> void:
+	if _repair_selected_slot != "":
+		if player != null and player.equipment_system.repair_slot(_repair_selected_slot, player.inventory):
+			_repair_selected_slot = ""
+			_repair_selected_inv_index = -1
+			_build_repair_list_refresh()
+	elif _repair_selected_inv_index >= 0:
+		_do_repair_inventory_item(_repair_selected_inv_index)
+		_repair_selected_slot = ""
+		_repair_selected_inv_index = -1
+		_build_repair_list_refresh()
+
+
+func _build_repair_list_refresh() -> void:
+	for child: Node in recipe_list_container.get_children():
+		child.queue_free()
+	_build_repair_list()
+
+
+func _do_repair_inventory_item(inv_index: int) -> void:
+	if player == null or inv_index < 0 or inv_index >= player.inventory.items.size():
+		return
+	var item: Dictionary = player.inventory.items[inv_index]
+	var max_dur: int = int(item.get("max_durability", 0))
+	var dur: int = int(item.get("durability", max_dur))
+	var lost: int = maxi(max_dur - dur, 0)
+	if lost <= 0:
+		return
+	var material: String = str(player.equipment_system.get_repair_material("", item))
+	var repair_cost_multiplier: float = _get_repair_cost_multiplier()
+	var cost_amount: int = maxi(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
+	if player.inventory.get_item_count(material) < cost_amount:
+		return
+	player.inventory.remove_item(material, cost_amount)
+	item["durability"] = max_dur
+	player.inventory.inventory_changed.emit()
+
+
+func _get_repair_cost_multiplier() -> float:
+	var facility_multiplier: float = facility.get_repair_cost_multiplier() \
+		if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
+	var npc_multiplier: float = NpcManager.get_repair_cost_multiplier() if NpcManager != null else 1.0
+	return facility_multiplier * npc_multiplier
+
+
+func _repair_get_display_name(item: Dictionary) -> String:
+	var raw_name: String = str(item.get("name", ""))
+	if raw_name != "":
+		return raw_name
+	var item_id: String = str(item.get("id", str(item.get("item_id", ""))))
+	var db_name: String = ITEM_DATABASE.get_display_name(item_id)
+	if db_name != "" and db_name != item_id:
+		return db_name
+	return item_id.replace("_", " ").capitalize()
+
+
+func _repair_translate_slot(slot_name: String) -> String:
+	match slot_name:
+		"weapon":
+			return LocaleManager.L("slot_weapon")
+		"helmet":
+			return LocaleManager.L("slot_helmet")
+		"chest_armor":
+			return LocaleManager.L("slot_chest_armor")
+		"boots":
+			return LocaleManager.L("slot_boots")
+		"accessory":
+			return LocaleManager.L("slot_accessory")
+		"offhand":
+			return LocaleManager.L("slot_offhand")
+		"tool":
+			return LocaleManager.L("slot_tool")
+	return slot_name.replace("_", " ").capitalize()

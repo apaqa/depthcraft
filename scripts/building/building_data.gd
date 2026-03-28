@@ -15,7 +15,7 @@ const CATEGORY_ORDER = ["structure", "door_window", "facility", "defense"]
 const CATEGORY_DATA = {
 	"structure": {"name": "build_cat_structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
 	"door_window": {"name": "build_cat_door_window", "items": ["wood_door"]},
-	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot", "bounty_board", "tavern", "home_core"]},
+	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "talent_altar", "cooking_bench", "farm_plot", "bounty_board", "tavern", "home_core"]},
 	"defense": {"name": "build_cat_defense", "items": []},
 }
 
@@ -160,7 +160,7 @@ const BUILDINGS = {
 	},
 }
 
-const ORDER = ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "tavern", "home_core"]
+const ORDER = ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "tavern", "home_core"]
 
 
 static func get_building(building_id: String) -> Dictionary:

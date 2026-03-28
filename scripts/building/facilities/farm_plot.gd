@@ -26,6 +26,10 @@ func _ready() -> void:
 	_refresh_visuals()
 
 
+func _needs_process() -> bool:
+	return true
+
+
 func _process(delta: float) -> void:
 	super._process(delta)
 	_update_growth_state()

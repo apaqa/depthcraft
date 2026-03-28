@@ -24,7 +24,7 @@ var _hp_bar_fill: Polygon2D = null
 
 
 func _ready() -> void:
-	set_process(true)
+	set_process(false)
 	_ensure_visual_refs()
 	_ensure_hp_bar()
 	_apply_upgrade_visuals()
@@ -34,6 +34,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	hp_bar_time_left = max(hp_bar_time_left - delta, 0.0)
 	_update_hp_bar_visibility()
+	if hp_bar_time_left <= 0.0 and not _needs_process():
+		set_process(false)
+
+
+func _needs_process() -> bool:
+	return false
 
 
 func initialize_building(building: Dictionary, target_system, tile_pos: Vector2i, data: Dictionary = {}) -> void:
@@ -127,6 +133,7 @@ func _take_building_damage(amount: int) -> void:
 		return
 	current_hp = max(current_hp - amount, 0)
 	hp_bar_time_left = DAMAGE_BAR_DURATION
+	set_process(true)
 	_update_hp_bar()
 	building_state_changed.emit()
 	if current_hp <= 0:
