@@ -6,6 +6,7 @@ signal damaged(amount: int)
 
 const LOOT_DROP_SCENE: PackedScene = preload("res://scenes/dungeon/loot_drop.tscn")
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/enemies/projectile.tscn")
+const MonsterPrefix: Script = preload("res://scripts/enemies/monster_prefix.gd")
 
 @export var max_hp: int = 30
 @export var damage: int = 8
@@ -45,6 +46,14 @@ var facing_direction: Vector2 = Vector2.RIGHT
 var slow_time_left: float = 0.0
 var slow_multiplier: float = 1.0
 var _currency_floor_value: int = 1
+var _prefixes: Array[String] = []
+var _prefix_label: Label = null
+var _stealth_timer: float = 0.0
+var _stealth_active: bool = false
+var _stealth_interval: float = 8.0
+var _stealth_duration: float = 2.0
+var _prefix_damage_reduction: float = 0.0
+var _prefix_reflect_ratio: float = 0.0
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -92,6 +101,7 @@ func _physics_process(delta: float) -> void:
 		_update_animation(Vector2.ZERO)
 		move_and_slide()
 		return
+	_tick_prefix_effects(delta)
 
 	if target == null or not is_instance_valid(target):
 		var players: Array = get_tree().get_nodes_in_group("player")
@@ -180,8 +190,16 @@ func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 		var incoming_from_attacker: Vector2 = -hit_direction.normalized()
 		if incoming_from_attacker.dot(facing_direction.normalized()) > 0.35:
 			final_amount = int(ceil(final_amount * 0.5))
+	# Armored prefix: reduce incoming damage
+	if _prefix_damage_reduction > 0.0:
+		final_amount = int(ceil(float(final_amount) * (1.0 - _prefix_damage_reduction)))
 	current_hp -= final_amount
 	damaged.emit(final_amount)
+	# Thorned prefix: reflect damage to attacker
+	if _prefix_reflect_ratio > 0.0 and target != null and is_instance_valid(target) and target.has_method("take_damage"):
+		var reflect_dmg: int = int(round(float(final_amount) * _prefix_reflect_ratio))
+		if reflect_dmg > 0:
+			target.take_damage(reflect_dmg, Vector2.ZERO)
 	_update_hp_bar()
 	modulate = Color(1, 0.3, 0.3, 1)
 	if hit_direction.length_squared() > 0.0:
@@ -206,11 +224,68 @@ func die() -> void:
 	if hp_bar_root != null:
 		hp_bar_root.visible = false
 	died.emit(global_position)
+	_apply_death_prefix_effects()
 	_drop_loot()
 	_drop_gold_loot()
 	var tween: Tween = create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(queue_free)
+
+
+func _tick_prefix_effects(delta: float) -> void:
+	if not _prefixes.has("shadowed"):
+		return
+	_stealth_timer -= delta
+	if _stealth_active:
+		if _stealth_timer <= 0.0:
+			_stealth_active = false
+			modulate = Color.WHITE
+			_stealth_timer = _stealth_interval
+	else:
+		if _stealth_timer <= 0.0:
+			_stealth_active = true
+			modulate = Color(1.0, 1.0, 1.0, 0.2)
+			_stealth_timer = _stealth_duration
+
+
+func _apply_death_prefix_effects() -> void:
+	if _prefixes.has("explosive"):
+		_do_explosion()
+	if _prefixes.has("splitting"):
+		_do_split()
+
+
+func _do_explosion() -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var explosion_radius: float = 48.0
+	var explosion_damage: int = int(round(float(max_hp) * 0.3))
+	if target.global_position.distance_to(global_position) <= explosion_radius:
+		if target.has_method("take_damage"):
+			target.take_damage(explosion_damage, (target.global_position - global_position).normalized())
+
+
+func _do_split() -> void:
+	if loot_parent == null:
+		return
+	var parent_node: Node = get_parent()
+	if parent_node == null:
+		return
+	for _i: int in range(2):
+		var split_enemy: Enemy = duplicate(false) as Enemy
+		if split_enemy == null:
+			continue
+		split_enemy.max_hp = int(round(float(max_hp) * 0.4))
+		split_enemy.current_hp = split_enemy.max_hp
+		split_enemy.damage = int(round(float(damage) * 0.6))
+		split_enemy._prefixes = []
+		split_enemy._prefix_damage_reduction = 0.0
+		split_enemy._prefix_reflect_ratio = 0.0
+		split_enemy.is_dead = false
+		split_enemy.global_position = global_position + Vector2(randf_range(-16, 16), randf_range(-16, 16))
+		parent_node.add_child(split_enemy)
+		split_enemy.target = target
+		split_enemy.loot_parent = loot_parent
 
 
 func set_ai_paused(paused: bool) -> void:
@@ -313,6 +388,61 @@ func _update_hp_bar() -> void:
 	var ratio: float = clampf(float(current_hp) / float(max(max_hp, 1)), 0.0, 1.0)
 	hp_bar_fill.polygon = PackedVector2Array([Vector2.ZERO, Vector2(24.0 * ratio, 0), Vector2(24.0 * ratio, 4), Vector2(0, 4)])
 	hp_bar_root.visible = current_hp < max_hp and current_hp > 0
+
+
+func apply_prefixes(prefix_ids: Array) -> void:
+	_prefixes.clear()
+	for pid_variant: Variant in prefix_ids:
+		var pid: String = str(pid_variant)
+		if pid == "":
+			continue
+		_prefixes.append(pid)
+		_apply_single_prefix_stats(pid)
+	_update_prefix_label()
+	_update_hp_bar()
+
+
+func _apply_single_prefix_stats(prefix_id: String) -> void:
+	match prefix_id:
+		"frenzied":
+			attack_cooldown = maxf(attack_cooldown / 1.5, 0.3)
+			damage = int(round(float(damage) * 1.2))
+		"armored":
+			max_hp = int(round(float(max_hp) * 1.43))
+			current_hp = max_hp
+			_prefix_damage_reduction = 0.3
+		"thorned":
+			_prefix_reflect_ratio = 0.15
+		"shadowed":
+			_stealth_interval = 8.0
+			_stealth_duration = 2.0
+			_stealth_timer = _stealth_interval
+
+
+func _update_prefix_label() -> void:
+	if _prefixes.is_empty():
+		if _prefix_label != null and is_instance_valid(_prefix_label):
+			_prefix_label.queue_free()
+			_prefix_label = null
+		return
+	var prefix_names: Array[String] = []
+	for pid: String in _prefixes:
+		var zh_name: String = MonsterPrefix.get_prefix_display_name(pid)
+		if zh_name != "":
+			prefix_names.append(zh_name)
+	var display_name: String = " ".join(prefix_names)
+	if display_name == "":
+		return
+	if _prefix_label == null or not is_instance_valid(_prefix_label):
+		_prefix_label = Label.new()
+		_prefix_label.add_theme_font_size_override("font_size", 9)
+		_prefix_label.add_theme_constant_override("outline_size", 2)
+		_prefix_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		_prefix_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_prefix_label.position = Vector2(-24, -30)
+		add_child(_prefix_label)
+	_prefix_label.text = display_name
+	_prefix_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1, 1.0))
 
 
 func _update_animation(direction: Vector2) -> void:

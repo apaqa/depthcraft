@@ -48,6 +48,7 @@ const DEMON_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/demon_merch
 const TIMED_TREASURE_ROOM_SCRIPT: Script = preload("res://scripts/dungeon/timed_treasure_room.gd")
 const SECRET_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/secret_merchant.gd")
 const ARROW_TRAP_LAUNCHER_SCRIPT: Script = preload("res://scripts/dungeon/arrow_trap_launcher.gd")
+const MONSTER_PREFIX: Script = preload("res://scripts/enemies/monster_prefix.gd")
 
 @export var current_floor: int = 1
 @export var level_seed: int = 1
@@ -335,6 +336,7 @@ func _spawn_enemies() -> void:
 		elite.global_position = _random_point_in_room(elite_room, rng)
 		elite.configure_for_floor(player, current_floor, loot_root)
 		_apply_floor_scaling(elite, 1.4, 1.25, 1.08 if current_floor >= 31 else 1.0)
+		_maybe_apply_prefixes(elite, true, rng)
 		elite.died.connect(_on_enemy_died.bind(elite))
 		enemy_root.add_child(elite)
 
@@ -590,10 +592,40 @@ func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNu
 		spawned_enemy.global_position = _random_point_in_room(room, rng) + offset
 		spawned_enemy.configure_for_floor(player, current_floor, loot_root)
 		_apply_floor_scaling(spawned_enemy, 1.4, 1.25, 1.12 if current_floor >= 31 else 1.0)
+		_maybe_apply_prefixes(spawned_enemy, false, rng)
 		spawned_enemy.died.connect(_on_enemy_died.bind(spawned_enemy))
 		enemy_root.add_child(spawned_enemy)
 		spawned_enemies.append(spawned_enemy)
 	return spawned_enemies
+
+
+func _maybe_apply_prefixes(enemy: Enemy, is_elite_or_boss: bool, rng: RandomNumberGenerator) -> void:
+	if not enemy.has_method("apply_prefixes"):
+		return
+	var cycle_manager: Node = get_node_or_null("/root/CycleManager")
+	var cycle: int = 1
+	if cycle_manager != null:
+		cycle = int(cycle_manager.current_cycle)
+	var prefix_count: int = 0
+	if is_elite_or_boss:
+		prefix_count = 1
+		if cycle >= 3:
+			prefix_count = 2
+	else:
+		# Normal enemies: cycle 2=20% chance 1 prefix, cycle 3+=40% one 10% two
+		var roll: float = _rng_randf(rng)
+		if cycle >= 3:
+			if roll < 0.10:
+				prefix_count = 2
+			elif roll < 0.40:
+				prefix_count = 1
+		elif cycle >= 2:
+			if roll < 0.20:
+				prefix_count = 1
+	if prefix_count <= 0:
+		return
+	var chosen: Array[String] = MONSTER_PREFIX.pick_random_prefixes(prefix_count, rng)
+	enemy.apply_prefixes(chosen)
 
 
 func _spawn_treasure_room(room: Rect2i, room_index: int = -1) -> void:
@@ -1216,6 +1248,7 @@ func _spawn_boss_enemy(room: Rect2i, rng: RandomNumberGenerator) -> void:
 	boss.global_position = _random_point_in_room(room, rng)
 	boss.configure_for_floor(player, current_floor, loot_root)
 	_apply_floor_scaling(boss, 1.55, 1.3, 1.08 if current_floor >= 31 else 1.0)
+	_maybe_apply_prefixes(boss, true, rng)
 	boss.died.connect(_on_enemy_died.bind(boss))
 	enemy_root.add_child(boss)
 	if boss.has_method("setup_boss_arena"):
