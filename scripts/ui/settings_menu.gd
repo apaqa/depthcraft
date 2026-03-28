@@ -85,8 +85,15 @@ func _build_ui() -> void:
 	_settings_panel.anchor_top = 0.18
 	_settings_panel.anchor_right = 0.82
 	_settings_panel.anchor_bottom = 0.82
-	_settings_panel.self_modulate = Color(1.0, 1.0, 1.0, 0.98)
 	_settings_panel.visible = false
+	var sm_style: StyleBoxFlat = StyleBoxFlat.new()
+	sm_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	sm_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	sm_style.border_width_left = 1
+	sm_style.border_width_top = 1
+	sm_style.border_width_right = 1
+	sm_style.border_width_bottom = 1
+	_settings_panel.add_theme_stylebox_override("panel", sm_style)
 	content_root.add_child(_settings_panel)
 
 	var panel_margin := MarginContainer.new()
@@ -105,9 +112,9 @@ func _build_ui() -> void:
 	back_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel_vbox.add_child(back_button)
 
-	var title := Label.new()
+	var title: Label = Label.new()
 	title.text = LocaleManager.L("settings_title")
-	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	title.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
 	title.add_theme_constant_override("outline_size", 2)

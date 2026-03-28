@@ -23,12 +23,22 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	if not auto_timer.timeout.is_connected(_on_auto_timer_timeout):
 		auto_timer.timeout.connect(_on_auto_timer_timeout)
+	var bs_panel: PanelContainer = $PanelContainer
+	var bs_style: StyleBoxFlat = StyleBoxFlat.new()
+	bs_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	bs_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	bs_style.border_width_left = 1
+	bs_style.border_width_top = 1
+	bs_style.border_width_right = 1
+	bs_style.border_width_bottom = 1
+	bs_panel.add_theme_stylebox_override("panel", bs_style)
 
 
 func open_with_options(options: Array[Dictionary]) -> void:
 	active_options = options.duplicate(true)
 	visible = true
 	title_label.text = LocaleManager.L("buff_select_title")
+	title_label.add_theme_font_size_override("font_size", 22)
 	for child: Node in card_container.get_children():
 		child.queue_free()
 	for i in range(active_options.size()):

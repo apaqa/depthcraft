@@ -59,6 +59,14 @@ func _ready() -> void:
 	craft_button.text = LocaleManager.L("craft")
 	_ensure_close_button()
 	_ensure_upgrade_controls()
+	var cm_style: StyleBoxFlat = StyleBoxFlat.new()
+	cm_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	cm_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	cm_style.border_width_left = 1
+	cm_style.border_width_top = 1
+	cm_style.border_width_right = 1
+	cm_style.border_width_bottom = 1
+	panel_container.add_theme_stylebox_override("panel", cm_style)
 
 
 func open_for_player(target_player, available_recipe_ids: PackedStringArray = PackedStringArray(), title: String = "", target_facility = null) -> void:
@@ -105,6 +113,7 @@ func _rebuild_recipe_list() -> void:
 	recipe_ids.clear()
 	recipe_buttons.clear()
 	title_label.text = menu_title
+	title_label.add_theme_font_size_override("font_size", 22)
 	var recipes: Array[Dictionary] = CRAFTING_SYSTEM.get_available_recipes_for_ids(filtered_recipe_ids) if not filtered_recipe_ids.is_empty() else CRAFTING_SYSTEM.get_available_recipes()
 	var grouped: Dictionary = {}
 	for recipe in recipes:
@@ -294,7 +303,7 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 func _ensure_close_button() -> void:
 	if panel_container == null or get_node_or_null("CloseButton") != null:
 		return
-	var close_button := Button.new()
+	var close_button: Button = Button.new()
 	close_button.name = "CloseButton"
 	close_button.text = "X"
 	close_button.position = panel_container.position + Vector2(8, 8)
@@ -302,6 +311,17 @@ func _ensure_close_button() -> void:
 	close_button.size = Vector2(32, 32)
 	close_button.z_index = 100
 	close_button.pressed.connect(close_menu)
+	var cb_normal: StyleBoxFlat = StyleBoxFlat.new()
+	cb_normal.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+	cb_normal.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	cb_normal.border_width_left = 1
+	cb_normal.border_width_top = 1
+	cb_normal.border_width_right = 1
+	cb_normal.border_width_bottom = 1
+	var cb_hover: StyleBoxFlat = cb_normal.duplicate()
+	cb_hover.bg_color = Color(0.28, 0.28, 0.34, 0.95)
+	close_button.add_theme_stylebox_override("normal", cb_normal)
+	close_button.add_theme_stylebox_override("hover", cb_hover)
 	add_child(close_button)
 
 

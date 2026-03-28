@@ -36,6 +36,14 @@ func _setup_ui() -> void:
 	_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_panel.position = Vector2(-PANEL_MIN_SIZE.x * 0.5, -PANEL_MIN_SIZE.y * 0.5)
 	_panel.size = PANEL_MIN_SIZE
+	var qb_style: StyleBoxFlat = StyleBoxFlat.new()
+	qb_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	qb_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	qb_style.border_width_left = 1
+	qb_style.border_width_top = 1
+	qb_style.border_width_right = 1
+	qb_style.border_width_bottom = 1
+	_panel.add_theme_stylebox_override("panel", qb_style)
 	add_child(_panel)
 
 	var margin: MarginContainer = MarginContainer.new()
@@ -63,6 +71,17 @@ func _setup_ui() -> void:
 	close_button.text = "X"
 	close_button.custom_minimum_size = Vector2(32.0, 32.0)
 	close_button.pressed.connect(_close)
+	var qb_btn_normal: StyleBoxFlat = StyleBoxFlat.new()
+	qb_btn_normal.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+	qb_btn_normal.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	qb_btn_normal.border_width_left = 1
+	qb_btn_normal.border_width_top = 1
+	qb_btn_normal.border_width_right = 1
+	qb_btn_normal.border_width_bottom = 1
+	var qb_btn_hover: StyleBoxFlat = qb_btn_normal.duplicate()
+	qb_btn_hover.bg_color = Color(0.28, 0.28, 0.34, 0.95)
+	close_button.add_theme_stylebox_override("normal", qb_btn_normal)
+	close_button.add_theme_stylebox_override("hover", qb_btn_hover)
 	title_bar.add_child(close_button)
 
 	root_vbox.add_child(HSeparator.new())

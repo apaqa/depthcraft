@@ -27,13 +27,21 @@ func _build_ui() -> void:
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
 
-	var panel := PanelContainer.new()
+	var panel: PanelContainer = PanelContainer.new()
 	panel.layout_mode = 1
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.offset_left = -280.0
 	panel.offset_top = -220.0
 	panel.offset_right = 280.0
 	panel.offset_bottom = 220.0
+	var se_style: StyleBoxFlat = StyleBoxFlat.new()
+	se_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	se_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	se_style.border_width_left = 1
+	se_style.border_width_top = 1
+	se_style.border_width_right = 1
+	se_style.border_width_bottom = 1
+	panel.add_theme_stylebox_override("panel", se_style)
 	add_child(panel)
 	_main_panel = panel
 
@@ -55,7 +63,7 @@ func _build_ui() -> void:
 	_title_label = Label.new()
 	_title_label.text = LocaleManager.L("skill_equip_title")
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title_label.add_theme_font_size_override("font_size", 14)
+	_title_label.add_theme_font_size_override("font_size", 22)
 	_title_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5, 1.0))
 	title_row.add_child(_title_label)
 

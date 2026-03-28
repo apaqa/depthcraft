@@ -21,6 +21,14 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_ensure_close_button()
+	var su_style: StyleBoxFlat = StyleBoxFlat.new()
+	su_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	su_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	su_style.border_width_left = 1
+	su_style.border_width_top = 1
+	su_style.border_width_right = 1
+	su_style.border_width_bottom = 1
+	panel_container.add_theme_stylebox_override("panel", su_style)
 
 
 func open_for_storage(player_inv, chest_inv) -> void:
@@ -69,6 +77,7 @@ func _unbind_inventory_signals() -> void:
 
 func _rebuild() -> void:
 	title_label.text = LocaleManager.L("storage_title")
+	title_label.add_theme_font_size_override("font_size", 22)
 	player_label.text = LocaleManager.L("your_inventory")
 	chest_label.text = LocaleManager.L("chest_label")
 	_rebuild_grid(player_grid, player_inventory, chest_inventory, true)
@@ -136,7 +145,7 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 func _ensure_close_button() -> void:
 	if get_node_or_null("CloseButton") != null:
 		return
-	var close_btn = Button.new()
+	var close_btn: Button = Button.new()
 	close_btn.name = "CloseButton"
 	close_btn.text = "X"
 	close_btn.custom_minimum_size = Vector2(32, 32)
@@ -144,4 +153,15 @@ func _ensure_close_button() -> void:
 	close_btn.position = panel_container.position + Vector2(8, 8)
 	close_btn.z_index = 100
 	close_btn.pressed.connect(close_menu)
+	var cb_normal: StyleBoxFlat = StyleBoxFlat.new()
+	cb_normal.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+	cb_normal.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	cb_normal.border_width_left = 1
+	cb_normal.border_width_top = 1
+	cb_normal.border_width_right = 1
+	cb_normal.border_width_bottom = 1
+	var cb_hover: StyleBoxFlat = cb_normal.duplicate()
+	cb_hover.bg_color = Color(0.28, 0.28, 0.34, 0.95)
+	close_btn.add_theme_stylebox_override("normal", cb_normal)
+	close_btn.add_theme_stylebox_override("hover", cb_hover)
 	add_child(close_btn)

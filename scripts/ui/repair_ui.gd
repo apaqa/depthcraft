@@ -21,9 +21,19 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	title_label.text = LocaleManager.L("repair_bench")
+	title_label.add_theme_font_size_override("font_size", 22)
 	_resize_panel()
 	_ensure_close_button()
 	_ensure_upgrade_controls()
+	var ru_style: StyleBoxFlat = StyleBoxFlat.new()
+	ru_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	ru_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	ru_style.border_width_left = 1
+	ru_style.border_width_top = 1
+	ru_style.border_width_right = 1
+	ru_style.border_width_bottom = 1
+	panel_container.add_theme_stylebox_override("panel", ru_style)
+	detail_label.add_theme_font_size_override("font_size", 16)
 
 
 func _notification(what: int) -> void:
@@ -327,6 +337,17 @@ func _ensure_close_button() -> void:
 	close_btn.position = panel_container.position + Vector2(8, 8)
 	close_btn.z_index = 100
 	close_btn.pressed.connect(close_menu)
+	var cb_normal: StyleBoxFlat = StyleBoxFlat.new()
+	cb_normal.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+	cb_normal.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	cb_normal.border_width_left = 1
+	cb_normal.border_width_top = 1
+	cb_normal.border_width_right = 1
+	cb_normal.border_width_bottom = 1
+	var cb_hover: StyleBoxFlat = cb_normal.duplicate()
+	cb_hover.bg_color = Color(0.28, 0.28, 0.34, 0.95)
+	close_btn.add_theme_stylebox_override("normal", cb_normal)
+	close_btn.add_theme_stylebox_override("hover", cb_hover)
 	add_child(close_btn)
 
 

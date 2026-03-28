@@ -30,8 +30,20 @@ func _ready() -> void:
 	add_child(_context_menu)
 	_context_menu.id_pressed.connect(_on_context_id_pressed)
 	title_label.text = LocaleManager.L("equipment")
+	title_label.add_theme_font_size_override("font_size", 22)
 	slot_title.text = LocaleManager.L("wearing")
 	inventory_title.text = LocaleManager.L("backpack_equipment")
+	var ep_panel: PanelContainer = $PanelContainer
+	var ep_style: StyleBoxFlat = StyleBoxFlat.new()
+	ep_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	ep_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	ep_style.border_width_left = 1
+	ep_style.border_width_top = 1
+	ep_style.border_width_right = 1
+	ep_style.border_width_bottom = 1
+	ep_panel.add_theme_stylebox_override("panel", ep_style)
+	stat_label.add_theme_font_size_override("font_size", 16)
+	comparison_label.add_theme_font_size_override("font_size", 16)
 
 
 func open_for_player(target_player) -> void:

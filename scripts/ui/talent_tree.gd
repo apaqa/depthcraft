@@ -77,6 +77,7 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	title_label.text = LocaleManager.L("title_talents")
+	title_label.add_theme_font_size_override("font_size", 22)
 	map_root.custom_minimum_size = BASE_MAP_SIZE
 	map_root.size = BASE_MAP_SIZE
 	_build_map_canvas()
@@ -84,6 +85,14 @@ func _ready() -> void:
 	_setup_detail_panel()
 	_ensure_close_button()
 	_update_zoom()
+	var tt_style: StyleBoxFlat = StyleBoxFlat.new()
+	tt_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	tt_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	tt_style.border_width_left = 1
+	tt_style.border_width_top = 1
+	tt_style.border_width_right = 1
+	tt_style.border_width_bottom = 1
+	panel_container.add_theme_stylebox_override("panel", tt_style)
 
 
 func _notification(what: int) -> void:

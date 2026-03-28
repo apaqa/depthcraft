@@ -18,8 +18,18 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	title_label.text = TITLE_TEXT
+	title_label.add_theme_font_size_override("font_size", 22)
 	hint_label.text = HINT_TEXT
+	hint_label.add_theme_font_size_override("font_size", 16)
 	_ensure_close_button()
+	var ap_style: StyleBoxFlat = StyleBoxFlat.new()
+	ap_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
+	ap_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	ap_style.border_width_left = 1
+	ap_style.border_width_top = 1
+	ap_style.border_width_right = 1
+	ap_style.border_width_bottom = 1
+	panel_container.add_theme_stylebox_override("panel", ap_style)
 
 
 func open_panel() -> void:
@@ -98,10 +108,21 @@ func _build_row(achievement: Dictionary) -> Control:
 func _ensure_close_button() -> void:
 	if panel_container == null or panel_container.get_node_or_null("CloseButton") != null:
 		return
-	var close_button := Button.new()
+	var close_button: Button = Button.new()
 	close_button.name = "CloseButton"
 	close_button.text = "X"
 	close_button.position = Vector2(8.0, 8.0)
 	close_button.custom_minimum_size = Vector2(28.0, 28.0)
+	var cb_normal: StyleBoxFlat = StyleBoxFlat.new()
+	cb_normal.bg_color = Color(0.18, 0.18, 0.22, 0.95)
+	cb_normal.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	cb_normal.border_width_left = 1
+	cb_normal.border_width_top = 1
+	cb_normal.border_width_right = 1
+	cb_normal.border_width_bottom = 1
+	var cb_hover: StyleBoxFlat = cb_normal.duplicate()
+	cb_hover.bg_color = Color(0.28, 0.28, 0.34, 0.95)
+	close_button.add_theme_stylebox_override("normal", cb_normal)
+	close_button.add_theme_stylebox_override("hover", cb_hover)
 	close_button.pressed.connect(close_panel)
 	panel_container.add_child(close_button)

@@ -61,6 +61,7 @@ var settings_menu: SettingsMenu = null
 var currency_label: Label = null
 var class_label: Label = null
 var home_arrow: Control = null
+var _consumable_bar_bg: Panel = null
 var _tracked_ui_visibility: Dictionary = {}
 
 
@@ -89,6 +90,22 @@ func _ready() -> void:
 	_layout_static_hud()
 	_layout_bottom_hud()
 
+	_consumable_bar_bg = Panel.new()
+	var cbb_style: StyleBoxFlat = StyleBoxFlat.new()
+	cbb_style.bg_color = Color(0.08, 0.08, 0.1, 0.88)
+	cbb_style.border_color = Color(0.25, 0.25, 0.3, 1.0)
+	cbb_style.border_width_left = 1
+	cbb_style.border_width_top = 1
+	cbb_style.border_width_right = 1
+	cbb_style.border_width_bottom = 1
+	cbb_style.corner_radius_top_left = 4
+	cbb_style.corner_radius_top_right = 4
+	cbb_style.corner_radius_bottom_left = 4
+	cbb_style.corner_radius_bottom_right = 4
+	_consumable_bar_bg.add_theme_stylebox_override("panel", cbb_style)
+	_consumable_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_consumable_bar_bg)
+	move_child(_consumable_bar_bg, consumable_bar.get_index())
 	update_hp(100, 100)
 	update_bag_label(0, 20)
 	update_consumable_bar([])
@@ -596,17 +613,28 @@ func _refresh_skill_slots() -> void:
 		var slot: Dictionary = snapshots[slot_index] if slot_index < snapshots.size() else {}
 		var key_name: String = KEY_NAMES[slot_index]
 
-		var container := Control.new()
+		var container: Control = Control.new()
 		container.custom_minimum_size = Vector2(SLOT_W, SLOT_H)
 		container.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 
-		var bg := ColorRect.new()
-		bg.position = Vector2.ZERO
-		bg.size = Vector2(SLOT_W, SLOT_H)
-		bg.color = Color(0.08, 0.08, 0.1, 0.88)
-		container.add_child(bg)
+		var bg_panel: Panel = Panel.new()
+		bg_panel.position = Vector2.ZERO
+		bg_panel.size = Vector2(SLOT_W, SLOT_H)
+		var bg_style: StyleBoxFlat = StyleBoxFlat.new()
+		bg_style.bg_color = Color(0.08, 0.08, 0.1, 0.88)
+		bg_style.border_color = Color(0.25, 0.25, 0.3, 1.0)
+		bg_style.border_width_left = 1
+		bg_style.border_width_top = 1
+		bg_style.border_width_right = 1
+		bg_style.border_width_bottom = 1
+		bg_style.corner_radius_top_left = 4
+		bg_style.corner_radius_top_right = 4
+		bg_style.corner_radius_bottom_left = 4
+		bg_style.corner_radius_bottom_right = 4
+		bg_panel.add_theme_stylebox_override("panel", bg_style)
+		container.add_child(bg_panel)
 
-		var skill_label := Label.new()
+		var skill_label: Label = Label.new()
 		skill_label.position = Vector2.ZERO
 		skill_label.size = Vector2(SLOT_W, SLOT_H)
 		skill_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -620,23 +648,23 @@ func _refresh_skill_slots() -> void:
 			skill_label.self_modulate = Color(0.5, 0.5, 0.5, 1.0)
 			container.add_child(skill_label)
 		else:
-			var cooldown := float(slot.get("current_cooldown", 0.0))
-			var max_cooldown := maxf(float(slot.get("cooldown", 1.0)), 0.001)
-			var short_name := LocaleManager.L(str(slot.get("short_name", "skill_name_fallback")))
+			var cooldown: float = float(slot.get("current_cooldown", 0.0))
+			var max_cooldown: float = maxf(float(slot.get("cooldown", 1.0)), 0.001)
+			var short_name: String = LocaleManager.L(str(slot.get("short_name", "skill_name_fallback")))
 			skill_label.text = "[%s]\n%s" % [key_name, short_name]
 			skill_label.self_modulate = Color(0.65, 0.65, 0.65, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
 			skill_label.tooltip_text = LocaleManager.L(str(slot.get("name", "skill_name_fallback")))
 			container.add_child(skill_label)
 
 			if cooldown > 0.0:
-				var ratio := clampf(cooldown / max_cooldown, 0.0, 1.0)
-				var overlay := ColorRect.new()
-				overlay.position = Vector2.ZERO
+				var ratio: float = clampf(cooldown / max_cooldown, 0.0, 1.0)
+				var overlay: ColorRect = ColorRect.new()
+				overlay.position = Vector2(0.0, SLOT_H * (1.0 - ratio))
 				overlay.size = Vector2(SLOT_W, SLOT_H * ratio)
 				overlay.color = Color(0.0, 0.0, 0.0, 0.62)
 				container.add_child(overlay)
 
-				var cd_label := Label.new()
+				var cd_label: Label = Label.new()
 				cd_label.position = Vector2.ZERO
 				cd_label.size = Vector2(SLOT_W, SLOT_H)
 				cd_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -751,17 +779,21 @@ func _layout_bottom_hud() -> void:
 	_center_skill_slot_row()
 	if consumable_bar == null:
 		return
-	var bar_size := consumable_bar.get_combined_minimum_size()
+	var bar_size: Vector2 = consumable_bar.get_combined_minimum_size()
 	bar_size.x = maxf(bar_size.x, 220.0)
 	bar_size.y = maxf(bar_size.y, 24.0)
 	consumable_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	consumable_bar.position = Vector2(-bar_size.x * 0.5, -CONSUMABLE_BAR_BOTTOM_MARGIN - bar_size.y)
 	consumable_bar.size = bar_size
 	if skill_slot_row != null:
-		var skill_bottom := skill_slot_row.position.y + skill_slot_row.size.y
-		var consumable_top := consumable_bar.position.y
+		var skill_bottom: float = skill_slot_row.position.y + skill_slot_row.size.y
+		var consumable_top: float = consumable_bar.position.y
 		if consumable_top < skill_bottom + BOTTOM_UI_GAP:
 			consumable_bar.position.y = skill_bottom + BOTTOM_UI_GAP
+	if _consumable_bar_bg != null:
+		_consumable_bar_bg.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		_consumable_bar_bg.position = consumable_bar.position - Vector2(6.0, 4.0)
+		_consumable_bar_bg.size = consumable_bar.size + Vector2(12.0, 8.0)
 
 
 func _on_hud_resized() -> void:
