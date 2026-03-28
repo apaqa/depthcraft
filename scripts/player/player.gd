@@ -605,6 +605,7 @@ func _configure_input_actions() -> void:
 	_set_key_action("skill_slot_1", KEY_Z)
 	_set_key_action("skill_slot_2", KEY_X)
 	_set_key_action("skill_slot_3", KEY_V)
+	_set_key_action("toggle_map", KEY_M)
 
 
 func _set_key_action(action_name: String, keycode: int) -> void:

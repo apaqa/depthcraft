@@ -4,6 +4,7 @@ const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
 const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
+const MINIMAP_SCRIPT = preload("res://scripts/ui/minimap.gd")
 
 @onready var hp_label: Label = $HPLabel
 @onready var hp_bar_bg: ColorRect = $HPBarBG
@@ -60,6 +61,7 @@ var player = null
 var inventory = null
 var current_level = null
 var current_level_id: String = ""
+var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
 var currency_label: Label = null
 var class_label: Label = null
@@ -159,6 +161,17 @@ func _ready() -> void:
 	if NpcManager != null and not NpcManager.roster_changed.is_connected(_on_npc_roster_changed):
 		NpcManager.roster_changed.connect(_on_npc_roster_changed)
 	_update_npc_count_label(NpcManager.get_recruited_count() if NpcManager != null else 0)
+	var fsmap: Control = MINIMAP_SCRIPT.new()
+	fsmap.name = "FullscreenMap"
+	fsmap.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fsmap.offset_left = 80.0
+	fsmap.offset_top = 60.0
+	fsmap.offset_right = -80.0
+	fsmap.offset_bottom = -60.0
+	fsmap.visible = false
+	fsmap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(fsmap)
+	fullscreen_map = fsmap
 
 
 func update_hp(current: int, max_hp: int) -> void:
@@ -205,16 +218,29 @@ func bind_player(new_player) -> void:
 func bind_level(level, level_id: String) -> void:
 	current_level = level
 	current_level_id = level_id
-	minimap.visible = level_id == "dungeon"
+	minimap.visible = level_id == "dungeon" or level_id == "overworld"
+	if fullscreen_map != null:
+		fullscreen_map.visible = false
 	if level_id != "overworld":
 		set_raid_countdown("", Color(1.0, 0.15, 0.15, 1.0), false)
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if fullscreen_map != null and fullscreen_map.visible:
+		if event.is_action_pressed("toggle_map") or event.is_action_pressed("ui_cancel"):
+			_toggle_fullscreen_map()
+			get_viewport().set_input_as_handled()
+		return
+
 	if _is_modal_open():
 		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact") or event.is_action_pressed("toggle_equipment") or event.is_action_pressed("toggle_skills"):
 			_close_all_menus()
 			get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("toggle_map"):
+		_toggle_fullscreen_map()
+		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("toggle_inventory"):
@@ -438,12 +464,32 @@ func _toggle_settings_menu() -> void:
 
 
 func _process(_delta: float) -> void:
-	if current_level_id == "dungeon" and current_level != null and current_level.has_method("get_minimap_snapshot"):
+	if current_level != null and current_level.has_method("get_minimap_snapshot"):
 		minimap.visible = true
-		minimap.set_snapshot(current_level.get_minimap_snapshot())
+		var snap: Dictionary = current_level.get_minimap_snapshot()
+		minimap.set_snapshot(snap)
+		if fullscreen_map != null and fullscreen_map.visible:
+			fullscreen_map.set_snapshot(snap)
 	else:
 		minimap.visible = false
 	_refresh_skill_slots()
+
+
+func _toggle_fullscreen_map() -> void:
+	if fullscreen_map == null:
+		return
+	if fullscreen_map.visible:
+		fullscreen_map.visible = false
+		if player != null:
+			player.set_ui_blocked(false)
+		return
+	if current_level == null or not current_level.has_method("get_minimap_snapshot"):
+		return
+	var snap: Dictionary = current_level.get_minimap_snapshot()
+	fullscreen_map.set_snapshot(snap)
+	fullscreen_map.visible = true
+	if player != null:
+		player.set_ui_blocked(true)
 
 
 func rebuild_inventory_grid() -> void:

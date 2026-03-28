@@ -24,8 +24,14 @@ const MELEE_ENEMY_SCENE := preload("res://scenes/enemies/melee_enemy.tscn")
 const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
 const SHIELD_ORC_SCENE := preload("res://scenes/enemies/shield_orc_enemy.tscn")
 const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
+const SLIME_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/slime_enemy.tscn")
+const SHADOW_ASSASSIN_SCENE: PackedScene = preload("res://scenes/enemies/shadow_assassin_enemy.tscn")
+const GARGOYLE_SCENE: PackedScene = preload("res://scenes/enemies/gargoyle_enemy.tscn")
 const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
 const BOSS_ENEMY_SCENE := preload("res://scenes/enemies/boss_enemy.tscn")
+const NECROMANCER_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/necromancer_boss.tscn")
+const LAVA_GIANT_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/lava_giant_boss.tscn")
+const ABYSS_EYE_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/abyss_eye_boss.tscn")
 const DUNGEON_CHEST_SCENE := preload("res://scenes/dungeon/dungeon_chest.tscn")
 const LOCKED_CHEST_SCENE := preload("res://scenes/dungeon/locked_chest.tscn")
 const SPIKE_TRAP_SCENE := preload("res://scenes/dungeon/spike_trap.tscn")
@@ -35,6 +41,9 @@ const CHALLENGE_ROOM_SCRIPT := preload("res://scripts/dungeon/challenge_room.gd"
 const PUZZLE_ROOM_SCRIPT := preload("res://scripts/dungeon/puzzle_room.gd")
 const SAFE_ROOM_SCRIPT := preload("res://scripts/dungeon/safe_room.gd")
 const DUNGEON_MERCHANT_SCRIPT := preload("res://scripts/dungeon/dungeon_merchant.gd")
+const TIMED_TREASURE_ROOM_SCRIPT: Script = preload("res://scripts/dungeon/timed_treasure_room.gd")
+const SECRET_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/secret_merchant.gd")
+const ARROW_TRAP_LAUNCHER_SCRIPT: Script = preload("res://scripts/dungeon/arrow_trap_launcher.gd")
 
 @export var current_floor: int = 1
 @export var level_seed: int = 1
@@ -54,6 +63,7 @@ var treasure_reveal_time_left: float = 0.0
 var boss_stairway = null
 var boss_enemy_ref = null
 var boss_locked_chest = null
+var explored_rooms: Array[int] = []
 
 
 func _ready() -> void:
@@ -64,6 +74,22 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if treasure_reveal_time_left > 0.0:
 		treasure_reveal_time_left = max(treasure_reveal_time_left - delta, 0.0)
+	_track_explored_room()
+
+
+func _track_explored_room() -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	var rooms: Array = floor_data.get("rooms", [])
+	var player_tile: Vector2i = Vector2i(
+		floori(player.global_position.x / 16.0),
+		floori(player.global_position.y / 16.0)
+	)
+	for room_index: int in range(rooms.size()):
+		var room: Rect2i = rooms[room_index] as Rect2i
+		if room.has_point(player_tile) and not explored_rooms.has(room_index):
+			explored_rooms.append(room_index)
+			break
 
 
 func place_player(new_player: Node2D, spawn_override: Variant = null) -> void:
@@ -88,6 +114,7 @@ func _generate_floor() -> void:
 	boss_stairway = null
 	boss_enemy_ref = null
 	boss_locked_chest = null
+	explored_rooms.clear()
 	_draw_floor()
 	_spawn_features()
 	_spawn_enemies()
@@ -190,11 +217,13 @@ func _spawn_features() -> void:
 			_spawn_challenge_room(room, room_index)
 		match str(room_types[room_index]):
 			"treasure":
-				_spawn_treasure_room(room)
+				_spawn_treasure_room(room, room_index)
 			"trap":
 				_spawn_trap_room(room)
 			"empty":
 				_spawn_empty_room(room)
+			"secret_merchant":
+				_spawn_secret_merchant_room(room, room_index)
 			"boss":
 				_spawn_boss_room_visual(room)
 		if _room_has_feature(room_index, "puzzle"):
@@ -203,6 +232,7 @@ func _spawn_features() -> void:
 			_spawn_safe_room(room)
 		if _room_has_feature(room_index, "boss_merchant"):
 			_spawn_boss_merchant(room, room_index)
+	_spawn_corridor_features()
 
 
 func _spawn_enemies() -> void:
@@ -222,23 +252,26 @@ func _spawn_enemies() -> void:
 	for room_index in range(rooms.size()):
 		if room_index == int(floor_data.get("spawn_room_index", 0)) or room_index == int(floor_data.get("exit_room_index", 0)):
 			continue
+		var room_type: String = str(room_types[room_index]) if room_index < room_types.size() else "normal"
 		var room_feature := _get_room_feature(room_index)
-		if bool(room_feature.get("safe", false)) or bool(room_feature.get("challenge", false)) or bool(room_feature.get("boss_merchant", false)):
+		if bool(room_feature.get("safe", false)) or bool(room_feature.get("challenge", false)) or bool(room_feature.get("boss_merchant", false)) or room_type == "secret_merchant":
 			continue
 		eligible_rooms.append(room_index)
 		var room: Rect2i = rooms[room_index]
-		var room_type := str(room_types[room_index]) if room_index < room_types.size() else "normal"
 		if room_type == "empty":
 			continue
 		var enemy_count := rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"]))
 		if room_type == "treasure":
-			enemy_count = max(1, enemy_count - 2)
+			enemy_count = max(1, enemy_count - 3)
 		elif room_type == "elite":
 			enemy_count = max(2, enemy_count - 1)
 		for _enemy_index in range(enemy_count):
 			var enemy_scene: PackedScene = _pick_enemy_scene(current_floor, rng)
 			if room_type == "elite":
-				enemy_scene = BAT_SWARM_SCENE if rng.randf() <= 0.4 else SHIELD_ORC_SCENE
+				if current_floor >= 21:
+					enemy_scene = GARGOYLE_SCENE if rng.randf() <= 0.65 else SHADOW_ASSASSIN_SCENE
+				else:
+					enemy_scene = BAT_SWARM_SCENE if rng.randf() <= 0.4 else SHIELD_ORC_SCENE
 			_spawn_enemy_instance(enemy_scene, room, rng)
 
 	var elite_count: int = min(int(config["elite_count"]), eligible_rooms.size())
@@ -248,6 +281,7 @@ func _spawn_enemies() -> void:
 		var elite: Enemy = ELITE_ENEMY_SCENE.instantiate()
 		elite.global_position = _random_point_in_room(elite_room, rng)
 		elite.configure_for_floor(player, current_floor, loot_root)
+		_apply_floor_scaling(elite, 1.4, 1.25, 1.08 if current_floor >= 31 else 1.0)
 		elite.died.connect(_on_enemy_died.bind(elite))
 		enemy_root.add_child(elite)
 
@@ -369,40 +403,50 @@ func get_floor_spawn_config(floor_number: int, rng: RandomNumberGenerator = null
 		return {"enemy_min": 3, "enemy_max": 4, "allow_ranged": true, "ranged_ratio": 0.3, "elite_count": elite_count}
 	if floor_number <= 10:
 		return {"enemy_min": 4, "enemy_max": 5, "allow_ranged": true, "ranged_ratio": 0.45, "elite_count": 1}
-	if floor_number <= 12:
-		return {"enemy_min": 5, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": _rng_range(rng, 1, 2)}
-	return {"enemy_min": 5, "enemy_max": 7, "allow_ranged": true, "ranged_ratio": 0.55, "elite_count": _rng_range(rng, 2, 3)}
+	if floor_number <= 20:
+		return {"enemy_min": 4, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.6, "elite_count": _rng_range(rng, 1, 2)}
+	if floor_number <= 30:
+		return {"enemy_min": 5, "enemy_max": 7, "allow_ranged": true, "ranged_ratio": 0.65, "elite_count": _rng_range(rng, 2, 3)}
+	return {"enemy_min": 6, "enemy_max": 8, "allow_ranged": true, "ranged_ratio": 0.7, "elite_count": _rng_range(rng, 3, 4)}
 
 
 func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedScene:
 	var roll := _rng_randf(rng)
-	if floor_number >= 13:
-		if roll <= 0.30:
+	if floor_number >= 31:
+		if roll <= 0.16:
+			return MELEE_ENEMY_SCENE
+		if roll <= 0.32:
+			return SLIME_ENEMY_SCENE
+		if roll <= 0.46:
+			return RANGED_ENEMY_SCENE
+		if roll <= 0.60:
 			return SHIELD_ORC_SCENE
+		if roll <= 0.74:
+			return BAT_SWARM_SCENE
+		if roll <= 0.87:
+			return SHADOW_ASSASSIN_SCENE
+		return GARGOYLE_SCENE
+	if floor_number >= 21:
 		if roll <= 0.55:
-			return RANGED_ENEMY_SCENE
-		if roll <= 0.75:
-			return BAT_SWARM_SCENE
-		return MELEE_ENEMY_SCENE
-	if floor_number >= 9:
-		if roll <= 0.50:
+			return GARGOYLE_SCENE
+		if roll <= 0.78:
+			return SHADOW_ASSASSIN_SCENE
+		if roll <= 0.92:
 			return SHIELD_ORC_SCENE
-		if roll <= 0.65:
+		return RANGED_ENEMY_SCENE
+	if floor_number >= 11:
+		if roll <= 0.38:
 			return RANGED_ENEMY_SCENE
-		if roll <= 0.75:
-			return BAT_SWARM_SCENE
-		return MELEE_ENEMY_SCENE
-	if floor_number >= 5:
-		if roll <= 0.55:
-			return RANGED_ENEMY_SCENE
-		if roll <= 0.70:
-			return BAT_SWARM_SCENE
-		if roll <= 0.85:
+		if roll <= 0.73:
 			return SHIELD_ORC_SCENE
-		return MELEE_ENEMY_SCENE
-	if floor_number >= 3 and roll <= 0.20:
+		if roll <= 0.93:
+			return SHADOW_ASSASSIN_SCENE
 		return BAT_SWARM_SCENE
-	return MELEE_ENEMY_SCENE
+	if roll <= 0.52:
+		return MELEE_ENEMY_SCENE
+	if roll <= 0.87:
+		return SLIME_ENEMY_SCENE
+	return BAT_SWARM_SCENE
 
 
 func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNumberGenerator) -> Array[Enemy]:
@@ -419,19 +463,36 @@ func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNu
 		var offset := Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0)) * float(index)
 		spawned_enemy.global_position = _random_point_in_room(room, rng) + offset
 		spawned_enemy.configure_for_floor(player, current_floor, loot_root)
+		_apply_floor_scaling(spawned_enemy, 1.4, 1.25, 1.12 if current_floor >= 31 else 1.0)
 		spawned_enemy.died.connect(_on_enemy_died.bind(spawned_enemy))
 		enemy_root.add_child(spawned_enemy)
 		spawned_enemies.append(spawned_enemy)
 	return spawned_enemies
 
 
-func _spawn_treasure_room(room: Rect2i) -> void:
-	var chest_count := randi_range(1, 2)
+func _spawn_treasure_room(room: Rect2i, room_index: int = -1) -> void:
+	var chest_count := randi_range(3, 5)
 	for _idx in range(chest_count):
 		var chest = DUNGEON_CHEST_SCENE.instantiate()
 		chest.global_position = _random_point_in_room(room)
 		chest.setup(loot_root, current_floor)
 		feature_root.add_child(chest)
+	if room_index >= 0:
+		var treasure_timer: Node = TIMED_TREASURE_ROOM_SCRIPT.new()
+		if treasure_timer.has_method("setup"):
+			treasure_timer.setup(room, _get_room_door_tiles(room))
+		feature_root.add_child(treasure_timer)
+
+
+func _spawn_secret_merchant_room(room: Rect2i, room_index: int) -> void:
+	_spawn_room_tint(room, Color(0.12, 0.26, 0.36, 0.22), Color(0.52, 0.84, 1.0, 0.88))
+	var merchant: Node2D = SECRET_MERCHANT_SCRIPT.new() as Node2D
+	if merchant == null:
+		return
+	if merchant.has_method("setup"):
+		merchant.setup(current_floor + 2, _create_room_rng(251, room_index))
+	merchant.position = _room_center_world(room)
+	feature_root.add_child(merchant)
 
 
 func _spawn_empty_room(room: Rect2i) -> void:
@@ -607,6 +668,56 @@ func _spawn_boss_merchant(room: Rect2i, room_index: int) -> void:
 	feature_root.add_child(merchant)
 
 
+func _spawn_corridor_features() -> void:
+	var corridor_features: Array = floor_data.get("corridor_features", [])
+	for corridor_index in range(corridor_features.size()):
+		var corridor_feature: Dictionary = corridor_features[corridor_index] as Dictionary
+		if not bool(corridor_feature.get("trap", false)):
+			continue
+		_spawn_trap_corridor(corridor_feature, corridor_index)
+
+
+func _spawn_trap_corridor(corridor_feature: Dictionary, corridor_index: int) -> void:
+	var from_tile: Vector2i = corridor_feature.get("from", Vector2i.ZERO)
+	var to_tile: Vector2i = corridor_feature.get("to", Vector2i.ZERO)
+	_spawn_corridor_segment_launchers(from_tile, Vector2i(to_tile.x, from_tile.y), true, corridor_index)
+	_spawn_corridor_segment_launchers(Vector2i(to_tile.x, from_tile.y), to_tile, false, corridor_index + 7)
+
+
+func _spawn_corridor_segment_launchers(start_tile: Vector2i, end_tile: Vector2i, is_horizontal: bool, seed_offset: int) -> void:
+	if is_horizontal:
+		var min_x: int = mini(start_tile.x, end_tile.x)
+		var max_x: int = maxi(start_tile.x, end_tile.x)
+		if max_x - min_x < 4:
+			return
+		for tile_x: int in range(min_x + 2, max_x - 1, 4):
+			var top_delay: float = float((tile_x + seed_offset) % 3) * 0.35
+			var bottom_delay: float = float((tile_x + seed_offset + 1) % 3) * 0.35
+			_spawn_arrow_trap_launcher(Vector2i(tile_x, start_tile.y - 2), Vector2.DOWN, top_delay)
+			_spawn_arrow_trap_launcher(Vector2i(tile_x, start_tile.y + 2), Vector2.UP, bottom_delay)
+		return
+
+	var min_y: int = mini(start_tile.y, end_tile.y)
+	var max_y: int = maxi(start_tile.y, end_tile.y)
+	if max_y - min_y < 4:
+		return
+	for tile_y: int in range(min_y + 2, max_y - 1, 4):
+		var left_delay: float = float((tile_y + seed_offset) % 3) * 0.35
+		var right_delay: float = float((tile_y + seed_offset + 1) % 3) * 0.35
+		_spawn_arrow_trap_launcher(Vector2i(start_tile.x - 2, tile_y), Vector2.RIGHT, left_delay)
+		_spawn_arrow_trap_launcher(Vector2i(start_tile.x + 2, tile_y), Vector2.LEFT, right_delay)
+
+
+func _spawn_arrow_trap_launcher(tile_pos: Vector2i, direction: Vector2, initial_delay: float) -> void:
+	var launcher: Node2D = ARROW_TRAP_LAUNCHER_SCRIPT.new() as Node2D
+	if launcher == null:
+		return
+	if launcher.has_method("setup"):
+		launcher.setup(direction, initial_delay, max(8 + current_floor, 10), 1.4)
+	launcher.position = Vector2(tile_pos.x * 16 + 8, tile_pos.y * 16 + 8)
+	feature_root.add_child(launcher)
+
+
 func _spawn_boss_room_visual(room: Rect2i) -> void:
 	var room_start := Vector2(room.position.x * 16, room.position.y * 16)
 	var room_end := Vector2(room.end.x * 16, room.end.y * 16)
@@ -635,11 +746,15 @@ func _spawn_boss_room_visual(room: Rect2i) -> void:
 
 
 func _spawn_boss_enemy(room: Rect2i, rng: RandomNumberGenerator) -> void:
-	var boss = BOSS_ENEMY_SCENE.instantiate()
+	var boss_scene: PackedScene = _pick_boss_scene(current_floor)
+	var boss = boss_scene.instantiate()
 	boss.global_position = _random_point_in_room(room, rng)
 	boss.configure_for_floor(player, current_floor, loot_root)
+	_apply_floor_scaling(boss, 1.55, 1.3, 1.08 if current_floor >= 31 else 1.0)
 	boss.died.connect(_on_enemy_died.bind(boss))
 	enemy_root.add_child(boss)
+	if boss.has_method("setup_boss_arena"):
+		boss.setup_boss_arena(self, room)
 	boss_enemy_ref = boss
 
 
@@ -657,6 +772,82 @@ func set_gameplay_paused(paused: bool) -> void:
 		if enemy.has_method("set_ai_paused"):
 			enemy.set_ai_paused(paused)
 		enemy.process_mode = Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
+	for feature in feature_root.get_children():
+		if feature.has_method("set_gameplay_paused"):
+			feature.set_gameplay_paused(paused)
+		feature.process_mode = Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
+
+
+func _pick_boss_scene(floor_number: int) -> PackedScene:
+	if floor_number == 25:
+		return ABYSS_EYE_BOSS_SCENE
+	if floor_number == 15:
+		return LAVA_GIANT_BOSS_SCENE
+	if floor_number % 10 == 0:
+		return NECROMANCER_BOSS_SCENE
+	return BOSS_ENEMY_SCENE
+
+
+func spawn_abyss_cover_pillars(room: Rect2i) -> void:
+	var room_center: Vector2 = _room_center_world(room)
+	var pillar_offsets: Array[Vector2] = [
+		Vector2.ZERO,
+		Vector2(-36.0, 26.0),
+		Vector2(36.0, -26.0),
+	]
+	for offset: Vector2 in pillar_offsets:
+		feature_root.add_child(_create_cover_pillar(room_center + offset))
+
+
+func _create_cover_pillar(world_position: Vector2) -> Node2D:
+	var pillar_root: Node2D = Node2D.new()
+	pillar_root.name = "AbyssPillar"
+	pillar_root.global_position = world_position
+	pillar_root.z_index = 1
+
+	var pillar_body: StaticBody2D = StaticBody2D.new()
+	pillar_body.collision_layer = 1
+	pillar_body.collision_mask = 0
+	pillar_root.add_child(pillar_body)
+
+	var collision_shape: CollisionShape2D = CollisionShape2D.new()
+	var shape: CircleShape2D = CircleShape2D.new()
+	shape.radius = 11.0
+	collision_shape.shape = shape
+	pillar_body.add_child(collision_shape)
+
+	var base: Polygon2D = Polygon2D.new()
+	base.color = Color(0.18, 0.18, 0.24, 1.0)
+	base.polygon = PackedVector2Array([
+		Vector2(-12.0, -12.0),
+		Vector2(12.0, -12.0),
+		Vector2(12.0, 12.0),
+		Vector2(-12.0, 12.0),
+	])
+	pillar_root.add_child(base)
+
+	var inner: Polygon2D = Polygon2D.new()
+	inner.color = Color(0.45, 0.45, 0.58, 1.0)
+	inner.polygon = PackedVector2Array([
+		Vector2(-7.0, -11.0),
+		Vector2(7.0, -11.0),
+		Vector2(7.0, 11.0),
+		Vector2(-7.0, 11.0),
+	])
+	pillar_root.add_child(inner)
+
+	return pillar_root
+
+
+func _apply_floor_scaling(enemy_node: Enemy, hp_multiplier: float, damage_multiplier: float, speed_multiplier: float) -> void:
+	if enemy_node == null or current_floor < 31:
+		return
+	enemy_node.max_hp = int(round(float(enemy_node.max_hp) * hp_multiplier))
+	enemy_node.current_hp = enemy_node.max_hp
+	enemy_node.damage = int(round(float(enemy_node.damage) * damage_multiplier))
+	enemy_node.speed *= speed_multiplier
+	if enemy_node.has_method("_update_hp_bar"):
+		enemy_node.call("_update_hp_bar")
 
 
 func get_minimap_snapshot() -> Dictionary:
@@ -669,8 +860,15 @@ func get_minimap_snapshot() -> Dictionary:
 			if child is DungeonChest:
 				chest_positions.append(child.global_position)
 	return {
+		"mode": "dungeon",
 		"map_size": DUNGEON_GENERATOR.MAP_SIZE,
 		"floor_tiles": floor_data.get("floor_tiles", []),
+		"rooms": floor_data.get("rooms", []),
+		"room_types": floor_data.get("room_types", []),
+		"boss_room_index": int(floor_data.get("boss_room_index", -1)),
+		"spawn_room_index": int(floor_data.get("spawn_room_index", 0)),
+		"exit_room_index": int(floor_data.get("exit_room_index", 0)),
+		"explored_rooms": explored_rooms.duplicate(),
 		"enemy_positions": enemy_positions,
 		"chest_positions": chest_positions,
 		"stair_tile": Vector2(floor_data.get("exit_point", Vector2.ZERO).x / 16.0, floor_data.get("exit_point", Vector2.ZERO).y / 16.0),
