@@ -7,6 +7,7 @@
   "crafting_title": "Crafting",
   "craft_button": "Craft",
   "materials_header": "[b]Materials:[/b]",
+  "materials_section": "Materials",
   "durability_label": "Durability: %d/%d",
   "slot_label": "Slot: %s",
   "repair_no_player": "Cannot repair: no player connected",

@@ -7,6 +7,7 @@
   "crafting_title": "製作",
   "craft_button": "製作",
   "materials_header": "[b]材料:[/b]",
+  "materials_section": "材料",
   "durability_label": "耐久度: %d/%d",
   "slot_label": "欄位: %s",
   "repair_no_player": "無法修復：未連結到玩家",

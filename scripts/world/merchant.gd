@@ -60,15 +60,15 @@ func _open_shop() -> void:
 	_shop_canvas.add_child(_shop_root)
 
 	var panel: Panel = Panel.new()
-	panel.anchor_left = 0.5
+	panel.anchor_left = 0.1
 	panel.anchor_top = 0.5
-	panel.anchor_right = 0.5
+	panel.anchor_right = 0.9
 	panel.anchor_bottom = 0.5
+	panel.offset_left = 0.0
+	panel.offset_top = -260.0
+	panel.offset_right = 0.0
+	panel.offset_bottom = 260.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.offset_left = -210.0
-	panel.offset_top = -250.0
-	panel.offset_right = 210.0
-	panel.offset_bottom = 250.0
 	_shop_root.add_child(panel)
 
 	var x_btn: Button = Button.new()
@@ -76,11 +76,11 @@ func _open_shop() -> void:
 	x_btn.text = "X"
 	x_btn.custom_minimum_size = Vector2(32, 32)
 	x_btn.size = Vector2(32, 32)
-	x_btn.position = panel.position + Vector2(8, 8)
+	x_btn.position = Vector2(8.0, 8.0)
 	x_btn.z_index = 100
 	x_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	x_btn.pressed.connect(_close_shop)
-	_shop_root.add_child(x_btn)
+	panel.add_child(x_btn)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -103,29 +103,71 @@ func _open_shop() -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	for item in SHOP_ITEMS:
+	var columns: HBoxContainer = HBoxContainer.new()
+	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	columns.add_theme_constant_override("separation", 12)
+	vbox.add_child(columns)
+
+	var left_vbox: VBoxContainer = VBoxContainer.new()
+	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_vbox.add_theme_constant_override("separation", 6)
+	columns.add_child(left_vbox)
+
+	var shop_header: Label = Label.new()
+	shop_header.text = LocaleManager.L("merchant")
+	shop_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_header.add_theme_font_size_override("font_size", 14)
+	left_vbox.add_child(shop_header)
+
+	var shop_scroll: ScrollContainer = ScrollContainer.new()
+	shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left_vbox.add_child(shop_scroll)
+
+	var shop_list: VBoxContainer = VBoxContainer.new()
+	shop_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_list.add_theme_constant_override("separation", 6)
+	shop_scroll.add_child(shop_list)
+
+	for item: Dictionary in SHOP_ITEMS:
 		_add_shop_row(
-			vbox,
+			shop_list,
 			LocaleManager.L(str(item["label_key"])),
 			int(item["price"]),
 			_on_buy_item.bind(str(item["id"]), int(item["quantity"]), int(item["price"])),
 			ITEM_DATABASE.get_item_icon(str(item["id"]))
 		)
+	_add_shop_row(shop_list, LocaleManager.L("mystery_equipment"), 50, _on_buy_equipment, ITEM_DATABASE.get_default_equipment_icon("weapon"))
 
-	_add_shop_row(vbox, LocaleManager.L("mystery_equipment"), 50, _on_buy_equipment, ITEM_DATABASE.get_default_equipment_icon("weapon"))
+	columns.add_child(VSeparator.new())
 
-	vbox.add_child(HSeparator.new())
-	_exchange_buttons.clear()
+	var right_vbox: VBoxContainer = VBoxContainer.new()
+	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_vbox.add_theme_constant_override("separation", 6)
+	columns.add_child(right_vbox)
 
 	var exchange_title: Label = Label.new()
 	exchange_title.text = LocaleManager.L("merchant_exchange")
 	exchange_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	exchange_title.add_theme_font_size_override("font_size", 15)
-	vbox.add_child(exchange_title)
+	exchange_title.add_theme_font_size_override("font_size", 14)
+	right_vbox.add_child(exchange_title)
 
+	var exchange_scroll: ScrollContainer = ScrollContainer.new()
+	exchange_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	exchange_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	right_vbox.add_child(exchange_scroll)
+
+	var exchange_list: VBoxContainer = VBoxContainer.new()
+	exchange_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	exchange_list.add_theme_constant_override("separation", 6)
+	exchange_scroll.add_child(exchange_list)
+
+	_exchange_buttons.clear()
 	for recipe: Dictionary in EXCHANGE_RECIPES:
 		_add_exchange_row(
-			vbox,
+			exchange_list,
 			str(recipe.get("from_id", "")),
 			int(recipe.get("from_amount", 0)),
 			str(recipe.get("to_id", "")),

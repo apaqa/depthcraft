@@ -67,6 +67,8 @@ func open_for_player(target_player, available_recipe_ids: PackedStringArray = Pa
 	filtered_recipe_ids = available_recipe_ids
 	menu_title = title if title != "" else LocaleManager.L("crafting_title")
 	_current_category = "all"
+	_tabs_built = false
+	_category_tab_buttons.clear()
 	visible = true
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
@@ -351,14 +353,23 @@ func _build_category_tabs() -> void:
 	var recipe_panel: Control = recipe_scroll.get_parent() as Control
 	if recipe_panel == null:
 		return
+
+	var old_bar: Node = recipe_panel.get_node_or_null("CategoryTabs")
+	if old_bar != null:
+		old_bar.free()
+
 	_tabs_built = true
 
 	var tab_bar: HBoxContainer = HBoxContainer.new()
 	tab_bar.name = "CategoryTabs"
 	tab_bar.add_theme_constant_override("separation", 4)
 
-	var cat_keys: Array = ["all", "Weapons", "Armor", "Consumables", "Tools"]
-	for cat_key in cat_keys:
+	var cat_keys: Array = []
+	if facility != null and facility is CookingBenchFacility:
+		cat_keys = ["all", "Cooking"]
+	else:
+		cat_keys = ["all", "Weapons", "Armor", "Consumables", "Tools"]
+	for cat_key: Variant in cat_keys:
 		var btn: Button = Button.new()
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if cat_key == "all":

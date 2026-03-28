@@ -92,6 +92,25 @@ func _refresh() -> void:
 		_cons_indices.append(index)
 		inventory_list_container.add_child(_build_cons_row(stack, cons_index, q_id, r_id))
 
+	var has_materials: bool = false
+	for index in range(player.inventory.items.size()):
+		var stack: Dictionary = player.inventory.items[index]
+		var item_type: String = str(stack.get("type", ""))
+		var item_id: String = str(stack.get("id", ""))
+		if item_type != "resource":
+			continue
+		if item_id == "copper" or item_id == "silver" or item_id == "gold":
+			continue
+		if not has_materials:
+			has_materials = true
+			inventory_list_container.add_child(HSeparator.new())
+			var mat_header: Label = Label.new()
+			mat_header.text = LocaleManager.L("materials_section")
+			mat_header.modulate = Color(0.85, 0.75, 0.45, 1.0)
+			mat_header.add_theme_font_size_override("font_size", 12)
+			inventory_list_container.add_child(mat_header)
+		inventory_list_container.add_child(_build_material_row(stack))
+
 	var summary: Dictionary = player.get_stats_summary()
 	stat_label.text = "%s: %d   %s: %d   %s: %d   %s: %d" % [
 		LocaleManager.L("atk"), int(summary.get("attack", 0)),
@@ -323,6 +342,22 @@ func _build_cons_row(stack: Dictionary, cons_idx: int, q_id: String, r_id: Strin
 		_update_comparison_label()
 	)
 	return panel
+
+
+func _build_material_row(stack: Dictionary) -> HBoxContainer:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var icon_texture: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+	row.add_child(_make_icon_ctrl(icon_texture, ITEM_DATABASE.get_stack_color(stack), 20))
+	var label: Label = Label.new()
+	var label_text: String = ITEM_DATABASE.get_stack_display_name(stack)
+	var quantity: int = int(stack.get("quantity", 0))
+	label.text = "%s x%d" % [label_text, quantity]
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.clip_text = true
+	row.add_child(label)
+	return row
 
 
 func _make_icon_ctrl(icon: Texture2D, fallback_color: Color, size: int) -> Control:
