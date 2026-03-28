@@ -487,13 +487,10 @@ func _update_minimap(delta: float) -> void:
 	var mode: String = str(snap.get("mode", "dungeon"))
 	var needs_redraw: bool = false
 	if mode == "dungeon":
-		var player_tile: Vector2 = snap.get("player_tile", Vector2.ZERO)
-		var current_tile: Vector2i = Vector2i(int(player_tile.x), int(player_tile.y))
 		var explored_rooms: Array = snap.get("explored_rooms", [])
 		var explored_count: int = explored_rooms.size()
-		if current_tile != _last_minimap_player_tile or explored_count != _last_explored_count:
+		if explored_count != _last_explored_count:
 			needs_redraw = true
-			_last_minimap_player_tile = current_tile
 			_last_explored_count = explored_count
 	else:
 		var player_pos: Vector2 = snap.get("player_pos", Vector2.ZERO)

@@ -25,11 +25,17 @@ const WANDERER_COUNT: int = 4
 @onready var raid_system = $RaidSystem
 @onready var dungeon_entrance = $ReturnPortal
 
+const RESOURCE_CULL_RADIUS: float = 800.0
+const RESOURCE_CULL_MOVE_THRESHOLD_SQ: float = 32.0 * 32.0
+
 var generation_seed: int = 0
 var current_day: int = 1
 var _generator: WorldGenerator = null
 var _world_npc_container: Node2D = null
 var _recruited_npc_container: Node2D = null
+var _player_ref: Node2D = null
+var _resource_nodes: Array[Node2D] = []
+var _last_cull_pos: Vector2 = Vector2(-99999.0, -99999.0)
 
 
 func _ready() -> void:
@@ -58,7 +64,27 @@ func _exit_tree() -> void:
 		NpcManager.roster_changed.disconnect(_on_npc_roster_changed)
 
 
+func _process(_delta: float) -> void:
+	_update_resource_culling()
+
+
+func _update_resource_culling() -> void:
+	if _player_ref == null or not is_instance_valid(_player_ref):
+		return
+	var player_pos: Vector2 = _player_ref.global_position
+	if player_pos.distance_squared_to(_last_cull_pos) < RESOURCE_CULL_MOVE_THRESHOLD_SQ:
+		return
+	_last_cull_pos = player_pos
+	var cull_sq: float = RESOURCE_CULL_RADIUS * RESOURCE_CULL_RADIUS
+	for node: Node2D in _resource_nodes:
+		if not is_instance_valid(node):
+			continue
+		node.visible = node.global_position.distance_squared_to(player_pos) <= cull_sq
+
+
 func place_player(player: Node2D, spawn_override: Variant = null) -> void:
+	_player_ref = player
+	_last_cull_pos = Vector2(-99999.0, -99999.0)
 	if player.get_parent() != self:
 		player.reparent(self)
 	player.global_position = get_spawn_position(spawn_override)
@@ -89,65 +115,70 @@ func build_ground() -> void:
 
 
 func _spawn_resource_layout() -> void:
-	for child in get_children():
+	for child: Node in get_children():
 		if child is ResourceNode or child.name.begins_with("AutoResource_"):
 			child.queue_free()
+	_resource_nodes.clear()
 
-	var spawn_px := _generator.get_spawn_pixel()
-	var entrance_px := _generator.get_dungeon_entrance_pixel()
-	var safe_dist := float((WorldGenerator.SAFE_RADIUS + 2) * WorldGenerator.TILE_SIZE)
-	var entrance_clear := float(3 * WorldGenerator.TILE_SIZE)
-	var idx := 0
+	var spawn_px: Vector2 = _generator.get_spawn_pixel()
+	var entrance_px: Vector2 = _generator.get_dungeon_entrance_pixel()
+	var safe_dist: float = float((WorldGenerator.SAFE_RADIUS + 2) * WorldGenerator.TILE_SIZE)
+	var entrance_clear: float = float(3 * WorldGenerator.TILE_SIZE)
+	var idx: int = 0
 
-	for cluster in _generator.forest_clusters:
-		var count := clampi(cluster.radius / 2, 10, 25)
-		for pos in _generator.sample_positions_in_cluster(cluster, count):
+	for cluster: Dictionary in _generator.forest_clusters:
+		var count: int = clampi(cluster.radius / 2, 10, 25)
+		for pos: Vector2 in _generator.sample_positions_in_cluster(cluster, count):
 			if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
 				continue
-			var node := TREE_SCENE.instantiate()
+			var node: Node2D = TREE_SCENE.instantiate() as Node2D
 			node.name = "AutoResource_%d" % idx
 			node.position = pos
 			add_child(node)
+			_resource_nodes.append(node)
 			idx += 1
 
-	for cluster in _generator.mountain_clusters:
-		var rock_count := clampi(cluster.radius / 2, 8, 15)
-		for pos in _generator.sample_positions_in_cluster(cluster, rock_count):
+	for cluster: Dictionary in _generator.mountain_clusters:
+		var rock_count: int = clampi(cluster.radius / 2, 8, 15)
+		for pos: Vector2 in _generator.sample_positions_in_cluster(cluster, rock_count):
 			if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
 				continue
-			var node := ROCK_SCENE.instantiate()
+			var node: Node2D = ROCK_SCENE.instantiate() as Node2D
 			node.name = "AutoResource_%d" % idx
 			node.position = pos
 			add_child(node)
+			_resource_nodes.append(node)
 			idx += 1
-		var iron_count := clampi(cluster.radius / 5, 2, 5)
-		for pos in _generator.sample_positions_in_cluster(cluster, iron_count):
+		var iron_count: int = clampi(cluster.radius / 5, 2, 5)
+		for pos: Vector2 in _generator.sample_positions_in_cluster(cluster, iron_count):
 			if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
 				continue
-			var node := IRON_SCENE.instantiate()
+			var node: Node2D = IRON_SCENE.instantiate() as Node2D
 			node.name = "AutoResource_%d" % idx
 			node.position = pos
 			add_child(node)
+			_resource_nodes.append(node)
 			idx += 1
 
-	for pos in _generator.sample_plains_positions(20):
+	for pos: Vector2 in _generator.sample_plains_positions(20):
 		if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
 			continue
-		var node := GRASS_SCENE.instantiate()
+		var node: Node2D = GRASS_SCENE.instantiate() as Node2D
 		node.name = "AutoResource_%d" % idx
 		node.position = pos
 		add_child(node)
+		_resource_nodes.append(node)
 		idx += 1
 
-	# Scatter decorative objects (flowers, grass tufts, pebbles) across plains
-	for tile_pos in _generator.get_decoration_positions():
+	for tile_pos: Variant in _generator.get_decoration_positions():
 		var px: Vector2 = Vector2(Vector2i(tile_pos) * WorldGenerator.TILE_SIZE)
 		if not _is_valid_resource_pos(px, spawn_px, entrance_px, safe_dist, entrance_clear):
 			continue
-		var deco := GRASS_SCENE.instantiate()
+		var deco: Node2D = GRASS_SCENE.instantiate() as Node2D
 		deco.name = "AutoResource_%d" % idx
 		deco.position = px
 		add_child(deco)
+		_resource_nodes.append(deco)
 		idx += 1
 
 

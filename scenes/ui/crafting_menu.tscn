@@ -17,13 +17,14 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0, 0, 0, 0.45)
+mouse_filter = 1
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
-layout_mode = 0
-offset_left = 72.0
-offset_top = 20.0
-offset_right = 568.0
-offset_bottom = 524.0
+layout_mode = 1
+anchor_left = 0.1
+anchor_top = 0.15
+anchor_right = 0.9
+anchor_bottom = 0.85
 self_modulate = Color(1, 1, 1, 0.96)
 
 [node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
@@ -32,41 +33,60 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer"]
-theme_override_constants/separation = 12
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+theme_override_constants/separation = 8
 
-[node name="RecipePanel" type="PanelContainer" parent="PanelContainer/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(220, 220)
+[node name="TitleRow" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/TitleRow"]
+text = "製作"
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
 
-[node name="RecipeScroll" type="ScrollContainer" parent="PanelContainer/MarginContainer/HBoxContainer/RecipePanel"]
-custom_minimum_size = Vector2(220, 220)
+[node name="HSeparator" type="HSeparator" parent="PanelContainer/MarginContainer/VBoxContainer"]
+
+[node name="MainColumns" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="CategoryVBox" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns"]
+custom_minimum_size = Vector2(120, 0)
+theme_override_constants/separation = 4
+
+[node name="VSeparator" type="VSeparator" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns"]
+
+[node name="RecipeVBox" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns"]
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_override_constants/separation = 4
+
+[node name="RecipeScroll" type="ScrollContainer" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns/RecipeVBox"]
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="RecipeListContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/RecipePanel/RecipeScroll"]
+[node name="RecipeListContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns/RecipeVBox/RecipeScroll"]
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
-[node name="DetailPanel" type="PanelContainer" parent="PanelContainer/MarginContainer/HBoxContainer"]
-size_flags_horizontal = 3
+[node name="VSeparator2" type="VSeparator" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns"]
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel"]
+[node name="DetailVBox" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns"]
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
 theme_override_constants/separation = 8
 
-[node name="TitleLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
-text = "製作"
-
-[node name="DetailText" type="RichTextLabel" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
-custom_minimum_size = Vector2(250, 80)
+[node name="DetailText" type="RichTextLabel" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns/DetailVBox"]
+custom_minimum_size = Vector2(0, 80)
 bbcode_enabled = true
 fit_content = false
 size_flags_vertical = 3
 scroll_active = true
 
-[node name="MaterialsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
+[node name="MaterialsContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns/DetailVBox"]
 theme_override_constants/separation = 4
 
-[node name="CraftButton" type="Button" parent="PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer"]
+[node name="CraftButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/MainColumns/DetailVBox"]
 text = "製作"
 
 [node name="FlashRect" type="ColorRect" parent="."]
@@ -75,3 +95,4 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(1, 1, 1, 0)
+mouse_filter = 1

@@ -7,13 +7,13 @@ signal close_requested
 
 @onready var panel_container: PanelContainer = $PanelContainer
 
-@onready var recipe_list_container: VBoxContainer = $PanelContainer/MarginContainer/HBoxContainer/RecipePanel/RecipeScroll/RecipeListContainer
-@onready var title_label: Label = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/TitleLabel
-@onready var detail_text: RichTextLabel = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/DetailText
-@onready var materials_container: VBoxContainer = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/MaterialsContainer
-@onready var craft_button: Button = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer/CraftButton
+@onready var recipe_list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/MainColumns/RecipeVBox/RecipeScroll/RecipeListContainer
+@onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleRow/TitleLabel
+@onready var detail_text: RichTextLabel = $PanelContainer/MarginContainer/VBoxContainer/MainColumns/DetailVBox/DetailText
+@onready var materials_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/MainColumns/DetailVBox/MaterialsContainer
+@onready var craft_button: Button = $PanelContainer/MarginContainer/VBoxContainer/MainColumns/DetailVBox/CraftButton
 @onready var flash_rect: ColorRect = $FlashRect
-@onready var detail_vbox: VBoxContainer = $PanelContainer/MarginContainer/HBoxContainer/DetailPanel/VBoxContainer
+@onready var detail_vbox: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/MainColumns/DetailVBox
 
 var player_inventory = null
 var player = null
@@ -301,15 +301,13 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 
 
 func _ensure_close_button() -> void:
-	if panel_container == null or get_node_or_null("CloseButton") != null:
+	var title_row: HBoxContainer = panel_container.get_node_or_null("MarginContainer/VBoxContainer/TitleRow") as HBoxContainer
+	if title_row == null or title_row.get_node_or_null("CloseButton") != null:
 		return
 	var close_button: Button = Button.new()
 	close_button.name = "CloseButton"
 	close_button.text = "X"
-	close_button.position = panel_container.position + Vector2(8, 8)
 	close_button.custom_minimum_size = Vector2(32, 32)
-	close_button.size = Vector2(32, 32)
-	close_button.z_index = 100
 	close_button.pressed.connect(close_menu)
 	var cb_normal: StyleBoxFlat = StyleBoxFlat.new()
 	cb_normal.bg_color = Color(0.18, 0.18, 0.22, 0.95)
@@ -322,7 +320,7 @@ func _ensure_close_button() -> void:
 	cb_hover.bg_color = Color(0.28, 0.28, 0.34, 0.95)
 	close_button.add_theme_stylebox_override("normal", cb_normal)
 	close_button.add_theme_stylebox_override("hover", cb_hover)
-	add_child(close_button)
+	title_row.add_child(close_button)
 
 
 func _ensure_upgrade_controls() -> void:
@@ -368,48 +366,28 @@ func _refresh_upgrade_controls() -> void:
 # Category tab bar
 # ---------------------------------------------------------------------------
 func _build_category_tabs() -> void:
-	if _tabs_built:
-		_refresh_category_tab_visuals()
+	var category_vbox: VBoxContainer = panel_container.get_node_or_null(
+			"MarginContainer/VBoxContainer/MainColumns/CategoryVBox") as VBoxContainer
+	if category_vbox == null:
 		return
-	var recipe_scroll: ScrollContainer = recipe_list_container.get_parent() as ScrollContainer
-	if recipe_scroll == null:
-		return
-	var recipe_panel: Control = recipe_scroll.get_parent() as Control
-	if recipe_panel == null:
-		return
-
-	var old_bar: Node = recipe_panel.get_node_or_null("CategoryTabs")
-	if old_bar != null:
-		old_bar.free()
-
+	for child: Node in category_vbox.get_children():
+		child.queue_free()
+	_category_tab_buttons.clear()
 	_tabs_built = true
 
-	var tab_bar: HBoxContainer = HBoxContainer.new()
-	tab_bar.name = "CategoryTabs"
-	tab_bar.add_theme_constant_override("separation", 4)
-
-	var cat_keys: Array = []
+	var cat_keys: Array[String] = []
 	if facility != null and facility is CookingBenchFacility:
 		cat_keys = ["all", "Cooking"]
 	else:
 		cat_keys = ["all", "Weapons", "Armor", "Consumables", "Tools"]
-	for cat_key: Variant in cat_keys:
+	for cat_key: String in cat_keys:
 		var btn: Button = Button.new()
+		btn.custom_minimum_size = Vector2(0, 40)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		if cat_key == "all":
-			btn.text = "All"
-		else:
-			btn.text = _translate_category(str(cat_key))
-		btn.pressed.connect(_on_category_tab_pressed.bind(str(cat_key)))
-		_category_tab_buttons[str(cat_key)] = btn
-		tab_bar.add_child(btn)
-
-	recipe_panel.add_child(tab_bar)
-	recipe_panel.move_child(tab_bar, 0)
-	tab_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	tab_bar.offset_bottom = 34.0
-	recipe_scroll.anchor_top = 0.0
-	recipe_scroll.offset_top = 36.0
+		btn.text = "All" if cat_key == "all" else _translate_category(cat_key)
+		btn.pressed.connect(_on_category_tab_pressed.bind(cat_key))
+		_category_tab_buttons[cat_key] = btn
+		category_vbox.add_child(btn)
 	_refresh_category_tab_visuals()
 
 
