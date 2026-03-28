@@ -42,10 +42,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	for skill_id in skills.keys():
 		var skill: Dictionary = skills[skill_id]
-		var current_cd := maxf(float(skill.get("current_cooldown", 0.0)) - delta, 0.0)
+		var current_cd: float = maxf(float(skill.get("current_cooldown", 0.0)) - delta, 0.0)
 		skill["current_cooldown"] = current_cd
 		skills[skill_id] = skill
-	skills_changed.emit()
 
 
 func bind_player(target_player) -> void:

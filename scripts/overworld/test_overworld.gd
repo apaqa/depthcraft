@@ -8,8 +8,6 @@ signal raid_countdown_changed(message: String, color: Color, visible: bool)
 const SOURCE_GRASS = 1
 const SOURCE_GRASS_ALT = 1
 const SOURCE_ROAD = 3
-const SOURCE_WATER = 5
-const SOURCE_WATER_ALT = 6
 const BASE_CLEAR_RADIUS = 128.0
 const TREE_SCENE = preload("res://scenes/world/tree_node.tscn")
 const ROCK_SCENE = preload("res://scenes/world/rock_node.tscn")

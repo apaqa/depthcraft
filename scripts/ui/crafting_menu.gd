@@ -598,17 +598,12 @@ func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> HBo
 	mid_vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	mid_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var rarity: String = str(item.get("rarity", ""))
 	var display_name: String = _repair_get_display_name(item)
 	var slot_tag: String = _repair_translate_slot(slot_name) if slot_name != "" else LocaleManager.L("inventory_short")
-	var name_text: String = ""
-	if rarity != "" and rarity != "Common":
-		name_text = "[%s] %s  (%s)" % [rarity, display_name, slot_tag]
-	else:
-		name_text = "%s  (%s)" % [display_name, slot_tag]
+	var name_text: String = "[%s] %s" % [slot_tag, display_name]
 	var name_lbl: Label = Label.new()
 	name_lbl.text = name_text
-	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.add_theme_font_size_override("font_size", 14)
 	name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
 	name_lbl.clip_text = true
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -616,22 +611,32 @@ func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> HBo
 
 	var max_dur: int = int(item.get("max_durability", 0))
 	var dur: int = int(item.get("durability", max_dur))
+	var dur_ratio: float = float(dur) / float(maxi(max_dur, 1))
 	var dur_row: HBoxContainer = HBoxContainer.new()
 	dur_row.add_theme_constant_override("separation", 6)
 	dur_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var dur_bar: ProgressBar = ProgressBar.new()
-	dur_bar.custom_minimum_size = Vector2(200, 12)
+	dur_bar.custom_minimum_size = Vector2(160, 10)
 	dur_bar.min_value = 0.0
 	dur_bar.max_value = float(maxi(max_dur, 1))
 	dur_bar.value = float(dur)
 	dur_bar.show_percentage = false
 	dur_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bar_color: Color
+	if dur_ratio > 0.5:
+		bar_color = Color(0.2, 0.85, 0.2, 1.0)
+	elif dur_ratio > 0.25:
+		bar_color = Color(0.9, 0.75, 0.1, 1.0)
+	else:
+		bar_color = Color(0.9, 0.2, 0.2, 1.0)
+	dur_bar.add_theme_color_override("font_color", bar_color)
+	dur_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(bar_color))
 	dur_row.add_child(dur_bar)
 
 	var dur_txt: Label = Label.new()
 	dur_txt.text = "%d/%d" % [dur, max_dur]
-	dur_txt.add_theme_font_size_override("font_size", 11)
+	dur_txt.add_theme_font_size_override("font_size", 12)
 	dur_txt.modulate = Color(0.8, 0.8, 0.8, 1.0)
 	dur_txt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dur_row.add_child(dur_txt)
@@ -641,10 +646,10 @@ func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> HBo
 	select_btn.add_child(select_hbox)
 	row.add_child(select_btn)
 
-	# Right: "修理" button (80×40)
+	# Right: "修理" button (80×36)
 	var repair_btn: Button = Button.new()
 	repair_btn.text = LocaleManager.L("repair")
-	repair_btn.custom_minimum_size = Vector2(80, 40)
+	repair_btn.custom_minimum_size = Vector2(80, 36)
 	repair_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	if slot_name != "":
 		var sn: String = slot_name
@@ -873,12 +878,25 @@ func _get_repair_cost_multiplier() -> float:
 func _repair_get_display_name(item: Dictionary) -> String:
 	var raw_name: String = str(item.get("name", ""))
 	if raw_name != "":
-		return raw_name
+		# Strip leading "[Quality] " prefix if present, to avoid double-prefix
+		var stripped: String = raw_name
+		if stripped.begins_with("["):
+			var bracket_end: int = stripped.find("]")
+			if bracket_end >= 0:
+				stripped = stripped.substr(bracket_end + 1).strip_edges()
+		if stripped != "":
+			return stripped
 	var item_id: String = str(item.get("id", str(item.get("item_id", ""))))
 	var db_name: String = ITEM_DATABASE.get_display_name(item_id)
 	if db_name != "" and db_name != item_id:
 		return db_name
 	return item_id.replace("_", " ").capitalize()
+
+
+func _make_bar_fill_style(bar_color: Color) -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = bar_color
+	return style
 
 
 func _repair_translate_slot(slot_name: String) -> String:
