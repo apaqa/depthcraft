@@ -62,6 +62,7 @@ var player = null
 var fog_tile_map_layer: TileMapLayer = null
 var floor_data: Dictionary = {}
 var total_kills: int = 0
+var elites_killed_this_floor: int = 0
 var gameplay_paused: bool = false
 var treasure_reveal_time_left: float = 0.0
 var boss_stairway = null
@@ -140,7 +141,7 @@ func descend_floor() -> void:
 
 
 func _generate_floor() -> void:
-	var generator := DUNGEON_GENERATOR.new()
+	var generator: RefCounted = DUNGEON_GENERATOR.new()
 	floor_data = generator.generate_floor(current_floor, _create_rng(17))
 	boss_stairway = null
 	boss_enemy_ref = null
@@ -150,6 +151,7 @@ func _generate_floor() -> void:
 	_boss_door_blockers.clear()
 	explored_rooms.clear()
 	revealed_tiles.clear()
+	elites_killed_this_floor = 0
 	_draw_floor()
 	_spawn_features()
 	_spawn_enemies()
@@ -364,6 +366,8 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 			boss_locked_chest.unlock()
 		return
 	if enemy_ref != null and enemy_ref.has_method("is_elite_enemy") and enemy_ref.is_elite_enemy():
+		elites_killed_this_floor += 1
+		_apply_elite_chain_enhancement()
 		set_gameplay_paused(true)
 		buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())
 
@@ -484,19 +488,44 @@ func _unlock_boss_door() -> void:
 	_boss_door_blockers.clear()
 
 
+func _roll_elite_count(rng: RandomNumberGenerator, guaranteed: int) -> int:
+	var count: int = guaranteed
+	# Extra elites: 2nd=30%, 3rd=15%, 4th+=5%
+	if _rng_randf(rng) < 0.30:
+		count += 1
+	if count >= 2 and _rng_randf(rng) < 0.15:
+		count += 1
+	if count >= 3 and _rng_randf(rng) < 0.05:
+		count += 1
+	return count
+
+
+func _apply_elite_chain_enhancement() -> void:
+	if elites_killed_this_floor <= 0:
+		return
+	var boost_mult: float = 1.0 + float(elites_killed_this_floor) * 0.1
+	var remaining_count: int = 0
+	for child: Node in enemy_root.get_children():
+		if child.has_method("is_elite_enemy") and child.is_elite_enemy() and child.has_method("apply_chain_enhancement"):
+			child.apply_chain_enhancement(boost_mult)
+			remaining_count += 1
+	if remaining_count > 0 and player != null and player.has_method("status_message_requested"):
+		player.status_message_requested.emit(LocaleManager.L("elite_chain_enhanced"), Color(1.0, 0.4, 0.1, 1.0), 2.5)
+
+
 func get_floor_spawn_config(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	if floor_number <= 2:
 		return {"enemy_min": 2, "enemy_max": 3, "allow_ranged": false, "ranged_ratio": 0.0, "elite_count": 0}
 	if floor_number <= 5:
-		var elite_count := 1 if _rng_randf(rng) <= 0.5 else 0
-		return {"enemy_min": 3, "enemy_max": 4, "allow_ranged": true, "ranged_ratio": 0.3, "elite_count": elite_count}
+		var ec_early: int = 1 if _rng_randf(rng) <= 0.5 else 0
+		return {"enemy_min": 3, "enemy_max": 4, "allow_ranged": true, "ranged_ratio": 0.3, "elite_count": ec_early}
 	if floor_number <= 10:
-		return {"enemy_min": 4, "enemy_max": 5, "allow_ranged": true, "ranged_ratio": 0.45, "elite_count": 1}
+		return {"enemy_min": 4, "enemy_max": 5, "allow_ranged": true, "ranged_ratio": 0.45, "elite_count": _roll_elite_count(rng, 1)}
 	if floor_number <= 20:
-		return {"enemy_min": 4, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.6, "elite_count": _rng_range(rng, 1, 2)}
+		return {"enemy_min": 4, "enemy_max": 6, "allow_ranged": true, "ranged_ratio": 0.6, "elite_count": _roll_elite_count(rng, 1)}
 	if floor_number <= 30:
-		return {"enemy_min": 5, "enemy_max": 7, "allow_ranged": true, "ranged_ratio": 0.65, "elite_count": _rng_range(rng, 2, 3)}
-	return {"enemy_min": 6, "enemy_max": 8, "allow_ranged": true, "ranged_ratio": 0.7, "elite_count": _rng_range(rng, 3, 4)}
+		return {"enemy_min": 5, "enemy_max": 7, "allow_ranged": true, "ranged_ratio": 0.65, "elite_count": _roll_elite_count(rng, 2)}
+	return {"enemy_min": 6, "enemy_max": 8, "allow_ranged": true, "ranged_ratio": 0.7, "elite_count": _roll_elite_count(rng, 3)}
 
 
 func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedScene:

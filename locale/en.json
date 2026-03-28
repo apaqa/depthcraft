@@ -508,5 +508,6 @@
   "wish_equip": "Toss 1 Gold for Treasure",
   "demon_merchant": "Demon Merchant",
   "sacrifice_hp": "Sacrifice Max HP",
-  "sacrifice_warning": "At the cost of blood..."
+  "sacrifice_warning": "At the cost of blood...",
+  "elite_chain_enhanced": "Remaining elites have been enhanced!"
 }

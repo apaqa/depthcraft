@@ -41,6 +41,14 @@ func is_elite_enemy() -> bool:
 	return true
 
 
+func apply_chain_enhancement(multiplier: float) -> void:
+	var new_max_hp: int = int(round(float(max_hp) * multiplier))
+	var hp_ratio: float = float(current_hp) / float(maxi(max_hp, 1))
+	max_hp = new_max_hp
+	current_hp = int(round(float(max_hp) * hp_ratio))
+	damage = int(round(float(damage) * multiplier))
+
+
 func _drop_gold_loot() -> void:
 	super._drop_gold_loot()
 
