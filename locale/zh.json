@@ -378,6 +378,7 @@
   "prompt_locked": "[E] 已上鎖",
   "prompt_return_surface": "[F] 返回地表",
   "puzzle_order": "順序: %s",
+  "legendary_drop": "傳說裝備掉落！",
   "altar_blessing": "祝福",
   "altar_curse": "詛咒",
   "altar_used": "祭壇已使用",

@@ -378,6 +378,7 @@
   "prompt_locked": "[E] Locked",
   "prompt_return_surface": "[F] Return to Surface",
   "puzzle_order": "Order: %s",
+  "legendary_drop": "Legendary item dropped!",
   "altar_blessing": "Blessing",
   "altar_curse": "Curse",
   "altar_used": "Altar exhausted",

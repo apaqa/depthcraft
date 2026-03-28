@@ -8,6 +8,7 @@ const ATTACK_EFFECT_SCENE = preload("res://scenes/player/attack_effect.tscn")
 const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
 const TALENT_DATA = preload("res://scripts/talent/talent_data.gd")
 const PLAYER_SAVE = preload("res://scripts/player/player_save.gd")
+const LEGENDARY_ITEMS: Script = preload("res://scripts/dungeon/legendary_items.gd")
 
 signal interaction_prompt_changed(prompt_text: String)
 signal interaction_prompt_cleared
@@ -997,7 +998,18 @@ func _on_player_stats_changed() -> void:
 func _on_equipment_changed() -> void:
 	player_stats.set_equipment_bonuses(equipment_system.get_total_bonus_map())
 	equipment_lifesteal_ratio = float(equipment_system.get_total_bonus_map().get("lifesteal_ratio", 0.0))
+	_apply_legendary_passives()
 	_save_persistent_state()
+
+
+func _apply_legendary_passives() -> void:
+	var all_equipped: Dictionary = equipment_system.get_all_equipped()
+	for slot_name: Variant in all_equipped.keys():
+		var item: Dictionary = all_equipped[slot_name] as Dictionary
+		if item.is_empty():
+			continue
+		if str(item.get("rarity", "")) == "Legendary" and item.has("legendary_effect"):
+			LEGENDARY_ITEMS.apply_legendary_passive(self, item)
 
 
 func _refresh_all_stats() -> void:
