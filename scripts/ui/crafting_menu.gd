@@ -406,6 +406,10 @@ func _build_category_tabs() -> void:
 
 	recipe_panel.add_child(tab_bar)
 	recipe_panel.move_child(tab_bar, 0)
+	tab_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	tab_bar.offset_bottom = 34.0
+	recipe_scroll.anchor_top = 0.0
+	recipe_scroll.offset_top = 36.0
 	_refresh_category_tab_visuals()
 
 

@@ -72,18 +72,20 @@ func _debug_give_resources() -> void:
 	if targets.is_empty() and player != null:
 		targets = [player]
 	for p in targets:
-		var inv = p.get("inventory")
-		if inv == null or not inv.has_method("add_item"):
+		var inv: Object = p.get("inventory")
+		if inv == null or not inv.has_method("add_items_batch"):
 			continue
-		inv.add_item("gold", 100)
-		inv.add_item("silver", 100)
-		inv.add_item("copper", 100)
-		inv.add_item("wood", 99)
-		inv.add_item("stone", 99)
-		inv.add_item("iron_ore", 99)
-		inv.add_item("fiber", 99)
-		inv.add_item("wheat", 99)
-		inv.add_item("talent_shard", 99)
+		inv.add_items_batch({
+			"gold": 100,
+			"silver": 100,
+			"copper": 100,
+			"wood": 99,
+			"stone": 99,
+			"iron_ore": 99,
+			"fiber": 99,
+			"wheat": 99,
+			"talent_shard": 99,
+		})
 
 
 func _debug_clear_inventory_and_equipment() -> void:

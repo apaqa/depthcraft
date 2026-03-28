@@ -4,8 +4,11 @@ const EDGE_MARGIN := 28.0
 const ARROW_SIZE := 28.0
 const ARROW_COLOR := Color(1.0, 1.0, 1.0, 0.95)
 const OUTLINE_COLOR := Color(0.0, 0.0, 0.0, 0.85)
+const UPDATE_INTERVAL: float = 0.05
 
 var player = null
+var _update_timer: float = 0.0
+var _last_camera_pos: Vector2 = Vector2(-99999.0, -99999.0)
 
 
 func _ready() -> void:
@@ -19,10 +22,22 @@ func _ready() -> void:
 
 func bind_player(new_player) -> void:
 	player = new_player
+	_last_camera_pos = Vector2(-99999.0, -99999.0)
 	_update_arrow()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_update_timer += delta
+	if _update_timer < UPDATE_INTERVAL:
+		return
+	_update_timer = 0.0
+	var camera: Camera2D = get_viewport().get_camera_2d()
+	if camera == null:
+		return
+	var cam_pos: Vector2 = camera.global_position
+	if cam_pos.distance_squared_to(_last_camera_pos) < 64.0:
+		return
+	_last_camera_pos = cam_pos
 	_update_arrow()
 
 

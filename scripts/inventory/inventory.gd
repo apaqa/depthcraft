@@ -135,6 +135,43 @@ func refund_currency(payment: Dictionary) -> void:
 			add_item(coin_type, coin_count)
 
 
+func add_items_batch(batch: Dictionary) -> void:
+	var did_add: bool = false
+	for item_id_var: Variant in batch.keys():
+		var item_id: String = str(item_id_var)
+		var quantity: int = int(batch[item_id_var])
+		if quantity <= 0:
+			continue
+		var item_data: Dictionary = ITEM_DATABASE.get_item(item_id)
+		if item_data.is_empty():
+			continue
+		var remaining: int = quantity
+		for stack: Dictionary in items:
+			if stack["id"] != item_id:
+				continue
+			if int(stack.get("max_stack", 1)) <= 1:
+				continue
+			var free_space: int = int(stack["max_stack"]) - int(stack["quantity"])
+			if free_space <= 0:
+				continue
+			var added: int = mini(remaining, free_space)
+			stack["quantity"] += added
+			remaining -= added
+			if remaining <= 0:
+				break
+		while remaining > 0:
+			if items.size() >= max_slots:
+				break
+			var stack_size: int = mini(remaining, int(item_data.get("max_stack", 1)))
+			var new_stack: Dictionary = item_data.duplicate(true)
+			new_stack["quantity"] = stack_size
+			items.append(new_stack)
+			remaining -= stack_size
+		did_add = true
+	if did_add:
+		inventory_changed.emit()
+
+
 func get_free_slots() -> int:
 	return max(max_slots - items.size(), 0)
 

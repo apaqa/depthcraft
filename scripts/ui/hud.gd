@@ -69,6 +69,13 @@ var home_arrow: Control = null
 var _consumable_bar_bg: Panel = null
 var _tracked_ui_visibility: Dictionary = {}
 var _death_dynamic_nodes: Array[Node] = []
+var _last_minimap_player_tile: Vector2i = Vector2i(-9999, -9999)
+var _last_explored_count: int = -1
+var _minimap_force_timer: float = 0.0
+var _skill_slot_overlays: Array[ColorRect] = []
+var _skill_slot_cd_labels: Array[Label] = []
+var _skill_slot_name_labels: Array[Label] = []
+var _skill_hint_label: Label = null
 
 
 func _ready() -> void:
@@ -219,6 +226,8 @@ func bind_level(level, level_id: String) -> void:
 	current_level = level
 	current_level_id = level_id
 	minimap.visible = level_id == "dungeon" or level_id == "overworld"
+	_last_minimap_player_tile = Vector2i(-9999, -9999)
+	_last_explored_count = -1
 	if fullscreen_map != null:
 		fullscreen_map.visible = false
 	if level_id != "overworld":
@@ -463,16 +472,76 @@ func _toggle_settings_menu() -> void:
 		player.set_ui_blocked(true)
 
 
-func _process(_delta: float) -> void:
-	if current_level != null and current_level.has_method("get_minimap_snapshot"):
-		minimap.visible = true
-		var snap: Dictionary = current_level.get_minimap_snapshot()
+func _process(delta: float) -> void:
+	_update_minimap(delta)
+	_update_skill_cooldowns()
+
+
+func _update_minimap(delta: float) -> void:
+	if current_level == null or not current_level.has_method("get_minimap_snapshot"):
+		minimap.visible = false
+		return
+	minimap.visible = true
+	_minimap_force_timer += delta
+	var snap: Dictionary = current_level.get_minimap_snapshot()
+	var mode: String = str(snap.get("mode", "dungeon"))
+	var needs_redraw: bool = false
+	if mode == "dungeon":
+		var player_tile: Vector2 = snap.get("player_tile", Vector2.ZERO)
+		var current_tile: Vector2i = Vector2i(int(player_tile.x), int(player_tile.y))
+		var explored_rooms: Array = snap.get("explored_rooms", [])
+		var explored_count: int = explored_rooms.size()
+		if current_tile != _last_minimap_player_tile or explored_count != _last_explored_count:
+			needs_redraw = true
+			_last_minimap_player_tile = current_tile
+			_last_explored_count = explored_count
+	else:
+		var player_pos: Vector2 = snap.get("player_pos", Vector2.ZERO)
+		var current_tile: Vector2i = Vector2i(int(player_pos.x / 32.0), int(player_pos.y / 32.0))
+		if current_tile != _last_minimap_player_tile:
+			needs_redraw = true
+			_last_minimap_player_tile = current_tile
+	if _minimap_force_timer >= 0.5:
+		needs_redraw = true
+		_minimap_force_timer = 0.0
+	if needs_redraw:
 		minimap.set_snapshot(snap)
 		if fullscreen_map != null and fullscreen_map.visible:
 			fullscreen_map.set_snapshot(snap)
-	else:
-		minimap.visible = false
-	_refresh_skill_slots()
+
+
+func _update_skill_cooldowns() -> void:
+	var skill_system: Node = get_node_or_null("/root/SkillSystem")
+	if skill_system == null:
+		return
+	var snapshots: Array = skill_system.get_equipped_skill_snapshots()
+	const SLOT_W: float = 70.0
+	const SLOT_H: float = 36.0
+	for slot_index in range(3):
+		var overlay: ColorRect = _skill_slot_overlays[slot_index] if slot_index < _skill_slot_overlays.size() else null
+		var cd_label: Label = _skill_slot_cd_labels[slot_index] if slot_index < _skill_slot_cd_labels.size() else null
+		var name_label: Label = _skill_slot_name_labels[slot_index] if slot_index < _skill_slot_name_labels.size() else null
+		if overlay == null or not is_instance_valid(overlay):
+			continue
+		var slot: Dictionary = snapshots[slot_index] if slot_index < snapshots.size() else {}
+		if slot.is_empty():
+			continue
+		var cooldown: float = float(slot.get("current_cooldown", 0.0))
+		var max_cooldown: float = maxf(float(slot.get("cooldown", 1.0)), 0.001)
+		if name_label != null and is_instance_valid(name_label):
+			name_label.self_modulate = Color(0.65, 0.65, 0.65, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
+		if cooldown > 0.0:
+			var ratio: float = clampf(cooldown / max_cooldown, 0.0, 1.0)
+			overlay.position = Vector2(0.0, SLOT_H * (1.0 - ratio))
+			overlay.size = Vector2(SLOT_W, SLOT_H * ratio)
+			overlay.visible = true
+			if cd_label != null and is_instance_valid(cd_label):
+				cd_label.text = "%.1f" % cooldown
+				cd_label.visible = true
+		else:
+			overlay.visible = false
+			if cd_label != null and is_instance_valid(cd_label):
+				cd_label.visible = false
 
 
 func _toggle_fullscreen_map() -> void:
@@ -758,15 +827,19 @@ func update_consumable_bar(slots: Array) -> void:
 func _refresh_skill_slots() -> void:
 	if skill_slot_row == null:
 		return
+	_skill_slot_overlays.clear()
+	_skill_slot_cd_labels.clear()
+	_skill_slot_name_labels.clear()
+	_skill_hint_label = null
 	for child in skill_slot_row.get_children():
 		child.queue_free()
-	var skill_system = get_node_or_null("/root/SkillSystem")
+	var skill_system: Node = get_node_or_null("/root/SkillSystem")
 	if skill_system == null:
 		return
-	var snapshots = skill_system.get_equipped_skill_snapshots()
-	const SLOT_W := 70.0
-	const SLOT_H := 36.0
-	const KEY_NAMES := ["Z", "X", "V"]
+	var snapshots: Array = skill_system.get_equipped_skill_snapshots()
+	const SLOT_W: float = 70.0
+	const SLOT_H: float = 36.0
+	const KEY_NAMES: Array[String] = ["Z", "X", "V"]
 	for slot_index in range(3):
 		var slot: Dictionary = snapshots[slot_index] if slot_index < snapshots.size() else {}
 		var key_name: String = KEY_NAMES[slot_index]
@@ -805,49 +878,52 @@ func _refresh_skill_slots() -> void:
 			skill_label.text = "[%s]\n%s" % [key_name, LocaleManager.L("empty")]
 			skill_label.self_modulate = Color(0.5, 0.5, 0.5, 1.0)
 			container.add_child(skill_label)
+			_skill_slot_name_labels.append(null)
+			_skill_slot_overlays.append(null)
+			_skill_slot_cd_labels.append(null)
 		else:
-			var cooldown: float = float(slot.get("current_cooldown", 0.0))
-			var max_cooldown: float = maxf(float(slot.get("cooldown", 1.0)), 0.001)
 			var short_name: String = LocaleManager.L(str(slot.get("short_name", "skill_name_fallback")))
 			skill_label.text = "[%s]\n%s" % [key_name, short_name]
-			skill_label.self_modulate = Color(0.65, 0.65, 0.65, 1.0) if cooldown > 0.0 else Color(1.0, 1.0, 1.0, 1.0)
 			skill_label.tooltip_text = LocaleManager.L(str(slot.get("name", "skill_name_fallback")))
 			container.add_child(skill_label)
+			_skill_slot_name_labels.append(skill_label)
 
-			if cooldown > 0.0:
-				var ratio: float = clampf(cooldown / max_cooldown, 0.0, 1.0)
-				var overlay: ColorRect = ColorRect.new()
-				overlay.position = Vector2(0.0, SLOT_H * (1.0 - ratio))
-				overlay.size = Vector2(SLOT_W, SLOT_H * ratio)
-				overlay.color = Color(0.0, 0.0, 0.0, 0.62)
-				container.add_child(overlay)
+			var overlay: ColorRect = ColorRect.new()
+			overlay.position = Vector2.ZERO
+			overlay.size = Vector2.ZERO
+			overlay.color = Color(0.0, 0.0, 0.0, 0.62)
+			overlay.visible = false
+			container.add_child(overlay)
+			_skill_slot_overlays.append(overlay)
 
-				var cd_label: Label = Label.new()
-				cd_label.position = Vector2.ZERO
-				cd_label.size = Vector2(SLOT_W, SLOT_H)
-				cd_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				cd_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-				cd_label.text = "%.1f" % cooldown
-				cd_label.add_theme_font_size_override("font_size", 12)
-				cd_label.add_theme_constant_override("outline_size", 3)
-				cd_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-				cd_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-				container.add_child(cd_label)
+			var cd_label: Label = Label.new()
+			cd_label.position = Vector2.ZERO
+			cd_label.size = Vector2(SLOT_W, SLOT_H)
+			cd_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			cd_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			cd_label.add_theme_font_size_override("font_size", 12)
+			cd_label.add_theme_constant_override("outline_size", 3)
+			cd_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+			cd_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+			cd_label.visible = false
+			container.add_child(cd_label)
+			_skill_slot_cd_labels.append(cd_label)
 
 		skill_slot_row.add_child(container)
 
-	var has_unequipped := false
-	for skill_id in skill_system.unlocked_skill_ids:
-		var is_passive := bool((skill_system.skills.get(skill_id, {}) as Dictionary).get("passive", false))
+	var has_unequipped: bool = false
+	for skill_id: Variant in skill_system.unlocked_skill_ids:
+		var is_passive: bool = bool((skill_system.skills.get(skill_id, {}) as Dictionary).get("passive", false))
 		if not is_passive and not skill_system.equipped_skill_ids.has(skill_id):
 			has_unequipped = true
 			break
 	if has_unequipped:
-		var hint := Label.new()
+		var hint: Label = Label.new()
 		hint.text = LocaleManager.L("press_k_equip")
 		hint.add_theme_constant_override("outline_size", 2)
 		hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		skill_slot_row.add_child(hint)
+		_skill_hint_label = hint
 	_layout_bottom_hud.call_deferred()
 
 
