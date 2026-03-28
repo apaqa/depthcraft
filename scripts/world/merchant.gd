@@ -27,6 +27,14 @@ const EXCHANGE_RECIPES = [
 	{"from_id": "gold", "from_amount": 1, "to_id": "silver", "to_amount": 10},
 ]
 
+const SELL_PRICES: Dictionary = {
+	"common": {"currency": "copper", "amount": 5},
+	"uncommon": {"currency": "copper", "amount": 15},
+	"rare": {"currency": "silver", "amount": 1},
+	"epic": {"currency": "silver", "amount": 3},
+	"legendary": {"currency": "gold", "amount": 1},
+}
+
 var _shop_canvas: CanvasLayer = null
 var _shop_root: Control = null
 var _current_player: Variant = null
@@ -34,9 +42,14 @@ var _gold_label: Label = null
 var _message_label: Label = null
 var _exchange_buttons: Array[Dictionary] = []
 var _shop_buttons: Array[Dictionary] = []
+var _sell_buttons: Array[Dictionary] = []
 var _remaining_stock: Dictionary = {}
 var _stock_day: int = -1
 var _stock_bonus_applied: int = 0
+var _current_tab: String = "buy"
+var _tab_buttons: Dictionary = {}
+var _tab_content_nodes: Dictionary = {}
+var _sell_list_container: VBoxContainer = null
 
 
 func get_interaction_prompt() -> String:
@@ -83,6 +96,14 @@ func _open_shop() -> void:
 	panel.offset_right = 0.0
 	panel.offset_bottom = 260.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 0.95)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.border_width_left = 1
+	panel_style.border_width_top = 1
+	panel_style.border_width_right = 1
+	panel_style.border_width_bottom = 1
+	panel.add_theme_stylebox_override("panel", panel_style)
 	_shop_root.add_child(panel)
 
 	var x_btn: Button = Button.new()
@@ -112,37 +133,38 @@ func _open_shop() -> void:
 	var title: Label = Label.new()
 	title.text = LocaleManager.L("merchant")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", 22)
 	vbox.add_child(title)
 
 	vbox.add_child(HSeparator.new())
 
-	var columns: HBoxContainer = HBoxContainer.new()
-	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 12)
-	vbox.add_child(columns)
+	var tab_bar: HBoxContainer = HBoxContainer.new()
+	tab_bar.add_theme_constant_override("separation", 4)
+	vbox.add_child(tab_bar)
 
-	var left_vbox: VBoxContainer = VBoxContainer.new()
-	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left_vbox.add_theme_constant_override("separation", 6)
-	columns.add_child(left_vbox)
+	_tab_buttons.clear()
+	_tab_content_nodes.clear()
+	_build_tab_button(tab_bar, "buy", LocaleManager.L("buy"))
+	_build_tab_button(tab_bar, "sell", LocaleManager.L("sell"))
+	_build_tab_button(tab_bar, "exchange", LocaleManager.L("exchange_button"))
 
-	var shop_header: Label = Label.new()
-	shop_header.text = LocaleManager.L("merchant")
-	shop_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	shop_header.add_theme_font_size_override("font_size", 14)
-	left_vbox.add_child(shop_header)
+	vbox.add_child(HSeparator.new())
 
-	var shop_scroll: ScrollContainer = ScrollContainer.new()
-	shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left_vbox.add_child(shop_scroll)
+	var content_area: Control = Control.new()
+	content_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(content_area)
+
+	var buy_scroll: ScrollContainer = ScrollContainer.new()
+	buy_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	buy_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content_area.add_child(buy_scroll)
+	_tab_content_nodes["buy"] = buy_scroll
 
 	var shop_list: VBoxContainer = VBoxContainer.new()
 	shop_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	shop_list.add_theme_constant_override("separation", 6)
-	shop_scroll.add_child(shop_list)
+	buy_scroll.add_child(shop_list)
 
 	_shop_buttons.clear()
 	for item: Dictionary in SHOP_ITEMS:
@@ -166,24 +188,24 @@ func _open_shop() -> void:
 		ITEM_DATABASE.get_default_equipment_icon("weapon")
 	)
 
-	columns.add_child(VSeparator.new())
+	var sell_scroll: ScrollContainer = ScrollContainer.new()
+	sell_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sell_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sell_scroll.visible = false
+	content_area.add_child(sell_scroll)
+	_tab_content_nodes["sell"] = sell_scroll
 
-	var right_vbox: VBoxContainer = VBoxContainer.new()
-	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_vbox.add_theme_constant_override("separation", 6)
-	columns.add_child(right_vbox)
-
-	var exchange_title: Label = Label.new()
-	exchange_title.text = LocaleManager.L("merchant_exchange")
-	exchange_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	exchange_title.add_theme_font_size_override("font_size", 14)
-	right_vbox.add_child(exchange_title)
+	_sell_list_container = VBoxContainer.new()
+	_sell_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_sell_list_container.add_theme_constant_override("separation", 6)
+	sell_scroll.add_child(_sell_list_container)
 
 	var exchange_scroll: ScrollContainer = ScrollContainer.new()
-	exchange_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	exchange_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
 	exchange_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	right_vbox.add_child(exchange_scroll)
+	exchange_scroll.visible = false
+	content_area.add_child(exchange_scroll)
+	_tab_content_nodes["exchange"] = exchange_scroll
 
 	var exchange_list: VBoxContainer = VBoxContainer.new()
 	exchange_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -218,6 +240,9 @@ func _open_shop() -> void:
 	close_btn.pressed.connect(_close_shop)
 	footer.add_child(close_btn)
 	vbox.add_child(footer)
+
+	_current_tab = "buy"
+	_switch_tab("buy")
 	_refresh_shop_state()
 	UI_AUDIO_CLICK_HOOK.attach(_shop_root)
 	AudioManager.play_sfx("ui_open")
@@ -370,6 +395,8 @@ func _refresh_shop_state() -> void:
 	_update_gold_label()
 	_update_exchange_buttons()
 	_update_shop_buttons()
+	if _current_tab == "sell":
+		_refresh_sell_list()
 
 
 func _update_exchange_buttons() -> void:
@@ -441,6 +468,10 @@ func _close_shop() -> void:
 	_shop_root = null
 	_exchange_buttons.clear()
 	_shop_buttons.clear()
+	_sell_buttons.clear()
+	_tab_buttons.clear()
+	_tab_content_nodes.clear()
+	_sell_list_container = null
 	get_tree().paused = false
 	if _current_player != null:
 		if _current_player.has_method("set_ui_blocked"):
@@ -487,3 +518,136 @@ func _format_shop_row_text(label_text: String, price: int, stock_key: String) ->
 	if str(LocaleManager.get_locale()).begins_with("zh"):
 		return "%s  %s  [剩餘 %d]" % [label_text, ITEM_DATABASE.format_currency(price), stock_left]
 	return "%s  %s  [%d left]" % [label_text, ITEM_DATABASE.format_currency(price), stock_left]
+
+
+func _build_tab_button(parent: HBoxContainer, tab_id: String, label_text: String) -> void:
+	var btn: Button = Button.new()
+	btn.text = label_text
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.toggle_mode = true
+	btn.pressed.connect(_switch_tab.bind(tab_id))
+	parent.add_child(btn)
+	_tab_buttons[tab_id] = btn
+
+
+func _switch_tab(tab_id: String) -> void:
+	_current_tab = tab_id
+	for key: Variant in _tab_content_nodes.keys():
+		var node: Control = _tab_content_nodes[key] as Control
+		if node != null:
+			node.visible = (str(key) == tab_id)
+	for key: Variant in _tab_buttons.keys():
+		var btn: Button = _tab_buttons[key] as Button
+		if btn != null:
+			btn.button_pressed = (str(key) == tab_id)
+	if _message_label != null:
+		_message_label.text = ""
+	if tab_id == "sell":
+		_refresh_sell_list()
+
+
+func _refresh_sell_list() -> void:
+	if _sell_list_container == null:
+		return
+	while _sell_list_container.get_child_count() > 0:
+		var child: Node = _sell_list_container.get_child(0)
+		_sell_list_container.remove_child(child)
+		child.queue_free()
+	_sell_buttons.clear()
+	if _current_player == null:
+		return
+	var inv: Variant = _current_player.get("inventory")
+	if inv == null:
+		return
+	var found_any: bool = false
+	for i: int in range(inv.items.size()):
+		var stack: Dictionary = inv.items[i]
+		if not _is_sellable(stack):
+			continue
+		_add_sell_row(_sell_list_container, i, stack)
+		found_any = true
+	if not found_any:
+		var empty_label: Label = Label.new()
+		empty_label.text = "（無可出售物品）"
+		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_sell_list_container.add_child(empty_label)
+
+
+func _add_sell_row(parent: VBoxContainer, stack_index: int, stack: Dictionary) -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+	if icon != null:
+		row.add_child(_make_icon_rect(icon))
+	var name_label: Label = Label.new()
+	var qty: int = int(stack.get("quantity", 1))
+	name_label.text = ITEM_DATABASE.get_stack_display_name(stack)
+	if qty > 1:
+		name_label.text += " x%d" % qty
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_label)
+	var price_info: Dictionary = _get_sell_price(stack)
+	var price_copper: int = _sell_price_to_copper(price_info, qty)
+	var price_label: Label = Label.new()
+	price_label.text = ITEM_DATABASE.format_currency(price_copper)
+	row.add_child(price_label)
+	var btn: Button = Button.new()
+	btn.text = LocaleManager.L("sell")
+	btn.pressed.connect(_on_sell_item.bind(stack_index))
+	row.add_child(btn)
+	parent.add_child(row)
+	_sell_buttons.append({"button": btn, "stack_index": stack_index})
+
+
+func _on_sell_item(stack_index: int) -> void:
+	if _current_player == null:
+		return
+	var inv: Variant = _current_player.get("inventory")
+	if inv == null:
+		return
+	if stack_index < 0 or stack_index >= inv.items.size():
+		_refresh_sell_list()
+		return
+	var stack: Dictionary = inv.items[stack_index]
+	if not _is_sellable(stack):
+		_refresh_sell_list()
+		return
+	var price_info: Dictionary = _get_sell_price(stack)
+	var qty: int = int(stack.get("quantity", 1))
+	var currency: String = str(price_info.get("currency", "copper"))
+	var amount_per: int = int(price_info.get("amount", 1))
+	inv.items.remove_at(stack_index)
+	inv.inventory_changed.emit()
+	inv.add_item(currency, amount_per * qty)
+	if _message_label != null:
+		_message_label.text = ""
+	_refresh_shop_state()
+
+
+func _is_sellable(stack: Dictionary) -> bool:
+	if stack.is_empty():
+		return false
+	var item_id: String = str(stack.get("id", ""))
+	if item_id == "copper" or item_id == "silver" or item_id == "gold":
+		return false
+	return true
+
+
+func _get_sell_price(stack: Dictionary) -> Dictionary:
+	var rarity: String = str(stack.get("rarity", "")).to_lower()
+	if rarity != "" and SELL_PRICES.has(rarity):
+		return (SELL_PRICES[rarity] as Dictionary).duplicate()
+	return {"currency": "copper", "amount": 1}
+
+
+func _sell_price_to_copper(price_info: Dictionary, qty: int) -> int:
+	var currency: String = str(price_info.get("currency", "copper"))
+	var amount: int = int(price_info.get("amount", 1))
+	var total_currency: int = amount * qty
+	match currency:
+		"gold":
+			return total_currency * 100
+		"silver":
+			return total_currency * 10
+		_:
+			return total_currency

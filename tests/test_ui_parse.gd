@@ -12,6 +12,7 @@ const _BUFF_SELECT := preload("res://scripts/ui/buff_select.gd")
 const _SKILL_EQUIP_UI := preload("res://scripts/ui/skill_equip_ui.gd")
 const _ACHIEVEMENT_PANEL := preload("res://scripts/ui/achievement_panel.gd")
 const _QUEST_BOARD_UI := preload("res://scripts/ui/quest_board_ui.gd")
+const _MERCHANT := preload("res://scripts/world/merchant.gd")
 
 
 func _initialize() -> void:

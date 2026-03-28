@@ -654,17 +654,25 @@ func show_death_screen(summary: Dictionary) -> void:
 	_death_dynamic_nodes.clear()
 
 	death_vbox.offset_left = -220.0
-	death_vbox.offset_top = -200.0
+	death_vbox.offset_top = -240.0
 	death_vbox.offset_right = 220.0
-	death_vbox.offset_bottom = 200.0
+	death_vbox.offset_bottom = 160.0
 
 	death_title_label.text = "你死了"
-	death_title_label.add_theme_font_size_override("font_size", 48)
+	death_title_label.add_theme_font_size_override("font_size", 32)
 
 	var floor_num: int = int(summary.get("floor", 0))
 	var kills_num: int = int(summary.get("kills", 0))
 	death_summary_label.text = "第 %d 層  |  擊殺 %d" % [floor_num, kills_num]
 	death_summary_label.add_theme_font_size_override("font_size", 16)
+
+	var loot_loss_note: Label = Label.new()
+	loot_loss_note.text = "失去所有未保存的地牢戰利品"
+	loot_loss_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	loot_loss_note.add_theme_font_size_override("font_size", 13)
+	loot_loss_note.add_theme_color_override("font_color", Color(0.85, 0.35, 0.35, 1.0))
+	death_vbox.add_child(loot_loss_note)
+	_death_dynamic_nodes.append(loot_loss_note)
 
 	var dur_note: Label = Label.new()
 	dur_note.text = "所有裝備耐久度 -20%"
