@@ -17,8 +17,6 @@ var _pickup_delay: float = 0.0
 
 func _ready() -> void:
 	add_to_group("loot_drop")
-	if not body_entered.is_connected(_on_body_entered):
-		body_entered.connect(_on_body_entered)
 	if not lifetime_timer.timeout.is_connected(queue_free):
 		lifetime_timer.timeout.connect(queue_free)
 	lifetime_timer.start()

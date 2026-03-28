@@ -141,6 +141,8 @@ func _ready() -> void:
 		achievement_panel.close_requested.connect(_on_menu_closed)
 	if quest_board_ui.has_signal("close_requested") and not quest_board_ui.close_requested.is_connected(_on_menu_closed):
 		quest_board_ui.close_requested.connect(_on_menu_closed)
+	if tavern_ui.has_signal("close_requested") and not tavern_ui.close_requested.is_connected(_on_menu_closed):
+		tavern_ui.close_requested.connect(_on_menu_closed)
 	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
 		buff_select.buff_chosen.connect(_on_buff_chosen)
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
@@ -518,28 +520,24 @@ func _update_minimap(delta: float) -> void:
 		return
 	minimap.visible = true
 	_minimap_force_timer += delta
-	var snap: Dictionary = current_level.get_minimap_snapshot()
-	var mode: String = str(snap.get("mode", "dungeon"))
 	var needs_redraw: bool = false
-	if mode == "dungeon":
-		var explored_rooms: Array = snap.get("explored_rooms", [])
-		var explored_count: int = explored_rooms.size()
-		if explored_count != _last_explored_count:
-			needs_redraw = true
-			_last_explored_count = explored_count
-	else:
-		var player_pos: Vector2 = snap.get("player_pos", Vector2.ZERO)
-		var current_tile: Vector2i = Vector2i(int(player_pos.x / 32.0), int(player_pos.y / 32.0))
+	if player != null and is_instance_valid(player):
+		var current_tile: Vector2i = Vector2i(
+			int(player.global_position.x / 32.0),
+			int(player.global_position.y / 32.0)
+		)
 		if current_tile != _last_minimap_player_tile:
 			needs_redraw = true
 			_last_minimap_player_tile = current_tile
 	if _minimap_force_timer >= 0.5:
 		needs_redraw = true
 		_minimap_force_timer = 0.0
-	if needs_redraw:
-		minimap.set_snapshot(snap)
-		if fullscreen_map != null and fullscreen_map.visible:
-			fullscreen_map.set_snapshot(snap)
+	if not needs_redraw:
+		return
+	var snap: Dictionary = current_level.get_minimap_snapshot()
+	minimap.set_snapshot(snap)
+	if fullscreen_map != null and fullscreen_map.visible:
+		fullscreen_map.set_snapshot(snap)
 
 
 func _update_skill_cooldowns() -> void:

@@ -69,6 +69,7 @@ var boss_enemy_ref = null
 var boss_locked_chest = null
 var explored_rooms: Array[int] = []
 var revealed_tiles: Dictionary = {}
+var _last_track_tile: Vector2i = Vector2i(-99999, -99999)
 var _boss_door_locked: bool = false
 var _boss_door_tiles: Array[Vector2i] = []
 var _boss_door_blockers: Array[Node] = []
@@ -96,7 +97,9 @@ func _track_explored_room() -> void:
 		floori(player.global_position.x / 16.0),
 		floori(player.global_position.y / 16.0)
 	)
-	_reveal_tile_radius(player_tile, 1)
+	if player_tile != _last_track_tile:
+		_last_track_tile = player_tile
+		_reveal_tile_radius(player_tile, 3)
 	for room_index: int in range(rooms.size()):
 		var room: Rect2i = rooms[room_index] as Rect2i
 		if not room.has_point(player_tile):

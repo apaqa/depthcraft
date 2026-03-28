@@ -383,7 +383,7 @@ func _try_secondary_interact() -> void:
 
 
 func _pickup_nearby_loot() -> void:
-	var pickup_radius: float = 48.0
+	var pickup_radius: float = 64.0
 	var drops: Array = get_tree().get_nodes_in_group("loot_drop")
 	for drop in drops:
 		if not is_instance_valid(drop):

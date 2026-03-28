@@ -1,6 +1,8 @@
 extends Control
 class_name TavernUI
 
+signal close_requested
+
 const TavernSlots = preload("res://scripts/world/tavern_slots.gd")
 const TavernPachinko = preload("res://scripts/world/tavern_pachinko.gd")
 
@@ -34,7 +36,13 @@ func open_for_player(player: Node, facility: Node) -> void:
 
 
 func close_menu() -> void:
+	if not visible:
+		return
 	visible = false
+	if _player != null and _player.has_method("set_ui_blocked"):
+		_player.set_ui_blocked(false)
+	release_focus()
+	close_requested.emit()
 
 
 func _build_ui() -> void:
