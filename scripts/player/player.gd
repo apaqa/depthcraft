@@ -72,6 +72,7 @@ var aoe_attack_multiplier: float = 1.0
 var bonus_max_hp: int = 0
 var buff_regen_amount: int = 0
 var buff_regen_interval: float = 3.0
+var active_meal_buff: Dictionary = {}
 var undying_will_available: bool = false
 var network_peer_id: int = 1
 var load_persistent_state_on_ready: bool = true
@@ -716,6 +717,7 @@ func apply_buff(buff_id: String) -> bool:
 
 func clear_dungeon_buffs() -> void:
 	active_buff_ids.clear()
+	active_meal_buff.clear()
 	_recalculate_buff_state()
 	buffs_changed.emit(get_active_buffs())
 
@@ -971,6 +973,15 @@ func _recalculate_buff_state() -> void:
 			"aoe_attack":
 				aoe_attack_multiplier += 0.5 * eff
 
+	# Apply meal buff (from cooked food consumed this run)
+	if not active_meal_buff.is_empty():
+		damage_multiplier += float(active_meal_buff.get("damage_multiplier", 0.0))
+		armor_reduction += float(active_meal_buff.get("armor_reduction", 0.0))
+		move_speed_multiplier += float(active_meal_buff.get("move_speed_multiplier", 0.0))
+		attack_cooldown_multiplier += float(active_meal_buff.get("attack_cooldown_multiplier", 0.0))
+		bonus_max_hp += int(active_meal_buff.get("bonus_max_hp", 0))
+		buff_regen_amount += int(active_meal_buff.get("buff_regen_amount", 0))
+
 	# Clamp to sensible ranges
 	move_speed_multiplier = maxf(move_speed_multiplier, 0.5)
 	attack_cooldown_multiplier = maxf(attack_cooldown_multiplier, 0.2)
@@ -1077,6 +1088,15 @@ func _use_consumable_at_slot(slot_index: int) -> bool:
 	if bool(effects.get("light", false)):
 		torch_light_time_left = 30.0
 		show_status_message("Torch lit", Color(1.0, 0.85, 0.45, 1.0))
+	var meal_buff_data: Variant = effects.get("meal_buff", null)
+	if meal_buff_data != null and typeof(meal_buff_data) == TYPE_DICTIONARY:
+		var new_buff: Dictionary = meal_buff_data as Dictionary
+		# Merge: accumulate additive bonuses
+		for key: Variant in new_buff.keys():
+			var k: String = str(key)
+			active_meal_buff[k] = float(active_meal_buff.get(k, 0.0)) + float(new_buff[k])
+		_recalculate_buff_state()
+		show_status_message(LocaleManager.L("meal_buff_active"), Color(1.0, 0.85, 0.45, 1.0))
 	consumable_cooldown_left = BANDAGE_COOLDOWN
 	return true
 

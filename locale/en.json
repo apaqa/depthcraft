@@ -378,6 +378,7 @@
   "prompt_locked": "[E] Locked",
   "prompt_return_surface": "[F] Return to Surface",
   "puzzle_order": "Order: %s",
+  "meal_buff_active": "Meal buff activated!",
   "codex": "Codex",
   "codex_tab_monster": "Monsters",
   "codex_tab_equipment": "Equipment",

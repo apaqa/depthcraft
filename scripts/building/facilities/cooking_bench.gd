@@ -2,10 +2,10 @@ extends "res://scripts/building/upgradeable_facility.gd"
 class_name CookingBenchFacility
 
 
-const RECIPE_LEVELS := {
-	1: ["bread", "stew"],
-	2: ["bread", "stew"],
-	3: ["bread", "stew", "herb_tea"],
+const RECIPE_LEVELS: Dictionary = {
+	1: ["bread", "stew", "grilled_fish", "fruit_salad", "energy_brew"],
+	2: ["bread", "stew", "herb_tea", "grilled_fish", "meat_stew", "fruit_salad", "spiced_bread", "energy_brew"],
+	3: ["bread", "stew", "herb_tea", "grilled_fish", "meat_stew", "fruit_salad", "spiced_bread", "fish_soup", "warrior_meal", "energy_brew"],
 }
 
 
