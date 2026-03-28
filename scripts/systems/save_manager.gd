@@ -116,6 +116,7 @@ func get_save_meta(slot: int) -> Dictionary:
 		"gold": int(currency.get("gold", 0)),
 		"silver": int(currency.get("silver", 0)),
 		"copper": int(currency.get("copper", 0)),
+		"wooden_coin": int(currency.get("wooden_coin", 0)),
 	}
 
 
@@ -225,14 +226,15 @@ func _serialize_equipment(player: Node) -> Dictionary:
 
 func _serialize_currency(player: Node) -> Dictionary:
 	if player == null:
-		return {"gold": 0, "silver": 0, "copper": 0}
+		return {"gold": 0, "silver": 0, "copper": 0, "wooden_coin": 0}
 	var inventory: Node = player.get_node_or_null("Inventory")
 	if inventory == null or not inventory.has_method("get_item_count"):
-		return {"gold": 0, "silver": 0, "copper": 0}
+		return {"gold": 0, "silver": 0, "copper": 0, "wooden_coin": 0}
 	return {
 		"gold": int(inventory.call("get_item_count", "gold")),
 		"silver": int(inventory.call("get_item_count", "silver")),
 		"copper": int(inventory.call("get_item_count", "copper")),
+		"wooden_coin": int(inventory.call("get_item_count", "wooden_coin")),
 	}
 
 
@@ -417,6 +419,8 @@ func _restore_player(data: Dictionary, player: Node) -> void:
 		var class_system: Node = get_node_or_null("/root/ClassSystem")
 		if class_system != null and class_system.has_method("save_class"):
 			class_system.call("save_class", class_id)
+		if player.has_method("refresh_class_visuals"):
+			player.call("refresh_class_visuals")
 
 
 func _restore_inventory(data: Array, player: Node) -> void:
@@ -451,7 +455,7 @@ func _restore_currency(data: Dictionary, player: Node) -> void:
 		return
 	if not inventory.has_method("get_item_count") or not inventory.has_method("remove_item") or not inventory.has_method("add_item"):
 		return
-	for coin_id: String in ["gold", "silver", "copper"]:
+	for coin_id: String in ["gold", "silver", "copper", "wooden_coin"]:
 		var existing_amount: int = int(inventory.call("get_item_count", coin_id))
 		if existing_amount > 0:
 			inventory.call("remove_item", coin_id, existing_amount)
@@ -596,7 +600,10 @@ func _restore_progress(data: Dictionary, main_node: Node) -> void:
 	if data.is_empty() or main_node == null:
 		return
 	main_node.set("current_day", int(data.get("current_day", 1)))
-	main_node.set("deepest_dungeon_floor_reached", int(data.get("deepest_floor", data.get("deepest_floor_reached", 1))))
+	var deepest_floor_reached: int = int(data.get("deepest_floor", data.get("deepest_floor_reached", 1)))
+	main_node.set("deepest_dungeon_floor_reached", deepest_floor_reached)
+	if WorldLevel != null and WorldLevel.has_method("set_deepest_floor_reached"):
+		WorldLevel.call("set_deepest_floor_reached", deepest_floor_reached)
 	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")
 	if achievement_manager == null:
 		return
@@ -647,16 +654,15 @@ func _refresh_loaded_scene(main_node: Node) -> void:
 	QuestManager.set_day(current_day)
 	if NpcManager != null:
 		NpcManager.set_current_day(current_day)
+	if WorldLevel != null and WorldLevel.has_method("set_deepest_floor_reached"):
+		WorldLevel.call("set_deepest_floor_reached", deepest_floor)
 	var hud_value: Variant = main_node.get("hud")
 	if hud_value is Node:
 		var hud_node: Node = hud_value as Node
 		if hud_node.has_method("update_day_label"):
 			hud_node.call("update_day_label", current_day)
-		var class_label_value: Variant = hud_node.get("class_label")
-		if class_label_value is Label:
-			var class_label: Label = class_label_value as Label
-			var class_system: Node = get_node_or_null("/root/ClassSystem")
-			class_label.text = class_system.call("get_class_display_name") if class_system != null and class_system.has_method("get_class_display_name") else ""
+		if hud_node.has_method("refresh_meta_labels"):
+			hud_node.call("refresh_meta_labels")
 	var current_level_value: Variant = main_node.get("current_level")
 	if current_level_value is Node:
 		var current_level: Node = current_level_value as Node

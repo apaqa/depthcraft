@@ -3,15 +3,15 @@ extends CharacterBody2D
 @export var speed: float = 80.0
 @export var sprint_speed: float = 140.0
 
-const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
-const ATTACK_EFFECT_SCENE := preload("res://scenes/player/attack_effect.tscn")
-const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
-const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
-const PLAYER_SAVE := preload("res://scripts/player/player_save.gd")
+const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+const ATTACK_EFFECT_SCENE = preload("res://scenes/player/attack_effect.tscn")
+const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
+const TALENT_DATA = preload("res://scripts/talent/talent_data.gd")
+const PLAYER_SAVE = preload("res://scripts/player/player_save.gd")
 
 signal interaction_prompt_changed(prompt_text: String)
 signal interaction_prompt_cleared
-signal portal_requested(target_level_id: String)
+signal portal_requested(target_level_id: String, start_floor: int)
 signal build_mode_changed(active: bool)
 signal crafting_requested(facility)
 signal storage_requested(facility)
@@ -29,15 +29,22 @@ signal status_message_requested(message: String, color: Color, duration: float)
 @onready var interaction_area: Area2D = $InteractionArea
 @onready var inventory: Inventory = $Inventory
 @onready var building_system: BuildingSystem = $BuildingSystem
-@onready var player_stats = $PlayerStats
-@onready var equipment_system = $EquipmentSystem
+@onready var player_stats: Node = $PlayerStats
+@onready var equipment_system: Node = $EquipmentSystem
 @onready var player_camera: Camera2D = $Camera2D
 
-const FLOATING_TEXT_SCENE := preload("res://scenes/ui/floating_text.tscn")
+const FLOATING_TEXT_SCENE = preload("res://scenes/ui/floating_text.tscn")
+const CLASS_VISUAL_PREFIXES: Dictionary = {
+	"warrior": "knight_m",
+	"mage": "wizzard_m",
+	"ranger": "elf_m",
+}
+const CLASS_IDLE_ANIMATION_SPEED: float = 8.0
+const CLASS_RUN_ANIMATION_SPEED: float = 10.0
 
 var max_hp: int = 100
 var current_hp: int = 100
-var last_interacted_resource = null
+var last_interacted_resource: Variant = null
 var build_mode: bool = false
 var nearby_interactables: Array = []
 var ui_blocked: bool = false
@@ -80,8 +87,8 @@ var dungeon_max_hp_penalty: int = 0
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
-const BASE_ATTACK_COOLDOWN := 0.4
-const BANDAGE_COOLDOWN := 1.0
+const BASE_ATTACK_COOLDOWN = 0.4
+const BANDAGE_COOLDOWN = 1.0
 
 
 func _ready() -> void:
@@ -95,17 +102,59 @@ func _ready() -> void:
 	equipment_system.equipment_changed.connect(_on_equipment_changed)
 	if load_persistent_state_on_ready:
 		_load_persistent_state()
-	var _class_system = get_node_or_null("/root/ClassSystem")
+	var _class_system: Node = get_node_or_null("/root/ClassSystem")
 	if _class_system != null:
 		_class_system.apply_to_stats(player_stats)
+	refresh_class_visuals()
 	_recalculate_buff_state()
 	_refresh_all_stats()
 	_setup_torch_light()
 	configure_for_network_role(load_persistent_state_on_ready)
 
 
+func refresh_class_visuals() -> void:
+	var sprite: AnimatedSprite2D = get_animated_sprite()
+	if sprite == null:
+		return
+	var current_animation: StringName = sprite.animation if sprite.animation != StringName() else &"idle"
+	sprite.sprite_frames = _build_class_sprite_frames(_get_current_class_id())
+	if sprite.sprite_frames != null and sprite.sprite_frames.has_animation(current_animation):
+		sprite.play(String(current_animation))
+	else:
+		sprite.play("idle")
+
+
+func _get_current_class_id() -> String:
+	var class_system: Node = get_node_or_null("/root/ClassSystem")
+	if class_system != null:
+		var class_id_value: Variant = class_system.get("current_class_id")
+		if class_id_value != null and str(class_id_value) != "":
+			return str(class_id_value)
+	return "warrior"
+
+
+func _build_class_sprite_frames(class_id: String) -> SpriteFrames:
+	var resolved_class_id: String = class_id if CLASS_VISUAL_PREFIXES.has(class_id) else "warrior"
+	var sprite_frames: SpriteFrames = SpriteFrames.new()
+	var prefix: String = str(CLASS_VISUAL_PREFIXES.get(resolved_class_id, "knight_m"))
+	_append_class_animation_frames(sprite_frames, "idle", prefix, CLASS_IDLE_ANIMATION_SPEED)
+	_append_class_animation_frames(sprite_frames, "run", prefix, CLASS_RUN_ANIMATION_SPEED)
+	return sprite_frames
+
+
+func _append_class_animation_frames(sprite_frames: SpriteFrames, animation_name: String, prefix: String, animation_speed: float) -> void:
+	sprite_frames.add_animation(animation_name)
+	sprite_frames.set_animation_loop(animation_name, true)
+	sprite_frames.set_animation_speed(animation_name, animation_speed)
+	for frame_index: int in range(4):
+		var frame_path: String = "res://assets/%s_%s_anim_f%d.png" % [prefix, animation_name, frame_index]
+		var frame_texture: Texture2D = load(frame_path) as Texture2D
+		if frame_texture != null:
+			sprite_frames.add_frame(animation_name, frame_texture)
+
+
 static func compute_input_vector(left_strength: float, right_strength: float, up_strength: float, down_strength: float) -> Vector2:
-	var input_vector := Vector2(right_strength - left_strength, down_strength - up_strength)
+	var input_vector: Vector2 = Vector2(right_strength - left_strength, down_strength - up_strength)
 	if input_vector.length_squared() > 1.0:
 		input_vector = input_vector.normalized()
 	return input_vector
@@ -128,7 +177,7 @@ func apply_input_direction(input_direction: Vector2, move_speed: float = -1.0) -
 
 
 func update_sprite_state(input_direction: Vector2, is_sprinting: bool = false) -> void:
-	var sprite := get_animated_sprite()
+	var sprite: AnimatedSprite2D = get_animated_sprite()
 	if sprite == null:
 		return
 
@@ -401,7 +450,7 @@ func _on_resource_gathered(resource_id: String, quantity: int) -> void:
 	var total_quantity: int = quantity + player_stats.get_total_gather_bonus()
 	var item_data: Dictionary = ITEM_DATABASE.get_item(resource_id)
 	var display_name: String = str(item_data.get("name", ITEM_DATABASE.get_display_name(resource_id)))
-	var source_position := global_position
+	var source_position: Vector2 = global_position
 	if last_interacted_resource != null:
 		source_position = last_interacted_resource.global_position
 	if inventory.add_item(resource_id, total_quantity):
@@ -492,7 +541,7 @@ func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	hp_changed.emit(current_hp, max_hp)
 	invincible_time_left = 0.8
 	apply_knockback(hit_direction, 110.0)
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color(1, 0.45, 0.45, 1), 0.05)
 	tween.tween_property(animated_sprite, "modulate", Color(1, 1, 1, 1), 0.1)
 	if current_hp <= 0:
@@ -534,38 +583,38 @@ func heal(amount: int) -> void:
 func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 	if attack_cooldown_left > 0.0:
 		return
-	var attack_direction := _get_attack_direction(override_direction)
+	var attack_direction: Vector2 = _get_attack_direction(override_direction)
 	last_attack_direction = attack_direction
 	attack_cooldown_left = get_attack_cooldown_duration()
 	AudioManager.play_sfx("attack_swing")
 	_spawn_attack_effect(attack_direction)
 	equipment_system.consume_attack_durability()
-	var attack_shape := RectangleShape2D.new()
+	var attack_shape: RectangleShape2D = RectangleShape2D.new()
 	attack_shape.size = Vector2(28, 20) * aoe_attack_multiplier
-	var query := PhysicsShapeQueryParameters2D.new()
+	var query: PhysicsShapeQueryParameters2D = PhysicsShapeQueryParameters2D.new()
 	query.shape = attack_shape
 	query.transform = Transform2D(attack_direction.angle(), global_position + _get_attack_offset(attack_direction))
 	query.collision_mask = 4
-	var results := get_world_2d().direct_space_state.intersect_shape(query)
-	var total_damage_dealt := 0
-	for result in results:
-		var collider = result.get("collider", null)
+	var results: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(query)
+	var total_damage_dealt: int = 0
+	for result: Dictionary in results:
+		var collider: Variant = result.get("collider", null)
 		if collider == null or not collider.has_method("take_damage") or collider == self:
 			continue
 		if collider.has_method("is_player_owned_building") and collider.is_player_owned_building():
 			continue
-		var attack_damage := get_attack_damage()
+		var attack_damage: int = get_attack_damage()
 		if execute_skill_armed:
-			var execute_enemy_hp := int(collider.get("current_hp"))
-			var execute_enemy_max_hp := int(collider.get("max_hp"))
+			var execute_enemy_hp: int = int(collider.get("current_hp"))
+			var execute_enemy_max_hp: int = int(collider.get("max_hp"))
 			if execute_enemy_max_hp > 0 and float(execute_enemy_hp) / float(execute_enemy_max_hp) <= 0.3:
 				attack_damage *= 3
 			execute_skill_armed = false
 		if player_stats.get_total_crit_chance() + crit_chance_bonus > 0.0 and randf() < (player_stats.get_total_crit_chance() + crit_chance_bonus):
 			attack_damage *= 2
 		if player_stats.get_execute_bonus() > 0.0:
-			var enemy_hp := int(collider.get("current_hp"))
-			var enemy_max_hp := int(collider.get("max_hp"))
+			var enemy_hp: int = int(collider.get("current_hp"))
+			var enemy_max_hp: int = int(collider.get("max_hp"))
 			if enemy_max_hp > 0 and float(enemy_hp) / float(enemy_max_hp) <= 0.3:
 				attack_damage = int(round(float(attack_damage) * (1.0 + player_stats.get_execute_bonus())))
 		collider.take_damage(attack_damage, attack_direction)
@@ -575,7 +624,7 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 	if (lifesteal_ratio + equipment_lifesteal_ratio) > 0.0 and total_damage_dealt > 0:
 		heal(int(max(round(total_damage_dealt * (lifesteal_ratio + equipment_lifesteal_ratio)), 1.0)))
 	# Also hit the closest nearby resource node (trees, rocks, ore)
-	var closest_resource = _get_closest_interactable()
+	var closest_resource: Variant = _get_closest_interactable()
 	if closest_resource != null and closest_resource.has_method("hit"):
 		last_interacted_resource = closest_resource
 		closest_resource.hit()
@@ -596,7 +645,7 @@ func _spawn_attack_effect(attack_direction: Vector2) -> void:
 
 
 func _get_attack_offset(attack_direction: Vector2 = Vector2.RIGHT) -> Vector2:
-	var direction := attack_direction.normalized() if attack_direction.length_squared() > 0.0 else last_attack_direction
+	var direction: Vector2 = attack_direction.normalized() if attack_direction.length_squared() > 0.0 else last_attack_direction
 	return direction * 18.0 + Vector2(0, 2)
 
 
@@ -640,7 +689,7 @@ func _set_key_action(action_name: String, keycode: int) -> void:
 		InputMap.add_action(action_name)
 	for event in InputMap.action_get_events(action_name):
 		InputMap.action_erase_event(action_name, event)
-	var key_event := InputEventKey.new()
+	var key_event: InputEventKey = InputEventKey.new()
 	key_event.keycode = keycode
 	key_event.physical_keycode = keycode
 	InputMap.action_add_event(action_name, key_event)
@@ -722,7 +771,7 @@ func get_unlocked_talents() -> Array[String]:
 func unlock_talent(talent_id: String) -> bool:
 	if not TALENT_DATA.can_unlock(unlocked_talents, inventory.get_item_count("talent_shard"), talent_id):
 		return false
-	var talent := TALENT_DATA.get_talent(talent_id)
+	var talent: Dictionary = TALENT_DATA.get_talent(talent_id)
 	if not inventory.remove_item("talent_shard", int(talent.get("cost", 0))):
 		return false
 	unlocked_talents.append(talent_id)
@@ -823,7 +872,7 @@ func configure_for_network_role(is_local_player: bool) -> void:
 func _broadcast_state() -> void:
 	if not multiplayer.has_multiplayer_peer() or not is_multiplayer_authority():
 		return
-	var current_animation := animated_sprite.animation if animated_sprite != null else &"idle"
+	var current_animation: StringName = animated_sprite.animation if animated_sprite != null else &"idle"
 	sync_state.rpc(global_position, velocity, str(current_animation), animated_sprite.flip_h if animated_sprite != null else false, animated_sprite.speed_scale if animated_sprite != null else 1.0)
 
 
@@ -915,7 +964,7 @@ func get_consumable_slots() -> Array[Dictionary]:
 	for stack in inventory.items:
 		if str(stack.get("type", "")) != "consumable":
 			continue
-		var id := str(stack.get("id", ""))
+		var id: String = str(stack.get("id", ""))
 		if id == consumable_q_id:
 			slots[0] = stack.duplicate(true)
 		elif id == consumable_r_id:
@@ -964,17 +1013,17 @@ func use_first_consumable() -> bool:
 func _use_consumable_at_slot(slot_index: int) -> bool:
 	if consumable_cooldown_left > 0.0:
 		return false
-	var slots := get_consumable_slots()
+	var slots: Array[Dictionary] = get_consumable_slots()
 	if slot_index < 0 or slot_index >= slots.size():
 		show_status_message("Consumable slot empty", Color(0.7, 0.7, 0.7, 1.0))
 		return false
-	var stack := slots[slot_index]
-	var item_id := str(stack.get("id", ""))
-	var item_data := ITEM_DATABASE.get_item(item_id)
+	var stack: Dictionary = slots[slot_index]
+	var item_id: String = str(stack.get("id", ""))
+	var item_data: Dictionary = ITEM_DATABASE.get_item(item_id)
 	if not inventory.remove_item(item_id, 1):
 		return false
-	var effects := item_data.get("effect", {}) as Dictionary
-	var heal_amount := int(effects.get("heal", 0))
+	var effects: Dictionary = item_data.get("effect", {}) as Dictionary
+	var heal_amount: int = int(effects.get("heal", 0))
 	if heal_amount > 0:
 		heal(heal_amount)
 		_play_heal_feedback(heal_amount)
@@ -987,7 +1036,7 @@ func _use_consumable_at_slot(slot_index: int) -> bool:
 
 func _play_heal_feedback(heal_amount: int) -> void:
 	_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.45, 1.0, 0.45, 1.0))
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color(0.45, 1.0, 0.45, 1.0), 0.08)
 	tween.tween_property(animated_sprite, "modulate", Color.WHITE, 0.22)
 
@@ -1001,8 +1050,8 @@ func apply_knockback(direction: Vector2, force: float = 110.0) -> void:
 func _get_attack_direction(override_direction: Vector2 = Vector2.ZERO) -> Vector2:
 	if override_direction.length_squared() > 0.0:
 		return override_direction.normalized()
-	var mouse_position := get_global_mouse_position()
-	var direction := mouse_position - global_position
+	var mouse_position: Vector2 = get_global_mouse_position()
+	var direction: Vector2 = mouse_position - global_position
 	if direction.length_squared() <= 0.001:
 		return Vector2.LEFT if animated_sprite.flip_h else Vector2.RIGHT
 	return direction.normalized()
@@ -1035,25 +1084,25 @@ func activate_sprint_skill(duration: float, multiplier: float) -> void:
 func _spawn_afterimage() -> void:
 	if animated_sprite == null or animated_sprite.sprite_frames == null:
 		return
-	var animation_name := animated_sprite.animation
+	var animation_name: StringName = animated_sprite.animation
 	if animation_name == StringName():
 		return
-	var texture := animated_sprite.sprite_frames.get_frame_texture(animation_name, animated_sprite.frame)
+	var texture: Texture2D = animated_sprite.sprite_frames.get_frame_texture(animation_name, animated_sprite.frame)
 	if texture == null:
 		return
-	var afterimage := Sprite2D.new()
+	var afterimage: Sprite2D = Sprite2D.new()
 	afterimage.texture = texture
 	afterimage.global_position = animated_sprite.global_position
 	afterimage.scale = animated_sprite.scale
 	afterimage.flip_h = animated_sprite.flip_h
 	afterimage.modulate = Color(0.75, 0.95, 1.0, 0.45)
-	var parent_node := get_parent()
+	var parent_node: Node = get_parent()
 	if parent_node == null:
 		parent_node = get_tree().current_scene
 	if parent_node == null:
 		return
 	parent_node.add_child(afterimage)
-	var tween := afterimage.create_tween()
+	var tween: Tween = afterimage.create_tween()
 	tween.tween_property(afterimage, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(afterimage.queue_free)
 

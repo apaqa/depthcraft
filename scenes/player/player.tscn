@@ -72,6 +72,7 @@ script = ExtResource("1_h17s1")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=464455966]
 position = Vector2(0, -1)
 sprite_frames = SubResource("SpriteFrames_8ydkj")
+animation = &"idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=61282265]
 position = Vector2(0, 5)

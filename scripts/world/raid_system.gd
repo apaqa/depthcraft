@@ -6,13 +6,11 @@ signal border_flash_requested(color: Color)
 signal raid_started
 signal raid_countdown_changed(message: String, color: Color, visible: bool)
 
-const RAID_ENEMY_SCENE := preload("res://scenes/enemies/raid_enemy.tscn")
-const RAID_WARNING_DURATION := 30.0
-const BASE_MIN_ENEMIES := 8
-const BASE_MAX_ENEMIES := 15
-const FLOOR_SCALE_STEP := 5
-const EXTRA_ENEMIES_PER_STEP := 3
-const HP_SCALE_PER_STEP := 0.2
+const RAID_ENEMY_SCENE = preload("res://scenes/enemies/raid_enemy.tscn")
+const RAID_WARNING_DURATION = 30.0
+const BASE_RAID_ENEMY_COUNT: int = 6
+const BIG_ZOMBIE_STRENGTH_THRESHOLD: float = 10.0
+const BIG_ZOMBIE_STRENGTH_STEP: float = 5.0
 
 var player = null
 var building_system = null
@@ -76,7 +74,7 @@ func queue_progress_raid() -> void:
 
 
 func _start_raid() -> void:
-	var core = building_system.get_home_core() if building_system != null else null
+	var core: Variant = building_system.get_home_core() if building_system != null else null
 	if core == null:
 		_cancel_countdown()
 		return
@@ -95,27 +93,29 @@ func _start_raid() -> void:
 
 func _spawn_raid_enemies(core) -> void:
 	_clear_enemy_refs()
-	var scaling_steps := int(max(deepest_floor_reached - 1, 0) / FLOOR_SCALE_STEP)
-	var enemy_count: int = randi_range(BASE_MIN_ENEMIES, BASE_MAX_ENEMIES) + scaling_steps * EXTRA_ENEMIES_PER_STEP
-	var hp_multiplier := 1.0 + float(scaling_steps) * HP_SCALE_PER_STEP
+	var strength_value: float = _get_raid_strength_value(core)
+	var enemy_count: int = BASE_RAID_ENEMY_COUNT + maxi(int(round(strength_value)), 0)
+	var hp_multiplier: float = 1.0 + strength_value * 0.1
+	var big_zombie_count: int = _get_big_zombie_count(strength_value, enemy_count)
 	var guard_damage_reduction: int = NpcManager.get_guard_damage_reduction() if NpcManager != null else 0
 	var enemy_root: Node2D = Node2D.new()
 	enemy_root.name = "RaidEnemyRoot"
 	get_parent().add_child(enemy_root)
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	for _index in range(enemy_count):
-		var enemy = RAID_ENEMY_SCENE.instantiate()
+	for index: int in range(enemy_count):
+		var enemy: RaidEnemy = RAID_ENEMY_SCENE.instantiate() as RaidEnemy
+		var use_big_zombie: bool = index < big_zombie_count
 		enemy_root.add_child(enemy)
 		enemy.global_position = _get_spawn_position(viewport_size, core.global_position)
-		enemy.setup_raid(player, core, building_system, deepest_floor_reached, hp_multiplier, enemy_root)
+		enemy.setup_raid(player, core, building_system, strength_value, hp_multiplier, use_big_zombie, enemy_root)
 		enemy.damage = maxi(int(enemy.damage) - guard_damage_reduction, 1)
 		enemy.died.connect(_on_raid_enemy_died.bind(enemy))
 		raid_enemies.append(enemy)
 
 
 func _get_spawn_position(viewport_size: Vector2, anchor_position: Vector2) -> Vector2:
-	var side := randi() % 4
-	var margin := 48.0
+	var side: int = randi() % 4
+	var margin: float = 48.0
 	match side:
 		0:
 			return anchor_position + Vector2(randf_range(-viewport_size.x * 0.6, viewport_size.x * 0.6), -viewport_size.y * 0.6 - margin)
@@ -134,7 +134,7 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 		return
 	raid_active = false
 	_guard_attack_cooldown_left = 0.0
-	var core = building_system.get_home_core() if building_system != null else null
+	var core: Variant = building_system.get_home_core() if building_system != null else null
 	if core != null and core.has_method("set_raid_active"):
 		core.set_raid_active(false)
 	banner_requested.emit(LocaleManager.L("raid_victory"), Color(0.45, 1.0, 0.45, 1.0), 3.0)
@@ -167,8 +167,8 @@ func is_countdown_active() -> bool:
 
 
 func _emit_countdown() -> void:
-	var seconds_left := int(ceil(raid_countdown_remaining))
-	var message := LocaleManager.L("raid_countdown") % max(seconds_left, 0)
+	var seconds_left: int = int(ceil(raid_countdown_remaining))
+	var message: String = LocaleManager.L("raid_countdown") % max(seconds_left, 0)
 	raid_countdown_changed.emit(message, Color(1.0, 0.15, 0.15, 1.0), true)
 
 
@@ -202,7 +202,7 @@ func _process_guard_support(delta: float) -> void:
 
 
 func _get_guard_target() -> Node2D:
-	var core = building_system.get_home_core() if building_system != null else null
+	var core: Variant = building_system.get_home_core() if building_system != null else null
 	var best_target: Node2D = null
 	var best_distance: float = INF
 	for enemy_variant: Variant in raid_enemies:
@@ -219,3 +219,23 @@ func _get_guard_target() -> Node2D:
 			best_distance = distance
 			best_target = enemy
 	return best_target
+
+
+func _get_raid_strength_value(core: Variant) -> float:
+	var home_core_level: int = _get_home_core_level(core)
+	return float(deepest_floor_reached) * 0.5 + float(home_core_level) * 2.0
+
+
+func _get_home_core_level(core: Variant) -> int:
+	if core == null:
+		return 0
+	if core.has_method("get_upgrade_level"):
+		return maxi(int(core.call("get_upgrade_level")), 1)
+	return 1
+
+
+func _get_big_zombie_count(strength_value: float, enemy_count: int) -> int:
+	if strength_value < BIG_ZOMBIE_STRENGTH_THRESHOLD:
+		return 0
+	var extra_steps: int = int(floor((strength_value - BIG_ZOMBIE_STRENGTH_THRESHOLD) / BIG_ZOMBIE_STRENGTH_STEP))
+	return mini(1 + extra_steps, maxi(int(floor(float(enemy_count) * 0.35)), 1))

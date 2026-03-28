@@ -5,18 +5,18 @@ signal border_flash_requested(color: Color)
 signal raid_started
 signal raid_countdown_changed(message: String, color: Color, visible: bool)
 
-const SOURCE_GRASS := 1
-const SOURCE_GRASS_ALT := 1
-const SOURCE_ROAD := 3
-const SOURCE_WATER := 5
-const SOURCE_WATER_ALT := 6
-const BASE_CLEAR_RADIUS := 128.0
-const TREE_SCENE := preload("res://scenes/world/tree_node.tscn")
-const ROCK_SCENE := preload("res://scenes/world/rock_node.tscn")
-const IRON_SCENE := preload("res://scenes/world/iron_node.tscn")
-const GRASS_SCENE := preload("res://scenes/world/grass_node.tscn")
-const MERCHANT_SCENE := preload("res://scenes/world/merchant.tscn")
-const VILLAGE_NPC_SCENE := preload("res://scenes/world/village_npc.tscn")
+const SOURCE_GRASS = 1
+const SOURCE_GRASS_ALT = 1
+const SOURCE_ROAD = 3
+const SOURCE_WATER = 5
+const SOURCE_WATER_ALT = 6
+const BASE_CLEAR_RADIUS = 128.0
+const TREE_SCENE = preload("res://scenes/world/tree_node.tscn")
+const ROCK_SCENE = preload("res://scenes/world/rock_node.tscn")
+const IRON_SCENE = preload("res://scenes/world/iron_node.tscn")
+const GRASS_SCENE = preload("res://scenes/world/grass_node.tscn")
+const MERCHANT_SCENE = preload("res://scenes/world/merchant.tscn")
+const VILLAGE_NPC_SCENE = preload("res://scenes/world/village_npc.tscn")
 const WANDERER_COUNT: int = 4
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
@@ -188,16 +188,16 @@ func _is_valid_resource_pos(pos: Vector2, spawn_px: Vector2, entrance_px: Vector
 		return false
 	if pos.distance_to(entrance_px) < entrance_clear:
 		return false
-	var tile := Vector2i(int(pos.x) / WorldGenerator.TILE_SIZE, int(pos.y) / WorldGenerator.TILE_SIZE)
-	var tile_type := _generator.get_tile_type(tile)
+	var tile: Vector2i = Vector2i(int(pos.x) / WorldGenerator.TILE_SIZE, int(pos.y) / WorldGenerator.TILE_SIZE)
+	var tile_type: String = _generator.get_tile_type(tile)
 	return tile_type != "water" and tile_type != "lake" and tile_type != "border"
 
 
 func _spawn_merchant() -> void:
-	var existing := get_node_or_null("Merchant")
+	var existing: Node = get_node_or_null("Merchant")
 	if existing != null:
 		return
-	var merchant := MERCHANT_SCENE.instantiate()
+	var merchant: Node2D = MERCHANT_SCENE.instantiate() as Node2D
 	merchant.name = "Merchant"
 	merchant.position = _generator.get_spawn_pixel() + Vector2(48, 0)
 	add_child(merchant)
@@ -221,8 +221,14 @@ func set_day_count(day_count: int) -> void:
 
 
 func set_deepest_floor_reached(floor_number: int) -> void:
+	if WorldLevel != null and WorldLevel.has_method("set_deepest_floor_reached"):
+		WorldLevel.call("set_deepest_floor_reached", floor_number)
 	if raid_system != null and raid_system.has_method("set_deepest_floor_reached"):
 		raid_system.set_deepest_floor_reached(floor_number)
+	var merchant: Node = get_node_or_null("Merchant")
+	if merchant != null and merchant.has_method("refresh_inventory_state"):
+		merchant.call("refresh_inventory_state")
+	_refresh_npc_population()
 
 
 func trigger_progress_raid() -> void:

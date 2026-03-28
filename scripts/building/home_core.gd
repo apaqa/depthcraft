@@ -56,6 +56,10 @@ func restore_to_full() -> void:
 	_update_hp_bar()
 
 
+func get_upgrade_level() -> int:
+	return 1
+
+
 func _process(delta: float) -> void:
 	hp_bar_time_left = max(hp_bar_time_left - delta, 0.0)
 	if hp_bar_root != null:
@@ -77,6 +81,6 @@ func _start_pulse() -> void:
 func _update_hp_bar() -> void:
 	if hp_fill == null:
 		return
-	var ratio := clampf(float(current_hp) / float(max(max_hp, 1)), 0.0, 1.0)
+	var ratio: float = clampf(float(current_hp) / float(max(max_hp, 1)), 0.0, 1.0)
 	hp_fill.polygon = PackedVector2Array([Vector2.ZERO, Vector2(28.0 * ratio, 0), Vector2(28.0 * ratio, 4), Vector2(0, 4)])
 
