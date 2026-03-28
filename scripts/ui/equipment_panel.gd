@@ -6,14 +6,19 @@ const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
 const LOOT_DROP_SCENE = preload("res://scenes/dungeon/loot_drop.tscn")
 
 @onready var slot_list: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel/VBoxContainer/SlotList
-@onready var inventory_list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryScroll/InventoryListContainer
+@onready var eq_list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/EqScroll/EqListContainer
+@onready var mat_list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/MatScroll/MatListContainer
+@onready var eq_scroll: ScrollContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/EqScroll
+@onready var mat_scroll: ScrollContainer = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/MatScroll
+@onready var eq_tab_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/TabBar/EqTabBtn
+@onready var mat_tab_btn: Button = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/TabBar/MatTabBtn
 @onready var stat_label: Label = $PanelContainer/MarginContainer/VBoxContainer/StatLabel
-@onready var comparison_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ComparisonLabel
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
 @onready var slot_title: Label = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/SlotPanel/VBoxContainer/SlotTitle
 @onready var inventory_title: Label = $PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/InventoryPanel/VBoxContainer/InventoryTitle
 
 var player: Variant = null
+var _active_tab: String = "equipment"
 var _eq_indices: Array[int] = []
 var _cons_indices: Array[int] = []
 var _hovered_eq_index: int = -1
@@ -45,7 +50,6 @@ func _ready() -> void:
 	ep_style.border_width_bottom = 1
 	ep_panel.add_theme_stylebox_override("panel", ep_style)
 	stat_label.add_theme_font_size_override("font_size", 16)
-	comparison_label.add_theme_font_size_override("font_size", 16)
 
 	_tooltip_panel = PanelContainer.new()
 	_tooltip_panel.visible = false
@@ -73,6 +77,22 @@ func _ready() -> void:
 	_tooltip_vbox.add_theme_constant_override("separation", 4)
 	tooltip_margin.add_child(_tooltip_vbox)
 	add_child(_tooltip_panel)
+
+	eq_tab_btn.pressed.connect(func() -> void: _switch_tab("equipment"))
+	mat_tab_btn.pressed.connect(func() -> void: _switch_tab("materials"))
+	_apply_tab_styles()
+
+
+func _switch_tab(tab: String) -> void:
+	_active_tab = tab
+	eq_scroll.visible = tab == "equipment"
+	mat_scroll.visible = tab == "materials"
+	_apply_tab_styles()
+
+
+func _apply_tab_styles() -> void:
+	eq_tab_btn.modulate = Color(1.0, 1.0, 1.0, 1.0) if _active_tab == "equipment" else Color(0.55, 0.55, 0.55, 1.0)
+	mat_tab_btn.modulate = Color(1.0, 1.0, 1.0, 1.0) if _active_tab == "materials" else Color(0.55, 0.55, 0.55, 1.0)
 
 
 func open_for_player(target_player) -> void:
@@ -117,7 +137,9 @@ func _refresh() -> void:
 	_hide_tooltip()
 	for child: Node in slot_list.get_children():
 		child.queue_free()
-	for child: Node in inventory_list_container.get_children():
+	for child: Node in eq_list_container.get_children():
+		child.queue_free()
+	for child: Node in mat_list_container.get_children():
 		child.queue_free()
 	_eq_indices.clear()
 	_cons_indices.clear()
@@ -138,7 +160,7 @@ func _refresh() -> void:
 			continue
 		var eq_index: int = _eq_indices.size()
 		_eq_indices.append(index)
-		inventory_list_container.add_child(_build_eq_row(stack, eq_index))
+		eq_list_container.add_child(_build_eq_row(stack, eq_index))
 
 	var q_id: String = str(player.get("consumable_q_id")) if player != null else ""
 	var r_id: String = str(player.get("consumable_r_id")) if player != null else ""
@@ -148,9 +170,8 @@ func _refresh() -> void:
 			continue
 		var cons_index: int = _cons_indices.size()
 		_cons_indices.append(index)
-		inventory_list_container.add_child(_build_cons_row(stack, cons_index, q_id, r_id))
+		eq_list_container.add_child(_build_cons_row(stack, cons_index, q_id, r_id))
 
-	var has_materials: bool = false
 	for index in range(player.inventory.items.size()):
 		var stack: Dictionary = player.inventory.items[index]
 		var item_type: String = str(stack.get("type", ""))
@@ -159,15 +180,10 @@ func _refresh() -> void:
 			continue
 		if item_id == "copper" or item_id == "silver" or item_id == "gold":
 			continue
-		if not has_materials:
-			has_materials = true
-			inventory_list_container.add_child(HSeparator.new())
-			var mat_header: Label = Label.new()
-			mat_header.text = LocaleManager.L("materials_section")
-			mat_header.modulate = Color(0.85, 0.75, 0.45, 1.0)
-			mat_header.add_theme_font_size_override("font_size", 12)
-			inventory_list_container.add_child(mat_header)
-		inventory_list_container.add_child(_build_material_row(stack))
+		mat_list_container.add_child(_build_material_row(stack))
+
+	eq_scroll.visible = _active_tab == "equipment"
+	mat_scroll.visible = _active_tab == "materials"
 
 	var summary: Dictionary = player.get_stats_summary()
 	stat_label.text = "%s: %d   %s: %d   %s: %d   %s: %d" % [
@@ -176,7 +192,6 @@ func _refresh() -> void:
 		LocaleManager.L("hp"), int(summary.get("max_hp", 0)),
 		LocaleManager.L("spd"), int(summary.get("speed", 0)),
 	]
-	comparison_label.text = LocaleManager.L("hover_to_compare")
 
 
 func _build_slot_row(slot_name: String, item: Dictionary) -> Button:
@@ -317,12 +332,10 @@ func _build_eq_row(stack: Dictionary, eq_idx: int) -> PanelContainer:
 	panel.mouse_entered.connect(func() -> void:
 		_hovered_eq_index = eq_idx
 		_hovered_consumable_index = -1
-		_update_comparison_label()
 		_show_tooltip(stack)
 	)
 	panel.mouse_exited.connect(func() -> void:
 		_hovered_eq_index = -1
-		_update_comparison_label()
 		_hide_tooltip()
 	)
 	_apply_panel_rarity_style(panel, rarity_color)
@@ -395,12 +408,10 @@ func _build_cons_row(stack: Dictionary, cons_idx: int, q_id: String, r_id: Strin
 	panel.mouse_entered.connect(func() -> void:
 		_hovered_consumable_index = cons_idx
 		_hovered_eq_index = -1
-		_update_comparison_label()
 		_show_tooltip(stack)
 	)
 	panel.mouse_exited.connect(func() -> void:
 		_hovered_consumable_index = -1
-		_update_comparison_label()
 		_hide_tooltip()
 	)
 	return panel
@@ -740,27 +751,3 @@ func _fill_material_tooltip(container: VBoxContainer, stack: Dictionary) -> void
 		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_label.custom_minimum_size = Vector2(180, 0)
 		container.add_child(desc_label)
-
-
-func _update_comparison_label() -> void:
-	if comparison_label == null or player == null:
-		return
-	if _hovered_eq_index >= 0 and _hovered_eq_index < _eq_indices.size():
-		var stack_index: int = _eq_indices[_hovered_eq_index]
-		if stack_index < 0 or stack_index >= player.inventory.items.size():
-			comparison_label.text = LocaleManager.L("hover_to_compare")
-			return
-		var item: Dictionary = player.inventory.items[stack_index]
-		var current_summary: Dictionary = player.get_stats_summary()
-		var preview_summary: Dictionary = player.get_stats_summary_for_item(item)
-		var lines: PackedStringArray = player.equipment_system.get_comparison_lines(current_summary, preview_summary)
-		var localized_lines: Array[String] = []
-		for line in lines:
-			var translated: String = line.replace("ATK", LocaleManager.L("atk")).replace("DEF", LocaleManager.L("def")).replace("HP", LocaleManager.L("hp")).replace("SPD", LocaleManager.L("spd"))
-			localized_lines.append(translated)
-		comparison_label.text = "\n".join(localized_lines)
-		return
-	if _hovered_consumable_index >= 0 and _hovered_consumable_index < _cons_indices.size():
-		comparison_label.text = LocaleManager.L("consumable_quickslot_hint")
-		return
-	comparison_label.text = LocaleManager.L("hover_to_compare")

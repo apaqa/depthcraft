@@ -5,10 +5,9 @@ signal close_requested
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 
 @onready var panel_container: PanelContainer = $PanelContainer
-
 @onready var title_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TitleLabel
-@onready var list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/ListContainer
-@onready var detail_label: Label = $PanelContainer/MarginContainer/VBoxContainer/DetailLabel
+@onready var list_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/BodyHBox/LeftPanel/ListScroll/ListContainer
+@onready var detail_vbox: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/BodyHBox/RightPanel/DetailVBox
 @onready var content_vbox: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer
 
 var player = null
@@ -16,13 +15,22 @@ var facility = null
 var upgrade_label: Label = null
 var upgrade_button: Button = null
 
+var _selected_slot: String = ""
+var _selected_inv_index: int = -1
+var _detail_placeholder: Label = null
+var _detail_name_lbl: Label = null
+var _detail_dur_bg: ColorRect = null
+var _detail_dur_fill: ColorRect = null
+var _detail_dur_lbl: Label = null
+var _detail_cost_lbl: Label = null
+var _detail_repair_btn: Button = null
+
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	title_label.text = LocaleManager.L("repair_bench")
 	title_label.add_theme_font_size_override("font_size", 22)
-	_resize_panel()
 	_ensure_close_button()
 	_ensure_upgrade_controls()
 	var ru_style: StyleBoxFlat = StyleBoxFlat.new()
@@ -33,12 +41,7 @@ func _ready() -> void:
 	ru_style.border_width_right = 1
 	ru_style.border_width_bottom = 1
 	panel_container.add_theme_stylebox_override("panel", ru_style)
-	detail_label.add_theme_font_size_override("font_size", 16)
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_RESIZED:
-		_resize_panel()
+	_build_detail_panel()
 
 
 func open_for_player(target_player, target_facility = null) -> void:
@@ -72,166 +75,234 @@ func _refresh() -> void:
 	for child in list_container.get_children():
 		child.queue_free()
 	if player == null:
-		detail_label.text = LocaleManager.L("repair_no_player")
+		_selected_slot = ""
+		_selected_inv_index = -1
+		_populate_detail()
 		return
-	var repair_cost_multiplier: float = _get_total_repair_cost_multiplier()
-	var equipped_any: bool = false
-	var repairable_any: bool = false
 
-	# === Equipped (slot) items ===
 	for slot_name in player.equipment_system.get_slot_order():
 		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
 		if item.is_empty():
 			continue
-		equipped_any = true
-		var durability: int = int(item.get("durability", 0))
-		var max_durability: int = int(item.get("max_durability", 0))
-		var dur_ratio: float = clampf(float(durability) / float(maxi(max_durability, 1)), 0.0, 1.0)
+		list_container.add_child(_build_repair_row(item, slot_name, -1))
 
-		# Pre-compute repair cost
-		var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name).duplicate()
-		for _k in cost.keys():
-			cost[_k] = maxi(int(ceil(float(cost[_k]) * repair_cost_multiplier)), 1)
-
-		# Outer row: left info | right actions
-		var outer_row: HBoxContainer = HBoxContainer.new()
-		outer_row.add_theme_constant_override("separation", 8)
-
-		# Left column: icon + name, durability bar
-		var left_col: VBoxContainer = VBoxContainer.new()
-		left_col.add_theme_constant_override("separation", 4)
-		left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-		var title_row: HBoxContainer = HBoxContainer.new()
-		title_row.add_theme_constant_override("separation", 6)
-		title_row.add_child(_build_item_icon(item))
-		var name_lbl: Label = Label.new()
-		name_lbl.text = "%s  [%s]" % [_get_display_name(item), _translate_slot_name(slot_name)]
-		name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.clip_text = true
-		title_row.add_child(name_lbl)
-		left_col.add_child(title_row)
-
-		var bar_bg: ColorRect = ColorRect.new()
-		bar_bg.custom_minimum_size = Vector2(200, 10)
-		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
-		var bar_fill: ColorRect = ColorRect.new()
-		bar_fill.custom_minimum_size = Vector2(200.0 * dur_ratio, 10)
-		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if durability <= 0 else \
-			(Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0))
-		bar_bg.add_child(bar_fill)
-		left_col.add_child(bar_bg)
-
-		var info_lbl: Label = Label.new()
-		info_lbl.text = LocaleManager.L("durability_label") % [durability, max_durability]
-		left_col.add_child(info_lbl)
-		outer_row.add_child(left_col)
-
-		# Right column: cost + repair button (shrinks to content, right-side)
-		var right_col: VBoxContainer = VBoxContainer.new()
-		right_col.add_theme_constant_override("separation", 4)
-		right_col.size_flags_horizontal = Control.SIZE_SHRINK_END
-
-		if not cost.is_empty():
-			repairable_any = true
-			var cost_parts: PackedStringArray = []
-			var can_afford: bool = true
-			for resource_id in cost.keys():
-				cost_parts.append("%d %s" % [int(cost[resource_id]), ITEM_DATABASE.get_display_name(str(resource_id))])
-				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
-					can_afford = false
-			var cost_lbl: Label = Label.new()
-			cost_lbl.text = LocaleManager.L("repair_cost_fmt") % ", ".join(cost_parts)
-			cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-			right_col.add_child(cost_lbl)
-			var repair_btn: Button = Button.new()
-			repair_btn.text = LocaleManager.L("repair")
-			repair_btn.disabled = not can_afford
-			repair_btn.pressed.connect(_on_repair_pressed.bind(slot_name))
-			right_col.add_child(repair_btn)
-
-		outer_row.add_child(right_col)
-		list_container.add_child(outer_row)
-		list_container.add_child(HSeparator.new())
-
-	# === Inventory (unequipped) equipment ===
 	for index in range(player.inventory.items.size()):
 		var item: Dictionary = player.inventory.items[index]
 		if str(item.get("type", "")) != "equipment":
 			continue
-		var max_durability: int = int(item.get("max_durability", 0))
-		var durability: int = int(item.get("durability", max_durability))
-		if max_durability <= 0:
+		if int(item.get("max_durability", 0)) <= 0:
 			continue
-		equipped_any = true
-		var dur_ratio: float = clampf(float(durability) / float(maxi(max_durability, 1)), 0.0, 1.0)
-		var lost: int = maxi(max_durability - durability, 0)
+		list_container.add_child(_build_repair_row(item, "", index))
 
-		var outer_row: HBoxContainer = HBoxContainer.new()
-		outer_row.add_theme_constant_override("separation", 8)
+	_populate_detail()
+	_refresh_upgrade_controls()
 
-		var left_col: VBoxContainer = VBoxContainer.new()
-		left_col.add_theme_constant_override("separation", 4)
-		left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-		var title_row: HBoxContainer = HBoxContainer.new()
-		title_row.add_theme_constant_override("separation", 6)
-		title_row.add_child(_build_item_icon(item))
-		var name_lbl: Label = Label.new()
-		name_lbl.text = "%s  [%s]" % [_get_display_name(item), LocaleManager.L("inventory_short")]
-		name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.clip_text = true
-		title_row.add_child(name_lbl)
-		left_col.add_child(title_row)
+func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> Button:
+	var row_btn: Button = Button.new()
+	row_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	row_btn.flat = true
 
-		var bar_bg: ColorRect = ColorRect.new()
-		bar_bg.custom_minimum_size = Vector2(200, 10)
-		bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
-		var bar_fill: ColorRect = ColorRect.new()
-		bar_fill.custom_minimum_size = Vector2(200.0 * dur_ratio, 10)
-		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if durability <= 0 else \
-			(Color(0.45, 1.0, 0.45, 1.0) if durability >= max_durability else Color(1.0, 0.75, 0.3, 1.0))
-		bar_bg.add_child(bar_fill)
-		left_col.add_child(bar_bg)
+	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-		var info_lbl: Label = Label.new()
-		info_lbl.text = LocaleManager.L("durability_label") % [durability, max_durability]
-		left_col.add_child(info_lbl)
-		outer_row.add_child(left_col)
+	hbox.add_child(_build_item_icon(item))
 
-		var right_col: VBoxContainer = VBoxContainer.new()
-		right_col.add_theme_constant_override("separation", 4)
-		right_col.size_flags_horizontal = Control.SIZE_SHRINK_END
+	var info_col: VBoxContainer = VBoxContainer.new()
+	info_col.add_theme_constant_override("separation", 4)
+	info_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	var label_text: String = _get_display_name(item)
+	if slot_name != "":
+		label_text = "%s [%s]" % [label_text, _translate_slot_name(slot_name)]
+	else:
+		label_text = "%s [%s]" % [label_text, LocaleManager.L("inventory_short")]
+	var name_lbl: Label = Label.new()
+	name_lbl.text = label_text
+	name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+	name_lbl.clip_text = true
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_col.add_child(name_lbl)
+
+	var max_dur: int = int(item.get("max_durability", 0))
+	var dur: int = int(item.get("durability", max_dur))
+	var dur_ratio: float = clampf(float(dur) / float(maxi(max_dur, 1)), 0.0, 1.0)
+	var bar_bg: ColorRect = ColorRect.new()
+	bar_bg.custom_minimum_size = Vector2(0, 8)
+	bar_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
+	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bar_fill: ColorRect = ColorRect.new()
+	bar_fill.anchor_top = 0.0
+	bar_fill.anchor_bottom = 1.0
+	bar_fill.anchor_left = 0.0
+	bar_fill.anchor_right = dur_ratio
+	bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar_fill.color = Color(1.0, 0.3, 0.3, 1.0) if dur <= 0 else \
+		(Color(0.45, 1.0, 0.45, 1.0) if dur >= max_dur else Color(1.0, 0.75, 0.3, 1.0))
+	bar_bg.add_child(bar_fill)
+	info_col.add_child(bar_bg)
+
+	hbox.add_child(info_col)
+	row_btn.add_child(hbox)
+
+	if slot_name != "":
+		var sn: String = slot_name
+		row_btn.pressed.connect(func() -> void: _set_selection(sn, -1))
+	else:
+		var idx: int = inv_idx
+		row_btn.pressed.connect(func() -> void: _set_selection("", idx))
+
+	return row_btn
+
+
+func _set_selection(slot: String, inv_idx: int) -> void:
+	_selected_slot = slot
+	_selected_inv_index = inv_idx
+	_populate_detail()
+
+
+func _build_detail_panel() -> void:
+	_detail_placeholder = Label.new()
+	_detail_placeholder.text = LocaleManager.L("repair_prompt")
+	_detail_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_detail_placeholder.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_placeholder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_vbox.add_child(_detail_placeholder)
+
+	_detail_name_lbl = Label.new()
+	_detail_name_lbl.visible = false
+	_detail_name_lbl.add_theme_font_size_override("font_size", 18)
+	detail_vbox.add_child(_detail_name_lbl)
+
+	_detail_dur_bg = ColorRect.new()
+	_detail_dur_bg.visible = false
+	_detail_dur_bg.custom_minimum_size = Vector2(0, 14)
+	_detail_dur_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_detail_dur_bg.color = Color(0.18, 0.18, 0.2, 1.0)
+	_detail_dur_fill = ColorRect.new()
+	_detail_dur_fill.anchor_top = 0.0
+	_detail_dur_fill.anchor_bottom = 1.0
+	_detail_dur_fill.anchor_left = 0.0
+	_detail_dur_fill.anchor_right = 0.0
+	_detail_dur_fill.color = Color(0.45, 1.0, 0.45, 1.0)
+	_detail_dur_bg.add_child(_detail_dur_fill)
+	detail_vbox.add_child(_detail_dur_bg)
+
+	_detail_dur_lbl = Label.new()
+	_detail_dur_lbl.visible = false
+	_detail_dur_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_vbox.add_child(_detail_dur_lbl)
+
+	_detail_cost_lbl = Label.new()
+	_detail_cost_lbl.visible = false
+	_detail_cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_vbox.add_child(_detail_cost_lbl)
+
+	_detail_repair_btn = Button.new()
+	_detail_repair_btn.visible = false
+	_detail_repair_btn.text = LocaleManager.L("repair")
+	_detail_repair_btn.pressed.connect(_on_detail_repair_pressed)
+	detail_vbox.add_child(_detail_repair_btn)
+
+
+func _populate_detail() -> void:
+	if _detail_placeholder == null:
+		return
+	var has_selection: bool = _selected_slot != "" or _selected_inv_index >= 0
+
+	if not has_selection or player == null:
+		var msg: String = LocaleManager.L("repair_prompt")
+		if player == null:
+			msg = LocaleManager.L("repair_no_player")
+		elif list_container.get_child_count() == 0:
+			msg = LocaleManager.L("repair_none_equipped")
+		_detail_placeholder.text = msg
+		_detail_placeholder.visible = true
+		_detail_name_lbl.visible = false
+		_detail_dur_bg.visible = false
+		_detail_dur_lbl.visible = false
+		_detail_cost_lbl.visible = false
+		_detail_repair_btn.visible = false
+		return
+
+	var item: Dictionary = {}
+	var slot_label: String = ""
+	var repair_cost_multiplier: float = _get_total_repair_cost_multiplier()
+
+	if _selected_slot != "":
+		item = player.equipment_system.get_equipped(_selected_slot)
+		slot_label = _translate_slot_name(_selected_slot)
+	elif _selected_inv_index >= 0 and _selected_inv_index < player.inventory.items.size():
+		item = player.inventory.items[_selected_inv_index]
+		slot_label = LocaleManager.L("inventory_short")
+
+	if item.is_empty():
+		_selected_slot = ""
+		_selected_inv_index = -1
+		_populate_detail()
+		return
+
+	var max_dur: int = int(item.get("max_durability", 0))
+	var dur: int = int(item.get("durability", max_dur))
+	var dur_ratio: float = clampf(float(dur) / float(maxi(max_dur, 1)), 0.0, 1.0)
+
+	_detail_placeholder.visible = false
+	_detail_name_lbl.text = "%s [%s]" % [_get_display_name(item), slot_label]
+	_detail_name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+	_detail_name_lbl.visible = true
+	_detail_dur_fill.anchor_right = dur_ratio
+	_detail_dur_fill.color = Color(1.0, 0.3, 0.3, 1.0) if dur <= 0 else \
+		(Color(0.45, 1.0, 0.45, 1.0) if dur >= max_dur else Color(1.0, 0.75, 0.3, 1.0))
+	_detail_dur_bg.visible = true
+	_detail_dur_lbl.text = LocaleManager.L("durability_label") % [dur, max_dur]
+	_detail_dur_lbl.visible = true
+
+	var can_afford: bool = false
+	if _selected_slot != "":
+		var cost: Dictionary = player.equipment_system.get_repair_cost(_selected_slot).duplicate()
+		for k in cost.keys():
+			cost[k] = maxi(int(ceil(float(cost[k]) * repair_cost_multiplier)), 1)
+		if not cost.is_empty():
+			var cost_parts: PackedStringArray = []
+			can_afford = true
+			for resource_id in cost.keys():
+				cost_parts.append("%d %s" % [int(cost[resource_id]), ITEM_DATABASE.get_display_name(str(resource_id))])
+				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
+					can_afford = false
+			_detail_cost_lbl.text = LocaleManager.L("repair_cost_fmt") % ", ".join(cost_parts)
+			_detail_cost_lbl.visible = true
+			_detail_repair_btn.disabled = not can_afford
+			_detail_repair_btn.visible = dur < max_dur
+		else:
+			_detail_cost_lbl.visible = false
+			_detail_repair_btn.visible = false
+	else:
+		var lost: int = maxi(max_dur - dur, 0)
 		if lost > 0:
-			repairable_any = true
 			var material: String = str(player.equipment_system.get_repair_material("", item))
 			var cost_amount: int = maxi(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
-			var can_afford: bool = player.inventory.get_item_count(material) >= cost_amount
-			var cost_lbl: Label = Label.new()
-			cost_lbl.text = LocaleManager.L("repair_cost_single_fmt") % [cost_amount, ITEM_DATABASE.get_display_name(material)]
-			cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-			right_col.add_child(cost_lbl)
-			var repair_btn: Button = Button.new()
-			repair_btn.text = LocaleManager.L("repair")
-			repair_btn.disabled = not can_afford
-			repair_btn.pressed.connect(_on_repair_inventory_pressed.bind(index))
-			right_col.add_child(repair_btn)
+			can_afford = player.inventory.get_item_count(material) >= cost_amount
+			_detail_cost_lbl.text = LocaleManager.L("repair_cost_single_fmt") % [cost_amount, ITEM_DATABASE.get_display_name(material)]
+			_detail_cost_lbl.visible = true
+			_detail_repair_btn.disabled = not can_afford
+			_detail_repair_btn.visible = true
+		else:
+			_detail_cost_lbl.visible = false
+			_detail_repair_btn.visible = false
 
-		outer_row.add_child(right_col)
-		list_container.add_child(outer_row)
-		list_container.add_child(HSeparator.new())
 
-	if not equipped_any:
-		detail_label.text = LocaleManager.L("repair_none_equipped")
-		return
-	if not repairable_any:
-		detail_label.text = LocaleManager.L("repair_all_full")
-	else:
-		detail_label.text = LocaleManager.L("repair_prompt")
-	_refresh_upgrade_controls()
+func _on_detail_repair_pressed() -> void:
+	if _selected_slot != "":
+		_on_repair_pressed(_selected_slot)
+	elif _selected_inv_index >= 0:
+		_on_repair_inventory_pressed(_selected_inv_index)
+	_selected_slot = ""
+	_selected_inv_index = -1
 
 
 func _on_repair_pressed(slot_name: String) -> void:
@@ -308,31 +379,15 @@ func _build_item_icon(item: Dictionary) -> Control:
 	return swatch
 
 
-func _resize_panel() -> void:
-	if panel_container == null:
-		return
-	var viewport_size: Vector2 = get_viewport_rect().size
-	var panel_height: float = maxf(500.0, viewport_size.y * 0.7)
-	var panel_width: float = maxf(440.0, viewport_size.x * 0.36)
-	panel_container.offset_top = maxf(24.0, (viewport_size.y - panel_height) * 0.5)
-	panel_container.offset_bottom = panel_container.offset_top + panel_height
-	if viewport_size.x > 0.0:
-		panel_container.offset_left = maxf(8.0, (viewport_size.x - panel_width) * 0.5)
-		panel_container.offset_right = panel_container.offset_left + panel_width
-	var close_btn: Button = get_node_or_null("CloseButton") as Button
-	if close_btn != null:
-		close_btn.position = panel_container.position + Vector2(8, 8)
-
-
 func _ensure_close_button() -> void:
-	if get_node_or_null("CloseButton") != null:
+	if panel_container.get_node_or_null("CloseButton") != null:
 		return
 	var close_btn: Button = Button.new()
 	close_btn.name = "CloseButton"
 	close_btn.text = "X"
 	close_btn.custom_minimum_size = Vector2(32, 32)
 	close_btn.size = Vector2(32, 32)
-	close_btn.position = panel_container.position + Vector2(8, 8)
+	close_btn.position = Vector2(8.0, 8.0)
 	close_btn.z_index = 100
 	close_btn.pressed.connect(close_menu)
 	var cb_normal: StyleBoxFlat = StyleBoxFlat.new()
@@ -346,7 +401,7 @@ func _ensure_close_button() -> void:
 	cb_hover.bg_color = Color(0.28, 0.28, 0.34, 0.95)
 	close_btn.add_theme_stylebox_override("normal", cb_normal)
 	close_btn.add_theme_stylebox_override("hover", cb_hover)
-	add_child(close_btn)
+	panel_container.add_child(close_btn)
 
 
 func _ensure_upgrade_controls() -> void:
