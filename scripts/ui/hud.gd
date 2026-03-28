@@ -657,7 +657,10 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 
 func open_buff_selection(options: Array, level) -> void:
 	current_level = level
-	buff_select.open_with_options(options)
+	var player_stacks: Dictionary = {}
+	if player != null and player.has_method("get_buff_stacks"):
+		player_stacks = player.get_buff_stacks()
+	buff_select.open_with_options(options, player_stacks)
 	if player != null:
 		player.set_ui_blocked(true)
 	if current_level != null and current_level.has_method("set_gameplay_paused"):

@@ -721,10 +721,23 @@ func clear_dungeon_buffs() -> void:
 
 
 func get_active_buffs() -> Array[Dictionary]:
+	var buff_counts: Dictionary = {}
+	for buff_id: String in active_buff_ids:
+		buff_counts[buff_id] = int(buff_counts.get(buff_id, 0)) + 1
 	var buffs: Array[Dictionary] = []
-	for buff_id in active_buff_ids:
-		buffs.append(BUFF_SYSTEM.get_buff(buff_id))
+	for buff_id: String in buff_counts.keys():
+		var buff: Dictionary = BUFF_SYSTEM.get_buff(buff_id)
+		if not buff.is_empty():
+			buff["stack_count"] = int(buff_counts[buff_id])
+			buffs.append(buff)
 	return buffs
+
+
+func get_buff_stacks() -> Dictionary:
+	var buff_counts: Dictionary = {}
+	for buff_id: String in active_buff_ids:
+		buff_counts[buff_id] = int(buff_counts.get(buff_id, 0)) + 1
+	return buff_counts
 
 
 func get_attack_damage() -> int:
@@ -910,34 +923,59 @@ func _recalculate_buff_state() -> void:
 	bonus_max_hp = 0
 	buff_regen_amount = 0
 	buff_regen_interval = 3.0
-	for buff_id in active_buff_ids:
+
+	# Count stacks per buff
+	var buff_counts: Dictionary = {}
+	for buff_id: String in active_buff_ids:
+		buff_counts[buff_id] = int(buff_counts.get(buff_id, 0)) + 1
+
+	# Count unique buffs per tag for synergy check
+	var tag_unique_counts: Dictionary = {}
+	for buff_id: String in buff_counts.keys():
+		var tag: String = BUFF_SYSTEM.get_buff_tag(buff_id)
+		if tag != "":
+			tag_unique_counts[tag] = int(tag_unique_counts.get(tag, 0)) + 1
+
+	# Apply each buff with diminishing returns + synergy bonus
+	for buff_id: String in buff_counts.keys():
+		var stacks: int = int(buff_counts[buff_id])
+		var scale: float = 1.0 + 0.5 * float(stacks - 1)
+		var tag: String = BUFF_SYSTEM.get_buff_tag(buff_id)
+		var synergy_mult: float = 1.1 if int(tag_unique_counts.get(tag, 0)) >= 3 else 1.0
+		var eff: float = scale * synergy_mult
 		match buff_id:
 			"atk_up_1":
-				damage_multiplier *= 1.15
+				damage_multiplier += 0.15 * eff
 			"atk_up_2":
-				damage_multiplier *= 1.25
-				move_speed_multiplier *= 0.9
+				damage_multiplier += 0.25 * eff
+				move_speed_multiplier -= 0.1 * eff
 			"crit_chance":
-				crit_chance_bonus += 0.15
+				crit_chance_bonus += 0.15 * eff
 			"atk_speed":
-				attack_cooldown_multiplier *= 0.7
+				attack_cooldown_multiplier -= 0.3 * eff
 			"lifesteal":
-				lifesteal_ratio += 0.1
+				lifesteal_ratio += 0.1 * eff
 			"hp_up":
-				bonus_max_hp += 30
+				bonus_max_hp += int(round(30.0 * eff))
 			"armor":
-				armor_reduction += 0.2
+				armor_reduction += 0.2 * eff
 			"dodge_chance":
-				dodge_chance += 0.15
+				dodge_chance += 0.15 * eff
 			"regen":
-				buff_regen_amount += 1
+				buff_regen_amount += int(round(1.0 * eff))
 				buff_regen_interval = 3.0
 			"speed_up":
-				move_speed_multiplier *= 1.25
+				move_speed_multiplier += 0.25 * eff
 			"loot_up":
-				loot_drop_multiplier *= 2.0
+				loot_drop_multiplier += 1.0 * eff
 			"aoe_attack":
-				aoe_attack_multiplier *= 1.5
+				aoe_attack_multiplier += 0.5 * eff
+
+	# Clamp to sensible ranges
+	move_speed_multiplier = maxf(move_speed_multiplier, 0.5)
+	attack_cooldown_multiplier = maxf(attack_cooldown_multiplier, 0.2)
+	armor_reduction = minf(armor_reduction, 0.85)
+	dodge_chance = minf(dodge_chance, 0.75)
 	_refresh_all_stats()
 
 

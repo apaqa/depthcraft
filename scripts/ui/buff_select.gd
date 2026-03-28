@@ -7,6 +7,7 @@ signal buff_chosen(buff_id: String)
 @onready var auto_timer: Timer = $AutoSelectTimer
 
 var active_options: Array[Dictionary] = []
+var _player_buff_stacks: Dictionary = {}
 
 const ATTACK_CARD_COLOR: Color = Color(0.92, 0.34, 0.30, 1.0)
 const DEFENSE_CARD_COLOR: Color = Color(0.30, 0.55, 0.92, 1.0)
@@ -34,18 +35,22 @@ func _ready() -> void:
 	bs_panel.add_theme_stylebox_override("panel", bs_style)
 
 
-func open_with_options(options: Array[Dictionary]) -> void:
+func open_with_options(options: Array[Dictionary], player_stacks: Dictionary = {}) -> void:
 	active_options = options.duplicate(true)
+	_player_buff_stacks = player_stacks.duplicate()
 	visible = true
 	title_label.text = LocaleManager.L("buff_select_title")
 	title_label.add_theme_font_size_override("font_size", 22)
 	for child: Node in card_container.get_children():
 		child.queue_free()
-	for i in range(active_options.size()):
+	for i: int in range(active_options.size()):
 		var option: Dictionary = active_options[i]
+		var buff_id: String = str(option.get("id", ""))
+		var current_stack: int = int(_player_buff_stacks.get(buff_id, 0))
+		var tier: int = int(option.get("tier", 0))
 		var card_color: Color = _get_option_color(option, i)
 		var button: Button = Button.new()
-		button.custom_minimum_size = Vector2(160, 132)
+		button.custom_minimum_size = Vector2(160, 140)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -60,13 +65,21 @@ func open_with_options(options: Array[Dictionary]) -> void:
 		button.add_theme_stylebox_override("hover_pressed", _make_card_style(card_color.darkened(0.1), 0.08))
 		button.add_theme_stylebox_override("disabled", _make_card_style(card_color.darkened(0.2), 0.06))
 		button.add_theme_color_override("font_color", Color(0.96, 0.97, 1.0, 1.0))
-		button.text = "%s\n[%s]\n%s" % [
-			LocaleManager.L(str(option.get("name", ""))),
+
+		var tier_label: String = _get_tier_label(tier)
+		var buff_display_name: String = LocaleManager.L(str(option.get("name", "")))
+		var level_suffix: String = ""
+		if current_stack > 0:
+			level_suffix = " Lv.%d→%d" % [current_stack, current_stack + 1]
+		button.text = "%s%s\n[%s]\n%s\n%s" % [
+			buff_display_name,
+			level_suffix,
 			LocaleManager.L(str(option.get("category", ""))),
 			LocaleManager.L(str(option.get("description", ""))),
+			tier_label,
 		]
 		_apply_card_border(button, card_color)
-		button.pressed.connect(_choose_buff.bind(str(option.get("id", ""))))
+		button.pressed.connect(_choose_buff.bind(buff_id))
 		card_container.add_child(button)
 
 	auto_timer.stop()
@@ -94,6 +107,16 @@ func _on_auto_timer_timeout() -> void:
 		return
 	var random_option: Dictionary = active_options[randi() % active_options.size()]
 	_choose_buff(str(random_option.get("id", "")))
+
+
+func _get_tier_label(tier: int) -> String:
+	match tier:
+		2:
+			return "★★★ 傳奇"
+		1:
+			return "★★ 稀有"
+		_:
+			return "★ 普通"
 
 
 func _get_option_color(option: Dictionary, fallback_index: int = 0) -> Color:
