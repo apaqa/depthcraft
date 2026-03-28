@@ -514,6 +514,7 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 	var attack_direction := _get_attack_direction(override_direction)
 	last_attack_direction = attack_direction
 	attack_cooldown_left = get_attack_cooldown_duration()
+	AudioManager.play_sfx("attack_swing")
 	_spawn_attack_effect(attack_direction)
 	equipment_system.consume_attack_durability()
 	var attack_shape := RectangleShape2D.new()

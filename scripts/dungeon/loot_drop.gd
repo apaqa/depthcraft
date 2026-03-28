@@ -195,6 +195,7 @@ func _on_body_entered(body: Node) -> void:
 	else:
 		did_add = inventory.add_item(item_id, quantity)
 	if did_add:
+		AudioManager.play_sfx("item_pickup")
 		var achievement_manager: Node = get_node_or_null("/root/AchievementManager") as Node
 		if achievement_manager != null:
 			achievement_manager.record_currency_gain(item_id, quantity)

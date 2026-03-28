@@ -3,6 +3,7 @@ extends Control
 const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
 const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
 const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
+const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 
 @onready var hp_label: Label = $HPLabel
 @onready var hp_bar_bg: ColorRect = $HPBarBG
@@ -60,9 +61,11 @@ var settings_menu: SettingsMenu = null
 var currency_label: Label = null
 var class_label: Label = null
 var home_arrow: Control = null
+var _tracked_ui_visibility: Dictionary = {}
 
 
 func _ready() -> void:
+	UI_AUDIO_CLICK_HOOK.attach(self)
 	skill_slot_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	if not resized.is_connected(_on_hud_resized):
 		resized.connect(_on_hud_resized)
@@ -119,6 +122,18 @@ func _ready() -> void:
 	add_child(settings_menu)
 	if not settings_menu.close_requested.is_connected(_on_menu_closed):
 		settings_menu.close_requested.connect(_on_menu_closed)
+	_register_ui_audio_target(inventory_panel)
+	_register_ui_audio_target(build_hud)
+	_register_ui_audio_target(crafting_menu)
+	_register_ui_audio_target(storage_ui)
+	_register_ui_audio_target(repair_ui)
+	_register_ui_audio_target(talent_tree)
+	_register_ui_audio_target(equipment_panel)
+	_register_ui_audio_target(skill_equip_ui)
+	_register_ui_audio_target(achievement_panel)
+	_register_ui_audio_target(quest_board_ui)
+	_register_ui_audio_target(buff_select)
+	_register_ui_audio_target(settings_menu)
 	_ensure_home_arrow()
 
 
@@ -751,3 +766,28 @@ func _layout_bottom_hud() -> void:
 
 func _on_hud_resized() -> void:
 	_layout_bottom_hud.call_deferred()
+
+
+func _register_ui_audio_target(target: Control) -> void:
+	if target == null:
+		return
+	var callable: Callable = Callable(self, "_on_tracked_ui_visibility_changed").bind(target)
+	var instance_id: int = target.get_instance_id()
+	_tracked_ui_visibility[instance_id] = target.visible
+	if not target.visibility_changed.is_connected(callable):
+		target.visibility_changed.connect(callable)
+
+
+func _on_tracked_ui_visibility_changed(target: Control) -> void:
+	if target == null:
+		return
+	var instance_id: int = target.get_instance_id()
+	var was_visible: bool = bool(_tracked_ui_visibility.get(instance_id, target.visible))
+	var is_visible: bool = target.visible
+	if was_visible == is_visible:
+		return
+	_tracked_ui_visibility[instance_id] = is_visible
+	if is_visible:
+		AudioManager.play_sfx("ui_open")
+	else:
+		AudioManager.play_sfx("ui_close")

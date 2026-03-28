@@ -177,6 +177,7 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		skill_system.bind_level(current_level, current_level_id)
 	if hud.has_method("update_day_label"):
 		hud.update_day_label(current_day)
+	_sync_bgm_for_current_level()
 
 	if level_id == "dungeon":
 		if previous_level_id != "dungeon" and player != null:
@@ -238,6 +239,7 @@ func _on_player_portal_requested(target_level_id: String) -> void:
 func _on_floor_changed(current_floor: int) -> void:
 	if hud.has_method("update_floor_label"):
 		hud.update_floor_label(current_floor)
+	_sync_bgm_for_current_level()
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null:
 		achievement_manager.record_floor_reached(current_floor)
@@ -465,6 +467,18 @@ func _broadcast_scene_change(level_id: String, floor_number: int = 1, level_seed
 		change_scene_all.rpc(level_id, floor_number, level_seed, spawn_override, has_spawn_override)
 	else:
 		change_scene_all(level_id, floor_number, level_seed, spawn_override, has_spawn_override)
+
+
+func _sync_bgm_for_current_level() -> void:
+	if current_level_id == "overworld":
+		AudioManager.play_bgm("overworld_bgm")
+		return
+	if current_level_id != "dungeon":
+		return
+	if current_level != null and current_level.has_method("is_boss_floor") and bool(current_level.call("is_boss_floor")):
+		AudioManager.play_bgm("boss_bgm")
+		return
+	AudioManager.play_bgm("dungeon_bgm")
 
 
 func _network_manager():

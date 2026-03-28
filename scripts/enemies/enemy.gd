@@ -194,6 +194,8 @@ func die() -> void:
 	if is_dead:
 		return
 	is_dead = true
+	if not (has_method("is_boss_enemy") and bool(call("is_boss_enemy"))):
+		AudioManager.play_sfx("enemy_death")
 	debug_state = "dead"
 	velocity = Vector2.ZERO
 	var enemy_type: String = enemy_kind

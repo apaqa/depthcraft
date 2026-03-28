@@ -55,6 +55,7 @@ func equip(item_data: Dictionary, slot_name: String = "") -> Dictionary:
 	var equipped_item := item_data.duplicate(true)
 	equipped_item["quantity"] = 1
 	_equipped[resolved_slot] = equipped_item
+	AudioManager.play_sfx("equip")
 	equipment_changed.emit()
 	return previous
 

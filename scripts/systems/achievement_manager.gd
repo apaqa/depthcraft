@@ -39,6 +39,7 @@ func unlock_achievement(id: String) -> bool:
 		return false
 	unlocked_achievements[id] = true
 	_save_data()
+	AudioManager.play_sfx("achievement")
 	achievement_unlocked.emit(id)
 	return true
 

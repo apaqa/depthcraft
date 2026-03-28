@@ -96,6 +96,8 @@ func _build_sound_dictionary() -> void:
 	_sfx_dict["ui_hover"]         = null
 	_sfx_dict["ui_confirm"]       = null
 	_sfx_dict["ui_cancel"]        = null
+	_sfx_dict["ui_open"]          = null
+	_sfx_dict["ui_close"]         = null
 
 	# --- Combat sounds ---
 	_sfx_dict["weapon_swing"]     = null  # e.g. preload("res://audio/sfx/swing_light.ogg")
@@ -103,6 +105,8 @@ func _build_sound_dictionary() -> void:
 	_sfx_dict["enemy_hit"]        = null  # e.g. preload("res://audio/sfx/impact_flesh.ogg")
 	_sfx_dict["enemy_death"]      = null
 	_sfx_dict["player_hurt"]      = null
+	_sfx_dict["attack_swing"]     = null
+	_sfx_dict["boss_death"]       = null
 
 	# --- World sounds ---
 	_sfx_dict["footstep"]         = null
@@ -111,6 +115,9 @@ func _build_sound_dictionary() -> void:
 	_sfx_dict["coin_pickup"]      = null
 	_sfx_dict["crafting_success"] = null
 	_sfx_dict["level_up"]         = null
+	_sfx_dict["equip"]            = null
+	_sfx_dict["build_place"]      = null
+	_sfx_dict["achievement"]      = null
 
 	# --- BGM ---
 	_bgm_dict["dungeon_bgm"]      = null  # e.g. preload("res://audio/bgm/dungeon.ogg")

@@ -14,9 +14,13 @@ extends Control
 const CONTINUE_GAME_ZH: String = "\u7e7c\u7e8c\u904a\u6232"
 const NO_SAVE_ZH: String = "\u6c92\u6709\u53ef\u7528\u5b58\u6a94\u3002"
 const SAVE_SUMMARY_ZH: String = "\u5b58\u6a94 1: \u7b2c %d \u5929 / \u6700\u6df1 %d \u5c64 / %dG %dS %dC"
+const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 
 
 func _ready() -> void:
+	UI_AUDIO_CLICK_HOOK.attach(self)
+	AudioManager.play_bgm("menu_bgm")
+	AudioManager.play_sfx("ui_open")
 	title_label.text = LocaleManager.L("main_title")
 	join_panel.visible = false
 	ip_input.text = _get_network_manager().get_last_join_ip() if _get_network_manager() != null else "127.0.0.1"
@@ -50,6 +54,7 @@ func _on_single_player_pressed() -> void:
 	var network_manager: Node = _get_network_manager()
 	if network_manager != null:
 		network_manager.disconnect_game()
+	AudioManager.play_sfx("ui_close")
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
@@ -61,6 +66,7 @@ func _on_load_game_pressed() -> void:
 	if network_manager != null:
 		network_manager.disconnect_game()
 	SaveManager.load_game(1)
+	AudioManager.play_sfx("ui_close")
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
@@ -69,11 +75,16 @@ func _on_host_game_pressed() -> void:
 	if network_manager == null:
 		return
 	network_manager.host_game()
+	AudioManager.play_sfx("ui_close")
 	network_manager.show_lobby()
 
 
 func _on_join_game_pressed() -> void:
 	join_panel.visible = not join_panel.visible
+	if join_panel.visible:
+		AudioManager.play_sfx("ui_open")
+	else:
+		AudioManager.play_sfx("ui_close")
 	if join_panel.visible:
 		ip_input.grab_focus()
 
@@ -87,10 +98,12 @@ func _on_connect_pressed() -> void:
 	if network_manager == null:
 		return
 	network_manager.join_game(ip)
+	AudioManager.play_sfx("ui_close")
 	network_manager.show_lobby()
 
 
 func _on_quit_pressed() -> void:
+	AudioManager.play_sfx("ui_close")
 	get_tree().quit()
 
 

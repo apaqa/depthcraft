@@ -3,6 +3,7 @@ class_name Merchant
 
 const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
 const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 
 const SHOP_ITEMS = [
 	{"id": "bandage", "quantity": 1, "price": 5, "label_key": "shop_bandage"},
@@ -193,6 +194,8 @@ func _open_shop() -> void:
 	footer.add_child(close_btn)
 	vbox.add_child(footer)
 	_refresh_shop_state()
+	UI_AUDIO_CLICK_HOOK.attach(_shop_root)
+	AudioManager.play_sfx("ui_open")
 
 
 func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
@@ -364,6 +367,8 @@ func _make_icon_rect(icon: Texture2D) -> TextureRect:
 
 
 func _close_shop() -> void:
+	if _shop_canvas != null:
+		AudioManager.play_sfx("ui_close")
 	if _shop_canvas != null:
 		_shop_canvas.queue_free()
 		_shop_canvas = null

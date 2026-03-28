@@ -294,6 +294,7 @@ func place_building(tile_pos: Vector2i, building_id: String) -> bool:
 		}
 	_rebuild_occupied_positions()
 	_auto_save()
+	AudioManager.play_sfx("build_place")
 	build_state_changed.emit()
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null:
@@ -393,6 +394,7 @@ func place_home_core(tile_pos: Vector2i) -> bool:
 	_spawn_home_core()
 	_rebuild_occupied_positions()
 	_auto_save()
+	AudioManager.play_sfx("build_place")
 	build_state_changed.emit()
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null:

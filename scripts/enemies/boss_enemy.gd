@@ -56,6 +56,7 @@ func die() -> void:
 	if rewards_granted:
 		return
 	rewards_granted = true
+	AudioManager.play_sfx("boss_death")
 	_grant_rewards_to_players()
 	super.die()
 	_request_buff_selection()

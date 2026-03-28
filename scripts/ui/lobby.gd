@@ -6,8 +6,12 @@ extends Control
 @onready var start_button: Button = $Panel/MarginContainer/VBoxContainer/ButtonRow/StartButton
 @onready var leave_button: Button = $Panel/MarginContainer/VBoxContainer/ButtonRow/LeaveButton
 
+const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
+
 
 func _ready() -> void:
+	UI_AUDIO_CLICK_HOOK.attach(self)
+	AudioManager.play_sfx("ui_open")
 	var network_manager = _get_network_manager()
 	if not start_button.pressed.is_connected(_on_start_pressed):
 		start_button.pressed.connect(_on_start_pressed)
@@ -62,12 +66,14 @@ func _on_connection_failed_message(message: String) -> void:
 func _on_start_pressed() -> void:
 	var network_manager = _get_network_manager()
 	if network_manager != null:
+		AudioManager.play_sfx("ui_close")
 		network_manager.start_game()
 
 
 func _on_leave_pressed() -> void:
 	var network_manager = _get_network_manager()
 	if network_manager != null:
+		AudioManager.play_sfx("ui_close")
 		network_manager.return_to_main_menu()
 
 

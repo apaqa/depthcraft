@@ -726,5 +726,9 @@ func reveal_treasure_hunter(duration: float) -> void:
 	treasure_reveal_time_left = max(treasure_reveal_time_left, duration)
 
 
+func is_boss_floor() -> bool:
+	return _is_boss_floor()
+
+
 func _is_boss_floor() -> bool:
 	return bool(floor_data.get("is_boss_floor", false))

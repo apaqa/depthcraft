@@ -7,9 +7,12 @@ const CARD_COLORS := {
 	"mage": Color(0.25, 0.25, 0.65, 1.0),
 	"ranger": Color(0.15, 0.55, 0.25, 1.0),
 }
+const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 
 
 func _ready() -> void:
+	UI_AUDIO_CLICK_HOOK.attach(self)
+	AudioManager.play_sfx("ui_open")
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	var bg := ColorRect.new()
@@ -125,4 +128,5 @@ func _on_card_pressed(class_id: String) -> void:
 	var class_system = get_node_or_null("/root/ClassSystem")
 	if class_system != null:
 		class_system.save_class(class_id)
+	AudioManager.play_sfx("ui_close")
 	class_chosen.emit(class_id)
