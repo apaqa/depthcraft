@@ -492,4 +492,18 @@
   "quest_collect_desc": "Collect %d units of %s from the world.",
   "quest_floor_title": "Reach Floor %d",
   "quest_floor_desc": "Descend to dungeon floor %d."
+,
+  "wooden_coin": "Wooden Coin",
+  "mimic": "Mimic",
+  "fog_cleared": "Explored",
+  "checkpoint_select": "Select Starting Floor",
+  "checkpoint_floor": "Start from Floor %d",
+  "world_level": "World Level",
+  "wishing_well": "Wishing Well",
+  "wish_buff": "Toss 10 Copper for a Wish",
+  "wish_heal": "Toss 1 Silver to Heal",
+  "wish_equip": "Toss 1 Gold for Treasure",
+  "demon_merchant": "Demon Merchant",
+  "sacrifice_hp": "Sacrifice Max HP",
+  "sacrifice_warning": "At the cost of blood..."
 }

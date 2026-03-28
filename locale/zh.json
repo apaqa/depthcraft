@@ -492,4 +492,18 @@
   "quest_collect_desc": "從世界中收集 %d 個%s。",
   "quest_floor_title": "抵達第 %d 層",
   "quest_floor_desc": "下降到地牢第 %d 層。"
+,
+  "wooden_coin": "木幣",
+  "mimic": "寶箱怪",
+  "fog_cleared": "已探索",
+  "checkpoint_select": "選擇起始樓層",
+  "checkpoint_floor": "從第 %d 層開始",
+  "world_level": "世界等級",
+  "wishing_well": "許願池",
+  "wish_buff": "投 10 銅幣許願",
+  "wish_heal": "投 1 銀幣回復",
+  "wish_equip": "投 1 金幣求寶",
+  "demon_merchant": "惡魔商人",
+  "sacrifice_hp": "獻祭血量上限",
+  "sacrifice_warning": "以血為代價..."
 }

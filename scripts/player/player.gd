@@ -76,6 +76,7 @@ var execute_skill_armed: bool = false
 var sprint_skill_time_left: float = 0.0
 var sprint_skill_multiplier: float = 1.0
 var sprint_afterimage_timer: float = 0.0
+var dungeon_max_hp_penalty: int = 0
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
@@ -746,15 +747,16 @@ func has_talent(talent_id: String) -> bool:
 
 func start_dungeon_run() -> void:
 	dungeon_run_loot.clear()
+	dungeon_max_hp_penalty = 0
 	clear_dungeon_buffs()
 	undying_will_available = player_stats.has_undying_will()
 	execute_skill_armed = false
 	sprint_skill_time_left = 0.0
 	sprint_skill_multiplier = 1.0
-	var skill_system = _skill_system()
+	var skill_system: Variant = _skill_system()
 	if skill_system != null:
 		skill_system.clear_dungeon_cooldowns()
-	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	var achievement_manager: Variant = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null:
 		achievement_manager.start_dungeon_run()
 
@@ -764,10 +766,12 @@ func finish_dungeon_run(safe_return: bool) -> void:
 		lose_dungeon_run_loot()
 		equipment_system.apply_death_penalty()
 	dungeon_run_loot.clear()
+	dungeon_max_hp_penalty = 0
 	clear_dungeon_buffs()
 	execute_skill_armed = false
 	sprint_skill_time_left = 0.0
 	sprint_skill_multiplier = 1.0
+	_refresh_all_stats()
 	_save_persistent_state()
 
 
@@ -786,6 +790,23 @@ func lose_dungeon_run_loot() -> void:
 
 func show_status_message(message: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
 	status_message_requested.emit(message, color, duration)
+
+
+func get_run_max_hp_penalty() -> int:
+	return dungeon_max_hp_penalty
+
+
+func sacrifice_max_hp_percent_for_run(percent: float) -> int:
+	if percent <= 0.0:
+		return 0
+	var sacrifice_amount: int = maxi(int(ceil(float(max_hp) * percent)), 1)
+	if max_hp - sacrifice_amount < 1:
+		return 0
+	dungeon_max_hp_penalty += sacrifice_amount
+	_refresh_all_stats()
+	current_hp = mini(current_hp, max_hp)
+	hp_changed.emit(current_hp, max_hp)
+	return sacrifice_amount
 
 
 func configure_for_network_role(is_local_player: bool) -> void:
@@ -874,7 +895,7 @@ func _on_equipment_changed() -> void:
 
 func _refresh_all_stats() -> void:
 	speed = player_stats.get_total_speed()
-	max_hp = player_stats.get_total_max_hp() + bonus_max_hp
+	max_hp = maxi(player_stats.get_total_max_hp() + bonus_max_hp - dungeon_max_hp_penalty, 1)
 	current_hp = clamp(current_hp, 0, max_hp)
 	stats_changed.emit()
 	hp_changed.emit(current_hp, max_hp)

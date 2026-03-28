@@ -1,0 +1,94 @@
+# assets_catalog.txt - 素材對照表
+
+## res://assets/ (根目錄)
+資料夾路徑 | 檔名 | 描述
+--- | --- | ---
+res://assets/ | angel_idle_anim_f0..f3 | 天使，待機動畫序列
+res://assets/ | angel_run_anim_f0..f3 | 天使，跑步動畫序列
+res://assets/ | big_demon_idle_anim_f0..f3 | 大型惡魔，待機動畫序列
+res://assets/ | big_demon_run_anim_f0..f3 | 大型惡魔，跑步動畫序列
+res://assets/ | big_zombie_idle_anim_f0..f3 | 大型殭屍，待機動畫序列
+res://assets/ | big_zombie_run_anim_f0..f3 | 大型殭屍，跑步動畫序列
+res://assets/ | bomb_f0..f2 | 炸彈，動畫序列
+res://assets/ | box / boxes_stacked | 木箱 / 堆疊的木箱，棕色
+res://assets/ | button_blue_up/down | 藍色按鈕，未按下與按下狀態
+res://assets/ | button_red_up/down | 紅色按鈕，未按下與按下狀態
+res://assets/ | chest_closed / chest_open_empty / chest_open_full | 寶箱，關閉/開啟(空)/開啟(滿)狀態
+res://assets/ | chest_empty_open_anim_f0..f2 | 空寶箱開啟動畫序列
+res://assets/ | chest_full_open_anim_f0..f2 | 滿寶箱開啟動畫序列
+res://assets/ | chest_golden_closed / open_empty / open_full | 黃金寶箱各狀態
+res://assets/ | chest_mimic_open_anim_f0..f2 | 擬態怪寶箱開啟動畫序列
+res://assets/ | chort_idle_anim_f0..f3 | 惡魔小鬼，待機動畫序列
+res://assets/ | chort_run_anim_f0..f3 | 惡魔小鬼，跑步動畫序列
+res://assets/ | coin_anim_f0..f3 | 金幣旋轉動畫序列
+res://assets/ | column / column_wall | 圓柱 / 牆面裝飾柱
+res://assets/ | crate | 貨物箱
+res://assets/ | darkness_bottom/top/left/right | 黑暗邊緣陰影
+res://assets/ | doc_idle_anim_f0..f3 | 醫生/學者，待機動畫序列
+res://assets/ | doc_run_anim_f0..f3 | 醫生/學者，跑步動畫序列
+res://assets/ | door_closed / door_open | 門，關閉與開啟狀態
+res://assets/ | dwarf_f_idle_anim_f0..f3 | 女性矮人，待機動畫序列
+res://assets/ | dwarf_m_idle_anim_f0..f3 | 男性矮人，待機動畫序列
+res://assets/ | elf_f_idle_anim_f0..f3 | 女性精靈，待機動畫序列
+res://assets/ | elf_m_idle_anim_f0..f3 | 男性精靈，待機動畫序列
+res://assets/ | flask_big_blue/green/red/yellow | 大型藥水瓶，各種顏色
+res://assets/ | floor_1..8 | 地板磚塊，多種款式
+res://assets/ | floor_spikes_anim_f0..f3 | 地板陷阱尖刺，伸縮動畫序列
+res://assets/ | goblin_idle_anim_f0..f3 | 哥布林，待機動畫序列
+res://assets/ | ice_zombie_anim_f0..f3 | 冰凍殭屍，動畫序列
+res://assets/ | knight_f_idle_anim_f0..f3 | 女性騎士，待機動畫序列
+res://assets/ | knight_m_idle_anim_f0..f3 | 男性騎士，待機動畫序列
+res://assets/ | lizard_f_idle_anim_f0..f3 | 女性蜥蜴人，待機動畫序列
+res://assets/ | lizard_m_idle_anim_f0..f3 | 男性蜥蜴人，待機動畫序列
+res://assets/ | masked_orc_idle_anim_f0..f3 | 蒙面獸人，待機動畫序列
+res://assets/ | monster_* | 多種怪物靜態圖 (bat, bies, demon, elemental 等)
+res://assets/ | npc_* | 多種 NPC 角色圖 (barbarian, merchant, mage, sage 等)
+res://assets/ | orc_shaman_idle_anim_f0..f3 | 獸人祭司，待機動畫序列
+res://assets/ | orc_warrior_idle_anim_f0..f3 | 獸人戰士，待機動畫序列
+res://assets/ | skeletal_idle_anim_f0..f3 | 骷髏人，待機動畫序列
+res://assets/ | torch_1..8 | 火把燃燒動畫序列
+res://assets/ | ui_heart_empty/full/half | UI 血量心形圖示
+res://assets/ | wall_* | 多種牆面與牆緣圖示
+res://assets/ | weapon_* | 多種武器圖示 (katana, axe, bow, dagger, sword 等)
+res://assets/ | wizzard_f_idle_anim_f0..f3 | 女性巫師，待機動畫序列
+res://assets/ | wizzard_m_idle_anim_f0..f3 | 男性巫師，待機動畫序列
+
+## res://assets/icons/
+資料夾路徑 | 檔名 | 描述
+--- | --- | ---
+res://assets/icons/ | armor_01a..e | 護甲圖示，多種顏色
+res://assets/icons/ | arrow_01a..03e | 箭矢圖示，多種款式與顏色
+res://assets/icons/ | book_01a..06g | 書籍/法術書圖示，豐富的款式
+res://assets/icons/ | boots_01a..e | 靴子圖示
+res://assets/icons/ | bow_01a..03e | 長弓圖示
+res://assets/icons/ | candy_01a..02g | 糖果圖示
+res://assets/icons/ | coin_01a..05e | 硬幣/錢幣堆圖示
+res://assets/icons/ | crystal_01a..j | 水晶圖示
+res://assets/icons/ | gem_01a..j | 寶石圖示，多種顏色與形狀
+res://assets/icons/ | gift_01a..f | 禮物盒圖示
+res://assets/icons/ | Item__00..71 | 各式雜項道具圖示
+res://assets/icons/ | key_01a..02e | 鑰匙圖示
+res://assets/icons/ | potion_01a..03h | 藥水瓶圖示
+res://assets/icons/ | ring_01a..03e | 戒指圖示
+res://assets/icons/ | scroll_01a..h | 卷軸圖示
+res://assets/icons/ | shard_01a..j | 碎片圖示
+res://assets/icons/ | shield_01a..03e | 盾牌圖示
+res://assets/icons/ | sword_01a..03e | 劍類圖示
+res://assets/icons/ | Sheet | spritesheet，包含多個小圖示 (432x352 像素)
+
+## res://assets/icons/kyrise/ (重複或變體圖示集)
+資料夾路徑 | 檔名 | 描述
+--- | --- | ---
+res://assets/icons/kyrise/ | (與上述 icons 類似) | Kyrise 風格的圖示變體集
+res://assets/icons/kyrise/ | Sheet | spritesheet，包含多個小圖示
+
+## res://assets/outdoor/
+資料夾路徑 | 檔名 | 描述
+--- | --- | ---
+res://assets/outdoor/ | Outdoors_00..53 | 戶外環境圖塊，單張小圖
+res://assets/outdoor/ | OutdoorsTileset | spritesheet，包含所有戶外環境圖塊的集合
+
+## res://assets/ui/
+資料夾路徑 | 檔名 | 描述
+--- | --- | ---
+res://assets/ui/ | dungeonui.v1 | spritesheet，包含 UI 框、按鈕、面板等介面元件
