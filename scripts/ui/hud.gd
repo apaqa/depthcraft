@@ -1,8 +1,8 @@
 extends Control
 
-const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
-const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
-const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
+const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
+const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+const HOME_ARROW_SCRIPT = preload("res://scripts/ui/home_arrow.gd")
 const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 const MINIMAP_SCRIPT = preload("res://scripts/ui/minimap.gd")
 
@@ -46,21 +46,21 @@ const MINIMAP_SCRIPT = preload("res://scripts/ui/minimap.gd")
 @onready var consumable_bar: Label = $ConsumableBar
 @onready var skill_slot_row: HBoxContainer = $SkillSlotRow
 
-const HUD_LEFT_MARGIN := 8.0
-const HUD_TOP_MARGIN := 8.0
-const HUD_LINE_HEIGHT := 18.0
-const HP_BAR_SIZE := Vector2(120.0, 10.0)
-const HP_LABEL_SIZE := Vector2(120.0, 18.0)
-const CLASS_LABEL_SIZE := Vector2(140.0, 18.0)
-const INFO_LABEL_SIZE := Vector2(220.0, 18.0)
-const BUFF_ROW_SIZE := Vector2(220.0, 24.0)
-const SKILL_ROW_BOTTOM_MARGIN := 56.0
-const CONSUMABLE_BAR_BOTTOM_MARGIN := 24.0
-const BOTTOM_UI_GAP := 10.0
+const HUD_LEFT_MARGIN = 8.0
+const HUD_TOP_MARGIN = 8.0
+const HUD_LINE_HEIGHT = 18.0
+const HP_BAR_SIZE = Vector2(120.0, 10.0)
+const HP_LABEL_SIZE = Vector2(120.0, 18.0)
+const CLASS_LABEL_SIZE = Vector2(280.0, 18.0)
+const INFO_LABEL_SIZE = Vector2(220.0, 18.0)
+const BUFF_ROW_SIZE = Vector2(220.0, 24.0)
+const SKILL_ROW_BOTTOM_MARGIN = 56.0
+const CONSUMABLE_BAR_BOTTOM_MARGIN = 24.0
+const BOTTOM_UI_GAP = 10.0
 
-var player = null
-var inventory = null
-var current_level = null
+var player: Node = null
+var inventory: Node = null
+var current_level: Node = null
 var current_level_id: String = ""
 var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
@@ -98,9 +98,8 @@ func _ready() -> void:
 	class_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5, 1.0))
 	class_label.add_theme_constant_override("outline_size", 2)
 	class_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	var _cs: Node = get_node_or_null("/root/ClassSystem")
-	class_label.text = _cs.get_class_display_name() if _cs != null else ""
 	add_child(class_label)
+	refresh_meta_labels()
 	_layout_static_hud()
 	_layout_bottom_hud()
 
@@ -169,6 +168,8 @@ func _ready() -> void:
 	if NpcManager != null and not NpcManager.roster_changed.is_connected(_on_npc_roster_changed):
 		NpcManager.roster_changed.connect(_on_npc_roster_changed)
 	_update_npc_count_label(NpcManager.get_recruited_count() if NpcManager != null else 0)
+	if WorldLevel != null and not WorldLevel.world_level_changed.is_connected(_on_world_level_changed):
+		WorldLevel.world_level_changed.connect(_on_world_level_changed)
 	var fsmap: Control = MINIMAP_SCRIPT.new()
 	fsmap.name = "FullscreenMap"
 	fsmap.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -221,6 +222,7 @@ func bind_player(new_player) -> void:
 	_on_equipment_changed()
 	_refresh_debug_label()
 	_refresh_buff_icons(player.get_active_buffs())
+	refresh_meta_labels()
 	_refresh_skill_slots()
 
 
@@ -309,10 +311,11 @@ func _on_inventory_changed() -> void:
 
 	update_bag_label(inventory.items.size(), inventory.max_slots)
 	if currency_label != null:
-		var _g: int = int(inventory.get_item_count("gold"))
-		var _s: int = int(inventory.get_item_count("silver"))
-		var _c: int = int(inventory.get_item_count("copper"))
-		currency_label.text = "%dG %dS %dC" % [_g, _s, _c]
+		var gold_count: int = int(inventory.get_item_count("gold"))
+		var silver_count: int = int(inventory.get_item_count("silver"))
+		var copper_count: int = int(inventory.get_item_count("copper"))
+		var wooden_count: int = int(inventory.get_item_count("wooden_coin"))
+		currency_label.text = "%dG %dS %dC %dW" % [gold_count, silver_count, copper_count, wooden_count]
 	if player != null and player.has_method("get_consumable_slots"):
 		update_consumable_bar(player.get_consumable_slots())
 	_sync_achievement_equipment_state()
@@ -342,6 +345,28 @@ func update_floor_label(current_floor: int) -> void:
 	day_label.visible = current_floor <= 0
 
 
+func refresh_meta_labels() -> void:
+	_refresh_class_label()
+
+
+func _refresh_class_label() -> void:
+	if class_label == null:
+		return
+	var class_system: Node = get_node_or_null("/root/ClassSystem")
+	var class_display_name: String = ""
+	if class_system != null and class_system.has_method("get_class_display_name"):
+		class_display_name = str(class_system.call("get_class_display_name"))
+	var world_level_text: String = _get_world_level_text()
+	class_label.text = world_level_text if class_display_name == "" else "%s | %s" % [class_display_name, world_level_text]
+
+
+func _get_world_level_text() -> String:
+	var world_level_value: int = WorldLevel.get_world_level() if WorldLevel != null else 1
+	if str(LocaleManager.get_locale()).begins_with("zh"):
+		return "世界等級: %d" % world_level_value
+	return "World Level: %d" % world_level_value
+
+
 func update_kills_label(kills: int) -> void:
 	kills_label.text = LocaleManager.L("kills") + ": %d" % kills if kills > 0 else ""
 
@@ -364,8 +389,8 @@ func set_connection_info(message: String) -> void:
 
 func _on_crafting_requested(_facility) -> void:
 	_close_all_menus()
-	var recipe_filter := PackedStringArray()
-	var menu_title := LocaleManager.L("crafting_title")
+	var recipe_filter: PackedStringArray = PackedStringArray()
+	var menu_title: String = LocaleManager.L("crafting_title")
 	if _facility != null and _facility.has_method("get_recipe_ids"):
 		recipe_filter = _facility.get_recipe_ids()
 	if _facility != null and _facility.has_method("get_menu_title"):
@@ -575,7 +600,7 @@ func rebuild_inventory_grid() -> void:
 	if inventory == null:
 		return
 
-	var groups := {
+	var groups: Dictionary = {
 		"resource": {"title": "inv_resources", "color": Color(0.62, 0.42, 0.22, 1.0)},
 		"equipment": {"title": "inv_equipment", "color": Color(0.3, 0.55, 0.95, 1.0)},
 		"consumable": {"title": "inv_consumables", "color": Color(0.32, 0.78, 0.42, 1.0)},
@@ -587,7 +612,7 @@ func rebuild_inventory_grid() -> void:
 				section_items.append(stack)
 		if section_items.is_empty():
 			continue
-		var header := Label.new()
+		var header: Label = Label.new()
 		header.text = LocaleManager.L(str((groups[type_id] as Dictionary).get("title", type_id)))
 		header.modulate = Color(0.95, 0.9, 0.7, 1.0)
 		inventory_list.add_child(header)
@@ -597,16 +622,16 @@ func rebuild_inventory_grid() -> void:
 
 
 func _build_item_row(stack: Dictionary, _swatch_color: Color) -> Control:
-	var row := HBoxContainer.new()
+	var row: HBoxContainer = HBoxContainer.new()
 	row.custom_minimum_size = Vector2(200, 24)
 	row.add_theme_constant_override("separation", 8)
 	row.add_child(_build_item_icon_holder(stack))
-	var name_label := Label.new()
+	var name_label: Label = Label.new()
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.text = ITEM_DATABASE.get_stack_display_name(stack)
 	name_label.self_modulate = ITEM_DATABASE.get_stack_color(stack)
 	row.add_child(name_label)
-	var quantity_label := Label.new()
+	var quantity_label: Label = Label.new()
 	quantity_label.text = "x%d" % int(stack.get("quantity", 0))
 	quantity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(quantity_label)
@@ -616,14 +641,14 @@ func _build_item_row(stack: Dictionary, _swatch_color: Color) -> Control:
 func _build_item_icon_holder(stack: Dictionary) -> Control:
 	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
 	if icon != null:
-		var icon_tex := TextureRect.new()
+		var icon_tex: TextureRect = TextureRect.new()
 		icon_tex.custom_minimum_size = Vector2(16, 16)
 		icon_tex.expand_mode = TextureRect.EXPAND_KEEP_SIZE
 		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		icon_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		icon_tex.texture = icon
 		return icon_tex
-	var swatch := ColorRect.new()
+	var swatch: ColorRect = ColorRect.new()
 	swatch.custom_minimum_size = Vector2(16, 16)
 	swatch.color = ITEM_DATABASE.get_stack_color(stack)
 	return swatch
@@ -650,7 +675,7 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 	for child in buff_row.get_children():
 		child.queue_free()
 	for buff in active_buffs:
-		var swatch := ColorRect.new()
+		var swatch: ColorRect = ColorRect.new()
 		swatch.custom_minimum_size = Vector2(8, 8)
 		swatch.color = buff.get("color", Color.WHITE)
 		swatch.tooltip_text = LocaleManager.L(str(buff.get("name", "Buff")))
@@ -773,7 +798,7 @@ func show_event_banner(message: String, color: Color = Color.WHITE, duration: fl
 	event_banner.text = message
 	event_banner.modulate = Color(color.r, color.g, color.b, 0.0)
 	event_banner.visible = true
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(event_banner, "modulate", color, 0.08)
 	tween.tween_interval(duration)
 	tween.tween_property(event_banner, "modulate", Color(color.r, color.g, color.b, 0.0), 0.3)
@@ -791,7 +816,7 @@ func set_raid_countdown(message: String, color: Color = Color(1.0, 0.15, 0.15, 1
 func flash_border(color: Color) -> void:
 	raid_border.color = Color(color.r, color.g, color.b, 0.0)
 	raid_border.visible = true
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(raid_border, "color", Color(color.r, color.g, color.b, 0.55), 0.08)
 	tween.tween_property(raid_border, "color", Color(color.r, color.g, color.b, 0.0), 0.25)
 	tween.tween_callback(func() -> void: raid_border.visible = false)
@@ -801,7 +826,7 @@ func show_status_message(message: String, color: Color = Color.WHITE, duration: 
 	status_label.text = message
 	status_label.modulate = Color(color.r, color.g, color.b, 0.0)
 	status_label.visible = true
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(status_label, "modulate", color, 0.08)
 	tween.tween_interval(duration)
 	tween.tween_property(status_label, "modulate", Color(color.r, color.g, color.b, 0.0), 0.25)
@@ -811,6 +836,10 @@ func show_status_message(message: String, color: Color = Color.WHITE, duration: 
 func update_day_label(day_number: int) -> void:
 	day_label.text = LocaleManager.L("days") + ": %d" % max(day_number, 1)
 	day_label.visible = true
+
+
+func _on_world_level_changed(_world_level: int, _deepest_floor_reached: int) -> void:
+	refresh_meta_labels()
 
 
 func _on_npc_roster_changed(recruited_count: int) -> void:
@@ -947,12 +976,12 @@ func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), 
 	transition_label.modulate = Color.WHITE
 	transition_overlay.color = Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0)
 	transition_overlay.visible = true
-	var fade_in := create_tween()
+	var fade_in: Tween = create_tween()
 	fade_in.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 1.0), fade_duration)
 	await fade_in.finished
 	if hold_duration > 0.0:
 		await get_tree().create_timer(hold_duration).timeout
-	var fade_out := create_tween()
+	var fade_out: Tween = create_tween()
 	fade_out.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0), fade_duration)
 	await fade_out.finished
 	transition_overlay.visible = false
@@ -963,13 +992,13 @@ func fade_to_black(message: String, overlay_color: Color = Color(0, 0, 0, 1), fa
 	transition_label.modulate = Color.WHITE
 	transition_overlay.color = Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0)
 	transition_overlay.visible = true
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 1.0), fade_duration)
 	await tween.finished
 
 
 func fade_from_black(overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.5) -> void:
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(transition_overlay, "color", Color(overlay_color.r, overlay_color.g, overlay_color.b, 0.0), fade_duration)
 	await tween.finished
 	transition_overlay.visible = false
@@ -985,10 +1014,10 @@ func _ensure_home_arrow() -> void:
 
 func _layout_static_hud() -> void:
 	# Row 0: HP label text | HP bar | class label (all on same top line)
-	var hp_y := HUD_TOP_MARGIN
-	var hp_label_w := 160.0
-	var hp_bar_x := HUD_LEFT_MARGIN + hp_label_w + 4.0
-	var class_x := hp_bar_x + HP_BAR_SIZE.x + 6.0
+	var hp_y: float = HUD_TOP_MARGIN
+	var hp_label_w: float = 160.0
+	var hp_bar_x: float = HUD_LEFT_MARGIN + hp_label_w + 4.0
+	var class_x: float = hp_bar_x + HP_BAR_SIZE.x + 6.0
 	_set_control_rect(hp_label, Vector2(HUD_LEFT_MARGIN, hp_y), Vector2(hp_label_w, HUD_LINE_HEIGHT))
 	_set_control_rect(hp_bar_bg, Vector2(hp_bar_x, hp_y + 4.0), HP_BAR_SIZE)
 	_set_control_rect(class_label, Vector2(class_x, hp_y), CLASS_LABEL_SIZE)
@@ -996,7 +1025,7 @@ func _layout_static_hud() -> void:
 	hp_bar_fill.size = Vector2(HP_BAR_SIZE.x, HP_BAR_SIZE.y)
 
 	# Info rows start below HP row — each on its own line, no overlap
-	var info_y := hp_y + HUD_LINE_HEIGHT + 4.0
+	var info_y: float = hp_y + HUD_LINE_HEIGHT + 4.0
 	_set_control_rect(bag_label, Vector2(HUD_LEFT_MARGIN, info_y), INFO_LABEL_SIZE)
 	_set_control_rect(floor_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT), INFO_LABEL_SIZE)
 	_set_control_rect(kills_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 2.0), INFO_LABEL_SIZE)
@@ -1017,7 +1046,7 @@ func _set_control_rect(control: Control, pos: Vector2, rect_size: Vector2) -> vo
 func _center_skill_slot_row() -> void:
 	if skill_slot_row == null:
 		return
-	var row_size := skill_slot_row.get_combined_minimum_size()
+	var row_size: Vector2 = skill_slot_row.get_combined_minimum_size()
 	row_size.x = maxf(row_size.x, 210.0)
 	row_size.y = maxf(row_size.y, 36.0)
 	skill_slot_row.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)

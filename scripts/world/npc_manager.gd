@@ -16,6 +16,33 @@ const GUARD_DAMAGE_REDUCTION_PER_NPC: int = 1
 const GUARD_ATTACK_INTERVAL: float = 1.5
 const MERCHANT_DISCOUNT_MULTIPLIER: float = 0.9
 const BLACKSMITH_DISCOUNT_MULTIPLIER: float = 0.5
+const ROLE_BASE_STATS: Dictionary = {
+	ROLE_FARMER: {
+		"vitality": 20,
+		"support": 3,
+		"skill": 4,
+	},
+	ROLE_GUARD: {
+		"attack": GUARD_DAMAGE_PER_VOLLEY,
+		"defense": GUARD_DAMAGE_REDUCTION_PER_NPC,
+		"vitality": 28,
+	},
+	ROLE_MERCHANT_ASSISTANT: {
+		"support": 4,
+		"trade": 5,
+		"vitality": 20,
+	},
+	ROLE_BLACKSMITH: {
+		"craft": 6,
+		"defense": 2,
+		"vitality": 24,
+	},
+	ROLE_EXPLORER: {
+		"agility": 6,
+		"support": 3,
+		"vitality": 22,
+	},
+}
 
 const ROLE_ORDER: PackedStringArray = [
 	ROLE_FARMER,
@@ -137,6 +164,7 @@ func recruit_npc(npc_data: Dictionary) -> void:
 	for existing_npc: Dictionary in recruited_npcs:
 		if str(existing_npc.get("id", "")) == npc_id:
 			return
+	_ensure_npc_stats(recruited_data)
 	recruited_data["recruited"] = true
 	recruited_data["recruited_day"] = current_day
 	recruited_npcs.append(recruited_data)
@@ -191,11 +219,14 @@ func create_random_wanderer(seed_value: int, index: int) -> Dictionary:
 	var role: String = ROLE_ORDER[rng.randi_range(0, ROLE_ORDER.size() - 1)]
 	var npc_name: String = _pick_random_name(rng, index)
 	var portrait_path: String = _pick_portrait_path(role, rng)
+	var recruit_world_level: int = WorldLevel.get_world_level() if WorldLevel != null else 1
 	return {
 		"id": "wanderer_%d_%d" % [seed_value, index],
 		"name": npc_name,
 		"role": role,
 		"portrait_path": portrait_path,
+		"stats": _build_scaled_npc_stats(role, recruit_world_level),
+		"world_level_at_recruit": recruit_world_level,
 	}
 
 
@@ -225,7 +256,9 @@ func get_merchant_price_multiplier() -> float:
 
 
 func get_merchant_stock_bonus() -> int:
-	return get_role_count(ROLE_MERCHANT_ASSISTANT)
+	var assistant_count: int = get_role_count(ROLE_MERCHANT_ASSISTANT)
+	var support_total: int = _get_role_stat_total(ROLE_MERCHANT_ASSISTANT, "support", 4)
+	return maxi(assistant_count, int(round(float(support_total) / 4.0)))
 
 
 func get_repair_cost_multiplier() -> float:
@@ -235,11 +268,11 @@ func get_repair_cost_multiplier() -> float:
 
 
 func get_guard_damage_per_volley() -> int:
-	return get_role_count(ROLE_GUARD) * GUARD_DAMAGE_PER_VOLLEY
+	return _get_role_stat_total(ROLE_GUARD, "attack", GUARD_DAMAGE_PER_VOLLEY)
 
 
 func get_guard_damage_reduction() -> int:
-	return get_role_count(ROLE_GUARD) * GUARD_DAMAGE_REDUCTION_PER_NPC
+	return _get_role_stat_total(ROLE_GUARD, "defense", GUARD_DAMAGE_REDUCTION_PER_NPC)
 
 
 func get_guard_attack_interval() -> float:
@@ -356,7 +389,9 @@ func restore_state(data: Dictionary) -> void:
 	if saved_roster is Array:
 		for npc_variant: Variant in saved_roster:
 			if npc_variant is Dictionary:
-				recruited_npcs.append((npc_variant as Dictionary).duplicate(true))
+				var restored_npc: Dictionary = (npc_variant as Dictionary).duplicate(true)
+				_ensure_npc_stats(restored_npc)
+				recruited_npcs.append(restored_npc)
 	current_day = max(int(data.get("current_day", current_day)), DEFAULT_DAY)
 	_last_processed_day = max(int(data.get("last_processed_day", current_day)), DEFAULT_DAY)
 	_last_claimed_explorer_day = max(int(data.get("last_claimed_explorer_day", 0)), 0)
@@ -406,6 +441,44 @@ func _pick_portrait_path(role: String, rng: RandomNumberGenerator) -> String:
 	if portrait_paths.is_empty():
 		return "res://assets/npc_merchant.png"
 	return portrait_paths[rng.randi_range(0, portrait_paths.size() - 1)]
+
+
+func _build_scaled_npc_stats(role: String, recruit_world_level: int = 0) -> Dictionary:
+	var role_stats: Dictionary = ROLE_BASE_STATS.get(role, {}) as Dictionary
+	var resolved_world_level: int = recruit_world_level
+	if resolved_world_level <= 0:
+		resolved_world_level = WorldLevel.get_world_level() if WorldLevel != null else 1
+	var multiplier: float = 1.0 + float(resolved_world_level) * 0.04
+	var scaled_stats: Dictionary = {}
+	for stat_name_variant: Variant in role_stats.keys():
+		var stat_name: String = str(stat_name_variant)
+		var base_value: int = int(role_stats.get(stat_name_variant, 0))
+		scaled_stats[stat_name] = maxi(int(round(float(base_value) * multiplier)), 1)
+	return scaled_stats
+
+
+func _ensure_npc_stats(npc_data: Dictionary) -> void:
+	var existing_stats_variant: Variant = npc_data.get("stats", {})
+	if existing_stats_variant is Dictionary and not (existing_stats_variant as Dictionary).is_empty():
+		if not npc_data.has("world_level_at_recruit"):
+			npc_data["world_level_at_recruit"] = WorldLevel.get_world_level() if WorldLevel != null else 1
+		return
+	var recruit_world_level: int = int(npc_data.get("world_level_at_recruit", 0))
+	if recruit_world_level <= 0:
+		recruit_world_level = WorldLevel.get_world_level() if WorldLevel != null else 1
+	npc_data["stats"] = _build_scaled_npc_stats(str(npc_data.get("role", "")), recruit_world_level)
+	npc_data["world_level_at_recruit"] = recruit_world_level
+
+
+func _get_role_stat_total(role: String, stat_name: String, fallback_per_npc: int) -> int:
+	var total_value: int = 0
+	for npc_data: Dictionary in recruited_npcs:
+		if str(npc_data.get("role", "")) != role:
+			continue
+		_ensure_npc_stats(npc_data)
+		var stats: Dictionary = npc_data.get("stats", {}) as Dictionary
+		total_value += int(stats.get(stat_name, fallback_per_npc))
+	return total_value
 
 
 func _is_zh_locale() -> bool:

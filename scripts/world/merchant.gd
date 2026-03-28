@@ -185,7 +185,7 @@ func _open_shop() -> void:
 		LocaleManager.L("mystery_equipment"),
 		_get_adjusted_price(50),
 		_on_buy_equipment,
-		ITEM_DATABASE.get_equipment_icon("weapon", "Common")
+		ITEM_DATABASE.get_equipment_icon("weapon", _get_mystery_equipment_min_rarity())
 	)
 
 	var sell_scroll: ScrollContainer = ScrollContainer.new()
@@ -371,7 +371,9 @@ func _on_buy_equipment() -> void:
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
 	if inv.pay_copper(equipment_price):
-		var equip: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
+		var equip_floor: int = _get_mystery_equipment_floor_value()
+		var min_rarity: String = _get_mystery_equipment_min_rarity()
+		var equip: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment_min_rarity(equip_floor, min_rarity)
 		if inv.add_stack(equip):
 			_consume_stock("mystery_equipment")
 			_message_label.text = ""
@@ -531,6 +533,18 @@ func _has_stock(stock_key: String) -> bool:
 
 func _consume_stock(stock_key: String) -> void:
 	_remaining_stock[stock_key] = maxi(int(_remaining_stock.get(stock_key, 0)) - 1, 0)
+
+
+func _get_mystery_equipment_floor_value() -> int:
+	if WorldLevel != null and WorldLevel.has_method("get_merchant_floor_value"):
+		return int(WorldLevel.call("get_merchant_floor_value"))
+	return 1
+
+
+func _get_mystery_equipment_min_rarity() -> String:
+	if WorldLevel != null and WorldLevel.has_method("get_merchant_min_rarity"):
+		return str(WorldLevel.call("get_merchant_min_rarity"))
+	return "Common"
 
 
 func _format_shop_row_text(label_text: String, price: int, stock_key: String) -> String:
