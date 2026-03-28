@@ -16,6 +16,8 @@ const ROCK_SCENE := preload("res://scenes/world/rock_node.tscn")
 const IRON_SCENE := preload("res://scenes/world/iron_node.tscn")
 const GRASS_SCENE := preload("res://scenes/world/grass_node.tscn")
 const MERCHANT_SCENE := preload("res://scenes/world/merchant.tscn")
+const VILLAGE_NPC_SCENE := preload("res://scenes/world/village_npc.tscn")
+const WANDERER_COUNT: int = 4
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
 @onready var building_layer: TileMapLayer = $BuildingLayer
@@ -24,7 +26,10 @@ const MERCHANT_SCENE := preload("res://scenes/world/merchant.tscn")
 @onready var dungeon_entrance = $ReturnPortal
 
 var generation_seed: int = 0
+var current_day: int = 1
 var _generator: WorldGenerator = null
+var _world_npc_container: Node2D = null
+var _recruited_npc_container: Node2D = null
 
 
 func _ready() -> void:
@@ -35,6 +40,9 @@ func _ready() -> void:
 	build_ground()
 	_spawn_resource_layout()
 	_spawn_merchant()
+	_ensure_npc_containers()
+	_connect_npc_manager()
+	_refresh_npc_population()
 	if raid_system != null and raid_system.has_signal("banner_requested") \
 			and raid_system.has_signal("border_flash_requested") \
 			and raid_system.has_signal("raid_started"):
@@ -43,6 +51,11 @@ func _ready() -> void:
 		raid_system.raid_started.connect(func() -> void: raid_started.emit())
 	if raid_system != null and raid_system.has_signal("raid_countdown_changed"):
 		raid_system.raid_countdown_changed.connect(_on_raid_countdown_changed)
+
+
+func _exit_tree() -> void:
+	if NpcManager != null and NpcManager.roster_changed.is_connected(_on_npc_roster_changed):
+		NpcManager.roster_changed.disconnect(_on_npc_roster_changed)
 
 
 func place_player(player: Node2D, spawn_override: Variant = null) -> void:
@@ -165,8 +178,15 @@ func set_total_dungeon_runs(run_count: int) -> void:
 
 
 func set_day_count(day_count: int) -> void:
+	current_day = max(day_count, 1)
 	if raid_system != null and raid_system.has_method("set_day_count"):
-		raid_system.set_day_count(day_count)
+		raid_system.set_day_count(current_day)
+	if NpcManager != null:
+		NpcManager.set_current_day(current_day)
+	var merchant: Node = get_node_or_null("Merchant")
+	if merchant != null and merchant.has_method("refresh_inventory_state"):
+		merchant.call("refresh_inventory_state")
+	_refresh_npc_population()
 
 
 func set_deepest_floor_reached(floor_number: int) -> void:
@@ -214,3 +234,222 @@ func clear_base_area_around(world_position: Vector2) -> void:
 			continue
 		if child.global_position.distance_to(world_position) <= BASE_CLEAR_RADIUS:
 			child.set_permanently_depleted()
+
+
+func _ensure_npc_containers() -> void:
+	if _world_npc_container == null:
+		_world_npc_container = get_node_or_null("WorldNpcContainer") as Node2D
+	if _world_npc_container == null:
+		_world_npc_container = Node2D.new()
+		_world_npc_container.name = "WorldNpcContainer"
+		add_child(_world_npc_container)
+	if _recruited_npc_container == null:
+		_recruited_npc_container = get_node_or_null("RecruitedNpcContainer") as Node2D
+	if _recruited_npc_container == null:
+		_recruited_npc_container = Node2D.new()
+		_recruited_npc_container.name = "RecruitedNpcContainer"
+		add_child(_recruited_npc_container)
+
+
+func _connect_npc_manager() -> void:
+	if NpcManager == null:
+		return
+	if not NpcManager.roster_changed.is_connected(_on_npc_roster_changed):
+		NpcManager.roster_changed.connect(_on_npc_roster_changed)
+
+
+func _on_npc_roster_changed(_recruited_count: int) -> void:
+	_spawn_recruited_npcs()
+	var merchant: Node = get_node_or_null("Merchant")
+	if merchant != null and merchant.has_method("refresh_inventory_state"):
+		merchant.call("refresh_inventory_state")
+
+
+func _refresh_npc_population() -> void:
+	_spawn_world_npcs()
+	_spawn_recruited_npcs()
+
+
+func _clear_container_children(container: Node2D) -> void:
+	if container == null:
+		return
+	for child: Node in container.get_children():
+		child.queue_free()
+
+
+func _spawn_world_npcs() -> void:
+	if _world_npc_container == null or _generator == null:
+		return
+	_clear_container_children(_world_npc_container)
+	var spawn_seed: int = generation_seed + current_day * 101
+	var positions: Array[Vector2] = _build_wanderer_positions(WANDERER_COUNT)
+	for index: int in range(mini(WANDERER_COUNT, positions.size())):
+		var npc_instance: Area2D = VILLAGE_NPC_SCENE.instantiate() as Area2D
+		if npc_instance == null:
+			continue
+		npc_instance.position = positions[index]
+		if npc_instance.has_method("setup"):
+			npc_instance.call("setup", NpcManager.create_random_wanderer(spawn_seed, index), true)
+		_world_npc_container.add_child(npc_instance)
+
+
+func _spawn_recruited_npcs() -> void:
+	if _recruited_npc_container == null:
+		return
+	_clear_container_children(_recruited_npc_container)
+	var anchor_position: Vector2 = _resolve_home_anchor()
+	var recruited_roster: Array[Dictionary] = NpcManager.recruited_npcs
+	for index: int in range(recruited_roster.size()):
+		var npc_instance: Area2D = VILLAGE_NPC_SCENE.instantiate() as Area2D
+		if npc_instance == null:
+			continue
+		npc_instance.position = anchor_position + NpcManager.get_settlement_offset(index)
+		if npc_instance.has_method("setup"):
+			npc_instance.call("setup", recruited_roster[index], false)
+		_recruited_npc_container.add_child(npc_instance)
+
+
+func _build_wanderer_positions(target_count: int) -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	_append_village_positions(positions, target_count)
+	_append_roadside_positions(positions, target_count)
+	if positions.size() >= target_count:
+		return positions
+	var fallback_positions: Array = _generator.sample_plains_positions(target_count * 2)
+	for fallback_variant: Variant in fallback_positions:
+		if not fallback_variant is Vector2:
+			continue
+		var fallback_position: Vector2 = fallback_variant as Vector2
+		_try_append_npc_position(positions, fallback_position, target_count)
+		if positions.size() >= target_count:
+			break
+	return positions
+
+
+func _append_village_positions(positions: Array[Vector2], target_count: int) -> void:
+	var spawn_center: Vector2 = _generator.get_spawn_pixel()
+	var village_offsets: Array[Vector2] = [
+		Vector2(-52.0, 20.0),
+		Vector2(54.0, 18.0),
+		Vector2(-14.0, 48.0),
+	]
+	for offset: Vector2 in village_offsets:
+		_try_append_npc_position(positions, spawn_center + offset, target_count)
+		if positions.size() >= target_count:
+			return
+
+
+func _append_roadside_positions(positions: Array[Vector2], target_count: int) -> void:
+	for tile_variant: Variant in _generator.road_tiles.keys():
+		if not tile_variant is Vector2i:
+			continue
+		var road_tile: Vector2i = tile_variant as Vector2i
+		if road_tile.y % 18 != 0:
+			continue
+		var road_position: Vector2 = Vector2(
+			float(road_tile.x * WorldGenerator.TILE_SIZE + WorldGenerator.TILE_SIZE / 2),
+			float(road_tile.y * WorldGenerator.TILE_SIZE + WorldGenerator.TILE_SIZE / 2)
+		)
+		var roadside_offset: Vector2 = Vector2(22.0, 0.0) if road_tile.x <= WorldGenerator.CENTER.x else Vector2(-22.0, 0.0)
+		_try_append_npc_position(positions, road_position + roadside_offset, target_count)
+		if positions.size() >= target_count:
+			return
+
+
+func _try_append_npc_position(positions: Array[Vector2], candidate_position: Vector2, target_count: int) -> void:
+	if positions.size() >= target_count:
+		return
+	if candidate_position.distance_to(_generator.get_dungeon_entrance_pixel()) < 48.0:
+		return
+	if candidate_position.distance_to(_generator.get_spawn_pixel()) < 26.0:
+		return
+	var tile_position: Vector2i = Vector2i(
+		floori(candidate_position.x / WorldGenerator.TILE_SIZE),
+		floori(candidate_position.y / WorldGenerator.TILE_SIZE)
+	)
+	var tile_type: String = _generator.get_tile_type(tile_position)
+	if tile_type == "water" or tile_type == "lake" or tile_type == "border":
+		return
+	for existing_position: Vector2 in positions:
+		if existing_position.distance_to(candidate_position) < 28.0:
+			return
+	positions.append(candidate_position)
+
+
+func get_minimap_snapshot() -> Dictionary:
+	var player_pos: Vector2 = Vector2.ZERO
+	var players: Array = get_tree().get_nodes_in_group("player")
+	if not players.is_empty():
+		var p: Node = players[0] as Node
+		if p != null and "global_position" in p:
+			player_pos = p.global_position as Vector2
+	var home_core_pos: Vector2 = Vector2.ZERO
+	if not players.is_empty():
+		var p: Node = players[0] as Node
+		if p != null and "building_system" in p:
+			var bsys: Node = p.building_system as Node
+			if bsys != null:
+				var hcp: Variant = bsys.get("home_core_position")
+				if hcp is Vector2:
+					home_core_pos = hcp as Vector2
+	var merchant_node: Node = get_node_or_null("Merchant")
+	var merchant_pos: Vector2 = merchant_node.global_position if merchant_node != null else Vector2.ZERO
+	var entrance_pos: Vector2 = _generator.get_dungeon_entrance_pixel() if _generator != null else Vector2.ZERO
+	var world_tile_size: int = WorldGenerator.TILE_SIZE
+	var world_map_size: Vector2i = WorldGenerator.MAP_SIZE
+	var world_px_size: Vector2 = Vector2(
+		float(world_map_size.x * world_tile_size),
+		float(world_map_size.y * world_tile_size)
+	)
+	var forest_data: Array = []
+	if _generator != null:
+		for cluster: Dictionary in _generator.forest_clusters:
+			var center_tile: Vector2i = cluster.get("center", Vector2i.ZERO) as Vector2i
+			var radius_tiles: int = int(cluster.get("radius", 0))
+			forest_data.append({
+				"center": Vector2(
+					float(center_tile.x * world_tile_size + world_tile_size / 2),
+					float(center_tile.y * world_tile_size + world_tile_size / 2)
+				),
+				"radius": float(radius_tiles * world_tile_size)
+			})
+	var mountain_data: Array = []
+	if _generator != null:
+		for cluster: Dictionary in _generator.mountain_clusters:
+			var center_tile: Vector2i = cluster.get("center", Vector2i.ZERO) as Vector2i
+			var radius_tiles: int = int(cluster.get("radius", 0))
+			mountain_data.append({
+				"center": Vector2(
+					float(center_tile.x * world_tile_size + world_tile_size / 2),
+					float(center_tile.y * world_tile_size + world_tile_size / 2)
+				),
+				"radius": float(radius_tiles * world_tile_size)
+			})
+	return {
+		"mode": "overworld",
+		"world_size": world_px_size,
+		"player_pos": player_pos,
+		"dungeon_entrance_pos": entrance_pos,
+		"merchant_pos": merchant_pos,
+		"home_core_pos": home_core_pos,
+		"forest_clusters": forest_data,
+		"mountain_clusters": mountain_data,
+	}
+
+
+func _resolve_home_anchor() -> Vector2:
+	var primary_player: Node = _get_primary_player()
+	if primary_player != null and "building_system" in primary_player:
+		var building_system: Node = primary_player.building_system
+		if building_system != null:
+			var home_core_position: Variant = building_system.get("home_core_position")
+			if home_core_position is Vector2 and (home_core_position as Vector2) != Vector2.ZERO:
+				return home_core_position as Vector2
+	return _generator.get_spawn_pixel() + Vector2(0.0, 44.0)
+
+
+func _get_primary_player() -> Node:
+	var players: Array = get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return null
+	return players[0] as Node

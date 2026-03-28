@@ -13,6 +13,7 @@ const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 @onready var kills_label: Label = $KillsLabel
 @onready var buff_row: HBoxContainer = $BuffRow
 @onready var day_label: Label = $DayLabel
+@onready var npc_count_label: Label = $NpcCountLabel
 @onready var inventory_panel: PanelContainer = $InventoryPanel
 @onready var inventory_list: VBoxContainer = $InventoryPanel/MarginContainer/VBoxContainer/ScrollContainer/ItemListContainer
 @onready var interaction_prompt: Label = $InteractionPrompt
@@ -31,6 +32,8 @@ const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 @onready var minimap: Control = $Minimap
 @onready var buff_select: Control = $BuffSelect
 @onready var death_overlay: Control = $DeathOverlay
+@onready var death_vbox: VBoxContainer = $DeathOverlay/VBoxContainer
+@onready var death_title_label: Label = $DeathOverlay/VBoxContainer/TitleLabel
 @onready var death_summary_label: Label = $DeathOverlay/VBoxContainer/SummaryLabel
 @onready var event_banner: Label = $EventBanner
 @onready var raid_countdown_label: Label = $RaidCountdownLabel
@@ -63,6 +66,7 @@ var class_label: Label = null
 var home_arrow: Control = null
 var _consumable_bar_bg: Panel = null
 var _tracked_ui_visibility: Dictionary = {}
+var _death_dynamic_nodes: Array[Node] = []
 
 
 func _ready() -> void:
@@ -152,6 +156,9 @@ func _ready() -> void:
 	_register_ui_audio_target(buff_select)
 	_register_ui_audio_target(settings_menu)
 	_ensure_home_arrow()
+	if NpcManager != null and not NpcManager.roster_changed.is_connected(_on_npc_roster_changed):
+		NpcManager.roster_changed.connect(_on_npc_roster_changed)
+	_update_npc_count_label(NpcManager.get_recruited_count() if NpcManager != null else 0)
 
 
 func update_hp(current: int, max_hp: int) -> void:
@@ -529,14 +536,106 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 
 
 func show_death_screen(summary: Dictionary) -> void:
+	for node: Node in _death_dynamic_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	_death_dynamic_nodes.clear()
+
+	death_vbox.offset_left = -220.0
+	death_vbox.offset_top = -200.0
+	death_vbox.offset_right = 220.0
+	death_vbox.offset_bottom = 200.0
+
+	death_title_label.text = "你死了"
+	death_title_label.add_theme_font_size_override("font_size", 48)
+
+	var floor_num: int = int(summary.get("floor", 0))
+	var kills_num: int = int(summary.get("kills", 0))
+	death_summary_label.text = "第 %d 層  |  擊殺 %d" % [floor_num, kills_num]
+	death_summary_label.add_theme_font_size_override("font_size", 16)
+
+	var dur_note: Label = Label.new()
+	dur_note.text = "所有裝備耐久度 -20%"
+	dur_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dur_note.add_theme_font_size_override("font_size", 13)
+	dur_note.add_theme_color_override("font_color", Color(0.85, 0.55, 0.25, 1.0))
+	death_vbox.add_child(dur_note)
+	_death_dynamic_nodes.append(dur_note)
+
+	var loot_items: Array = summary.get("loot_items", [])
+	if not loot_items.is_empty():
+		var sep: HSeparator = HSeparator.new()
+		death_vbox.add_child(sep)
+		_death_dynamic_nodes.append(sep)
+
+		var loot_header: Label = Label.new()
+		loot_header.text = "遺失戰利品："
+		loot_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		loot_header.add_theme_font_size_override("font_size", 13)
+		loot_header.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0))
+		death_vbox.add_child(loot_header)
+		_death_dynamic_nodes.append(loot_header)
+
+		var max_shown: int = min(loot_items.size(), 5)
+		for i in range(max_shown):
+			var entry: Dictionary = loot_items[i]
+			var item_id: String = str(entry.get("id", ""))
+			var qty: int = int(entry.get("quantity", 1))
+			var display_name: String = ITEM_DATABASE.get_display_name(item_id) if item_id != "" else item_id
+			if display_name == "":
+				display_name = item_id
+			var item_label: Label = Label.new()
+			item_label.text = "%s x%d" % [display_name, qty]
+			item_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			item_label.add_theme_font_size_override("font_size", 12)
+			item_label.add_theme_color_override("font_color", Color(0.75, 0.55, 0.55, 1.0))
+			death_vbox.add_child(item_label)
+			_death_dynamic_nodes.append(item_label)
+
+		if loot_items.size() > 5:
+			var more_label: Label = Label.new()
+			more_label.text = "...及其他 %d 件" % (loot_items.size() - 5)
+			more_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			more_label.add_theme_font_size_override("font_size", 12)
+			more_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
+			death_vbox.add_child(more_label)
+			_death_dynamic_nodes.append(more_label)
+
+	var sep2: HSeparator = HSeparator.new()
+	death_vbox.add_child(sep2)
+	_death_dynamic_nodes.append(sep2)
+
+	var return_btn: Button = Button.new()
+	return_btn.text = "返回據點"
+	return_btn.add_theme_font_size_override("font_size", 15)
+	var btn_style: StyleBoxFlat = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.2, 0.08, 0.08, 0.9)
+	btn_style.border_color = Color(0.6, 0.2, 0.2, 1.0)
+	btn_style.border_width_left = 1
+	btn_style.border_width_top = 1
+	btn_style.border_width_right = 1
+	btn_style.border_width_bottom = 1
+	btn_style.corner_radius_top_left = 4
+	btn_style.corner_radius_top_right = 4
+	btn_style.corner_radius_bottom_left = 4
+	btn_style.corner_radius_bottom_right = 4
+	return_btn.add_theme_stylebox_override("normal", btn_style)
+	return_btn.pressed.connect(hide_death_screen)
+	death_vbox.add_child(return_btn)
+	_death_dynamic_nodes.append(return_btn)
+
+	death_overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	death_overlay.visible = true
-	death_summary_label.text = LocaleManager.L("death_summary") % [
-		int(summary.get("floor", 0)),
-		int(summary.get("kills", 0)),
-	]
+	var tween: Tween = create_tween()
+	tween.tween_property(death_overlay, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.5)
 
 
 func hide_death_screen() -> void:
+	for node: Node in _death_dynamic_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	_death_dynamic_nodes.clear()
+	death_overlay.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	death_overlay.visible = false
 
 
@@ -582,6 +681,19 @@ func show_status_message(message: String, color: Color = Color.WHITE, duration: 
 func update_day_label(day_number: int) -> void:
 	day_label.text = LocaleManager.L("days") + ": %d" % max(day_number, 1)
 	day_label.visible = true
+
+
+func _on_npc_roster_changed(recruited_count: int) -> void:
+	_update_npc_count_label(recruited_count)
+
+
+func _update_npc_count_label(recruited_count: int) -> void:
+	if npc_count_label == null:
+		return
+	if str(LocaleManager.get_locale()).begins_with("zh"):
+		npc_count_label.text = "已招募 NPC: %d" % max(recruited_count, 0)
+	else:
+		npc_count_label.text = "NPCs Recruited: %d" % max(recruited_count, 0)
 
 
 func update_consumable_bar(slots: Array) -> void:
@@ -753,7 +865,8 @@ func _layout_static_hud() -> void:
 	_set_control_rect(kills_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 2.0), INFO_LABEL_SIZE)
 	_set_control_rect(day_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 3.0), INFO_LABEL_SIZE)
 	_set_control_rect(currency_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 4.0), INFO_LABEL_SIZE)
-	_set_control_rect(buff_row, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 5.0), BUFF_ROW_SIZE)
+	_set_control_rect(npc_count_label, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 5.0), INFO_LABEL_SIZE)
+	_set_control_rect(buff_row, Vector2(HUD_LEFT_MARGIN, info_y + HUD_LINE_HEIGHT * 6.0), BUFF_ROW_SIZE)
 
 
 func _set_control_rect(control: Control, pos: Vector2, rect_size: Vector2) -> void:

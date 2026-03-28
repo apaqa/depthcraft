@@ -34,6 +34,7 @@ func _ready() -> void:
 	var class_system = get_node_or_null("/root/ClassSystem")
 	if class_system != null and not class_system.has_chosen_class():
 		await _show_class_select()
+	_sync_quest_day()
 	_start_tutorial()
 	_sync_players_with_session()
 	change_level(current_level_id)
@@ -50,6 +51,8 @@ func _exit_tree() -> void:
 
 func _sync_quest_day() -> void:
 	QuestManager.set_day(current_day)
+	if NpcManager != null:
+		NpcManager.set_current_day(current_day)
 
 
 func _input(event: InputEvent) -> void:
@@ -217,10 +220,22 @@ func _get_level_scene(level_id: String) -> PackedScene:
 
 
 func _on_player_portal_requested(target_level_id: String) -> void:
+	var floor_reached: int = 0
+	var kill_count: int = 0
+	var item_count: int = 0
+	var npc_day_messages: Array[String] = []
 	if _is_multiplayer_enabled() and not _is_host():
 		request_portal_transition.rpc_id(1, target_level_id)
 		if player != null:
 			player.show_status_message("Waiting for host...", Color(0.85, 0.9, 1.0, 1.0), 1.5)
+		return
+	if false and player != null:
+		var surface_message: String = "已抵達第 %d 層 | %d 擊殺 | %d 件戰利品" % [floor_reached, kill_count, item_count]
+		if not npc_day_messages.is_empty():
+			surface_message += " | " + " / ".join(npc_day_messages)
+		player.show_status_message(surface_message, Color(0.85, 1.0, 0.85, 1.0), 4.0)
+		return
+		player.show_status_message("Waiting for host...", Color(0.85, 0.9, 1.0, 1.0), 1.5)
 		return
 	if current_level_id == "overworld" and target_level_id == "dungeon" and current_level != null and current_level.has_method("get_dungeon_entrance_position"):
 		overworld_return_position = current_level.get_dungeon_entrance_position()
@@ -267,6 +282,7 @@ func _on_return_to_surface_requested() -> void:
 	dungeon_returns_since_raid += 1
 	current_day += 1
 	_sync_quest_day()
+	var npc_day_messages: Array[String] = NpcManager.process_new_day(current_day, player) if NpcManager != null else []
 	deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, floor_reached)
 	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
@@ -274,6 +290,11 @@ func _on_return_to_surface_requested() -> void:
 	await get_tree().process_frame
 	await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
 	if player != null:
+		var surface_message: String = "已抵達第 %d 層 | %d 擊殺 | %d 件戰利品" % [floor_reached, kill_count, item_count]
+		if not npc_day_messages.is_empty():
+			surface_message += " | " + " / ".join(npc_day_messages)
+		player.show_status_message(surface_message, Color(0.85, 1.0, 0.85, 1.0), 4.0)
+		return
 		player.show_status_message("已抵達第 %d 層 | %d 擊殺 | %d 件戰利品" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
 
 
@@ -289,6 +310,7 @@ func _on_player_died() -> void:
 				"floor": death_floor if death_floor != null else 0,
 				"kills": death_kills if death_kills != null else 0,
 				"loot_lost": player.dungeon_run_loot.size() if player != null else 0,
+				"loot_items": player.dungeon_run_loot.duplicate() if player != null else [],
 			})
 		await get_tree().create_timer(3.0).timeout
 		if hud.has_method("play_transition"):
@@ -299,9 +321,19 @@ func _on_player_died() -> void:
 		dungeon_returns_since_raid += 1
 		current_day += 1
 		_sync_quest_day()
+		var npc_day_messages: Array[String] = NpcManager.process_new_day(current_day, player) if NpcManager != null else []
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, int(current_level.get("current_floor")))
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if player != null:
+			var defeated_message: String = "你失去了戰利品！"
+			if not npc_day_messages.is_empty():
+				defeated_message += " | " + " / ".join(npc_day_messages)
+			player.show_status_message(defeated_message, Color(1.0, 0.75, 0.45, 1.0), 3.0)
+			if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
+				current_level.trigger_progress_raid()
+			if hud.has_method("hide_death_screen"):
+				hud.hide_death_screen()
+			return
 			player.show_status_message("你失去了戰利品！", Color(1.0, 0.75, 0.45, 1.0), 3.0)
 		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 			current_level.trigger_progress_raid()

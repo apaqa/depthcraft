@@ -496,6 +496,27 @@ func _seed_runtime_state(main_scene: FakeMainScene, player: FakePlayer) -> void:
 	_skill_system().call("bind_player", player)
 	_skill_system().call("sync_from_player_talents")
 	_skill_system().call("set_equipped_skill_ids", ["whirlwind", "execute", "sprint"])
+	_npc_manager().call("restore_state", {
+		"recruited_npcs": [
+			{
+				"id": "npc_farmer_1",
+				"name": "阿洛1",
+				"role": "farmer",
+				"portrait_path": "res://assets/npc_dwarf.png",
+				"recruited": true,
+			},
+			{
+				"id": "npc_guard_1",
+				"name": "米菈2",
+				"role": "guard",
+				"portrait_path": "res://assets/npc_knight_blue.png",
+				"recruited": true,
+			},
+		],
+		"current_day": 12,
+		"last_processed_day": 12,
+		"last_claimed_explorer_day": 11,
+	})
 
 	main_scene.current_day = 12
 	main_scene.deepest_dungeon_floor_reached = 8
@@ -533,6 +554,7 @@ func _clear_runtime_state(main_scene: FakeMainScene, player: FakePlayer) -> void
 		(unlocked_skill_ids_variant as Array).clear()
 	_skill_system().call("set_equipped_skill_ids", ["", "", ""])
 	_quest_manager().call("set_day", 1)
+	_npc_manager().call("clear_state")
 
 
 func _capture_snapshot(main_scene: FakeMainScene, player: FakePlayer) -> Dictionary:
@@ -576,6 +598,7 @@ func _capture_snapshot(main_scene: FakeMainScene, player: FakePlayer) -> Diction
 			"achievements": unlocked_achievement_ids,
 		},
 		"skills": equipped_skill_ids,
+		"npcs": _npc_manager().call("serialize_state"),
 	}
 	return _normalize_variant(snapshot) as Dictionary
 
@@ -629,6 +652,7 @@ func _assert_saved_payload(payload: Dictionary) -> void:
 	_assert(payload.has("currency"), "Save payload should include currency data.")
 	_assert(payload.has("buildings"), "Save payload should include building data.")
 	_assert(payload.has("skills"), "Save payload should include skill data.")
+	_assert(payload.has("npcs"), "Save payload should include NPC data.")
 	_assert(payload.has("progress"), "Save payload should include progress data.")
 
 	var player_payload: Dictionary = payload.get("player", {}) as Dictionary
@@ -685,6 +709,10 @@ func _assert_saved_payload(payload: Dictionary) -> void:
 
 	var skills_payload: Dictionary = payload.get("skills", {}) as Dictionary
 	_assert(skills_payload.has("equipped_skill_ids"), "Skill payload should include equipped_skill_ids.")
+
+	var npc_payload: Dictionary = payload.get("npcs", {}) as Dictionary
+	_assert(npc_payload.has("recruited_npcs"), "NPC payload should include recruited_npcs.")
+	_assert(int((npc_payload.get("recruited_npcs", []) as Array).size()) == 2, "NPC payload should preserve recruited NPCs.")
 
 
 func _backup_files(paths: Array[String]) -> Dictionary:
@@ -754,6 +782,10 @@ func _skill_system() -> Node:
 
 func _quest_manager() -> Node:
 	return root.get_node("/root/QuestManager")
+
+
+func _npc_manager() -> Node:
+	return root.get_node("/root/NpcManager")
 
 
 func _assert(condition: bool, message: String) -> void:

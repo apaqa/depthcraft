@@ -21,6 +21,8 @@ var _hovered_consumable_index: int = -1
 var _context_menu: PopupMenu = null
 var _context_inv_index: int = -1
 var _context_inv_type: String = ""
+var _tooltip_panel: PanelContainer = null
+var _tooltip_vbox: VBoxContainer = null
 
 
 func _ready() -> void:
@@ -45,6 +47,33 @@ func _ready() -> void:
 	stat_label.add_theme_font_size_override("font_size", 16)
 	comparison_label.add_theme_font_size_override("font_size", 16)
 
+	_tooltip_panel = PanelContainer.new()
+	_tooltip_panel.visible = false
+	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_panel.z_index = 10
+	var tooltip_style: StyleBoxFlat = StyleBoxFlat.new()
+	tooltip_style.bg_color = Color(0.08, 0.08, 0.10, 0.93)
+	tooltip_style.border_color = Color(0.35, 0.35, 0.42, 1.0)
+	tooltip_style.border_width_left = 1
+	tooltip_style.border_width_top = 1
+	tooltip_style.border_width_right = 1
+	tooltip_style.border_width_bottom = 1
+	tooltip_style.corner_radius_top_left = 4
+	tooltip_style.corner_radius_top_right = 4
+	tooltip_style.corner_radius_bottom_left = 4
+	tooltip_style.corner_radius_bottom_right = 4
+	_tooltip_panel.add_theme_stylebox_override("panel", tooltip_style)
+	var tooltip_margin: MarginContainer = MarginContainer.new()
+	tooltip_margin.add_theme_constant_override("margin_left", 10)
+	tooltip_margin.add_theme_constant_override("margin_top", 8)
+	tooltip_margin.add_theme_constant_override("margin_right", 10)
+	tooltip_margin.add_theme_constant_override("margin_bottom", 8)
+	_tooltip_panel.add_child(tooltip_margin)
+	_tooltip_vbox = VBoxContainer.new()
+	_tooltip_vbox.add_theme_constant_override("separation", 4)
+	tooltip_margin.add_child(_tooltip_vbox)
+	add_child(_tooltip_panel)
+
 
 func open_for_player(target_player) -> void:
 	player = target_player
@@ -52,10 +81,26 @@ func open_for_player(target_player) -> void:
 	_refresh()
 
 
+func _process(_delta: float) -> void:
+	if not visible or _tooltip_panel == null or not _tooltip_panel.visible:
+		return
+	var mouse_pos: Vector2 = get_local_mouse_position()
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var panel_size: Vector2 = _tooltip_panel.size
+	var tx: float = mouse_pos.x + 16.0
+	var ty: float = mouse_pos.y + 16.0
+	if tx + panel_size.x > viewport_size.x - 4.0:
+		tx = mouse_pos.x - panel_size.x - 8.0
+	if ty + panel_size.y > viewport_size.y - 4.0:
+		ty = mouse_pos.y - panel_size.y - 8.0
+	_tooltip_panel.position = Vector2(tx, ty)
+
+
 func close_menu() -> void:
 	if not visible:
 		return
 	visible = false
+	_hide_tooltip()
 	release_focus()
 	close_requested.emit()
 
@@ -69,6 +114,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _refresh() -> void:
+	_hide_tooltip()
 	for child: Node in slot_list.get_children():
 		child.queue_free()
 	for child: Node in inventory_list_container.get_children():
@@ -272,10 +318,12 @@ func _build_eq_row(stack: Dictionary, eq_idx: int) -> PanelContainer:
 		_hovered_eq_index = eq_idx
 		_hovered_consumable_index = -1
 		_update_comparison_label()
+		_show_tooltip(stack)
 	)
 	panel.mouse_exited.connect(func() -> void:
 		_hovered_eq_index = -1
 		_update_comparison_label()
+		_hide_tooltip()
 	)
 	_apply_panel_rarity_style(panel, rarity_color)
 	return panel
@@ -348,10 +396,12 @@ func _build_cons_row(stack: Dictionary, cons_idx: int, q_id: String, r_id: Strin
 		_hovered_consumable_index = cons_idx
 		_hovered_eq_index = -1
 		_update_comparison_label()
+		_show_tooltip(stack)
 	)
 	panel.mouse_exited.connect(func() -> void:
 		_hovered_consumable_index = -1
 		_update_comparison_label()
+		_hide_tooltip()
 	)
 	return panel
 
@@ -360,6 +410,7 @@ func _build_material_row(stack: Dictionary) -> HBoxContainer:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.custom_minimum_size = Vector2(0, 24)
 	var icon_texture: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
 	row.add_child(_make_icon_ctrl(icon_texture, ITEM_DATABASE.get_stack_color(stack), 20))
 	var label: Label = Label.new()
@@ -369,6 +420,12 @@ func _build_material_row(stack: Dictionary) -> HBoxContainer:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.clip_text = true
 	row.add_child(label)
+	row.mouse_entered.connect(func() -> void:
+		_show_tooltip(stack)
+	)
+	row.mouse_exited.connect(func() -> void:
+		_hide_tooltip()
+	)
 	return row
 
 
@@ -539,6 +596,150 @@ func _set_quickslot(inv_index: int, slot_index: int) -> void:
 	if player.has_method("set_consumable_slot"):
 		player.set_consumable_slot(slot_index, item_id)
 	_refresh()
+
+
+func _show_tooltip(stack: Dictionary) -> void:
+	if _tooltip_panel == null or _tooltip_vbox == null or stack.is_empty():
+		return
+	for child: Node in _tooltip_vbox.get_children():
+		child.free()
+	var item_type: String = str(stack.get("type", ""))
+	if item_type == "equipment":
+		_fill_equipment_tooltip(_tooltip_vbox, stack)
+	elif item_type == "consumable":
+		_fill_consumable_tooltip(_tooltip_vbox, stack)
+	elif item_type == "resource":
+		_fill_material_tooltip(_tooltip_vbox, stack)
+	else:
+		var fallback_label: Label = Label.new()
+		fallback_label.text = ITEM_DATABASE.get_stack_display_name(stack)
+		_tooltip_vbox.add_child(fallback_label)
+	_tooltip_panel.visible = true
+	_tooltip_panel.reset_size()
+
+
+func _hide_tooltip() -> void:
+	if _tooltip_panel != null:
+		_tooltip_panel.visible = false
+
+
+func _fill_equipment_tooltip(container: VBoxContainer, stack: Dictionary) -> void:
+	var name_label: Label = Label.new()
+	name_label.text = ITEM_DATABASE.get_stack_display_name(stack)
+	name_label.self_modulate = ITEM_DATABASE.get_stack_color(stack)
+	name_label.add_theme_font_size_override("font_size", 14)
+	container.add_child(name_label)
+
+	var rarity_slot_label: Label = Label.new()
+	var rarity_str: String = _translate_rarity(str(stack.get("rarity", "Common")))
+	var slot_str: String = _translate_slot(str(stack.get("slot", "")))
+	rarity_slot_label.text = "%s  |  %s" % [rarity_str, slot_str]
+	rarity_slot_label.modulate = Color(0.75, 0.75, 0.75, 1.0)
+	rarity_slot_label.add_theme_font_size_override("font_size", 11)
+	container.add_child(rarity_slot_label)
+
+	container.add_child(HSeparator.new())
+
+	if player != null and player.has_method("get_stats_summary") and player.has_method("get_stats_summary_for_item"):
+		var current_summary: Dictionary = player.get_stats_summary()
+		var preview_summary: Dictionary = player.get_stats_summary_for_item(stack)
+		var stat_display_names: Dictionary = {
+			"attack": LocaleManager.L("atk"),
+			"defense": LocaleManager.L("def"),
+			"max_hp": LocaleManager.L("hp"),
+			"speed": LocaleManager.L("spd"),
+		}
+		for stat_key in ["attack", "defense", "max_hp", "speed"]:
+			var before_val: float = float(current_summary.get(stat_key, 0.0))
+			var after_val: float = float(preview_summary.get(stat_key, 0.0))
+			var delta: float = after_val - before_val
+			var stat_row: HBoxContainer = HBoxContainer.new()
+			stat_row.add_theme_constant_override("separation", 6)
+			var stat_name_label: Label = Label.new()
+			stat_name_label.text = str(stat_display_names.get(stat_key, stat_key)) + ":"
+			stat_name_label.custom_minimum_size = Vector2(36, 0)
+			stat_name_label.modulate = Color(0.8, 0.8, 0.8, 1.0)
+			stat_name_label.add_theme_font_size_override("font_size", 11)
+			stat_row.add_child(stat_name_label)
+			var val_label: Label = Label.new()
+			val_label.text = "%d -> %d" % [int(round(before_val)), int(round(after_val))]
+			val_label.add_theme_font_size_override("font_size", 11)
+			stat_row.add_child(val_label)
+			var delta_label: Label = Label.new()
+			delta_label.text = "(%+d)" % int(round(delta))
+			delta_label.add_theme_font_size_override("font_size", 11)
+			if delta > 0.5:
+				delta_label.self_modulate = Color(0.3, 0.9, 0.4, 1.0)
+			elif delta < -0.5:
+				delta_label.self_modulate = Color(0.9, 0.3, 0.3, 1.0)
+			else:
+				delta_label.self_modulate = Color(0.65, 0.65, 0.65, 1.0)
+			stat_row.add_child(delta_label)
+			container.add_child(stat_row)
+
+	var durability: int = int(stack.get("durability", 0))
+	var max_durability: int = int(stack.get("max_durability", 0))
+	if max_durability > 0:
+		var dur_label: Label = Label.new()
+		dur_label.text = LocaleManager.L("slot_durability") % [durability, max_durability]
+		dur_label.add_theme_font_size_override("font_size", 11)
+		if durability <= 0:
+			dur_label.self_modulate = Color(0.9, 0.3, 0.3, 1.0)
+		else:
+			dur_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+		container.add_child(dur_label)
+
+
+func _fill_consumable_tooltip(container: VBoxContainer, stack: Dictionary) -> void:
+	var name_label: Label = Label.new()
+	name_label.text = ITEM_DATABASE.get_stack_display_name(stack)
+	name_label.self_modulate = Color(0.32, 0.78, 0.42, 1.0)
+	name_label.add_theme_font_size_override("font_size", 14)
+	container.add_child(name_label)
+
+	var quantity: int = int(stack.get("quantity", 1))
+	var qty_label: Label = Label.new()
+	qty_label.text = "x%d" % quantity
+	qty_label.add_theme_font_size_override("font_size", 11)
+	qty_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+	container.add_child(qty_label)
+
+	var effect: String = str(stack.get("effect", stack.get("description", "")))
+	if effect != "":
+		container.add_child(HSeparator.new())
+		var effect_label: Label = Label.new()
+		effect_label.text = effect
+		effect_label.add_theme_font_size_override("font_size", 11)
+		effect_label.modulate = Color(0.8, 0.85, 0.8, 1.0)
+		effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		effect_label.custom_minimum_size = Vector2(180, 0)
+		container.add_child(effect_label)
+
+
+func _fill_material_tooltip(container: VBoxContainer, stack: Dictionary) -> void:
+	var name_label: Label = Label.new()
+	name_label.text = ITEM_DATABASE.get_stack_display_name(stack)
+	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.modulate = Color(0.85, 0.75, 0.45, 1.0)
+	container.add_child(name_label)
+
+	var quantity: int = int(stack.get("quantity", 1))
+	var qty_label: Label = Label.new()
+	qty_label.text = "x%d" % quantity
+	qty_label.add_theme_font_size_override("font_size", 11)
+	qty_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+	container.add_child(qty_label)
+
+	var description: String = str(stack.get("description", ""))
+	if description != "":
+		container.add_child(HSeparator.new())
+		var desc_label: Label = Label.new()
+		desc_label.text = description
+		desc_label.add_theme_font_size_override("font_size", 11)
+		desc_label.modulate = Color(0.8, 0.8, 0.8, 1.0)
+		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc_label.custom_minimum_size = Vector2(180, 0)
+		container.add_child(desc_label)
 
 
 func _update_comparison_label() -> void:

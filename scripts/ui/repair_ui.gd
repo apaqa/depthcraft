@@ -74,8 +74,7 @@ func _refresh() -> void:
 	if player == null:
 		detail_label.text = LocaleManager.L("repair_no_player")
 		return
-	var repair_cost_multiplier: float = facility.get_repair_cost_multiplier() \
-		if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
+	var repair_cost_multiplier: float = _get_total_repair_cost_multiplier()
 	var equipped_any: bool = false
 	var repairable_any: bool = false
 
@@ -252,8 +251,7 @@ func _on_repair_inventory_pressed(inv_index: int) -> void:
 	if lost <= 0:
 		return
 	var material: String = str(player.equipment_system.get_repair_material("", item))
-	var repair_cost_multiplier: float = facility.get_repair_cost_multiplier() \
-		if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
+	var repair_cost_multiplier: float = _get_total_repair_cost_multiplier()
 	var cost_amount: int = maxi(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
 	if player.inventory.get_item_count(material) < cost_amount:
 		return
@@ -393,3 +391,10 @@ func _on_upgrade_pressed() -> void:
 		return
 	if facility.try_upgrade(player):
 		_refresh()
+
+
+func _get_total_repair_cost_multiplier() -> float:
+	var facility_multiplier: float = facility.get_repair_cost_multiplier() \
+		if facility != null and facility.has_method("get_repair_cost_multiplier") else 1.0
+	var npc_multiplier: float = NpcManager.get_repair_cost_multiplier() if NpcManager != null else 1.0
+	return facility_multiplier * npc_multiplier

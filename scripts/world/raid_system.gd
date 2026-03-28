@@ -23,6 +23,7 @@ var raid_countdown_remaining: float = 0.0
 var raid_warning_active: bool = false
 var raid_active: bool = false
 var raid_enemies: Array = []
+var _guard_attack_cooldown_left: float = 0.0
 
 
 func _ready() -> void:
@@ -30,6 +31,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if raid_active:
+		_process_guard_support(delta)
 	if not raid_warning_active:
 		return
 	if raid_active or player == null:
@@ -79,6 +82,7 @@ func _start_raid() -> void:
 		return
 	_cancel_countdown()
 	raid_active = true
+	_guard_attack_cooldown_left = 0.4
 	raid_started.emit()
 	if core.has_method("set_raid_active"):
 		core.set_raid_active(true)
@@ -94,6 +98,7 @@ func _spawn_raid_enemies(core) -> void:
 	var scaling_steps := int(max(deepest_floor_reached - 1, 0) / FLOOR_SCALE_STEP)
 	var enemy_count: int = randi_range(BASE_MIN_ENEMIES, BASE_MAX_ENEMIES) + scaling_steps * EXTRA_ENEMIES_PER_STEP
 	var hp_multiplier := 1.0 + float(scaling_steps) * HP_SCALE_PER_STEP
+	var guard_damage_reduction: int = NpcManager.get_guard_damage_reduction() if NpcManager != null else 0
 	var enemy_root: Node2D = Node2D.new()
 	enemy_root.name = "RaidEnemyRoot"
 	get_parent().add_child(enemy_root)
@@ -103,6 +108,7 @@ func _spawn_raid_enemies(core) -> void:
 		enemy_root.add_child(enemy)
 		enemy.global_position = _get_spawn_position(viewport_size, core.global_position)
 		enemy.setup_raid(player, core, building_system, deepest_floor_reached, hp_multiplier, enemy_root)
+		enemy.damage = maxi(int(enemy.damage) - guard_damage_reduction, 1)
 		enemy.died.connect(_on_raid_enemy_died.bind(enemy))
 		raid_enemies.append(enemy)
 
@@ -127,6 +133,7 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	if not raid_enemies.is_empty():
 		return
 	raid_active = false
+	_guard_attack_cooldown_left = 0.0
 	var core = building_system.get_home_core() if building_system != null else null
 	if core != null and core.has_method("set_raid_active"):
 		core.set_raid_active(false)
@@ -138,6 +145,7 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 
 func _on_core_destroyed() -> void:
 	raid_active = false
+	_guard_attack_cooldown_left = 0.0
 	banner_requested.emit(LocaleManager.L("raid_failed"), Color(1.0, 0.3, 0.3, 1.0), 3.0)
 	for enemy in raid_enemies:
 		if is_instance_valid(enemy):
@@ -174,3 +182,40 @@ func _clear_enemy_root() -> void:
 	var enemy_root = get_parent().get_node_or_null("RaidEnemyRoot")
 	if enemy_root != null:
 		enemy_root.queue_free()
+
+
+func _process_guard_support(delta: float) -> void:
+	var guard_damage: int = NpcManager.get_guard_damage_per_volley() if NpcManager != null else 0
+	if guard_damage <= 0:
+		return
+	_clear_enemy_refs()
+	if raid_enemies.is_empty():
+		return
+	_guard_attack_cooldown_left = max(_guard_attack_cooldown_left - delta, 0.0)
+	if _guard_attack_cooldown_left > 0.0:
+		return
+	var target_enemy: Node2D = _get_guard_target()
+	if target_enemy == null:
+		return
+	target_enemy.take_damage(guard_damage, Vector2.ZERO)
+	_guard_attack_cooldown_left = NpcManager.get_guard_attack_interval()
+
+
+func _get_guard_target() -> Node2D:
+	var core = building_system.get_home_core() if building_system != null else null
+	var best_target: Node2D = null
+	var best_distance: float = INF
+	for enemy_variant: Variant in raid_enemies:
+		if not enemy_variant is Node2D:
+			continue
+		var enemy: Node2D = enemy_variant as Node2D
+		if not is_instance_valid(enemy):
+			continue
+		var reference_position: Vector2 = enemy.global_position
+		if core != null and is_instance_valid(core):
+			reference_position = core.global_position
+		var distance: float = enemy.global_position.distance_squared_to(reference_position)
+		if distance < best_distance:
+			best_distance = distance
+			best_target = enemy
+	return best_target

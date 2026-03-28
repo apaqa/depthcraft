@@ -12,6 +12,14 @@ const SHOP_ITEMS = [
 	{"id": "iron_ore", "quantity": 5, "price": 15, "label_key": "shop_iron_ore"},
 	{"id": "torch", "quantity": 3, "price": 6, "label_key": "shop_torch"},
 ]
+const BASE_STOCKS: Dictionary = {
+	"bandage": 3,
+	"bread": 2,
+	"seed": 2,
+	"iron_ore": 2,
+	"torch": 2,
+	"mystery_equipment": 1,
+}
 const EXCHANGE_RECIPES = [
 	{"from_id": "copper", "from_amount": 10, "to_id": "silver", "to_amount": 1},
 	{"from_id": "silver", "from_amount": 10, "to_id": "gold", "to_amount": 1},
@@ -25,6 +33,10 @@ var _current_player: Variant = null
 var _gold_label: Label = null
 var _message_label: Label = null
 var _exchange_buttons: Array[Dictionary] = []
+var _shop_buttons: Array[Dictionary] = []
+var _remaining_stock: Dictionary = {}
+var _stock_day: int = -1
+var _stock_bonus_applied: int = 0
 
 
 func get_interaction_prompt() -> String:
@@ -51,6 +63,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _open_shop() -> void:
+	_initialize_shop_stock()
 	_shop_canvas = CanvasLayer.new()
 	_shop_canvas.layer = 10
 	add_child(_shop_canvas)
@@ -131,15 +144,27 @@ func _open_shop() -> void:
 	shop_list.add_theme_constant_override("separation", 6)
 	shop_scroll.add_child(shop_list)
 
+	_shop_buttons.clear()
 	for item: Dictionary in SHOP_ITEMS:
+		var item_id: String = str(item.get("id", ""))
+		var item_quantity: int = int(item.get("quantity", 1))
+		var adjusted_price: int = _get_adjusted_price(int(item.get("price", 0)))
 		_add_shop_row(
 			shop_list,
+			item_id,
 			LocaleManager.L(str(item["label_key"])),
-			int(item["price"]),
-			_on_buy_item.bind(str(item["id"]), int(item["quantity"]), int(item["price"])),
+			adjusted_price,
+			_on_buy_item.bind(item_id, item_quantity, adjusted_price),
 			ITEM_DATABASE.get_item_icon(str(item["id"]))
 		)
-	_add_shop_row(shop_list, LocaleManager.L("mystery_equipment"), 50, _on_buy_equipment, ITEM_DATABASE.get_default_equipment_icon("weapon"))
+	_add_shop_row(
+		shop_list,
+		"mystery_equipment",
+		LocaleManager.L("mystery_equipment"),
+		_get_adjusted_price(50),
+		_on_buy_equipment,
+		ITEM_DATABASE.get_default_equipment_icon("weapon")
+	)
 
 	columns.add_child(VSeparator.new())
 
@@ -198,13 +223,20 @@ func _open_shop() -> void:
 	AudioManager.play_sfx("ui_open")
 
 
-func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
+func refresh_inventory_state() -> void:
+	if _shop_canvas == null:
+		return
+	_initialize_shop_stock()
+	_refresh_shop_state()
+
+
+func _add_shop_row(parent: Control, stock_key: String, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	if icon != null:
 		row.add_child(_make_icon_rect(icon))
 	var lbl: Label = Label.new()
-	lbl.text = "%s  %s" % [label_text, ITEM_DATABASE.format_currency(price)]
+	lbl.text = _format_shop_row_text(label_text, price, stock_key)
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var btn: Button = Button.new()
@@ -212,6 +244,13 @@ func _add_shop_row(parent: Control, label_text: String, price: int, callback: Ca
 	btn.pressed.connect(callback)
 	row.add_child(btn)
 	parent.add_child(row)
+	_shop_buttons.append({
+		"button": btn,
+		"label": lbl,
+		"stock_key": stock_key,
+		"label_text": label_text,
+		"price": price,
+	})
 
 
 func _add_exchange_row(parent: Control, from_id: String, from_amount: int, to_id: String, to_amount: int) -> void:
@@ -250,12 +289,17 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	var inv: Variant = _current_player.get("inventory")
 	if inv == null:
 		return
+	if not _has_stock(item_id):
+		_message_label.text = LocaleManager.L("sold_out")
+		_refresh_shop_state()
+		return
 	var payment: Dictionary = inv.get_exact_currency_payment(price)
 	if payment.is_empty():
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
 	if inv.pay_copper(price):
 		if inv.add_item(item_id, quantity):
+			_consume_stock(item_id)
 			_message_label.text = ""
 			_refresh_shop_state()
 		else:
@@ -272,13 +316,19 @@ func _on_buy_equipment() -> void:
 	var inv: Variant = _current_player.get("inventory")
 	if inv == null:
 		return
-	var payment: Dictionary = inv.get_exact_currency_payment(50)
+	if not _has_stock("mystery_equipment"):
+		_message_label.text = LocaleManager.L("sold_out")
+		_refresh_shop_state()
+		return
+	var equipment_price: int = _get_adjusted_price(50)
+	var payment: Dictionary = inv.get_exact_currency_payment(equipment_price)
 	if payment.is_empty():
 		_message_label.text = LocaleManager.L("insufficient_gold")
 		return
-	if inv.pay_copper(50):
+	if inv.pay_copper(equipment_price):
 		var equip: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment(randi_range(1, 5))
 		if inv.add_stack(equip):
+			_consume_stock("mystery_equipment")
 			_message_label.text = ""
 			_refresh_shop_state()
 		else:
@@ -319,6 +369,7 @@ func _can_exchange(inv: Variant, from_id: String, from_amount: int) -> bool:
 func _refresh_shop_state() -> void:
 	_update_gold_label()
 	_update_exchange_buttons()
+	_update_shop_buttons()
 
 
 func _update_exchange_buttons() -> void:
@@ -332,6 +383,21 @@ func _update_exchange_buttons() -> void:
 		var from_id: String = str(entry.get("from_id", ""))
 		var from_amount: int = int(entry.get("from_amount", 0))
 		button.disabled = not _can_exchange(inv, from_id, from_amount)
+
+
+func _update_shop_buttons() -> void:
+	for entry: Dictionary in _shop_buttons:
+		var button: Button = entry.get("button", null) as Button
+		var label: Label = entry.get("label", null) as Label
+		var stock_key: String = str(entry.get("stock_key", ""))
+		var label_text: String = str(entry.get("label_text", ""))
+		var price: int = int(entry.get("price", 0))
+		var in_stock: bool = _has_stock(stock_key)
+		if button != null:
+			button.disabled = not in_stock
+			button.text = LocaleManager.L("buy") if in_stock else LocaleManager.L("sold_out")
+		if label != null:
+			label.text = _format_shop_row_text(label_text, price, stock_key)
 
 
 func _update_gold_label() -> void:
@@ -374,6 +440,7 @@ func _close_shop() -> void:
 		_shop_canvas = null
 	_shop_root = null
 	_exchange_buttons.clear()
+	_shop_buttons.clear()
 	get_tree().paused = false
 	if _current_player != null:
 		if _current_player.has_method("set_ui_blocked"):
@@ -381,3 +448,42 @@ func _close_shop() -> void:
 		if "in_menu" in _current_player:
 			_current_player.in_menu = false
 	_current_player = null
+
+
+func _initialize_shop_stock() -> void:
+	var stock_bonus: int = NpcManager.get_merchant_stock_bonus() if NpcManager != null else 0
+	var target_day: int = NpcManager.current_day if NpcManager != null else 0
+	if _stock_day == target_day and not _remaining_stock.is_empty():
+		if stock_bonus > _stock_bonus_applied:
+			var stock_delta: int = stock_bonus - _stock_bonus_applied
+			for stock_key_variant: Variant in BASE_STOCKS.keys():
+				var stock_key: String = str(stock_key_variant)
+				_remaining_stock[stock_key] = int(_remaining_stock.get(stock_key, 0)) + stock_delta
+			_stock_bonus_applied = stock_bonus
+		return
+	_remaining_stock.clear()
+	for stock_key_variant: Variant in BASE_STOCKS.keys():
+		var stock_key: String = str(stock_key_variant)
+		_remaining_stock[stock_key] = int(BASE_STOCKS.get(stock_key_variant, 0)) + stock_bonus
+	_stock_day = target_day
+	_stock_bonus_applied = stock_bonus
+
+
+func _get_adjusted_price(base_price: int) -> int:
+	var price_multiplier: float = NpcManager.get_merchant_price_multiplier() if NpcManager != null else 1.0
+	return maxi(int(floor(float(base_price) * price_multiplier)), 1)
+
+
+func _has_stock(stock_key: String) -> bool:
+	return int(_remaining_stock.get(stock_key, 0)) > 0
+
+
+func _consume_stock(stock_key: String) -> void:
+	_remaining_stock[stock_key] = maxi(int(_remaining_stock.get(stock_key, 0)) - 1, 0)
+
+
+func _format_shop_row_text(label_text: String, price: int, stock_key: String) -> String:
+	var stock_left: int = int(_remaining_stock.get(stock_key, 0))
+	if str(LocaleManager.get_locale()).begins_with("zh"):
+		return "%s  %s  [剩餘 %d]" % [label_text, ITEM_DATABASE.format_currency(price), stock_left]
+	return "%s  %s  [%d left]" % [label_text, ITEM_DATABASE.format_currency(price), stock_left]

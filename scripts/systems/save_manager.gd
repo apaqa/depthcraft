@@ -36,6 +36,7 @@ func save_game(slot: int) -> void:
 		"currency": _serialize_currency(player),
 		"buildings": _serialize_buildings(player),
 		"skills": _serialize_skills(player),
+		"npcs": _serialize_npcs(),
 		"progress": _serialize_progress(main_node),
 	}
 	_write_json(SAVE_SLOT_TEMPLATE % slot, payload)
@@ -70,8 +71,10 @@ func load_game(slot: int) -> void:
 	var currency_data: Dictionary = data.get("currency", {}) as Dictionary
 	var building_data: Dictionary = data.get("buildings", {}) as Dictionary
 	var skill_data: Dictionary = data.get("skills", {}) as Dictionary
+	var npc_data: Dictionary = data.get("npcs", {}) as Dictionary
 	var progress_data: Dictionary = data.get("progress", {}) as Dictionary
 	_synchronize_legacy_player_state(data)
+	_restore_npcs(npc_data)
 	_restore_player(player_data, player)
 	_restore_inventory(inventory_data, player)
 	_restore_currency(currency_data, player)
@@ -339,6 +342,16 @@ func _serialize_skills(player: Node) -> Dictionary:
 	return {"equipped_skill_ids": equipped_skill_ids}
 
 
+func _serialize_npcs() -> Dictionary:
+	var npc_manager: Node = get_node_or_null("/root/NpcManager")
+	if npc_manager == null or not npc_manager.has_method("serialize_state"):
+		return {"recruited_npcs": []}
+	var npc_state: Variant = npc_manager.call("serialize_state")
+	if typeof(npc_state) != TYPE_DICTIONARY:
+		return {"recruited_npcs": []}
+	return npc_state as Dictionary
+
+
 func _serialize_progress(main_node: Node) -> Dictionary:
 	if main_node == null:
 		return {
@@ -572,6 +585,13 @@ func _restore_skills(data: Dictionary, player: Node) -> void:
 		skill_system.call("set_equipped_skill_ids", equipped_skill_ids)
 
 
+func _restore_npcs(data: Dictionary) -> void:
+	var npc_manager: Node = get_node_or_null("/root/NpcManager")
+	if npc_manager == null or not npc_manager.has_method("restore_state"):
+		return
+	npc_manager.call("restore_state", data)
+
+
 func _restore_progress(data: Dictionary, main_node: Node) -> void:
 	if data.is_empty() or main_node == null:
 		return
@@ -625,6 +645,8 @@ func _refresh_loaded_scene(main_node: Node) -> void:
 	var current_day: int = int(main_node.get("current_day"))
 	var deepest_floor: int = int(main_node.get("deepest_dungeon_floor_reached"))
 	QuestManager.set_day(current_day)
+	if NpcManager != null:
+		NpcManager.set_current_day(current_day)
 	var hud_value: Variant = main_node.get("hud")
 	if hud_value is Node:
 		var hud_node: Node = hud_value as Node
