@@ -93,13 +93,16 @@ func record_player_died() -> void:
 func record_enemy_kill(kind: String) -> void:
 	increment_stat("enemies_killed")
 	check_achievement("first_kill")
+	check_achievement("kill_1000_enemies")
 	match kind:
 		"elite":
 			increment_stat("elite_kills")
 			check_achievement("first_elite_kill")
+			check_achievement("kill_100_elites")
 		"boss":
 			increment_stat("boss_kills")
 			check_achievement("first_boss_kill")
+			check_achievement("kill_10_bosses")
 
 
 func record_floor_reached(floor_number: int) -> void:
@@ -111,6 +114,7 @@ func record_floor_reached(floor_number: int) -> void:
 	check_achievement("reach_floor_20")
 	check_achievement("reach_floor_30")
 	check_achievement("survive_10_floors")
+	check_achievement("survive_30_floors")
 
 
 func record_equipment_state(inventory, equipment_system) -> void:
@@ -156,6 +160,20 @@ func record_currency_gain(item_id: String, amount: int) -> void:
 	check_achievement("earn_10000_copper")
 
 
+func record_victory(current_cycle: int) -> void:
+	increment_stat("total_victories")
+	set_stat("current_cycle", current_cycle)
+	check_achievement("first_victory")
+	check_achievement("victory_3")
+	check_achievement("victory_10")
+	check_achievement("cycle_2")
+
+
+func record_forge() -> void:
+	increment_stat("forge_count")
+	check_achievement("forge_10")
+
+
 func record_building_placed() -> void:
 	increment_stat("buildings_built")
 	check_achievement("build_10")
@@ -169,6 +187,7 @@ func record_recipe_crafted(recipe: Dictionary) -> void:
 	if str(recipe.get("station", "")) == "cooking" or str(recipe.get("category", "")) == "Cooking":
 		increment_stat("cooking_count")
 		check_achievement("cook_10")
+		check_achievement("cook_50")
 
 
 func record_talent_unlocked(current_total: int) -> void:
@@ -235,4 +254,15 @@ func _build_achievements() -> void:
 		"talent_45": {"order": 18, "name": "\u5929\u8d4b\u5927\u5e08", "description": "\u89e3\u9501 45 \u4e2a\u5929\u8d4b\u3002", "reward": "\u5956\u52b1\uff1a\u5929\u8d4b\u5927\u5e08\u5fbd\u5370", "condition_type": "stat_at_least", "stat": "talents_unlocked", "target": 45},
 		"survive_10_floors": {"order": 19, "name": "\u751f\u5b58\u4e13\u5bb6", "description": "\u8fde\u7eed\u901a\u8fc7 10 \u5c42\u4e0d\u6b7b\u4ea1\u3002", "reward": "\u5956\u52b1\uff1a\u751f\u5b58\u4e13\u5bb6\u79f0\u53f7", "condition_type": "stat_at_least", "stat": "survival_floors_without_death", "target": 10},
 		"full_equipment_loadout": {"order": 20, "name": "\u5168\u88c5\u6ee1\u914d", "description": "7 \u4e2a\u88c5\u5907\u680f\u5168\u90e8\u88c5\u5907\u3002", "reward": "\u5956\u52b1\uff1a\u6ee1\u914d\u6218\u58eb\u5fbd\u7ae0", "condition_type": "equipment_slots_filled", "target": 7},
+		# ─── 30-floor clear & cycle achievements ──────────────────────────────
+		"first_victory": {"order": 21, "name": "初次通關", "description": "完成第一次 30 層通關。", "reward": "解鎖輪迴系統", "condition_type": "stat_at_least", "stat": "total_victories", "target": 1},
+		"victory_3": {"order": 22, "name": "三度傳說", "description": "完成 3 次 30 層通關。", "reward": "解鎖輪迴稱號", "condition_type": "stat_at_least", "stat": "total_victories", "target": 3},
+		"victory_10": {"order": 23, "name": "永恆征服者", "description": "完成 10 次 30 層通關。", "reward": "永恆戰士稱號", "condition_type": "stat_at_least", "stat": "total_victories", "target": 10},
+		"cycle_2": {"order": 24, "name": "第二輪迴", "description": "進入輪迴 2。", "reward": "前綴怪物系統解鎖", "condition_type": "stat_at_least", "stat": "current_cycle", "target": 2},
+		"kill_100_elites": {"order": 25, "name": "精英終結者", "description": "累計擊殺 100 個精英怪。", "reward": "精英獵手稱號", "condition_type": "stat_at_least", "stat": "elite_kills", "target": 100},
+		"kill_10_bosses": {"order": 26, "name": "弑王者", "description": "累計擊殺 10 個 Boss。", "reward": "王者殺手稱號", "condition_type": "stat_at_least", "stat": "boss_kills", "target": 10},
+		"kill_1000_enemies": {"order": 27, "name": "戰場屠夫", "description": "累計擊殺 1000 個敵人。", "reward": "血染者稱號", "condition_type": "stat_at_least", "stat": "enemies_killed", "target": 1000},
+		"survive_30_floors": {"order": 28, "name": "不死傳說", "description": "不死亡通關 30 層。", "reward": "不死稱號 + 特殊祝福", "condition_type": "stat_at_least", "stat": "survival_floors_without_death", "target": 30},
+		"forge_10": {"order": 29, "name": "鍛造狂人", "description": "成功鍛造 10 次裝備。", "reward": "鍛造大師稱號", "condition_type": "stat_at_least", "stat": "forge_count", "target": 10},
+		"cook_50": {"order": 30, "name": "料理傳說", "description": "烹飪 50 次。", "reward": "美食達人稱號", "condition_type": "stat_at_least", "stat": "cooking_count", "target": 50},
 	}

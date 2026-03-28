@@ -345,6 +345,10 @@ func _on_victory_requested() -> void:
 		"elapsed_seconds": elapsed,
 		"achievements_earned": earned_achievements,
 	}
+	if achievement_manager != null and achievement_manager.has_method("record_victory"):
+		var cycle_manager: Node = get_node_or_null("/root/CycleManager")
+		var current_cycle: int = int(cycle_manager.get("current_cycle")) if cycle_manager != null else 1
+		achievement_manager.record_victory(current_cycle)
 	if hud != null and hud.has_method("show_victory"):
 		hud.show_victory(victory_stats)
 	elif hud != null:

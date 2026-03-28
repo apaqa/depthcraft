@@ -153,6 +153,9 @@ func forge_item(slot_name: String, player_inventory) -> bool:
 	item["stats"] = stats
 	_equipped[slot_name] = item
 	equipment_changed.emit()
+	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")
+	if achievement_manager != null and achievement_manager.has_method("record_forge"):
+		achievement_manager.record_forge()
 	return true
 
 
