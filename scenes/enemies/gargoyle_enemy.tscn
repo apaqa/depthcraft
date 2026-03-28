@@ -32,9 +32,9 @@ radius = 22.0
 collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_gargoyle")
-max_hp = 48
-damage = 14
-speed = 28.0
+max_hp = 60
+damage = 18
+speed = 74.0
 enemy_kind = "gargoyle"
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]

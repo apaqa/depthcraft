@@ -25,7 +25,7 @@ const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
 const SHIELD_ORC_SCENE := preload("res://scenes/enemies/shield_orc_enemy.tscn")
 const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
 const SLIME_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/slime_enemy.tscn")
-const SHADOW_ASSASSIN_SCENE: PackedScene = preload("res://scenes/enemies/shadow_assassin_enemy.tscn")
+const SHADOW_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/shadow_enemy.tscn")
 const GARGOYLE_SCENE: PackedScene = preload("res://scenes/enemies/gargoyle_enemy.tscn")
 const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
 const BOSS_ENEMY_SCENE := preload("res://scenes/enemies/boss_enemy.tscn")
@@ -259,8 +259,8 @@ func _spawn_enemies() -> void:
 	if player == null or not is_instance_valid(player):
 		return
 
-	var rng := _create_rng(41)
-	var config := get_floor_spawn_config(current_floor, rng)
+	var rng: RandomNumberGenerator = _create_rng(41)
+	var config: Dictionary = get_floor_spawn_config(current_floor, rng)
 	var rooms: Array = floor_data.get("rooms", [])
 	var room_types: Array = floor_data.get("room_types", [])
 	var eligible_rooms: Array[int] = []
@@ -268,14 +268,14 @@ func _spawn_enemies() -> void:
 		if room_index == int(floor_data.get("spawn_room_index", 0)) or room_index == int(floor_data.get("exit_room_index", 0)):
 			continue
 		var room_type: String = str(room_types[room_index]) if room_index < room_types.size() else "normal"
-		var room_feature := _get_room_feature(room_index)
+		var room_feature: Dictionary = _get_room_feature(room_index)
 		if bool(room_feature.get("safe", false)) or bool(room_feature.get("challenge", false)) or bool(room_feature.get("boss_merchant", false)) or room_type == "secret_merchant":
 			continue
 		eligible_rooms.append(room_index)
 		var room: Rect2i = rooms[room_index]
 		if room_type == "empty":
 			continue
-		var enemy_count := rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"]))
+		var enemy_count: int = rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"]))
 		if room_type == "treasure":
 			enemy_count = max(1, enemy_count - 3)
 		elif room_type == "elite":
@@ -284,9 +284,11 @@ func _spawn_enemies() -> void:
 			var enemy_scene: PackedScene = _pick_enemy_scene(current_floor, rng)
 			if room_type == "elite":
 				if current_floor >= 21:
-					enemy_scene = GARGOYLE_SCENE if rng.randf() <= 0.65 else SHADOW_ASSASSIN_SCENE
+					enemy_scene = GARGOYLE_SCENE if rng.randf() <= 0.7 else SHIELD_ORC_SCENE
+				elif current_floor >= 11:
+					enemy_scene = SHADOW_ENEMY_SCENE if rng.randf() <= 0.65 else RANGED_ENEMY_SCENE
 				else:
-					enemy_scene = BAT_SWARM_SCENE if rng.randf() <= 0.4 else SHIELD_ORC_SCENE
+					enemy_scene = SLIME_ENEMY_SCENE if rng.randf() <= 0.6 else BAT_SWARM_SCENE
 			_spawn_enemy_instance(enemy_scene, room, rng)
 
 	var elite_count: int = min(int(config["elite_count"]), eligible_rooms.size())
@@ -301,7 +303,7 @@ func _spawn_enemies() -> void:
 		enemy_root.add_child(elite)
 
 	if _is_boss_floor():
-		var boss_room_index := int(floor_data.get("boss_room_index", floor_data.get("exit_room_index", 0)))
+		var boss_room_index: int = int(floor_data.get("boss_room_index", floor_data.get("exit_room_index", 0)))
 		if boss_room_index >= 0 and boss_room_index < rooms.size():
 			_spawn_boss_enemy(rooms[boss_room_index], rng)
 			_spawn_boss_locked_chest(rooms[boss_room_index], rng)
@@ -467,67 +469,43 @@ func get_floor_spawn_config(floor_number: int, rng: RandomNumberGenerator = null
 func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedScene:
 	var roll: float = _rng_randf(rng)
 	if floor_number >= 31:
-		# All types fully mixed with large number scaling
-		if roll <= 0.14:
-			return MELEE_ENEMY_SCENE
-		if roll <= 0.28:
-			return SLIME_ENEMY_SCENE
-		if roll <= 0.42:
+		if roll <= 0.16:
 			return RANGED_ENEMY_SCENE
-		if roll <= 0.56:
+		if roll <= 0.34:
 			return SHIELD_ORC_SCENE
-		if roll <= 0.70:
+		if roll <= 0.54:
 			return BAT_SWARM_SCENE
-		if roll <= 0.85:
-			return SHADOW_ASSASSIN_SCENE
+		if roll <= 0.76:
+			return GARGOYLE_SCENE
 		return GARGOYLE_SCENE
 	if floor_number >= 21:
-		# All mixed, rare goblin
-		if roll <= 0.08:
-			return MELEE_ENEMY_SCENE
 		if roll <= 0.22:
-			return SLIME_ENEMY_SCENE
-		if roll <= 0.38:
 			return RANGED_ENEMY_SCENE
-		if roll <= 0.55:
+		if roll <= 0.48:
 			return SHIELD_ORC_SCENE
-		if roll <= 0.68:
+		if roll <= 0.7:
 			return BAT_SWARM_SCENE
-		if roll <= 0.83:
-			return SHADOW_ASSASSIN_SCENE
 		return GARGOYLE_SCENE
-	if floor_number >= 16:
-		# Skeleton mage and orc dominant
-		if roll <= 0.40:
-			return RANGED_ENEMY_SCENE
-		if roll <= 0.72:
-			return SHIELD_ORC_SCENE
-		if roll <= 0.88:
-			return SHADOW_ASSASSIN_SCENE
-		return BAT_SWARM_SCENE
 	if floor_number >= 11:
-		# No goblin; shadow assassin and slime introduced
-		if roll <= 0.30:
+		if roll <= 0.32:
 			return RANGED_ENEMY_SCENE
-		if roll <= 0.56:
+		if roll <= 0.58:
 			return SHIELD_ORC_SCENE
-		if roll <= 0.78:
-			return SHADOW_ASSASSIN_SCENE
-		if roll <= 0.92:
-			return SLIME_ENEMY_SCENE
-		return BAT_SWARM_SCENE
+		if roll <= 0.8:
+			return BAT_SWARM_SCENE
+		return SHADOW_ENEMY_SCENE
 	if floor_number >= 6:
-		# Goblin reduced; skeleton mage and orc join
-		if roll <= 0.22:
+		if roll <= 0.26:
 			return MELEE_ENEMY_SCENE
-		if roll <= 0.52:
-			return RANGED_ENEMY_SCENE
+		if roll <= 0.5:
+			return SLIME_ENEMY_SCENE
 		if roll <= 0.74:
-			return SHIELD_ORC_SCENE
+			return RANGED_ENEMY_SCENE
 		return BAT_SWARM_SCENE
-	# Floor 1-5: only goblin and bat
-	if roll <= 0.65:
+	if roll <= 0.42:
 		return MELEE_ENEMY_SCENE
+	if roll <= 0.74:
+		return SLIME_ENEMY_SCENE
 	return BAT_SWARM_SCENE
 
 
