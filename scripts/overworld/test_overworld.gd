@@ -15,6 +15,7 @@ const IRON_SCENE = preload("res://scenes/world/iron_node.tscn")
 const GRASS_SCENE = preload("res://scenes/world/grass_node.tscn")
 const MERCHANT_SCENE = preload("res://scenes/world/merchant.tscn")
 const VILLAGE_NPC_SCENE = preload("res://scenes/world/village_npc.tscn")
+const OVERWORLD_ALTAR_SCRIPT: Script = preload("res://scripts/world/overworld_altar.gd")
 const WANDERER_COUNT: int = 4
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
@@ -44,6 +45,7 @@ func _ready() -> void:
 	build_ground()
 	_spawn_resource_layout()
 	_spawn_merchant()
+	_spawn_altars()
 	_ensure_npc_containers()
 	_connect_npc_manager()
 	_refresh_npc_population()
@@ -193,6 +195,40 @@ func _spawn_merchant() -> void:
 	merchant.name = "Merchant"
 	merchant.position = _generator.get_spawn_pixel() + Vector2(48, 0)
 	add_child(merchant)
+
+
+func _spawn_altars() -> void:
+	# Remove existing altars
+	for child: Node in get_children():
+		if child.name.begins_with("OverworldAltar_"):
+			child.queue_free()
+	var spawn_px: Vector2 = _generator.get_spawn_pixel()
+	var entrance_px: Vector2 = _generator.get_dungeon_entrance_pixel()
+	var safe_dist: float = float((WorldGenerator.SAFE_RADIUS + 3) * WorldGenerator.TILE_SIZE)
+	var entrance_clear: float = float(4 * WorldGenerator.TILE_SIZE)
+	var map_size: Vector2 = Vector2(float(WorldGenerator.MAP_SIZE.x), float(WorldGenerator.MAP_SIZE.y)) * float(WorldGenerator.TILE_SIZE)
+	var altar_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	altar_rng.seed = generation_seed ^ 0xA17A4
+	var placed: int = 0
+	var attempts: int = 0
+	while placed < 4 and attempts < 200:
+		attempts += 1
+		var px: float = altar_rng.randf_range(float(WorldGenerator.TILE_SIZE) * 4.0, map_size.x - float(WorldGenerator.TILE_SIZE) * 4.0)
+		var py: float = altar_rng.randf_range(float(WorldGenerator.TILE_SIZE) * 4.0, map_size.y - float(WorldGenerator.TILE_SIZE) * 4.0)
+		var pos: Vector2 = Vector2(px, py)
+		if pos.distance_to(spawn_px) < safe_dist:
+			continue
+		if pos.distance_to(entrance_px) < entrance_clear:
+			continue
+		var tile: Vector2i = Vector2i(int(pos.x) / WorldGenerator.TILE_SIZE, int(pos.y) / WorldGenerator.TILE_SIZE)
+		if _generator.get_tile_type(tile) == "border":
+			continue
+		var altar: Area2D = Area2D.new()
+		altar.set_script(OVERWORLD_ALTAR_SCRIPT)
+		altar.name = "OverworldAltar_%d" % placed
+		altar.position = pos
+		add_child(altar)
+		placed += 1
 
 
 func set_total_dungeon_runs(run_count: int) -> void:
