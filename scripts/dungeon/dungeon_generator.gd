@@ -9,6 +9,8 @@ const EVENT_ROOM_CHANCE := 0.07
 const CHALLENGE_ROOM_CHANCE := 0.07
 const PUZZLE_ROOM_CHANCE := 0.07
 const SAFE_ROOM_CHANCE := 0.07
+const SECRET_MERCHANT_ROOM_CHANCE: float = 0.07
+const TRAP_CORRIDOR_CHANCE: float = 0.18
 
 
 func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
@@ -55,19 +57,23 @@ func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dic
 	var boss_room_index := exit_room_index if is_boss_floor else -1
 	var boss_merchant_room_index := _get_boss_merchant_room_index(rooms.size(), exit_room_index, is_boss_floor)
 	var elite_room_index := _pick_elite_room_index(rooms.size(), spawn_room_index, exit_room_index, boss_merchant_room_index, floor_number, rng)
+	var secret_merchant_room_index: int = _pick_secret_merchant_room_index(rooms.size(), spawn_room_index, exit_room_index, boss_merchant_room_index, elite_room_index, is_boss_floor, rng)
 	var spawn_point := _tile_to_world(_room_center(rooms[spawn_room_index]))
 	var exit_point := _tile_to_world(_room_center(rooms[exit_room_index]))
-	var room_types := _assign_room_types(rooms.size(), spawn_room_index, exit_room_index, elite_room_index, boss_merchant_room_index, floor_number, is_boss_floor, rng)
+	var room_types := _assign_room_types(rooms.size(), spawn_room_index, exit_room_index, elite_room_index, boss_merchant_room_index, secret_merchant_room_index, floor_number, is_boss_floor, rng)
 	var room_features := _assign_room_features(room_types, spawn_room_index, exit_room_index, boss_merchant_room_index, rng)
+	var corridor_features: Array[Dictionary] = _assign_corridor_features(corridors, floor_number, rng)
 
 	return {
 		"rooms": rooms,
 		"corridors": corridors,
+		"corridor_features": corridor_features,
 		"spawn_point": spawn_point,
 		"exit_point": exit_point,
 		"elite_room_index": elite_room_index,
 		"boss_room_index": boss_room_index,
 		"boss_merchant_room_index": boss_merchant_room_index,
+		"secret_merchant_room_index": secret_merchant_room_index,
 		"is_boss_floor": is_boss_floor,
 		"room_types": room_types,
 		"room_features": room_features,
@@ -164,7 +170,22 @@ func _pick_elite_room_index(room_count: int, spawn_room_index: int, exit_room_in
 	return candidates[_rng_range(rng, 0, candidates.size() - 1)]
 
 
-func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index: int, elite_room_index: int, boss_merchant_room_index: int, floor_number: int, is_boss_floor: bool, rng: RandomNumberGenerator = null) -> Array[String]:
+func _pick_secret_merchant_room_index(room_count: int, spawn_room_index: int, exit_room_index: int, boss_merchant_room_index: int, elite_room_index: int, is_boss_floor: bool, rng: RandomNumberGenerator = null) -> int:
+	if is_boss_floor or _rng_randf(rng) > SECRET_MERCHANT_ROOM_CHANCE:
+		return -1
+	var candidates: Array[int] = []
+	for room_index: int in range(room_count):
+		if room_index == spawn_room_index or room_index == exit_room_index:
+			continue
+		if room_index == boss_merchant_room_index or room_index == elite_room_index:
+			continue
+		candidates.append(room_index)
+	if candidates.is_empty():
+		return -1
+	return candidates[_rng_range(rng, 0, candidates.size() - 1)]
+
+
+func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index: int, elite_room_index: int, boss_merchant_room_index: int, secret_merchant_room_index: int, floor_number: int, is_boss_floor: bool, rng: RandomNumberGenerator = null) -> Array[String]:
 	var room_types: Array[String] = []
 	for room_index in range(room_count):
 		if room_index == spawn_room_index:
@@ -175,6 +196,9 @@ func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index:
 			continue
 		if room_index == boss_merchant_room_index:
 			room_types.append("normal")
+			continue
+		if room_index == secret_merchant_room_index:
+			room_types.append("secret_merchant")
 			continue
 		if room_index == elite_room_index and floor_number >= 4:
 			room_types.append("elite")
@@ -223,4 +247,19 @@ func _assign_room_features(room_types: Array[String], spawn_room_index: int, exi
 			features["safe"] = has_safe
 		room_features.append(features)
 	return room_features
+
+
+func _assign_corridor_features(corridors: Array, floor_number: int, rng: RandomNumberGenerator = null) -> Array[Dictionary]:
+	var corridor_features: Array[Dictionary] = []
+	for corridor_index: int in range(corridors.size()):
+		var corridor: Dictionary = corridors[corridor_index] as Dictionary
+		var from_tile: Vector2i = corridor.get("from", Vector2i.ZERO)
+		var to_tile: Vector2i = corridor.get("to", Vector2i.ZERO)
+		var is_trap_corridor: bool = floor_number >= 6 and _rng_randf(rng) <= TRAP_CORRIDOR_CHANCE
+		corridor_features.append({
+			"trap": is_trap_corridor,
+			"from": from_tile,
+			"to": to_tile,
+		})
+	return corridor_features
 

@@ -11,6 +11,8 @@ var direction: Vector2 = Vector2.RIGHT
 
 
 func _ready() -> void:
+	collision_layer = 0
+	collision_mask = 2
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
 	if not area_entered.is_connected(_on_area_entered):
