@@ -8,6 +8,8 @@ signal raid_countdown_changed(message: String, color: Color, visible: bool)
 const SOURCE_GRASS = 1
 const SOURCE_GRASS_ALT = 1
 const SOURCE_ROAD = 3
+const SOURCE_WATER = 5
+const SOURCE_WATER_ALT = 6
 const BASE_CLEAR_RADIUS = 128.0
 const TREE_SCENE = preload("res://scenes/world/tree_node.tscn")
 const ROCK_SCENE = preload("res://scenes/world/rock_node.tscn")
@@ -184,7 +186,7 @@ func _is_valid_resource_pos(pos: Vector2, spawn_px: Vector2, entrance_px: Vector
 		return false
 	var tile: Vector2i = Vector2i(int(pos.x) / WorldGenerator.TILE_SIZE, int(pos.y) / WorldGenerator.TILE_SIZE)
 	var tile_type: String = _generator.get_tile_type(tile)
-	return tile_type != "border"
+	return tile_type != "water" and tile_type != "lake" and tile_type != "border"
 
 
 func _spawn_merchant() -> void:
