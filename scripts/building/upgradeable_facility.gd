@@ -19,7 +19,7 @@ func can_upgrade() -> bool:
 
 
 func get_upgrade_button_text() -> String:
-	return "Upgrade to Lv%d" % (upgrade_level + 1)
+	return LocaleManager.L("upgrade_to_lv") % (upgrade_level + 1)
 
 
 func get_upgrade_cost() -> Dictionary:

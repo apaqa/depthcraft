@@ -33,8 +33,8 @@ func requires_home_core() -> bool:
 func get_upgrade_summary() -> String:
 	match get_upgrade_level():
 		1:
-			return "Unlocks simple campfire food."
+			return LocaleManager.L("cooking_upgrade_1")
 		2:
-			return "Unlocks richer healing meals."
+			return LocaleManager.L("cooking_upgrade_2")
 		_:
-			return "Unlocks restorative hot drinks."
+			return LocaleManager.L("cooking_upgrade_3")

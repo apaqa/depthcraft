@@ -360,9 +360,9 @@ func _refresh_upgrade_controls() -> void:
 		parts.append("%s %d/%d" % [ITEM_DATABASE.get_display_name(str(resource_id)), have, need])
 		if have < need:
 			can_afford = false
-	upgrade_label.text = "%s\nUpgrade Cost: %s" % [facility.get_upgrade_summary() if facility.has_method("get_upgrade_summary") else "", ", ".join(parts)]
+	upgrade_label.text = "%s\n%s: %s" % [facility.get_upgrade_summary() if facility.has_method("get_upgrade_summary") else "", LocaleManager.L("upgrade_cost"), ", ".join(parts)]
 	upgrade_label.visible = true
-	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else "Upgrade"
+	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else LocaleManager.L("upgrade_to_lv") % 2
 	upgrade_button.disabled = not can_afford
 	upgrade_button.visible = true
 

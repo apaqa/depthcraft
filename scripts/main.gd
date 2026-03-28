@@ -54,13 +54,10 @@ func _sync_quest_day() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("dev_reset"):
-		get_tree().paused = false
-		get_tree().reload_current_scene()
+		_debug_goto_floor(10)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("dev_reset_save"):
-		get_tree().paused = false
-		BUILDING_SAVE.clear_save()
-		get_tree().reload_current_scene()
+		_debug_clear_inventory_and_equipment()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_8:
 		_debug_give_resources()
@@ -84,6 +81,29 @@ func _debug_give_resources() -> void:
 		inv.add_item("fiber", 99)
 		inv.add_item("wheat", 99)
 		inv.add_item("talent_shard", 99)
+
+
+func _debug_clear_inventory_and_equipment() -> void:
+	var targets: Array = get_tree().get_nodes_in_group("player")
+	if targets.is_empty() and player != null:
+		targets = [player]
+	for p in targets:
+		var inv: Object = p.get("inventory")
+		if inv != null:
+			inv.items.clear()
+			if inv.has_signal("inventory_changed"):
+				inv.inventory_changed.emit()
+		var eq: Object = p.get("equipment_system")
+		if eq != null:
+			for slot_name: String in eq.SLOT_ORDER:
+				eq.unequip(str(slot_name))
+	print("DEBUG: Cleared inventory and equipment")
+
+
+func _debug_goto_floor(target_floor: int) -> void:
+	current_level_seed = _create_level_seed()
+	_broadcast_scene_change("dungeon", target_floor, current_level_seed)
+	print("DEBUG: Teleporting to dungeon floor %d" % target_floor)
 
 
 func change_level(level_id: String, spawn_override: Variant = null) -> void:

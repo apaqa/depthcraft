@@ -122,8 +122,8 @@ func _build_ui() -> void:
 	panel_vbox.add_child(_make_i18n_section("settings_display"))
 	var zoom_row := _build_option_row("settings_view_zoom")
 	_zoom_slider = HSlider.new()
-	_zoom_slider.min_value = 1.5
-	_zoom_slider.max_value = 3.0
+	_zoom_slider.min_value = 1.0
+	_zoom_slider.max_value = 4.0
 	_zoom_slider.step = 0.1
 	_zoom_slider.value = 2.0
 	_zoom_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL

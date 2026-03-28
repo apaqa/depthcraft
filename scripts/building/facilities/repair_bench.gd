@@ -28,8 +28,8 @@ func get_repair_cost_multiplier() -> float:
 func get_upgrade_summary() -> String:
 	match get_upgrade_level():
 		1:
-			return "Standard repair costs."
+			return LocaleManager.L("repair_upgrade_1")
 		2:
-			return "Repairs cost 15% less."
+			return LocaleManager.L("repair_upgrade_2")
 		_:
-			return "Repairs cost 30% less."
+			return LocaleManager.L("repair_upgrade_3")

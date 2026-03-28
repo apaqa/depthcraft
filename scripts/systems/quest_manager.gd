@@ -31,24 +31,24 @@ const TYPE_REACH_FLOOR: String = "reach_floor"
 const MAX_AVAILABLE_QUESTS: int = 3
 const SAVE_PATH: String = "user://quests.json"
 
-## Enemy target IDs → display names
+## Enemy target IDs → locale keys for display names
 const KILL_TARGETS: Dictionary = {
-	"skeleton":   "Skeletons",
-	"goblin":     "Goblins",
-	"zombie":     "Zombies",
-	"spider":     "Spiders",
-	"slime":      "Slimes",
-	"bat":        "Bats",
+	"skeleton":   "enemy_skeletons",
+	"goblin":     "enemy_goblins",
+	"zombie":     "enemy_zombies",
+	"spider":     "enemy_spiders",
+	"slime":      "enemy_slimes",
+	"bat":        "enemy_bats",
 }
 
-## Collectible item IDs → display names
+## Collectible item IDs → locale keys for display names
 const COLLECT_TARGETS: Dictionary = {
-	"wood":     "Wood",
-	"stone":    "Stone",
-	"iron_ore": "Iron Ore",
-	"herb":     "Herbs",
-	"bone":     "Bones",
-	"coal":     "Coal",
+	"wood":     "item_wood_name",
+	"stone":    "item_stone_name",
+	"iron_ore": "item_iron_ore_name",
+	"herb":     "item_herb_name",
+	"bone":     "item_bone_name",
+	"coal":     "item_coal_name",
 }
 
 # ---------------------------------------------------------------------------
@@ -119,27 +119,27 @@ func _generate_quest(day: int, slot: int) -> Dictionary:
 		TYPE_KILL:
 			var keys: Array = KILL_TARGETS.keys()
 			target_id = str(keys[randi() % keys.size()])
-			var enemy_name: String = str(KILL_TARGETS.get(target_id, target_id))
+			var enemy_name: String = LocaleManager.L(str(KILL_TARGETS.get(target_id, target_id)))
 			goal = 5 + difficulty * 5 + randi() % (difficulty * 3 + 1)
-			title = "Slay %d %s" % [goal, enemy_name]
-			description = "Eliminate %d %s lurking in the dungeon." % [goal, enemy_name]
+			title = LocaleManager.L("quest_kill_title") % [goal, enemy_name]
+			description = LocaleManager.L("quest_kill_desc") % [goal, enemy_name]
 			reward_gold = difficulty * 20 + randi() % (difficulty * 10 + 5)
 			reward_shards = difficulty * 2 + randi() % 3
 
 		TYPE_COLLECT:
 			var keys: Array = COLLECT_TARGETS.keys()
 			target_id = str(keys[randi() % keys.size()])
-			var item_name: String = str(COLLECT_TARGETS.get(target_id, target_id))
+			var item_name: String = LocaleManager.L(str(COLLECT_TARGETS.get(target_id, target_id)))
 			goal = 10 + difficulty * 10 + randi() % (difficulty * 5 + 1)
-			title = "Gather %d %s" % [goal, item_name]
-			description = "Collect %d units of %s from the world." % [goal, item_name]
+			title = LocaleManager.L("quest_collect_title") % [goal, item_name]
+			description = LocaleManager.L("quest_collect_desc") % [goal, item_name]
 			reward_gold = difficulty * 15 + randi() % (difficulty * 8 + 5)
 			reward_shards = difficulty + randi() % 3
 
 		TYPE_REACH_FLOOR:
 			goal = clampi(2 + difficulty * 2 + randi() % 3, 2, 20)
-			title = "Reach Floor %d" % goal
-			description = "Descend to dungeon floor %d." % goal
+			title = LocaleManager.L("quest_floor_title") % goal
+			description = LocaleManager.L("quest_floor_desc") % goal
 			reward_gold = difficulty * 30 + randi() % (difficulty * 15 + 10)
 			reward_shards = difficulty * 3 + randi() % 4
 

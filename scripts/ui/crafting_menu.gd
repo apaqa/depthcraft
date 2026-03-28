@@ -46,7 +46,8 @@ const STAT_KEY_MAP = {
 	"Hands": "stat_hands",
 	"Feet": "stat_feet",
 	"Main Hand": "stat_main_hand",
-	"Off Hand": "stat_off_hand"
+	"Off Hand": "stat_off_hand",
+	"Heal": "stat_heal"
 }
 
 
@@ -228,8 +229,11 @@ func _translate_stat(stat_name: String) -> String:
 
 
 func _pretty_name(value: String) -> String:
-	var name = value.replace("_", " ").capitalize()
-	return _translate_stat(name)
+	var display_name: String = ITEM_DATABASE.get_display_name(value)
+	if display_name != value:
+		return display_name
+	var capitalized: String = value.replace("_", " ").capitalize()
+	return _translate_stat(capitalized)
 
 
 func _format_cost_summary(recipe_id: String) -> String:
@@ -333,9 +337,9 @@ func _refresh_upgrade_controls() -> void:
 		parts.append("%s %d/%d" % [_pretty_name(str(resource_id)), owned, required])
 		if owned < required:
 			can_afford = false
-	upgrade_label.text = "%s\nUpgrade Cost: %s" % [facility.get_upgrade_summary() if facility.has_method("get_upgrade_summary") else "", ", ".join(parts)]
+	upgrade_label.text = "%s\n%s: %s" % [facility.get_upgrade_summary() if facility.has_method("get_upgrade_summary") else "", LocaleManager.L("upgrade_cost"), ", ".join(parts)]
 	upgrade_label.visible = true
-	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else "Upgrade"
+	upgrade_button.text = facility.get_upgrade_button_text() if facility.has_method("get_upgrade_button_text") else LocaleManager.L("upgrade_to_lv") % 2
 	upgrade_button.disabled = not can_afford
 	upgrade_button.visible = true
 

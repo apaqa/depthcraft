@@ -1,7 +1,7 @@
 extends Camera2D
 
 @export var smoothing_speed: float = 8.0
-@export var default_zoom: Vector2 = Vector2(1.5, 1.5)
+@export var default_zoom: Vector2 = Vector2(2.0, 2.0)
 
 
 func _ready() -> void:
