@@ -185,7 +185,7 @@ func _open_shop() -> void:
 		LocaleManager.L("mystery_equipment"),
 		_get_adjusted_price(50),
 		_on_buy_equipment,
-		ITEM_DATABASE.get_default_equipment_icon("weapon")
+		ITEM_DATABASE.get_equipment_icon("weapon", "Common")
 	)
 
 	var sell_scroll: ScrollContainer = ScrollContainer.new()
@@ -282,7 +282,15 @@ func _add_exchange_row(parent: Control, from_id: String, from_amount: int, to_id
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(_make_icon_rect(ITEM_DATABASE.get_item_icon(from_id)))
+	var from_icon: Texture2D = _get_exchange_icon(from_id, from_amount)
+	if from_icon != null:
+		row.add_child(_make_icon_rect(from_icon))
+	var arrow_label: Label = Label.new()
+	arrow_label.text = "->"
+	row.add_child(arrow_label)
+	var to_icon: Texture2D = _get_exchange_icon(to_id, to_amount)
+	if to_icon != null:
+		row.add_child(_make_icon_rect(to_icon))
 	var label: Label = Label.new()
 	label.text = _format_exchange_text(from_id, from_amount, to_id, to_amount)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -297,6 +305,12 @@ func _add_exchange_row(parent: Control, from_id: String, from_amount: int, to_id
 		"from_id": from_id,
 		"from_amount": from_amount,
 	})
+
+
+func _get_exchange_icon(item_id: String, amount: int) -> Texture2D:
+	if item_id == "copper" and amount >= 10:
+		return preload("res://assets/icons/kyrise/coin_02b.png")
+	return ITEM_DATABASE.get_item_icon(item_id)
 
 
 func _format_exchange_text(from_id: String, from_amount: int, to_id: String, to_amount: int) -> String:

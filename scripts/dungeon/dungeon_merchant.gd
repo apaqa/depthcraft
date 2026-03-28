@@ -1,11 +1,11 @@
 extends Area2D
 class_name DungeonMerchant
 
-const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
-const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
-const MERCHANT_TEXTURE := preload("res://assets/npc_merchant_2.png")
+const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
+const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+const MERCHANT_TEXTURE = preload("res://assets/npc_merchant_2.png")
 const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
-const SHOP_ITEMS := [
+const SHOP_ITEMS = [
 	{"id": "bandage", "quantity": 1, "price": 5},
 	{"id": "bread", "quantity": 1, "price": 8},
 	{"id": "torch", "quantity": 3, "price": 6},
@@ -13,7 +13,7 @@ const SHOP_ITEMS := [
 
 var _shop_canvas: CanvasLayer = null
 var _shop_root: Control = null
-var _current_player = null
+var _current_player: Variant = null
 var _gold_label: Label = null
 var _message_label: Label = null
 var _equipment_icon: TextureRect = null
@@ -65,20 +65,20 @@ func _input(event: InputEvent) -> void:
 
 func _ensure_visuals() -> void:
 	if get_node_or_null("Sprite2D") == null:
-		var sprite := Sprite2D.new()
+		var sprite: Sprite2D = Sprite2D.new()
 		sprite.name = "Sprite2D"
 		sprite.texture = MERCHANT_TEXTURE
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.modulate = Color(1.0, 0.92, 0.78, 1.0)
 		add_child(sprite)
 	if get_node_or_null("CollisionShape2D") == null:
-		var collision := CollisionShape2D.new()
+		var collision: CollisionShape2D = CollisionShape2D.new()
 		collision.name = "CollisionShape2D"
-		var shape := CircleShape2D.new()
+		var shape: CircleShape2D = CircleShape2D.new()
 		shape.radius = 14.0
 		collision.shape = shape
 		add_child(collision)
-	var marker := get_node_or_null("TradeMarker")
+	var marker: Variant = get_node_or_null("TradeMarker")
 	if marker == null:
 		marker = Polygon2D.new()
 		marker.name = "TradeMarker"
@@ -102,7 +102,7 @@ func _open_shop() -> void:
 	_shop_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_shop_canvas.add_child(_shop_root)
 
-	var panel := Panel.new()
+	var panel: Panel = Panel.new()
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
@@ -114,7 +114,7 @@ func _open_shop() -> void:
 	panel.offset_bottom = 190.0
 	_shop_root.add_child(panel)
 
-	var close_button := Button.new()
+	var close_button: Button = Button.new()
 	close_button.name = "CloseButton"
 	close_button.text = "X"
 	close_button.position = panel.position + Vector2(8, 8)
@@ -124,7 +124,7 @@ func _open_shop() -> void:
 	close_button.pressed.connect(_close_shop)
 	_shop_root.add_child(close_button)
 
-	var margin := MarginContainer.new()
+	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_right", 12)
@@ -132,17 +132,17 @@ func _open_shop() -> void:
 	margin.add_theme_constant_override("margin_bottom", 10)
 	panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
+	var vbox: VBoxContainer = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	margin.add_child(vbox)
 
-	var title := Label.new()
+	var title: Label = Label.new()
 	title.text = LocaleManager.L("boss_merchant_title")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
 
-	var subtitle := Label.new()
+	var subtitle: Label = Label.new()
 	subtitle.text = LocaleManager.L("boss_merchant_subtitle")
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.modulate = Color(0.84, 0.84, 0.84, 1.0)
@@ -150,8 +150,8 @@ func _open_shop() -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	for item in SHOP_ITEMS:
-		_add_item_row(vbox, item)
+	for item_offer: Dictionary in SHOP_ITEMS:
+		_add_item_row(vbox, item_offer)
 
 	vbox.add_child(HSeparator.new())
 	_add_equipment_row(vbox)
@@ -162,11 +162,11 @@ func _open_shop() -> void:
 	_message_label.add_theme_color_override("font_color", Color(1.0, 0.42, 0.42, 1.0))
 	vbox.add_child(_message_label)
 
-	var footer := HBoxContainer.new()
+	var footer: HBoxContainer = HBoxContainer.new()
 	_gold_label = Label.new()
 	_gold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(_gold_label)
-	var footer_close_button := Button.new()
+	var footer_close_button: Button = Button.new()
 	footer_close_button.text = LocaleManager.L("close_button")
 	footer_close_button.pressed.connect(_close_shop)
 	footer.add_child(footer_close_button)
@@ -179,18 +179,18 @@ func _open_shop() -> void:
 
 
 func _add_item_row(parent: Control, item_offer: Dictionary) -> void:
-	var item_data := ITEM_DATABASE.get_item(str(item_offer.get("id", "")))
-	var quantity := int(item_offer.get("quantity", 1))
-	var name := str(item_data.get("name", ITEM_DATABASE.get_display_name(str(item_offer.get("id", "")))))
+	var item_data: Dictionary = ITEM_DATABASE.get_item(str(item_offer.get("id", "")))
+	var quantity: int = int(item_offer.get("quantity", 1))
+	var name: String = str(item_data.get("name", ITEM_DATABASE.get_display_name(str(item_offer.get("id", "")))))
 	if quantity > 1:
 		name = "%s x%d" % [name, quantity]
 	_add_shop_row(parent, name, int(item_offer.get("price", 0)), _on_buy_item.bind(str(item_offer.get("id", "")), quantity, int(item_offer.get("price", 0))), ITEM_DATABASE.get_stack_icon(item_data))
 
 
 func _add_equipment_row(parent: Control) -> void:
-	var row := HBoxContainer.new()
+	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
-	_equipment_icon = _make_icon_rect(ITEM_DATABASE.get_default_equipment_icon("weapon"))
+	_equipment_icon = _make_icon_rect(ITEM_DATABASE.get_equipment_icon("weapon", "Common"))
 	row.add_child(_equipment_icon)
 	_equipment_label = Label.new()
 	_equipment_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -202,15 +202,15 @@ func _add_equipment_row(parent: Control) -> void:
 
 
 func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
-	var row := HBoxContainer.new()
+	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	if icon != null:
 		row.add_child(_make_icon_rect(icon))
-	var label := Label.new()
+	var label: Label = Label.new()
 	label.text = "%s  %s" % [label_text, ITEM_DATABASE.format_currency(price)]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
-	var button := Button.new()
+	var button: Button = Button.new()
 	button.text = LocaleManager.L("buy")
 	button.pressed.connect(callback)
 	row.add_child(button)
@@ -220,7 +220,7 @@ func _add_shop_row(parent: Control, label_text: String, price: int, callback: Ca
 func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	if _current_player == null:
 		return
-	var inventory = _current_player.get("inventory")
+	var inventory: Variant = _current_player.get("inventory")
 	if inventory == null:
 		return
 	var payment: Dictionary = inventory.get_exact_currency_payment(price)
@@ -241,7 +241,7 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 func _on_buy_equipment() -> void:
 	if _equipment_offer.is_empty() or _current_player == null:
 		return
-	var inventory = _current_player.get("inventory")
+	var inventory: Variant = _current_player.get("inventory")
 	if inventory == null:
 		return
 	var payment: Dictionary = inventory.get_exact_currency_payment(_equipment_price)
@@ -266,7 +266,7 @@ func _refresh_equipment_offer_row() -> void:
 	if _equipment_label == null or _equipment_button == null or _equipment_icon == null:
 		return
 	if _equipment_offer.is_empty():
-		_equipment_icon.texture = ITEM_DATABASE.get_default_equipment_icon("weapon")
+		_equipment_icon.texture = ITEM_DATABASE.get_equipment_icon("weapon", "Common")
 		_equipment_label.text = "%s  %s" % [LocaleManager.L("mystery_equipment"), LocaleManager.L("sold_out")]
 		_equipment_label.remove_theme_color_override("font_color")
 		_equipment_button.text = LocaleManager.L("sold_button")
@@ -282,8 +282,8 @@ func _refresh_equipment_offer_row() -> void:
 func _update_gold_label() -> void:
 	if _gold_label == null or _current_player == null:
 		return
-	var inventory = _current_player.get("inventory")
-	var total := 0
+	var inventory: Variant = _current_player.get("inventory")
+	var total: int = 0
 	if inventory != null:
 		total = inventory.get_total_copper()
 	_gold_label.text = LocaleManager.L("gold_label") % total
@@ -328,5 +328,5 @@ func _close_shop() -> void:
 
 
 func _calculate_equipment_price(floor_number: int, equipment_offer: Dictionary) -> int:
-	var affix_count := (equipment_offer.get("affixes", []) as Array).size()
+	var affix_count: int = (equipment_offer.get("affixes", []) as Array).size()
 	return clampi(30 + floor_number * 4 + affix_count * 12, 42, 180)

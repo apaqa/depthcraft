@@ -102,7 +102,7 @@ static func _build_equipment(slot: String, quality: String, floor_number: int, r
 		"slot": slot,
 		"type": "equipment",
 		"max_stack": 1,
-		"icon": ITEM_DATABASE.get_default_equipment_icon(slot),
+		"icon": ITEM_DATABASE.get_equipment_icon(slot, normalized_quality),
 		"stats": _generate_base_stats(slot, base_power),
 		"affixes": _generate_affixes(num_affixes, resolved_floor, rng),
 		"durability": durability,

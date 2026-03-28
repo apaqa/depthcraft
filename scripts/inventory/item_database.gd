@@ -109,7 +109,7 @@ const ITEMS = {
 		"max_stack": 9999,
 		"type": "resource",
 		"description": "Basic currency — 10 copper = 1 silver",
-		"icon": preload("res://assets/icons/kyrise/coin_03b.png"),
+		"icon": preload("res://assets/icons/kyrise/coin_01b.png"),
 	},
 	"silver": {
 		"id": "silver",
@@ -117,7 +117,7 @@ const ITEMS = {
 		"max_stack": 9999,
 		"type": "resource",
 		"description": "Mid-tier currency — 10 silver = 1 gold",
-		"icon": preload("res://assets/icons/kyrise/coin_02a.png"),
+		"icon": preload("res://assets/icons/kyrise/coin_01c.png"),
 	},
 	"gold": {
 		"id": "gold",
@@ -125,7 +125,7 @@ const ITEMS = {
 		"max_stack": 9999,
 		"type": "resource",
 		"description": "High-tier currency dropped by bosses",
-		"icon": preload("res://assets/icons/kyrise/coin_01a.png"),
+		"icon": preload("res://assets/icons/kyrise/coin_01d.png"),
 	},
 	"wood_sword": {
 		"id": "wood_sword",
@@ -510,16 +510,36 @@ static func get_stack_icon(stack: Dictionary) -> Texture2D:
 		var slot_name: String = str(stack.get("slot", ""))
 		if slot_name == "" and item_id != "" and ITEMS.has(item_id):
 			slot_name = str(ITEMS[item_id].get("slot", ""))
-		return get_default_equipment_icon(slot_name)
+		var rarity: String = str(stack.get("rarity", ""))
+		if rarity == "" and item_id != "" and ITEMS.has(item_id):
+			rarity = str(ITEMS[item_id].get("rarity", "Common"))
+		return get_equipment_icon(slot_name, rarity)
 	return null
 
 
-static func get_default_equipment_icon(slot_name: String) -> Texture2D:
+static func get_equipment_icon(slot_name: String, rarity: String = "Common") -> Texture2D:
+	var normalized_rarity: String = rarity.strip_edges().to_lower()
 	match slot_name:
 		"weapon":
-			return preload("res://assets/icons/kyrise/sword_01a.png")
+			match normalized_rarity:
+				"rare", "epic":
+					return preload("res://assets/icons/kyrise/sword_02a.png")
+				"legendary":
+					return preload("res://assets/icons/kyrise/sword_03a.png")
+				_:
+					return preload("res://assets/icons/kyrise/sword_01a.png")
 		"helmet":
-			return preload("res://assets/icons/kyrise/helmet_01a.png")
+			match normalized_rarity:
+				"uncommon":
+					return preload("res://assets/icons/kyrise/helmet_01b.png")
+				"rare":
+					return preload("res://assets/icons/kyrise/helmet_01c.png")
+				"epic":
+					return preload("res://assets/icons/kyrise/helmet_01d.png")
+				"legendary":
+					return preload("res://assets/icons/kyrise/helmet_01e.png")
+				_:
+					return preload("res://assets/icons/kyrise/helmet_01a.png")
 		"chest_armor":
 			return preload("res://assets/icons/kyrise/armor_01a.png")
 		"offhand":

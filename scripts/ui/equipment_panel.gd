@@ -211,7 +211,7 @@ func _build_slot_row(slot_name: String, item: Dictionary) -> Button:
 	var icon_source: Dictionary = item if not item.is_empty() else {}
 	var slot_icon: Texture2D = ITEM_DATABASE.get_stack_icon(icon_source)
 	if slot_icon == null:
-		slot_icon = ITEM_DATABASE.get_default_equipment_icon(slot_name)
+		slot_icon = ITEM_DATABASE.get_equipment_icon(slot_name, "Common")
 	content.add_child(_make_icon_ctrl(slot_icon, ITEM_DATABASE.get_stack_color(icon_source), 32))
 
 	var info_column: VBoxContainer = VBoxContainer.new()
