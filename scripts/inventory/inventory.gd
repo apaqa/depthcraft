@@ -84,6 +84,11 @@ func add_stack_data(stack_template: Dictionary, quantity: int = 1) -> bool:
 
 	items = working_items
 	_mark_dirty()
+	var codex: Node = get_node_or_null("/root/CodexManager")
+	if codex != null:
+		var item_id_for_codex: String = str(stack_template.get("id", ""))
+		if item_id_for_codex != "":
+			codex.record_item_seen(item_id_for_codex)
 	return true
 
 

@@ -66,6 +66,10 @@ func _ready() -> void:
 	current_hp = max_hp
 	_setup_hp_bar()
 	call_deferred("_find_player")
+	if enemy_kind != "":
+		var codex: Node = get_node_or_null("/root/CodexManager")
+		if codex != null:
+			codex.record_enemy_seen(enemy_kind)
 
 
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
@@ -221,6 +225,9 @@ func die() -> void:
 	var enemy_type: String = enemy_kind
 	if enemy_type != "":
 		QuestManager.update_quest_progress("kill_enemies", enemy_type, 1)
+		var codex: Node = get_node_or_null("/root/CodexManager")
+		if codex != null:
+			codex.record_enemy_killed(enemy_type)
 	if hp_bar_root != null:
 		hp_bar_root.visible = false
 	died.emit(global_position)

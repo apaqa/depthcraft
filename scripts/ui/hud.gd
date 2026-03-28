@@ -79,6 +79,7 @@ var _skill_slot_name_labels: Array[Label] = []
 var _skill_hint_label: Label = null
 var _victory_screen: Control = null
 var _skill_system_cache: Node = null
+var _codex_panel: Control = null
 
 
 func _ready() -> void:
@@ -147,6 +148,7 @@ func _ready() -> void:
 		tavern_ui.close_requested.connect(_on_menu_closed)
 	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
 		buff_select.buff_chosen.connect(_on_buff_chosen)
+	# Note: _codex_panel is created later in _ready after fullscreen_map
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null and not achievement_manager.achievement_unlocked.is_connected(_on_achievement_unlocked):
 		achievement_manager.achievement_unlocked.connect(_on_achievement_unlocked)
@@ -185,6 +187,14 @@ func _ready() -> void:
 	fsmap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(fsmap)
 	fullscreen_map = fsmap
+
+	var codex_script: Script = load("res://scripts/ui/codex_panel.gd")
+	_codex_panel = Control.new()
+	_codex_panel.set_script(codex_script)
+	_codex_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_codex_panel)
+	if _codex_panel.has_signal("panel_closed") and not _codex_panel.panel_closed.is_connected(_on_menu_closed):
+		_codex_panel.panel_closed.connect(_on_menu_closed)
 
 
 func update_hp(current: int, max_hp: int) -> void:
@@ -271,6 +281,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_achievements") and player != null and not player.building_system.is_build_mode_active():
 		_toggle_achievement_panel()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("toggle_codex") and (player == null or not player.building_system.is_build_mode_active()):
+		_toggle_codex_panel()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel") and inventory_panel.visible:
 		inventory_panel.visible = false
@@ -462,6 +475,18 @@ func _toggle_achievement_panel() -> void:
 	player.set_ui_blocked(true)
 
 
+func _toggle_codex_panel() -> void:
+	if _codex_panel == null:
+		return
+	if _codex_panel.visible:
+		_codex_panel.close_panel()
+		return
+	_close_all_menus()
+	_codex_panel.open_panel()
+	if player != null:
+		player.set_ui_blocked(true)
+
+
 func _close_all_menus() -> void:
 	inventory_panel.visible = false
 	crafting_menu.close_menu()
@@ -478,6 +503,8 @@ func _close_all_menus() -> void:
 	buff_select.close_menu()
 	if settings_menu != null and settings_menu.visible:
 		settings_menu.close_menu()
+	if _codex_panel != null and _codex_panel.visible:
+		_codex_panel.close_panel()
 	_on_menu_closed()
 
 
@@ -489,7 +516,7 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or quest_board_ui.visible or tavern_ui.visible or buff_select.visible or (settings_menu != null and settings_menu.visible)
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or quest_board_ui.visible or tavern_ui.visible or buff_select.visible or (settings_menu != null and settings_menu.visible) or (_codex_panel != null and _codex_panel.visible)
 
 
 func _on_achievement_unlocked(id: String) -> void:
