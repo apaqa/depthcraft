@@ -8,13 +8,14 @@ const TALENT_ALTAR_SCENE_PATH := "res://scenes/building/facilities/talent_altar.
 const FARM_PLOT_SCENE_PATH := "res://scenes/building/facilities/farm_plot.tscn"
 const COOKING_BENCH_SCENE_PATH := "res://scenes/building/facilities/cooking_bench.tscn"
 const BOUNTY_BOARD_SCENE_PATH := "res://scenes/building/facilities/bounty_board.tscn"
+const TAVERN_SCENE_PATH := "res://scenes/building/facilities/tavern.tscn"
 const HOME_CORE_SCENE_PATH := "res://scenes/building/home_core.tscn"
 const FULL_TILE_ATLAS := Vector2i.ZERO
 const CATEGORY_ORDER := ["structure", "door_window", "facility", "defense"]
 const CATEGORY_DATA := {
 	"structure": {"name": "build_cat_structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
 	"door_window": {"name": "build_cat_door_window", "items": ["wood_door"]},
-	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot", "bounty_board", "home_core"]},
+	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot", "bounty_board", "tavern", "home_core"]},
 	"defense": {"name": "build_cat_defense", "items": []},
 }
 
@@ -138,6 +139,16 @@ const BUILDINGS := {
 		"scene_path": BOUNTY_BOARD_SCENE_PATH,
 		"preview_texture": preload("res://assets/wall_banner_yellow.png"),
 	},
+	"tavern": {
+		"id": "tavern",
+		"name": "tavern",
+		"category": "facility",
+		"kind": "facility",
+		"cost": {"wood": 10, "stone": 5, "copper": 20},
+		"base_max_hp": 80,
+		"scene_path": TAVERN_SCENE_PATH,
+		"preview_texture": preload("res://assets/wall_banner_yellow.png"),
+	},
 	"home_core": {
 		"id": "home_core",
 		"name": "home_core",
@@ -149,7 +160,7 @@ const BUILDINGS := {
 	},
 }
 
-const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "home_core"]
+const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "tavern", "home_core"]
 
 
 static func get_building(building_id: String) -> Dictionary:

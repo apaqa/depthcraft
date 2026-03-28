@@ -18,6 +18,7 @@ signal storage_requested(facility)
 signal repair_requested(facility)
 signal talent_requested(facility)
 signal equipment_panel_requested
+signal tavern_requested(facility)
 signal hp_changed(current_hp: int, max_hp: int)
 signal buffs_changed(active_buffs: Array)
 signal stats_changed
@@ -468,6 +469,10 @@ func request_repair_menu(facility) -> void:
 
 func request_talent_menu(facility) -> void:
 	talent_requested.emit(facility)
+
+
+func request_tavern_menu(facility) -> void:
+	tavern_requested.emit(facility)
 
 
 func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:

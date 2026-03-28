@@ -30,6 +30,7 @@ const MINIMAP_SCRIPT = preload("res://scripts/ui/minimap.gd")
 @onready var achievement_popup: Control = $AchievementPopup
 @onready var achievement_panel: Control = $AchievementPanel
 @onready var quest_board_ui: Control = $QuestBoardUI
+@onready var tavern_ui: Control = $TavernUI
 @onready var minimap: Control = $Minimap
 @onready var buff_select: Control = $BuffSelect
 @onready var death_overlay: Control = $DeathOverlay
@@ -206,6 +207,7 @@ func bind_player(new_player) -> void:
 	player.repair_requested.connect(_on_repair_requested)
 	player.talent_requested.connect(_on_talent_requested)
 	player.equipment_panel_requested.connect(_on_equipment_requested)
+	player.tavern_requested.connect(_on_tavern_requested)
 	player.buffs_changed.connect(_refresh_buff_icons)
 	player.status_message_requested.connect(show_status_message)
 	skill_system = get_node_or_null("/root/SkillSystem")
@@ -390,6 +392,12 @@ func _on_talent_requested(_facility) -> void:
 	player.set_ui_blocked(true)
 
 
+func _on_tavern_requested(facility: Node) -> void:
+	_close_all_menus()
+	tavern_ui.open_for_player(player, facility)
+	player.set_ui_blocked(true)
+
+
 func _on_equipment_requested() -> void:
 	_toggle_equipment_panel()
 
@@ -432,6 +440,8 @@ func _close_all_menus() -> void:
 	achievement_panel.close_panel()
 	if quest_board_ui.has_method("close_menu"):
 		quest_board_ui.call("close_menu")
+	if tavern_ui.has_method("close_menu"):
+		tavern_ui.call("close_menu")
 	buff_select.close_menu()
 	if settings_menu != null and settings_menu.visible:
 		settings_menu.close_menu()
@@ -446,7 +456,7 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or quest_board_ui.visible or buff_select.visible or (settings_menu != null and settings_menu.visible)
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or quest_board_ui.visible or tavern_ui.visible or buff_select.visible or (settings_menu != null and settings_menu.visible)
 
 
 func _on_achievement_unlocked(id: String) -> void:
