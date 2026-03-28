@@ -178,6 +178,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		current_level.buff_selection_requested.connect(_on_buff_selection_requested)
 	if current_level.has_signal("floor_transition_requested") and not current_level.floor_transition_requested.is_connected(_on_floor_transition_requested):
 		current_level.floor_transition_requested.connect(_on_floor_transition_requested)
+	if current_level.has_signal("victory_requested") and not current_level.victory_requested.is_connected(_on_victory_requested):
+		current_level.victory_requested.connect(_on_victory_requested)
 	if current_level.has_signal("banner_requested") and not current_level.banner_requested.is_connected(_on_level_banner_requested):
 		current_level.banner_requested.connect(_on_level_banner_requested)
 	if current_level.has_signal("border_flash_requested") and not current_level.border_flash_requested.is_connected(_on_level_border_flash_requested):
@@ -315,8 +317,42 @@ func _on_return_to_surface_requested() -> void:
 		player.show_status_message("已抵達第 %d 層 | %d 擊殺 | %d 件戰利品" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
 
 
+func _on_victory_requested() -> void:
+	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")
+	var floor_reached: int = int(current_level.get("current_floor")) if current_level != null else 30
+	var kill_count: int = int(current_level.get("total_kills")) if current_level != null else 0
+	var equipment_count: int = 0
+	var gold_earned: int = 0
+	var deaths: int = 0
+	var elapsed: float = 0.0
+	if player != null:
+		for entry in player.dungeon_run_loot:
+			if str(entry.get("type", "")) == "equipment":
+				equipment_count += int(entry.get("quantity", 0))
+	if achievement_manager != null:
+		var stats_variant: Variant = achievement_manager.get("stats")
+		if typeof(stats_variant) == TYPE_DICTIONARY:
+			deaths = int((stats_variant as Dictionary).get("deaths", 0))
+		elapsed = float(achievement_manager.get("run_elapsed_seconds") if achievement_manager.has_method("get") else 0)
+	var earned_achievements: Array[String] = []
+	if achievement_manager != null and achievement_manager.has_method("get_run_achievements"):
+		earned_achievements = achievement_manager.get_run_achievements()
+	var victory_stats: Dictionary = {
+		"total_kills": kill_count,
+		"gold_earned": gold_earned,
+		"equipment_count": equipment_count,
+		"deaths": deaths,
+		"elapsed_seconds": elapsed,
+		"achievements_earned": earned_achievements,
+	}
+	if hud != null and hud.has_method("show_victory"):
+		hud.show_victory(victory_stats)
+	elif hud != null:
+		_on_return_to_surface_requested()
+
+
 func _on_player_died() -> void:
-	var achievement_manager = get_node_or_null("/root/AchievementManager")
+	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null:
 		achievement_manager.record_player_died()
 	if current_level_id == "dungeon":

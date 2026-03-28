@@ -77,6 +77,7 @@ var _skill_slot_overlays: Array[ColorRect] = []
 var _skill_slot_cd_labels: Array[Label] = []
 var _skill_slot_name_labels: Array[Label] = []
 var _skill_hint_label: Label = null
+var _victory_screen: Control = null
 var _skill_system_cache: Node = null
 
 
@@ -344,7 +345,11 @@ func update_bag_label(used_slots: int, max_slots: int) -> void:
 
 
 func update_floor_label(current_floor: int) -> void:
-	floor_label.text = LocaleManager.L("floor") + ": %d" % current_floor if current_floor > 0 else ""
+	var cycle_manager: Node = get_node_or_null("/root/CycleManager")
+	var cycle_prefix: String = ""
+	if cycle_manager != null and int(cycle_manager.current_cycle) > 1:
+		cycle_prefix = "輪迴%d " % int(cycle_manager.current_cycle)
+	floor_label.text = cycle_prefix + (LocaleManager.L("floor") + ": %d" % current_floor) if current_floor > 0 else ""
 	day_label.visible = current_floor <= 0
 
 
@@ -684,6 +689,37 @@ func _refresh_buff_icons(active_buffs: Array) -> void:
 		swatch.color = buff.get("color", Color.WHITE)
 		swatch.tooltip_text = LocaleManager.L(str(buff.get("name", "Buff")))
 		buff_row.add_child(swatch)
+
+
+func show_victory(stats: Dictionary) -> void:
+	const VICTORY_SCREEN_SCRIPT: Script = preload("res://scripts/ui/victory_screen.gd")
+	if _victory_screen != null and is_instance_valid(_victory_screen):
+		_victory_screen.queue_free()
+	_victory_screen = Control.new()
+	_victory_screen.set_script(VICTORY_SCREEN_SCRIPT)
+	_victory_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_victory_screen.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_victory_screen)
+	_victory_screen.show_victory(stats)
+	_victory_screen.return_to_surface_requested.connect(_on_victory_return_to_surface)
+	_victory_screen.start_new_cycle_requested.connect(_on_victory_new_cycle)
+	if player != null:
+		player.set_ui_blocked(true)
+
+
+func _on_victory_return_to_surface() -> void:
+	if player != null:
+		player.set_ui_blocked(false)
+	if current_level != null and current_level.has_method("get"):
+		if current_level.has_signal("return_to_surface_requested"):
+			current_level.return_to_surface_requested.emit()
+
+
+func _on_victory_new_cycle() -> void:
+	if player != null:
+		player.set_ui_blocked(false)
+	if current_level != null and current_level.has_signal("floor_transition_requested"):
+		current_level.floor_transition_requested.emit(1)
 
 
 func show_death_screen(summary: Dictionary) -> void:

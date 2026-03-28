@@ -5,6 +5,7 @@ signal kills_changed(total_kills: int)
 signal return_to_surface_requested
 signal buff_selection_requested(options: Array)
 signal floor_transition_requested(next_floor: int)
+signal victory_requested
 
 const SOURCE_FLOOR_1 := 0
 const SOURCE_FLOOR_2 := 1
@@ -360,6 +361,9 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	if enemy_ref != null and enemy_ref.has_method("is_boss_enemy") and enemy_ref.is_boss_enemy():
 		boss_enemy_ref = null
 		_unlock_boss_door()
+		if current_floor >= 30:
+			victory_requested.emit()
+			return
 		if boss_stairway != null and is_instance_valid(boss_stairway):
 			boss_stairway.set_locked(false, LocaleManager.L("prompt_descend_floor") % (current_floor + 1))
 		if boss_locked_chest != null and is_instance_valid(boss_locked_chest):
@@ -1312,12 +1316,23 @@ func _create_cover_pillar(world_position: Vector2) -> Node2D:
 
 
 func _apply_floor_scaling(enemy_node: Enemy, hp_multiplier: float, damage_multiplier: float, speed_multiplier: float) -> void:
-	if enemy_node == null or current_floor < 31:
+	if enemy_node == null:
 		return
-	enemy_node.max_hp = int(round(float(enemy_node.max_hp) * hp_multiplier))
-	enemy_node.current_hp = enemy_node.max_hp
-	enemy_node.damage = int(round(float(enemy_node.damage) * damage_multiplier))
-	enemy_node.speed *= speed_multiplier
+	# Apply cycle-based scaling for all floors in cycle 2+
+	var cycle_manager: Node = get_node_or_null("/root/CycleManager")
+	var cycle_scale: float = 1.0
+	if cycle_manager != null and cycle_manager.has_method("get_enemy_scale"):
+		cycle_scale = cycle_manager.get_enemy_scale()
+	if cycle_scale > 1.0:
+		enemy_node.max_hp = int(round(float(enemy_node.max_hp) * cycle_scale))
+		enemy_node.current_hp = enemy_node.max_hp
+		enemy_node.damage = int(round(float(enemy_node.damage) * cycle_scale))
+	# Extra scaling for floor 31+
+	if current_floor >= 31:
+		enemy_node.max_hp = int(round(float(enemy_node.max_hp) * hp_multiplier))
+		enemy_node.current_hp = enemy_node.max_hp
+		enemy_node.damage = int(round(float(enemy_node.damage) * damage_multiplier))
+		enemy_node.speed *= speed_multiplier
 	if enemy_node.has_method("_update_hp_bar"):
 		enemy_node.call("_update_hp_bar")
 
