@@ -2,12 +2,12 @@ extends Node2D
 
 @onready var hud: Control = $HUDCanvas/HUD
 @onready var level_root: Node2D = $LevelRoot
-@onready var player_spawner = $PlayerSpawner
+@onready var player_spawner: Node = $PlayerSpawner
 
-const BUILDING_SAVE := preload("res://scripts/building/building_save.gd")
-const DUNGEON_SCENE := preload("res://scenes/dungeon/dungeon_level.tscn")
-const OVERWORLD_SCENE := preload("res://scenes/overworld/test_overworld.tscn")
-const TUTORIAL_MANAGER := preload("res://scripts/world/tutorial_manager.gd")
+const BUILDING_SAVE: Script = preload("res://scripts/building/building_save.gd")
+const DUNGEON_SCENE: PackedScene = preload("res://scenes/dungeon/dungeon_level.tscn")
+const OVERWORLD_SCENE: PackedScene = preload("res://scenes/overworld/test_overworld.tscn")
+const TUTORIAL_MANAGER: Script = preload("res://scripts/world/tutorial_manager.gd")
 
 var player
 var _tutorial_manager: Node = null
@@ -26,7 +26,7 @@ var deepest_dungeon_floor_reached: int = 1
 func _ready() -> void:
 	randomize()
 	overworld_seed = randi()
-	var network_manager = _network_manager()
+	var network_manager: Node = _network_manager()
 	if network_manager != null and not network_manager.players_changed.is_connected(_on_network_players_changed):
 		network_manager.players_changed.connect(_on_network_players_changed)
 	if network_manager != null and not network_manager.connection_status_changed.is_connected(_on_connection_status_changed):
@@ -42,7 +42,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	var network_manager = _network_manager()
+	var network_manager: Node = _network_manager()
 	if network_manager != null and network_manager.players_changed.is_connected(_on_network_players_changed):
 		network_manager.players_changed.disconnect(_on_network_players_changed)
 	if network_manager != null and network_manager.connection_status_changed.is_connected(_on_connection_status_changed):
@@ -71,7 +71,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _debug_give_resources() -> void:
-	var targets := get_tree().get_nodes_in_group("player")
+	var targets: Array = get_tree().get_nodes_in_group("player")
 	if targets.is_empty() and player != null:
 		targets = [player]
 	for p in targets:
@@ -125,7 +125,7 @@ func _debug_goto_floor(target_floor: int) -> void:
 
 func change_level(level_id: String, spawn_override: Variant = null) -> void:
 	if level_id == "dungeon":
-		var floor_number := 1
+		var floor_number: int = 1
 		if current_level_id == "dungeon" and current_level != null:
 			floor_number = int(current_level.get("current_floor"))
 		current_level_seed = _create_level_seed() if current_level_seed == 0 else current_level_seed
@@ -141,8 +141,8 @@ func change_scene_all(level_id: String, floor_number: int = 1, level_seed: int =
 
 
 func _change_level_internal(level_id: String, spawn_override: Variant = null, floor_number: int = 1, level_seed: int = 0) -> void:
-	var previous_level_id := current_level_id
-	var next_scene := _get_level_scene(level_id)
+	var previous_level_id: String = current_level_id
+	var next_scene: PackedScene = _get_level_scene(level_id)
 	if next_scene == null:
 		return
 
@@ -233,13 +233,14 @@ func _get_level_scene(level_id: String) -> PackedScene:
 			return null
 
 
-func _on_player_portal_requested(target_level_id: String) -> void:
+func _on_player_portal_requested(target_level_id: String, start_floor: int = 1) -> void:
 	var floor_reached: int = 0
 	var kill_count: int = 0
 	var item_count: int = 0
 	var npc_day_messages: Array[String] = []
+	var resolved_start_floor: int = max(start_floor, 1)
 	if _is_multiplayer_enabled() and not _is_host():
-		request_portal_transition.rpc_id(1, target_level_id)
+		request_portal_transition.rpc_id(1, target_level_id, resolved_start_floor)
 		if player != null:
 			player.show_status_message("Waiting for host...", Color(0.85, 0.9, 1.0, 1.0), 1.5)
 		return
@@ -256,16 +257,18 @@ func _on_player_portal_requested(target_level_id: String) -> void:
 	if current_level_id == "overworld" and target_level_id == "dungeon":
 		await hud.fade_to_black("進入地牢...", Color(0, 0, 0, 1), 0.8)
 		current_level_seed = _create_level_seed()
-		_broadcast_scene_change(target_level_id, 1, current_level_seed)
+		_broadcast_scene_change(target_level_id, resolved_start_floor, current_level_seed)
 		await get_tree().process_frame
 		_reset_all_cameras()
 		await get_tree().create_timer(0.3).timeout
 		await hud.fade_from_black(Color(0, 0, 0, 1), 0.8)
 		return
-	call_deferred("_broadcast_scene_change", target_level_id, 1, current_level_seed)
+	call_deferred("_broadcast_scene_change", target_level_id, resolved_start_floor, current_level_seed)
 
 
 func _on_floor_changed(current_floor: int) -> void:
+	if current_floor > 0:
+		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, current_floor)
 	if hud.has_method("update_floor_label"):
 		hud.update_floor_label(current_floor)
 	_sync_bgm_for_current_level()
@@ -400,9 +403,9 @@ func _on_floor_transition_requested(next_floor: int) -> void:
 
 
 @rpc("any_peer", "reliable")
-func request_portal_transition(target_level_id: String) -> void:
+func request_portal_transition(target_level_id: String, start_floor: int = 1) -> void:
 	if _is_host():
-		_on_player_portal_requested(target_level_id)
+		_on_player_portal_requested(target_level_id, start_floor)
 
 
 @rpc("any_peer", "reliable")
@@ -440,7 +443,7 @@ func _sync_players_with_session() -> void:
 
 
 func _bind_local_player() -> void:
-	var local_peer_id := multiplayer.get_unique_id() if _is_multiplayer_enabled() and multiplayer.has_multiplayer_peer() else 1
+	var local_peer_id: int = multiplayer.get_unique_id() if _is_multiplayer_enabled() and multiplayer.has_multiplayer_peer() else 1
 	var local_player = player_spawner.get_player(local_peer_id)
 	if local_player == null:
 		return
@@ -467,13 +470,13 @@ func _place_players_in_current_level(spawn_override: Variant = null) -> void:
 	if current_level == null:
 		return
 	var peer_ids: Array[int] = player_spawner.get_player_ids()
-	var base_position := _resolve_base_spawn(spawn_override)
+	var base_position: Vector2 = _resolve_base_spawn(spawn_override)
 	for index in range(peer_ids.size()):
 		var peer_id: int = peer_ids[index]
 		var spawned_player = player_spawner.get_player(peer_id)
 		if spawned_player == null:
 			continue
-		var player_position := base_position + _spawn_offset_for_index(index, peer_ids.size())
+		var player_position: Vector2 = base_position + _spawn_offset_for_index(index, peer_ids.size())
 		if current_level.has_method("place_player"):
 			current_level.place_player(spawned_player, player_position)
 		else:
@@ -495,7 +498,7 @@ func _resolve_base_spawn(spawn_override: Variant = null) -> Vector2:
 func _spawn_offset_for_index(index: int, count: int) -> Vector2:
 	if count <= 1:
 		return Vector2.ZERO
-	var angle := TAU * float(index) / float(count)
+	var angle: float = TAU * float(index) / float(count)
 	return Vector2(22, 0).rotated(angle)
 
 
@@ -556,10 +559,10 @@ func _start_tutorial() -> void:
 	add_child(_tutorial_manager)
 
 
-const CLASS_SELECT_SCREEN := preload("res://scripts/ui/class_select_screen.gd")
+const CLASS_SELECT_SCREEN: Script = preload("res://scripts/ui/class_select_screen.gd")
 
 func _show_class_select() -> void:
-	var screen := Control.new()
+	var screen: Control = Control.new()
 	screen.set_script(CLASS_SELECT_SCREEN)
 	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_tree().root.add_child(screen)

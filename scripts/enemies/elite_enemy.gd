@@ -1,7 +1,7 @@
 extends Enemy
 class_name EliteEnemy
 
-const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
+const BAT_SWARM_SCENE: PackedScene = preload("res://scenes/enemies/bat_swarm_enemy.tscn")
 
 var floor_value: int = 1
 var attack_pattern_index: int = 0
@@ -42,7 +42,7 @@ func is_elite_enemy() -> bool:
 
 
 func _drop_gold_loot() -> void:
-	_drop_gold("silver", randi_range(1, 3))
+	super._drop_gold_loot()
 
 
 func _perform_attack() -> void:
@@ -73,8 +73,8 @@ func _perform_charge_attack() -> void:
 	if is_dead or target == null or not is_instance_valid(target):
 		ai_paused = false
 		return
-	var dash_target := global_position + (target.global_position - global_position).normalized() * 42.0
-	var tween := create_tween()
+	var dash_target: Vector2 = global_position + (target.global_position - global_position).normalized() * 42.0
+	var tween: Tween = create_tween()
 	tween.tween_property(self, "global_position", dash_target, 0.18)
 	await tween.finished
 	if global_position.distance_to(target.global_position) <= attack_range + 20.0:
@@ -93,7 +93,6 @@ func die() -> void:
 		shard_drop.setup("talent_shard", 3)
 		shard_drop.global_position = global_position
 		loot_parent.add_child(shard_drop)
-		_drop_gold_loot()
 		if randf() <= 0.75:
 			var equipment_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop
 			equipment_drop.global_position = global_position + Vector2(10, -4)
@@ -106,7 +105,7 @@ func _summon_bats() -> void:
 	if loot_parent == null or get_parent() == null:
 		return
 	for index in range(2):
-		var bat := BAT_SWARM_SCENE.instantiate() as Enemy
+		var bat: Enemy = BAT_SWARM_SCENE.instantiate() as Enemy
 		if bat == null:
 			continue
 		bat.global_position = global_position + Vector2(14 + index * 10, -10 + index * 8)

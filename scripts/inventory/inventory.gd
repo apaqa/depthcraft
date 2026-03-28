@@ -1,7 +1,12 @@
 extends Node
 class_name Inventory
 
-const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
+const WOODEN_PER_COPPER: int = 10
+const COPPER_PER_SILVER: int = 10
+const SILVER_PER_GOLD: int = 100
+const WOODEN_PER_SILVER: int = WOODEN_PER_COPPER * COPPER_PER_SILVER
+const WOODEN_PER_GOLD: int = WOODEN_PER_SILVER * SILVER_PER_GOLD
 
 signal inventory_changed
 
@@ -49,7 +54,7 @@ func add_stack_data(stack_template: Dictionary, quantity: int = 1) -> bool:
 		return true
 
 	var working_items: Array[Dictionary] = _duplicate_items(items)
-	var remaining := quantity
+	var remaining: int = quantity
 
 	for stack in working_items:
 		if stack["id"] != stack_template["id"]:
@@ -89,11 +94,11 @@ func remove_item(item_id: String, quantity: int = 1) -> bool:
 	if get_item_count(item_id) < quantity:
 		return false
 
-	var remaining := quantity
+	var remaining: int = quantity
 	var working_items: Array[Dictionary] = _duplicate_items(items)
 
 	for index in range(working_items.size() - 1, -1, -1):
-		var stack := working_items[index]
+		var stack: Dictionary = working_items[index]
 		if stack["id"] != item_id:
 			continue
 
@@ -117,38 +122,45 @@ func has_item(item_id: String, quantity: int = 1) -> bool:
 
 
 func get_item_count(item_id: String) -> int:
-	var count := 0
-	for stack in items:
+	var count: int = 0
+	for stack: Dictionary in items:
 		if stack["id"] == item_id:
-			count += stack["quantity"]
+			count += int(stack["quantity"])
 	return count
 
 
 func get_total_copper() -> int:
-	return get_item_count("copper") + get_item_count("silver") * 10 + get_item_count("gold") * 100
+	return int(get_total_wooden_value() / WOODEN_PER_COPPER)
+
+
+func get_total_wooden_value() -> int:
+	return get_item_count("wooden_coin") + get_item_count("copper") * WOODEN_PER_COPPER + get_item_count("silver") * WOODEN_PER_SILVER + get_item_count("gold") * WOODEN_PER_GOLD
 
 
 func pay_copper(amount: int) -> bool:
-	var payment := get_exact_currency_payment(amount)
+	var payment: Dictionary = get_exact_currency_payment(amount)
 	if payment.is_empty():
 		return false
-	for coin_type in ["gold", "silver", "copper"]:
-		var coin_count := int(payment.get(coin_type, 0))
+	for coin_type: String in ["gold", "silver", "copper", "wooden_coin"]:
+		var coin_count: int = int(payment.get(coin_type, 0))
 		if coin_count > 0 and not remove_item(coin_type, coin_count):
 			return false
 	return true
 
 
 func get_exact_currency_payment(amount: int) -> Dictionary:
-	var total := get_total_copper()
-	if total < amount:
+	if amount <= 0:
 		return {}
-	return _get_exact_currency_payment(amount)
+	var total_wooden_value: int = get_total_wooden_value()
+	var required_wooden_value: int = amount * WOODEN_PER_COPPER
+	if total_wooden_value < required_wooden_value:
+		return {}
+	return _get_exact_currency_payment(required_wooden_value)
 
 
 func refund_currency(payment: Dictionary) -> void:
-	for coin_type in ["gold", "silver", "copper"]:
-		var coin_count := int(payment.get(coin_type, 0))
+	for coin_type: String in ["gold", "silver", "copper", "wooden_coin"]:
+		var coin_count: int = int(payment.get(coin_type, 0))
 		if coin_count > 0:
 			add_item(coin_type, coin_count)
 
@@ -233,23 +245,28 @@ func _duplicate_items(source_items: Array[Dictionary]) -> Array[Dictionary]:
 	return copied_items
 
 
-func _get_exact_currency_payment(amount: int) -> Dictionary:
-	var remaining := amount
-	var payment := {
+func _get_exact_currency_payment(required_wooden_value: int) -> Dictionary:
+	var remaining_wooden_value: int = required_wooden_value
+	var payment: Dictionary = {
 		"gold": 0,
 		"silver": 0,
 		"copper": 0,
+		"wooden_coin": 0,
 	}
-	var gold_needed = min(get_item_count("gold"), remaining / 100)
+	var gold_needed: int = mini(get_item_count("gold"), int(remaining_wooden_value / WOODEN_PER_GOLD))
 	payment["gold"] = gold_needed
-	remaining -= gold_needed * 100
+	remaining_wooden_value -= gold_needed * WOODEN_PER_GOLD
 
-	var silver_needed = min(get_item_count("silver"), remaining / 10)
+	var silver_needed: int = mini(get_item_count("silver"), int(remaining_wooden_value / WOODEN_PER_SILVER))
 	payment["silver"] = silver_needed
-	remaining -= silver_needed * 10
+	remaining_wooden_value -= silver_needed * WOODEN_PER_SILVER
 
-	var copper_needed = min(get_item_count("copper"), remaining)
+	var copper_needed: int = mini(get_item_count("copper"), int(remaining_wooden_value / WOODEN_PER_COPPER))
 	payment["copper"] = copper_needed
-	remaining -= copper_needed
+	remaining_wooden_value -= copper_needed * WOODEN_PER_COPPER
 
-	return payment if remaining == 0 else {}
+	var wooden_needed: int = mini(get_item_count("wooden_coin"), remaining_wooden_value)
+	payment["wooden_coin"] = wooden_needed
+	remaining_wooden_value -= wooden_needed
+
+	return payment if remaining_wooden_value == 0 else {}

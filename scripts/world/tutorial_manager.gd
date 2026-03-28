@@ -1,10 +1,10 @@
 ﻿extends Node
 
-const SAVE_PATH := "user://tutorial_save.json"
+const SAVE_PATH: String = "user://tutorial_save.json"
 
 enum Step { MOVE = 0, ATTACK = 1, BUILD = 2, INTERACT = 3, DUNGEON = 4, DONE = 5 }
 
-const STEP_TEXT_KEYS := {
+const STEP_TEXT_KEYS: Dictionary = {
 	Step.MOVE: "tutorial_move",
 	Step.ATTACK: "tutorial_attack",
 	Step.BUILD: "tutorial_build",
@@ -90,7 +90,7 @@ func _on_build_state_changed() -> void:
 		_advance()
 
 
-func _on_portal_requested(target_level_id: String) -> void:
+func _on_portal_requested(target_level_id: String, _start_floor: int) -> void:
 	if _step == Step.DUNGEON and target_level_id == "dungeon":
 		_advance()
 
@@ -113,7 +113,7 @@ func _finish() -> void:
 func _show_step(step: int) -> void:
 	if _label == null:
 		return
-	var key := str(STEP_TEXT_KEYS.get(step, ""))
+	var key: String = str(STEP_TEXT_KEYS.get(step, ""))
 	_label.text = LocaleManager.L(key) if key != "" else ""
 
 
@@ -122,12 +122,12 @@ func _build_ui() -> void:
 	_canvas.layer = 10
 	add_child(_canvas)
 
-	var root := Control.new()
+	var root: Control = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(root)
 
-	var bg := ColorRect.new()
+	var bg: ColorRect = ColorRect.new()
 	bg.anchor_left = 0.5
 	bg.anchor_right = 0.5
 	bg.anchor_top = 0.82
@@ -160,11 +160,11 @@ func _build_ui() -> void:
 
 
 func _load_completed() -> bool:
-	var path := ProjectSettings.globalize_path(SAVE_PATH)
+	var path: String = ProjectSettings.globalize_path(SAVE_PATH)
 	if not FileAccess.file_exists(path):
 		return false
-	var raw := FileAccess.get_file_as_bytes(path)
-	var text := raw.get_string_from_utf8()
+	var raw: PackedByteArray = FileAccess.get_file_as_bytes(path)
+	var text: String = raw.get_string_from_utf8()
 	if text.is_empty():
 		return false
 	var data: Variant = JSON.parse_string(text)
@@ -174,9 +174,9 @@ func _load_completed() -> bool:
 
 
 func _save_completed() -> void:
-	var path := ProjectSettings.globalize_path(SAVE_PATH)
+	var path: String = ProjectSettings.globalize_path(SAVE_PATH)
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
-	var file := FileAccess.open(path, FileAccess.WRITE)
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return
 	file.store_string(JSON.stringify({"completed": true}))
