@@ -601,11 +601,13 @@ func _get_attack_offset(attack_direction: Vector2 = Vector2.RIGHT) -> Vector2:
 
 func _get_closest_interactable():
 	var closest = null
-	var closest_distance := INF
+	var closest_distance: float = INF
 	for interactable in nearby_interactables:
 		if interactable == null or not is_instance_valid(interactable):
 			continue
-		var distance := global_position.distance_squared_to(interactable.global_position)
+		if interactable.has_method("get_interaction_prompt") and str(interactable.get_interaction_prompt()) == "":
+			continue
+		var distance: float = global_position.distance_squared_to(interactable.global_position)
 		if distance < closest_distance:
 			closest = interactable
 			closest_distance = distance

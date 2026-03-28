@@ -27,6 +27,7 @@ const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
 const SLIME_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/slime_enemy.tscn")
 const SHADOW_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/shadow_enemy.tscn")
 const GARGOYLE_SCENE: PackedScene = preload("res://scenes/enemies/gargoyle_enemy.tscn")
+const MIMIC_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/mimic_enemy.tscn")
 const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
 const BOSS_ENEMY_SCENE := preload("res://scenes/enemies/boss_enemy.tscn")
 const NECROMANCER_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/necromancer_boss.tscn")
@@ -56,6 +57,7 @@ const ARROW_TRAP_LAUNCHER_SCRIPT: Script = preload("res://scripts/dungeon/arrow_
 @onready var loot_root: Node2D = $LootRoot
 
 var player = null
+var fog_tile_map_layer: TileMapLayer = null
 var floor_data: Dictionary = {}
 var total_kills: int = 0
 var gameplay_paused: bool = false
@@ -64,12 +66,14 @@ var boss_stairway = null
 var boss_enemy_ref = null
 var boss_locked_chest = null
 var explored_rooms: Array[int] = []
+var revealed_tiles: Dictionary = {}
 var _boss_door_locked: bool = false
 var _boss_door_tiles: Array[Vector2i] = []
 var _boss_door_blockers: Array[Node] = []
 
 
 func _ready() -> void:
+	_ensure_fog_layer()
 	_generate_floor()
 	set_process(true)
 
@@ -88,12 +92,16 @@ func _track_explored_room() -> void:
 		floori(player.global_position.x / 16.0),
 		floori(player.global_position.y / 16.0)
 	)
+	_reveal_tile_radius(player_tile, 1)
 	for room_index: int in range(rooms.size()):
 		var room: Rect2i = rooms[room_index] as Rect2i
-		if room.has_point(player_tile) and not explored_rooms.has(room_index):
+		if not room.has_point(player_tile):
+			continue
+		_reveal_room(room)
+		if not explored_rooms.has(room_index):
 			explored_rooms.append(room_index)
 			_on_room_entered(room_index)
-			break
+		break
 
 
 func _on_room_entered(room_index: int) -> void:
@@ -111,6 +119,7 @@ func place_player(new_player: Node2D, spawn_override: Variant = null) -> void:
 	player.global_position = get_spawn_position(spawn_override)
 	_update_player_ambient_light()
 	_spawn_enemies()
+	_track_explored_room()
 
 
 func descend_floor() -> void:
@@ -118,6 +127,7 @@ func descend_floor() -> void:
 	_generate_floor()
 	if player != null and is_instance_valid(player):
 		player.global_position = floor_data.get("spawn_point", Vector2.ZERO)
+		_track_explored_room()
 
 
 func _generate_floor() -> void:
@@ -130,6 +140,7 @@ func _generate_floor() -> void:
 	_boss_door_tiles.clear()
 	_boss_door_blockers.clear()
 	explored_rooms.clear()
+	revealed_tiles.clear()
 	_draw_floor()
 	_spawn_features()
 	_spawn_enemies()
@@ -139,17 +150,22 @@ func _generate_floor() -> void:
 
 
 func _draw_floor() -> void:
+	_ensure_fog_layer()
 	tile_map_layer.clear()
 	wall_tile_map_layer.clear()
+	fog_tile_map_layer.clear()
 	for child in wall_collision_root.get_children():
 		child.queue_free()
 	for floor_tile: Vector2i in floor_data.get("floor_tiles", []):
 		tile_map_layer.set_cell(floor_tile, _get_floor_source(floor_tile), Vector2i.ZERO)
+		fog_tile_map_layer.set_cell(floor_tile, _get_floor_source(floor_tile), Vector2i.ZERO)
 	for wall_tile: Vector2i in floor_data.get("wall_tiles", []):
 		wall_tile_map_layer.set_cell(wall_tile, _get_wall_source(wall_tile), Vector2i.ZERO)
+		fog_tile_map_layer.set_cell(wall_tile, _get_wall_source(wall_tile), Vector2i.ZERO)
 		_spawn_wall_blocker(wall_tile)
 	tile_map_layer.update_internals()
 	wall_tile_map_layer.update_internals()
+	fog_tile_map_layer.update_internals()
 	_apply_biome_colors()
 	_update_player_ambient_light()
 
@@ -531,14 +547,23 @@ func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNu
 
 
 func _spawn_treasure_room(room: Rect2i, room_index: int = -1) -> void:
-	var chest_count := randi_range(3, 5)
+	var chest_count: int = randi_range(3, 5)
 	var chest_modulate: Color = _get_chest_modulate(current_floor)
 	for _idx in range(chest_count):
-		var chest = DUNGEON_CHEST_SCENE.instantiate()
-		chest.global_position = _random_point_in_room(room)
-		chest.setup(loot_root, current_floor)
-		chest.modulate = chest_modulate
-		feature_root.add_child(chest)
+		var spawn_mimic: bool = randf() <= 0.25
+		if spawn_mimic:
+			var mimic: Enemy = MIMIC_ENEMY_SCENE.instantiate() as Enemy
+			mimic.global_position = _random_point_in_room(room)
+			mimic.configure_for_floor(player, current_floor, loot_root)
+			mimic.modulate = chest_modulate
+			mimic.died.connect(_on_enemy_died.bind(mimic))
+			enemy_root.add_child(mimic)
+		else:
+			var chest: DungeonChest = DUNGEON_CHEST_SCENE.instantiate() as DungeonChest
+			chest.global_position = _random_point_in_room(room)
+			chest.setup(loot_root, current_floor)
+			chest.modulate = chest_modulate
+			feature_root.add_child(chest)
 	if room_index >= 0:
 		var treasure_timer: Node = TIMED_TREASURE_ROOM_SCRIPT.new()
 		if treasure_timer.has_method("setup"):
@@ -926,28 +951,89 @@ func _apply_floor_scaling(enemy_node: Enemy, hp_multiplier: float, damage_multip
 func get_minimap_snapshot() -> Dictionary:
 	var enemy_positions: Array[Vector2] = []
 	var chest_positions: Array[Vector2] = []
+	var visible_floor_tiles: Array[Vector2i] = []
+	var full_minimap: bool = _has_full_minimap()
 	for enemy in enemy_root.get_children():
+		if enemy.has_method("is_hidden_on_minimap") and bool(enemy.call("is_hidden_on_minimap")):
+			continue
 		enemy_positions.append(enemy.global_position)
 	if treasure_reveal_time_left > 0.0:
 		for child in feature_root.get_children():
 			if child is DungeonChest:
 				chest_positions.append(child.global_position)
+		for enemy in enemy_root.get_children():
+			if enemy.has_method("is_disguised_mimic") and bool(enemy.call("is_disguised_mimic")):
+				chest_positions.append(enemy.global_position)
+	for floor_tile_variant: Variant in floor_data.get("floor_tiles", []):
+		var floor_tile: Vector2i = floor_tile_variant as Vector2i
+		if full_minimap or revealed_tiles.has(floor_tile):
+			visible_floor_tiles.append(floor_tile)
+	var minimap_rooms: Array[int] = explored_rooms.duplicate()
+	if full_minimap:
+		minimap_rooms.clear()
+		var room_count: int = (floor_data.get("rooms", []) as Array).size()
+		for room_index: int in range(room_count):
+			minimap_rooms.append(room_index)
 	return {
 		"mode": "dungeon",
 		"map_size": DUNGEON_GENERATOR.MAP_SIZE,
-		"floor_tiles": floor_data.get("floor_tiles", []),
+		"floor_tiles": visible_floor_tiles,
 		"rooms": floor_data.get("rooms", []),
 		"room_types": floor_data.get("room_types", []),
 		"boss_room_index": int(floor_data.get("boss_room_index", -1)),
 		"spawn_room_index": int(floor_data.get("spawn_room_index", 0)),
 		"exit_room_index": int(floor_data.get("exit_room_index", 0)),
-		"explored_rooms": explored_rooms.duplicate(),
+		"explored_rooms": minimap_rooms,
 		"enemy_positions": enemy_positions,
 		"chest_positions": chest_positions,
 		"stair_tile": Vector2(floor_data.get("exit_point", Vector2.ZERO).x / 16.0, floor_data.get("exit_point", Vector2.ZERO).y / 16.0),
 		"spawn_tile": Vector2(floor_data.get("spawn_point", Vector2.ZERO).x / 16.0, floor_data.get("spawn_point", Vector2.ZERO).y / 16.0),
 		"player_tile": Vector2(player.global_position.x / 16.0, player.global_position.y / 16.0) if player != null else Vector2.ZERO,
 	}
+
+
+func _ensure_fog_layer() -> void:
+	if fog_tile_map_layer != null and is_instance_valid(fog_tile_map_layer):
+		return
+	var existing_layer: Node = get_node_or_null("fog")
+	if existing_layer is TileMapLayer:
+		fog_tile_map_layer = existing_layer as TileMapLayer
+	else:
+		fog_tile_map_layer = TileMapLayer.new()
+		fog_tile_map_layer.name = "fog"
+		add_child(fog_tile_map_layer)
+	fog_tile_map_layer.tile_set = tile_map_layer.tile_set
+	fog_tile_map_layer.z_index = max(tile_map_layer.z_index, wall_tile_map_layer.z_index) + 20
+	fog_tile_map_layer.modulate = Color(0.0, 0.0, 0.0, 0.96)
+
+
+func _reveal_room(room: Rect2i) -> void:
+	for y: int in range(room.position.y - 1, room.end.y + 1):
+		for x: int in range(room.position.x - 1, room.end.x + 1):
+			_reveal_tile(Vector2i(x, y))
+
+
+func _reveal_tile_radius(center_tile: Vector2i, radius: int) -> void:
+	for y: int in range(center_tile.y - radius, center_tile.y + radius + 1):
+		for x: int in range(center_tile.x - radius, center_tile.x + radius + 1):
+			_reveal_tile(Vector2i(x, y))
+
+
+func _reveal_tile(tile_pos: Vector2i) -> void:
+	if revealed_tiles.has(tile_pos):
+		return
+	revealed_tiles[tile_pos] = true
+	if fog_tile_map_layer != null:
+		fog_tile_map_layer.erase_cell(tile_pos)
+
+
+func _has_full_minimap() -> bool:
+	if player == null or not is_instance_valid(player):
+		return false
+	var stats_node: Node = player.get_node_or_null("PlayerStats")
+	if stats_node == null or not stats_node.has_method("has_full_minimap"):
+		return false
+	return bool(stats_node.call("has_full_minimap"))
 
 
 func get_spawn_position(spawn_override: Variant = null) -> Vector2:

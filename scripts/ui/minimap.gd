@@ -71,52 +71,41 @@ func _draw_dungeon() -> void:
 	var room_types: Array = snapshot.get("room_types", [])
 	var boss_room_index: int = int(snapshot.get("boss_room_index", -1))
 	var explored_rooms: Array = snapshot.get("explored_rooms", [])
+	var visible_tiles: Array = snapshot.get("floor_tiles", [])
+	var visible_tile_set: Dictionary = {}
+	for tile_variant: Variant in visible_tiles:
+		visible_tile_set[tile_variant] = true
 
-	if rooms.is_empty():
-		for tile: Vector2i in snapshot.get("floor_tiles", []):
-			draw_rect(Rect2(tile.x * scale_x, tile.y * scale_y, max(scale_x, 1.0), max(scale_y, 1.0)), Color(0.38, 0.4, 0.44, 1.0), true)
-	else:
-		var adjacent_set: Dictionary = {}
-		for exp_idx: int in explored_rooms:
-			if exp_idx > 0 and not explored_rooms.has(exp_idx - 1):
-				adjacent_set[exp_idx - 1] = true
-			if exp_idx < rooms.size() - 1 and not explored_rooms.has(exp_idx + 1):
-				adjacent_set[exp_idx + 1] = true
-
-		for adj_idx: int in adjacent_set.keys():
-			if adj_idx < 0 or adj_idx >= rooms.size():
-				continue
-			var room: Rect2i = rooms[adj_idx] as Rect2i
-			var rx: float = room.position.x * scale_x
-			var ry: float = room.position.y * scale_y
-			var rw: float = room.size.x * scale_x
-			var rh: float = room.size.y * scale_y
-			draw_rect(Rect2(rx, ry, rw, rh), Color(0.18, 0.18, 0.24, 1.0), true)
-			draw_rect(Rect2(rx, ry, rw, rh), Color(0.38, 0.38, 0.5, 0.7), false, 1.0)
-
-		for exp_idx: int in explored_rooms:
-			if exp_idx < 0 or exp_idx >= rooms.size():
-				continue
-			var room: Rect2i = rooms[exp_idx] as Rect2i
-			var rx: float = room.position.x * scale_x
-			var ry: float = room.position.y * scale_y
-			var rw: float = room.size.x * scale_x
-			var rh: float = room.size.y * scale_y
-			var room_color: Color = _room_color_for_type(room_types, exp_idx, boss_room_index)
-			draw_rect(Rect2(rx, ry, rw, rh), room_color, true)
-			draw_rect(Rect2(rx, ry, rw, rh), Color(0.65, 0.65, 0.75, 0.5), false, 1.0)
+	for tile: Vector2i in visible_tiles:
+		draw_rect(Rect2(tile.x * scale_x, tile.y * scale_y, max(scale_x, 1.0), max(scale_y, 1.0)), Color(0.38, 0.4, 0.44, 1.0), true)
+	for exp_idx: int in explored_rooms:
+		if exp_idx < 0 or exp_idx >= rooms.size():
+			continue
+		var room: Rect2i = rooms[exp_idx] as Rect2i
+		var rx: float = room.position.x * scale_x
+		var ry: float = room.position.y * scale_y
+		var rw: float = room.size.x * scale_x
+		var rh: float = room.size.y * scale_y
+		var room_color: Color = _room_color_for_type(room_types, exp_idx, boss_room_index)
+		draw_rect(Rect2(rx, ry, rw, rh), room_color, true)
+		draw_rect(Rect2(rx, ry, rw, rh), Color(0.65, 0.65, 0.75, 0.5), false, 1.0)
 
 	for enemy_pos: Vector2 in snapshot.get("enemy_positions", []):
 		var enemy_tile: Vector2 = Vector2(enemy_pos.x / 16.0, enemy_pos.y / 16.0)
+		if not visible_tile_set.has(Vector2i(int(enemy_tile.x), int(enemy_tile.y))):
+			continue
 		draw_circle(Vector2(enemy_tile.x * scale_x, enemy_tile.y * scale_y), 2.5, Color(0.95, 0.24, 0.24, 1.0))
 	for chest_pos: Vector2 in snapshot.get("chest_positions", []):
 		var chest_tile: Vector2 = Vector2(chest_pos.x / 16.0, chest_pos.y / 16.0)
+		if not visible_tile_set.has(Vector2i(int(chest_tile.x), int(chest_tile.y))):
+			continue
 		draw_rect(Rect2(chest_tile.x * scale_x - 1.5, chest_tile.y * scale_y - 1.5, 4.0, 4.0), Color(1.0, 0.9, 0.25, 1.0), true)
 	var stair_tile: Vector2 = snapshot.get("stair_tile", Vector2.ZERO)
-	if stair_tile != Vector2.ZERO:
+	if stair_tile != Vector2.ZERO and visible_tile_set.has(Vector2i(int(stair_tile.x), int(stair_tile.y))):
 		draw_rect(Rect2(stair_tile.x * scale_x - 3.0, stair_tile.y * scale_y - 3.0, 6.0, 6.0), Color(0.3, 1.0, 0.5, 1.0), true)
 	var spawn_tile: Vector2 = snapshot.get("spawn_tile", Vector2.ZERO)
-	draw_circle(Vector2(spawn_tile.x * scale_x, spawn_tile.y * scale_y), 3.0, Color(0.35, 0.7, 1.0, 1.0))
+	if visible_tile_set.has(Vector2i(int(spawn_tile.x), int(spawn_tile.y))):
+		draw_circle(Vector2(spawn_tile.x * scale_x, spawn_tile.y * scale_y), 3.0, Color(0.35, 0.7, 1.0, 1.0))
 	var player_tile: Vector2 = snapshot.get("player_tile", Vector2.ZERO)
 	draw_rect(Rect2(player_tile.x * scale_x - 3.0, player_tile.y * scale_y - 3.0, 6.0, 6.0), Color(1.0, 1.0, 0.3, 1.0), true)
 	draw_rect(Rect2(Vector2.ZERO, size), Color(1.0, 1.0, 1.0, 0.8), false, 1.0)
