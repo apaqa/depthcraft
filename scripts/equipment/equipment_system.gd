@@ -93,11 +93,82 @@ func get_preview_bonus_map(item_data: Dictionary, slot_name: String = "") -> Dic
 	return _build_total_bonus_map(preview_equipped)
 
 
+const FORGE_MAX_BY_RARITY: Dictionary = {
+	"Common": 3,
+	"Uncommon": 5,
+	"Rare": 7,
+	"Epic": 10,
+	"Legendary": 15,
+}
+
+
 func get_item_display_name(item: Dictionary) -> String:
 	if item.is_empty():
 		return ""
-	var base_name := ITEM_DATABASE.get_stack_display_name(item)
-	return LocaleManager.L("broken_item_fmt") % base_name if _is_item_broken(item) else base_name
+	var base_name: String = ITEM_DATABASE.get_stack_display_name(item)
+	var forge_lvl: int = int(item.get("forge_level", 0))
+	var broken: bool = _is_item_broken(item)
+	var display: String = LocaleManager.L("broken_item_fmt") % base_name if broken else base_name
+	if forge_lvl > 0:
+		display = display + " +%d" % forge_lvl
+	return display
+
+
+func get_forge_max_level(item: Dictionary) -> int:
+	var rarity: String = str(item.get("rarity", "Common"))
+	return int(FORGE_MAX_BY_RARITY.get(rarity, 3))
+
+
+func forge_item(slot_name: String, player_inventory) -> bool:
+	var item: Dictionary = get_equipped(slot_name)
+	if item.is_empty():
+		return false
+	var forge_lvl: int = int(item.get("forge_level", 0))
+	var max_lvl: int = get_forge_max_level(item)
+	if forge_lvl >= max_lvl:
+		return false
+	# Calculate cost
+	var item_level: int = maxi(int(item.get("required_level", 1)), 1)
+	var forge_times: int = forge_lvl + 1
+	var copper_cost: int = 10 * item_level * forge_times
+	var iron_cost: int = forge_times
+	if player_inventory == null:
+		return false
+	if not player_inventory.pay_copper(copper_cost):
+		return false
+	if not player_inventory.remove_item("iron_ore", iron_cost):
+		# Refund copper
+		player_inventory.add_item("copper", copper_cost)
+		return false
+	# Apply forge level
+	item["forge_level"] = forge_lvl + 1
+	# Boost main stats by 5% per forge level
+	var stats: Dictionary = item.get("stats", {})
+	for stat_name: String in stats.keys():
+		var base_val: float = float(stats[stat_name])
+		if stat_name == "attack" or stat_name == "defense":
+			stats[stat_name] = base_val * 1.05
+		else:
+			stats[stat_name] = base_val * 1.03
+	item["stats"] = stats
+	_equipped[slot_name] = item
+	equipment_changed.emit()
+	return true
+
+
+func get_forge_cost(slot_name: String) -> Dictionary:
+	var item: Dictionary = get_equipped(slot_name)
+	if item.is_empty():
+		return {}
+	var forge_lvl: int = int(item.get("forge_level", 0))
+	var item_level: int = maxi(int(item.get("required_level", 1)), 1)
+	var forge_times: int = forge_lvl + 1
+	return {
+		"copper": 10 * item_level * forge_times,
+		"iron_ore": forge_times,
+		"current_forge_level": forge_lvl,
+		"max_forge_level": get_forge_max_level(item),
+	}
 
 
 func get_item_display_color(item: Dictionary) -> Color:

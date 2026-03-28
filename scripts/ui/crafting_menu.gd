@@ -40,6 +40,14 @@ var _repair_action_btn: Button = null
 var _repair_widgets_built: bool = false
 var _repair_detail_icon: Control = null
 var _repair_stats_vbox: VBoxContainer = null
+var _forge_widgets_built: bool = false
+var _forge_selected_slot: String = ""
+var _forge_placeholder: Label = null
+var _forge_name_lbl: Label = null
+var _forge_level_lbl: Label = null
+var _forge_cost_lbl: Label = null
+var _forge_preview_lbl: Label = null
+var _forge_action_btn: Button = null
 
 const CATEGORY_KEY_MAP = {
 	"Armor": "cat_armor",
@@ -128,11 +136,20 @@ func _rebuild_recipe_list() -> void:
 	title_label.add_theme_font_size_override("font_size", 22)
 	if _current_category == "repair":
 		_apply_repair_mode_layout(true)
+		_apply_forge_mode_layout(false)
 		_ensure_repair_widgets()
 		_build_repair_list()
 		_refresh_category_tab_visuals()
 		return
+	if _current_category == "forge":
+		_apply_repair_mode_layout(false)
+		_apply_forge_mode_layout(true)
+		_ensure_forge_widgets()
+		_build_forge_list()
+		_refresh_category_tab_visuals()
+		return
 	_apply_repair_mode_layout(false)
+	_apply_forge_mode_layout(false)
 	var recipes: Array[Dictionary] = CRAFTING_SYSTEM.get_available_recipes_for_ids(filtered_recipe_ids) if not filtered_recipe_ids.is_empty() else CRAFTING_SYSTEM.get_available_recipes()
 	var grouped: Dictionary = {}
 	for recipe in recipes:
@@ -398,7 +415,7 @@ func _build_category_tabs() -> void:
 	if facility != null and facility is CookingBenchFacility:
 		cat_keys = ["all", "Cooking"]
 	else:
-		cat_keys = ["all", "Weapons", "Armor", "Consumables", "Tools", "repair"]
+		cat_keys = ["all", "Weapons", "Armor", "Consumables", "Tools", "repair", "forge"]
 	for cat_key: String in cat_keys:
 		var btn: Button = Button.new()
 		btn.custom_minimum_size = Vector2(0, 40)
@@ -407,6 +424,8 @@ func _build_category_tabs() -> void:
 		if cat_key != "all":
 			if cat_key == "repair":
 				btn_text = LocaleManager.L("repair")
+			elif cat_key == "forge":
+				btn_text = LocaleManager.L("forge")
 			else:
 				btn_text = _translate_category(cat_key)
 		btn.text = btn_text
@@ -916,3 +935,202 @@ func _repair_translate_slot(slot_name: String) -> String:
 		"tool":
 			return LocaleManager.L("slot_tool")
 	return slot_name.replace("_", " ").capitalize()
+
+
+# ---------------------------------------------------------------------------
+# Forge tab
+# ---------------------------------------------------------------------------
+func _apply_forge_mode_layout(is_forge: bool) -> void:
+	detail_text.visible = not is_forge
+	materials_container.visible = not is_forge
+	craft_button.visible = not is_forge
+	if upgrade_label != null:
+		upgrade_label.visible = false
+	if upgrade_button != null:
+		upgrade_button.visible = false
+	if not _forge_widgets_built:
+		return
+	_forge_placeholder.visible = is_forge
+	_forge_name_lbl.visible = false
+	_forge_level_lbl.visible = false
+	_forge_cost_lbl.visible = false
+	_forge_preview_lbl.visible = false
+	_forge_action_btn.visible = false
+
+
+func _ensure_forge_widgets() -> void:
+	if _forge_widgets_built:
+		return
+	_forge_placeholder = Label.new()
+	_forge_placeholder.text = "選擇已穿戴的裝備進行鍛造"
+	_forge_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_forge_placeholder.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_forge_placeholder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_vbox.add_child(_forge_placeholder)
+
+	_forge_name_lbl = Label.new()
+	_forge_name_lbl.visible = false
+	_forge_name_lbl.add_theme_font_size_override("font_size", 17)
+	_forge_name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_forge_name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_vbox.add_child(_forge_name_lbl)
+
+	_forge_level_lbl = Label.new()
+	_forge_level_lbl.visible = false
+	_forge_level_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_vbox.add_child(_forge_level_lbl)
+
+	_forge_preview_lbl = Label.new()
+	_forge_preview_lbl.visible = false
+	_forge_preview_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_forge_preview_lbl.add_theme_font_size_override("font_size", 13)
+	_forge_preview_lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 0.5, 1.0))
+	detail_vbox.add_child(_forge_preview_lbl)
+
+	_forge_cost_lbl = Label.new()
+	_forge_cost_lbl.visible = false
+	_forge_cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_forge_cost_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1.0))
+	detail_vbox.add_child(_forge_cost_lbl)
+
+	_forge_action_btn = Button.new()
+	_forge_action_btn.visible = false
+	_forge_action_btn.text = LocaleManager.L("forge")
+	_forge_action_btn.custom_minimum_size = Vector2(120, 44)
+	_forge_action_btn.pressed.connect(_on_forge_action_pressed)
+	detail_vbox.add_child(_forge_action_btn)
+
+	_forge_widgets_built = true
+
+
+func _build_forge_list() -> void:
+	if player == null:
+		_forge_selected_slot = ""
+		_populate_forge_detail()
+		return
+	for slot_name: String in player.equipment_system.get_slot_order():
+		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
+		if item.is_empty():
+			continue
+		var max_dur: int = int(item.get("max_durability", 0))
+		if max_dur <= 0:
+			continue
+		recipe_list_container.add_child(_build_forge_row(item, slot_name))
+	_populate_forge_detail()
+
+
+func _build_forge_row(item: Dictionary, slot_name: String) -> HBoxContainer:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.custom_minimum_size = Vector2(0, 56)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var select_btn: Button = Button.new()
+	select_btn.flat = true
+	select_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var sn: String = slot_name
+	select_btn.pressed.connect(func() -> void: _set_forge_selection(sn))
+
+	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var icon_tex: Texture2D = ITEM_DATABASE.get_stack_icon(item)
+	if icon_tex != null:
+		var icon_rect: TextureRect = TextureRect.new()
+		icon_rect.custom_minimum_size = Vector2(48, 48)
+		icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_rect.texture = icon_tex
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hbox.add_child(icon_rect)
+
+	var mid: VBoxContainer = VBoxContainer.new()
+	mid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mid.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var forge_lvl: int = int(item.get("forge_level", 0))
+	var max_lvl: int = player.equipment_system.get_forge_max_level(item)
+	var display_name: String = player.equipment_system.get_item_display_name(item)
+	var name_lbl: Label = Label.new()
+	name_lbl.text = "[%s] %s" % [_repair_translate_slot(slot_name), display_name]
+	name_lbl.add_theme_font_size_override("font_size", 14)
+	name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+	name_lbl.clip_text = true
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mid.add_child(name_lbl)
+
+	var level_lbl: Label = Label.new()
+	level_lbl.text = "鍛造 %d/%d" % [forge_lvl, max_lvl]
+	level_lbl.add_theme_font_size_override("font_size", 12)
+	level_lbl.modulate = Color(0.8, 0.85, 1.0, 1.0) if forge_lvl < max_lvl else Color(1.0, 0.82, 0.1, 1.0)
+	level_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mid.add_child(level_lbl)
+
+	hbox.add_child(mid)
+	select_btn.add_child(hbox)
+	row.add_child(select_btn)
+
+	return row
+
+
+func _set_forge_selection(slot: String) -> void:
+	_forge_selected_slot = slot
+	_populate_forge_detail()
+
+
+func _populate_forge_detail() -> void:
+	if not _forge_widgets_built:
+		return
+	if _forge_selected_slot == "" or player == null:
+		_forge_placeholder.text = "選擇已穿戴的裝備進行鍛造"
+		_forge_placeholder.visible = true
+		_forge_name_lbl.visible = false
+		_forge_level_lbl.visible = false
+		_forge_cost_lbl.visible = false
+		_forge_preview_lbl.visible = false
+		_forge_action_btn.visible = false
+		return
+	var item: Dictionary = player.equipment_system.get_equipped(_forge_selected_slot)
+	if item.is_empty():
+		_forge_selected_slot = ""
+		_populate_forge_detail()
+		return
+	var forge_lvl: int = int(item.get("forge_level", 0))
+	var max_lvl: int = player.equipment_system.get_forge_max_level(item)
+	_forge_placeholder.visible = false
+	_forge_name_lbl.text = player.equipment_system.get_item_display_name(item)
+	_forge_name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+	_forge_name_lbl.visible = true
+	_forge_level_lbl.text = "鍛造等級：%d / %d" % [forge_lvl, max_lvl]
+	_forge_level_lbl.visible = true
+	if forge_lvl >= max_lvl:
+		_forge_cost_lbl.text = "已達最大鍛造等級"
+		_forge_cost_lbl.add_theme_color_override("font_color", Color(1.0, 0.82, 0.1, 1.0))
+		_forge_cost_lbl.visible = true
+		_forge_preview_lbl.visible = false
+		_forge_action_btn.visible = false
+		return
+	var cost: Dictionary = player.equipment_system.get_forge_cost(_forge_selected_slot)
+	_forge_cost_lbl.text = "費用：%d 銅 + %d 鐵礦" % [int(cost.get("copper", 0)), int(cost.get("iron_ore", 0))]
+	_forge_cost_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1.0))
+	_forge_cost_lbl.visible = true
+	_forge_preview_lbl.text = "主屬性 +5% / 次屬性 +3%"
+	_forge_preview_lbl.visible = true
+	_forge_action_btn.visible = true
+
+
+func _on_forge_action_pressed() -> void:
+	if player == null or _forge_selected_slot == "":
+		return
+	var success: bool = player.equipment_system.forge_item(_forge_selected_slot, player.inventory)
+	if success:
+		_build_forge_list()
+		_populate_forge_detail()
+		player.inventory.inventory_changed.emit()
+	else:
+		_forge_cost_lbl.text = "材料不足！"
+		_forge_cost_lbl.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2, 1.0))
