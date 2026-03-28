@@ -1,0 +1,412 @@
+scripts/building/building_data.gd:29:		"preview_texture": preload("res://assets/crate.png"),
+scripts/building/building_data.gd:40:		"preview_texture": preload("res://assets/floor_5.png"),
+scripts/building/building_data.gd:51:		"preview_texture": preload("res://assets/wall_missing_brick_1.png"),
+scripts/building/building_data.gd:62:		"preview_texture": preload("res://assets/floor_8.png"),
+scripts/building/building_data.gd:75:		"preview_texture": preload("res://assets/door_closed.png"),
+scripts/building/building_data.gd:84:		"preview_texture": preload("res://assets/crate.png"),
+scripts/building/building_data.gd:93:		"preview_texture": preload("res://assets/chest_closed.png"),
+scripts/building/building_data.gd:102:		"preview_texture": preload("res://assets/boxes_stacked.png"),
+scripts/building/building_data.gd:111:		"preview_texture": preload("res://assets/column.png"),
+scripts/building/building_data.gd:120:		"preview_texture": preload("res://assets/floor_mud_mid_1.png"),
+scripts/building/building_data.gd:129:		"preview_texture": preload("res://assets/torch_no_flame.png"),
+scripts/building/building_data.gd:139:		"preview_texture": preload("res://assets/wall_banner_yellow.png"),
+scripts/building/building_data.gd:148:		"preview_texture": preload("res://assets/column.png"),
+scripts/building/building_system.gd:12:const BUILDING_DATA := preload("res://scripts/building/building_data.gd")
+scripts/building/building_system.gd:13:const BUILDING_SAVE := preload("res://scripts/building/building_save.gd")
+scripts/building/building_system.gd:14:const BUILD_PREVIEW_SCENE := preload("res://scenes/building/build_preview.tscn")
+scripts/building/building_system.gd:15:const HOME_CORE_SCENE := preload("res://scenes/building/home_core.tscn")
+scripts/building/building_system.gd:16:const BUILDING_TILE_SCRIPT := preload("res://scripts/building/building_tile.gd")
+scripts/building/building_system.gd:17:const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
+scripts/building/building_tile.gd:15:	sprite.texture = building.get("preview_texture", null)
+scripts/building/building_tile.gd:16:	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/building/build_preview.gd:17:	var texture: Texture2D = building_system.get_selected_building_texture()
+scripts/building/build_preview.gd:18:	if texture == null:
+scripts/building/build_preview.gd:25:	sprite.texture = texture
+scripts/crafting/crafting_system.gd:4:const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+scripts/dungeon/arrow_trap_launcher.gd:4:const PROJECTILE_SCENE: PackedScene = preload("res://scenes/enemies/projectile.tscn")
+scripts/dungeon/dungeon_chest.gd:4:const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
+scripts/dungeon/dungeon_chest.gd:5:const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
+scripts/dungeon/dungeon_chest.gd:23:	if chest_open_texture != null and sprite != null:
+scripts/dungeon/dungeon_chest.gd:24:		sprite.texture = chest_open_texture
+scripts/dungeon/dungeon_level.gd:19:const DUNGEON_GENERATOR := preload("res://scripts/dungeon/dungeon_generator.gd")
+scripts/dungeon/dungeon_level.gd:20:const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+scripts/dungeon/dungeon_level.gd:21:const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
+scripts/dungeon/dungeon_level.gd:22:const STAIRWAY_SCENE := preload("res://scenes/dungeon/stairway.tscn")
+scripts/dungeon/dungeon_level.gd:23:const MELEE_ENEMY_SCENE := preload("res://scenes/enemies/melee_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:24:const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:25:const SHIELD_ORC_SCENE := preload("res://scenes/enemies/shield_orc_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:26:const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:27:const SLIME_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/slime_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:28:const SHADOW_ASSASSIN_SCENE: PackedScene = preload("res://scenes/enemies/shadow_assassin_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:29:const GARGOYLE_SCENE: PackedScene = preload("res://scenes/enemies/gargoyle_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:30:const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:31:const BOSS_ENEMY_SCENE := preload("res://scenes/enemies/boss_enemy.tscn")
+scripts/dungeon/dungeon_level.gd:32:const NECROMANCER_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/necromancer_boss.tscn")
+scripts/dungeon/dungeon_level.gd:33:const LAVA_GIANT_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/lava_giant_boss.tscn")
+scripts/dungeon/dungeon_level.gd:34:const ABYSS_EYE_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/abyss_eye_boss.tscn")
+scripts/dungeon/dungeon_level.gd:35:const DUNGEON_CHEST_SCENE := preload("res://scenes/dungeon/dungeon_chest.tscn")
+scripts/dungeon/dungeon_level.gd:36:const LOCKED_CHEST_SCENE := preload("res://scenes/dungeon/locked_chest.tscn")
+scripts/dungeon/dungeon_level.gd:37:const SPIKE_TRAP_SCENE := preload("res://scenes/dungeon/spike_trap.tscn")
+scripts/dungeon/dungeon_level.gd:38:const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
+scripts/dungeon/dungeon_level.gd:39:const EVENT_ROOM_SCRIPT := preload("res://scripts/dungeon/event_room.gd")
+scripts/dungeon/dungeon_level.gd:40:const CHALLENGE_ROOM_SCRIPT := preload("res://scripts/dungeon/challenge_room.gd")
+scripts/dungeon/dungeon_level.gd:41:const PUZZLE_ROOM_SCRIPT := preload("res://scripts/dungeon/puzzle_room.gd")
+scripts/dungeon/dungeon_level.gd:42:const SAFE_ROOM_SCRIPT := preload("res://scripts/dungeon/safe_room.gd")
+scripts/dungeon/dungeon_level.gd:43:const DUNGEON_MERCHANT_SCRIPT := preload("res://scripts/dungeon/dungeon_merchant.gd")
+scripts/dungeon/dungeon_level.gd:44:const TIMED_TREASURE_ROOM_SCRIPT: Script = preload("res://scripts/dungeon/timed_treasure_room.gd")
+scripts/dungeon/dungeon_level.gd:45:const SECRET_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/secret_merchant.gd")
+scripts/dungeon/dungeon_level.gd:46:const ARROW_TRAP_LAUNCHER_SCRIPT: Script = preload("res://scripts/dungeon/arrow_trap_launcher.gd")
+scripts/dungeon/dungeon_level.gd:189:		light.texture = grad_tex
+scripts/dungeon/dungeon_level.gd:191:		light.texture_scale = 3.0
+scripts/dungeon/dungeon_loot.gd:4:const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+scripts/dungeon/dungeon_merchant.gd:4:const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
+scripts/dungeon/dungeon_merchant.gd:5:const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+scripts/dungeon/dungeon_merchant.gd:6:const MERCHANT_TEXTURE := preload("res://assets/npc_merchant_2.png")
+scripts/dungeon/dungeon_merchant.gd:7:const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
+scripts/dungeon/dungeon_merchant.gd:19:var _equipment_icon: TextureRect = null
+scripts/dungeon/dungeon_merchant.gd:70:		sprite.texture = MERCHANT_TEXTURE
+scripts/dungeon/dungeon_merchant.gd:71:		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/dungeon/dungeon_merchant.gd:193:	_equipment_icon = _make_icon_rect(ITEM_DATABASE.get_equipment_icon("weapon", "Common"))
+scripts/dungeon/dungeon_merchant.gd:204:func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
+scripts/dungeon/dungeon_merchant.gd:207:	if icon != null:
+scripts/dungeon/dungeon_merchant.gd:266:	if _equipment_label == null or _equipment_button == null or _equipment_icon == null:
+scripts/dungeon/dungeon_merchant.gd:269:		_equipment_icon.texture = ITEM_DATABASE.get_equipment_icon("weapon", "Common")
+scripts/dungeon/dungeon_merchant.gd:275:	_equipment_icon.texture = ITEM_DATABASE.get_stack_icon(_equipment_offer)
+scripts/dungeon/dungeon_merchant.gd:299:	var icon_rect: TextureRect = TextureRect.new()
+scripts/dungeon/dungeon_merchant.gd:300:	icon_rect.custom_minimum_size = Vector2(16, 16)
+scripts/dungeon/dungeon_merchant.gd:301:	icon_rect.size = Vector2(16, 16)
+scripts/dungeon/dungeon_merchant.gd:302:	icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+scripts/dungeon/dungeon_merchant.gd:303:	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+scripts/dungeon/dungeon_merchant.gd:304:	icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/dungeon/dungeon_merchant.gd:305:	icon_rect.texture = icon
+scripts/dungeon/dungeon_merchant.gd:325:	_equipment_icon = null
+scripts/dungeon/event_room.gd:4:const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
+scripts/dungeon/event_room.gd:5:const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
+scripts/dungeon/event_room.gd:6:const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+scripts/dungeon/event_room.gd:14:static var _altar_texture: Texture2D = null
+scripts/dungeon/event_room.gd:95:		sprite.texture = _get_altar_texture()
+scripts/dungeon/event_room.gd:96:		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/dungeon/event_room.gd:202:	if _altar_texture != null:
+scripts/dungeon/event_room.gd:224:	_altar_texture = ImageTexture.create_from_image(image)
+scripts/dungeon/locked_chest.gd:4:const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
+scripts/dungeon/locked_chest.gd:5:const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
+scripts/dungeon/loot_drop.gd:4:const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+scripts/dungeon/loot_drop.gd:5:const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
+scripts/dungeon/loot_drop.gd:34:	var icon_size: Vector2 = Vector2(24.0, 24.0)
+scripts/dungeon/loot_drop.gd:35:	if sprite != null and sprite.texture != null:
+scripts/dungeon/loot_drop.gd:37:		icon_size = Vector2(maxf(scaled_size.x, 16.0), maxf(scaled_size.y, 16.0)) + Vector2(8.0, 8.0)
+scripts/dungeon/loot_drop.gd:147:	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/dungeon/loot_drop.gd:153:		sprite.texture = null
+scripts/dungeon/loot_drop.gd:157:	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item_data)
+scripts/dungeon/loot_drop.gd:158:	if icon != null:
+scripts/dungeon/loot_drop.gd:159:		sprite.texture = icon
+scripts/dungeon/loot_drop.gd:168:	sprite.texture = null
+scripts/dungeon/puzzle_room.gd:9:const DUNGEON_CHEST_SCENE := preload("res://scenes/dungeon/dungeon_chest.tscn")
+scripts/dungeon/stairway.gd:13:const DOWN_TEXTURE := preload("res://assets/floor_stairs.png")
+scripts/dungeon/stairway.gd:14:const UP_TEXTURE := preload("res://assets/stairs_top.png")
+scripts/dungeon/stairway.gd:60:		sprite.texture = UP_TEXTURE
+scripts/dungeon/stairway.gd:64:		sprite.texture = DOWN_TEXTURE
+scripts/enemies/boss_enemy.gd:4:const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
+scripts/enemies/boss_enemy.gd:5:const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
+scripts/enemies/elite_enemy.gd:4:const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
+scripts/enemies/enemy.gd:7:const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
+scripts/enemies/enemy.gd:8:const PROJECTILE_SCENE := preload("res://scenes/enemies/projectile.tscn")
+scripts/enemies/lava_giant_boss.gd:4:const LAVA_PATCH_SCRIPT: Script = preload("res://scripts/dungeon/lava_patch.gd")
+scripts/enemies/necromancer_boss.gd:4:const SKELETON_SCENE: PackedScene = preload("res://scenes/enemies/melee_enemy.tscn")
+scripts/enemies/slime_enemy.gd:4:const SLIME_SCENE: PackedScene = preload("res://scenes/enemies/slime_enemy.tscn")
+scripts/equipment/equipment_system.gd:6:const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+scripts/inventory/inventory.gd:4:const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+scripts/inventory/item_database.gd:56:		"icon": preload("res://assets/icons/kyrise/wood_01a.png"),
+scripts/inventory/item_database.gd:64:		"icon": preload("res://assets/icons/kyrise/stoneblock_01a.png"),
+scripts/inventory/item_database.gd:72:		"icon": preload("res://assets/icons/kyrise/ingot_01a.png"),
+scripts/inventory/item_database.gd:80:		"icon": preload("res://assets/icons/kyrise/cotton_01a.png"),
+scripts/inventory/item_database.gd:88:		"icon": preload("res://assets/icons/kyrise/flower_01a.png"),
+scripts/inventory/item_database.gd:96:		"icon": preload("res://assets/icons/kyrise/leaf_01a.png"),
+scripts/inventory/item_database.gd:104:		"icon": preload("res://assets/icons/kyrise/shard_01a.png"),
+scripts/inventory/item_database.gd:112:		"icon": preload("res://assets/icons/kyrise/coin_01b.png"),
+scripts/inventory/item_database.gd:120:		"icon": preload("res://assets/icons/kyrise/coin_01c.png"),
+scripts/inventory/item_database.gd:128:		"icon": preload("res://assets/icons/kyrise/coin_01d.png"),
+scripts/inventory/item_database.gd:141:		"icon": preload("res://assets/icons/kyrise/sword_01a.png"),
+scripts/inventory/item_database.gd:154:		"icon": preload("res://assets/icons/kyrise/shield_01a.png"),
+scripts/inventory/item_database.gd:167:		"icon": preload("res://assets/icons/kyrise/ingot_01b.png"),
+scripts/inventory/item_database.gd:180:		"icon": preload("res://assets/icons/kyrise/helmet_01a.png"),
+scripts/inventory/item_database.gd:193:		"icon": preload("res://assets/icons/kyrise/armor_01a.png"),
+scripts/inventory/item_database.gd:206:		"icon": preload("res://assets/icons/kyrise/sword_02a.png"),
+scripts/inventory/item_database.gd:219:		"icon": preload("res://assets/icons/kyrise/sword_01b.png"),
+scripts/inventory/item_database.gd:232:		"icon": preload("res://assets/icons/kyrise/sword_03a.png"),
+scripts/inventory/item_database.gd:245:		"icon": preload("res://assets/icons/kyrise/staff_01a.png"),
+scripts/inventory/item_database.gd:258:		"icon": preload("res://assets/icons/kyrise/staff_02ab.png"),
+scripts/inventory/item_database.gd:271:		"icon": preload("res://assets/icons/kyrise/bow_01a.png"),
+scripts/inventory/item_database.gd:284:		"icon": preload("res://assets/icons/kyrise/bow_02a.png"),
+scripts/inventory/item_database.gd:297:		"icon": preload("res://assets/icons/kyrise/shield_02a.png"),
+scripts/inventory/item_database.gd:310:		"icon": preload("res://assets/icons/kyrise/shield_03a.png"),
+scripts/inventory/item_database.gd:323:		"icon": preload("res://assets/icons/kyrise/helmet_02a.png"),
+scripts/inventory/item_database.gd:336:		"icon": preload("res://assets/icons/kyrise/armor_01b.png"),
+scripts/inventory/item_database.gd:349:		"icon": preload("res://assets/icons/kyrise/armor_01c.png"),
+scripts/inventory/item_database.gd:362:		"icon": preload("res://assets/icons/kyrise/boots_01a.png"),
+scripts/inventory/item_database.gd:375:		"icon": preload("res://assets/icons/kyrise/boots_01b.png"),
+scripts/inventory/item_database.gd:388:		"icon": preload("res://assets/icons/kyrise/gloves_01a.png"),
+scripts/inventory/item_database.gd:401:		"icon": preload("res://assets/icons/kyrise/ring_02a.png"),
+scripts/inventory/item_database.gd:414:		"icon": preload("res://assets/icons/kyrise/necklace_01a.png"),
+scripts/inventory/item_database.gd:423:		"icon": preload("res://assets/icons/kyrise/scroll_01a.png"),
+scripts/inventory/item_database.gd:432:		"icon": preload("res://assets/icons/kyrise/candle_01a.png"),
+scripts/inventory/item_database.gd:441:		"icon": preload("res://assets/icons/kyrise/cookie_01a.png"),
+scripts/inventory/item_database.gd:450:		"icon": preload("res://assets/icons/kyrise/cup_01a.png"),
+scripts/inventory/item_database.gd:459:		"icon": preload("res://assets/icons/kyrise/cup_01a.png"),
+scripts/inventory/item_database.gd:498:	var direct_icon: Variant = stack.get("icon", null)
+scripts/inventory/item_database.gd:503:		var item_icon: Variant = ITEMS[item_id].get("icon", null)
+scripts/inventory/item_database.gd:520:static func get_equipment_icon(slot_name: String, rarity: String = "Common") -> Texture2D:
+scripts/inventory/item_database.gd:526:					return preload("res://assets/icons/kyrise/sword_02a.png")
+scripts/inventory/item_database.gd:528:					return preload("res://assets/icons/kyrise/sword_03a.png")
+scripts/inventory/item_database.gd:530:					return preload("res://assets/icons/kyrise/sword_01a.png")
+scripts/inventory/item_database.gd:534:					return preload("res://assets/icons/kyrise/helmet_01b.png")
+scripts/inventory/item_database.gd:536:					return preload("res://assets/icons/kyrise/helmet_01c.png")
+scripts/inventory/item_database.gd:538:					return preload("res://assets/icons/kyrise/helmet_01d.png")
+scripts/inventory/item_database.gd:540:					return preload("res://assets/icons/kyrise/helmet_01e.png")
+scripts/inventory/item_database.gd:542:					return preload("res://assets/icons/kyrise/helmet_01a.png")
+scripts/inventory/item_database.gd:544:			return preload("res://assets/icons/kyrise/armor_01a.png")
+scripts/inventory/item_database.gd:546:			return preload("res://assets/icons/kyrise/shield_01a.png")
+scripts/inventory/item_database.gd:548:			return preload("res://assets/icons/kyrise/boots_01a.png")
+scripts/inventory/item_database.gd:550:			return preload("res://assets/icons/kyrise/ring_01a.png")
+scripts/inventory/item_database.gd:552:			return preload("res://assets/icons/kyrise/ingot_01b.png")
+scripts/main.gd:7:const BUILDING_SAVE := preload("res://scripts/building/building_save.gd")
+scripts/main.gd:8:const DUNGEON_SCENE := preload("res://scenes/dungeon/dungeon_level.tscn")
+scripts/main.gd:9:const OVERWORLD_SCENE := preload("res://scenes/overworld/test_overworld.tscn")
+scripts/main.gd:10:const TUTORIAL_MANAGER := preload("res://scripts/world/tutorial_manager.gd")
+scripts/main.gd:559:const CLASS_SELECT_SCREEN := preload("res://scripts/ui/class_select_screen.gd")
+scripts/network/player_spawner.gd:4:const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
+scripts/overworld/test_overworld.gd:14:const TREE_SCENE := preload("res://scenes/world/tree_node.tscn")
+scripts/overworld/test_overworld.gd:15:const ROCK_SCENE := preload("res://scenes/world/rock_node.tscn")
+scripts/overworld/test_overworld.gd:16:const IRON_SCENE := preload("res://scenes/world/iron_node.tscn")
+scripts/overworld/test_overworld.gd:17:const GRASS_SCENE := preload("res://scenes/world/grass_node.tscn")
+scripts/overworld/test_overworld.gd:18:const MERCHANT_SCENE := preload("res://scenes/world/merchant.tscn")
+scripts/overworld/test_overworld.gd:19:const VILLAGE_NPC_SCENE := preload("res://scenes/world/village_npc.tscn")
+scripts/player/player.gd:6:const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+scripts/player/player.gd:7:const ATTACK_EFFECT_SCENE := preload("res://scenes/player/attack_effect.tscn")
+scripts/player/player.gd:8:const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+scripts/player/player.gd:9:const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
+scripts/player/player.gd:10:const PLAYER_SAVE := preload("res://scripts/player/player_save.gd")
+scripts/player/player.gd:35:const FLOATING_TEXT_SCENE := preload("res://scenes/ui/floating_text.tscn")
+scripts/player/player.gd:984:	torch_light.texture_scale = 2.8
+scripts/player/player.gd:1013:	var texture := animated_sprite.sprite_frames.get_frame_texture(animation_name, animated_sprite.frame)
+scripts/player/player.gd:1014:	if texture == null:
+scripts/player/player.gd:1017:	afterimage.texture = texture
+scripts/player/player_stats.gd:6:const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
+scripts/skills/skill_system.gd:25:const SKILL_VFX_SCENE := preload("res://scripts/skills/skill_vfx.gd")
+scripts/systems/audio_manager.gd:92:## Replace null with preload("res://audio/...") when assets are ready.
+scripts/systems/audio_manager.gd:95:	_sfx_dict["ui_click"]         = null  # e.g. preload("res://audio/sfx/ui_click.ogg")
+scripts/systems/audio_manager.gd:103:	_sfx_dict["weapon_swing"]     = null  # e.g. preload("res://audio/sfx/swing_light.ogg")
+scripts/systems/audio_manager.gd:105:	_sfx_dict["enemy_hit"]        = null  # e.g. preload("res://audio/sfx/impact_flesh.ogg")
+scripts/systems/audio_manager.gd:123:	_bgm_dict["dungeon_bgm"]      = null  # e.g. preload("res://audio/bgm/dungeon.ogg")
+scripts/systems/audio_manager.gd:124:	_bgm_dict["overworld_bgm"]    = null  # e.g. preload("res://audio/bgm/overworld.ogg")
+scripts/systems/save_manager.gd:5:const BUILDING_SAVE = preload("res://scripts/building/building_save.gd")
+scripts/systems/save_manager.gd:6:const PLAYER_SAVE = preload("res://scripts/player/player_save.gd")
+scripts/ui/buff_select.gd:53:		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+scripts/ui/class_select_screen.gd:10:const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
+scripts/ui/crafting_menu.gd:3:const CRAFTING_SYSTEM := preload("res://scripts/crafting/crafting_system.gd")
+scripts/ui/crafting_menu.gd:4:const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+scripts/ui/crafting_menu.gd:140:			var icon_holder: Control = _build_item_icon_holder(ITEM_DATABASE.get_item(str(recipe.get("result_item_id", ""))))
+scripts/ui/crafting_menu.gd:288:	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+scripts/ui/crafting_menu.gd:289:	if icon != null:
+scripts/ui/crafting_menu.gd:290:		var icon_tex := TextureRect.new()
+scripts/ui/crafting_menu.gd:291:		icon_tex.custom_minimum_size = Vector2(16, 16)
+scripts/ui/crafting_menu.gd:292:		icon_tex.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+scripts/ui/crafting_menu.gd:293:		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+scripts/ui/crafting_menu.gd:294:		icon_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/ui/crafting_menu.gd:295:		icon_tex.texture = icon
+scripts/ui/equipment_panel.gd:5:const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+scripts/ui/equipment_panel.gd:6:const LOOT_DROP_SCENE = preload("res://scenes/dungeon/loot_drop.tscn")
+scripts/ui/equipment_panel.gd:211:	var icon_source: Dictionary = item if not item.is_empty() else {}
+scripts/ui/equipment_panel.gd:212:	var slot_icon: Texture2D = ITEM_DATABASE.get_stack_icon(icon_source)
+scripts/ui/equipment_panel.gd:213:	if slot_icon == null:
+scripts/ui/equipment_panel.gd:214:		slot_icon = ITEM_DATABASE.get_equipment_icon(slot_name, "Common")
+scripts/ui/equipment_panel.gd:278:	var icon_texture: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+scripts/ui/equipment_panel.gd:375:	var icon_texture: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+scripts/ui/equipment_panel.gd:425:	var icon_texture: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+scripts/ui/equipment_panel.gd:444:	if icon != null:
+scripts/ui/equipment_panel.gd:445:		var texture_rect: TextureRect = TextureRect.new()
+scripts/ui/equipment_panel.gd:446:		texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+scripts/ui/equipment_panel.gd:447:		texture_rect.custom_minimum_size = Vector2(size, size)
+scripts/ui/equipment_panel.gd:448:		texture_rect.size = Vector2(size, size)
+scripts/ui/equipment_panel.gd:449:		texture_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+scripts/ui/equipment_panel.gd:450:		texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+scripts/ui/equipment_panel.gd:451:		texture_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/ui/equipment_panel.gd:452:		texture_rect.texture = icon
+scripts/ui/hud.gd:3:const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
+scripts/ui/hud.gd:4:const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+scripts/ui/hud.gd:5:const HOME_ARROW_SCRIPT := preload("res://scripts/ui/home_arrow.gd")
+scripts/ui/hud.gd:6:const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
+scripts/ui/hud.gd:7:const MINIMAP_SCRIPT = preload("res://scripts/ui/minimap.gd")
+scripts/ui/hud.gd:607:	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+scripts/ui/hud.gd:608:	if icon != null:
+scripts/ui/hud.gd:609:		var icon_tex := TextureRect.new()
+scripts/ui/hud.gd:610:		icon_tex.custom_minimum_size = Vector2(16, 16)
+scripts/ui/hud.gd:611:		icon_tex.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+scripts/ui/hud.gd:612:		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+scripts/ui/hud.gd:613:		icon_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/ui/hud.gd:614:		icon_tex.texture = icon
+scripts/ui/lobby.gd:9:const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
+scripts/ui/main_menu.gd:17:const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
+scripts/ui/repair_ui.gd:5:const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+scripts/ui/repair_ui.gd:366:	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item)
+scripts/ui/repair_ui.gd:367:	if icon != null:
+scripts/ui/repair_ui.gd:368:		var icon_rect: TextureRect = TextureRect.new()
+scripts/ui/repair_ui.gd:369:		icon_rect.custom_minimum_size = Vector2(16, 16)
+scripts/ui/repair_ui.gd:370:		icon_rect.size = Vector2(16, 16)
+scripts/ui/repair_ui.gd:371:		icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+scripts/ui/repair_ui.gd:372:		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+scripts/ui/repair_ui.gd:373:		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/ui/repair_ui.gd:374:		icon_rect.texture = icon
+scripts/ui/storage_ui.gd:5:const ITEM_DATABASE := preload("res://scripts/inventory/item_database.gd")
+scripts/ui/storage_ui.gd:98:		var icon_holder := _build_item_icon_holder({})
+scripts/ui/storage_ui.gd:109:			icon_holder = _build_item_icon_holder(stack)
+scripts/ui/storage_ui.gd:130:	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+scripts/ui/storage_ui.gd:131:	if icon != null:
+scripts/ui/storage_ui.gd:132:		var icon_tex := TextureRect.new()
+scripts/ui/storage_ui.gd:133:		icon_tex.custom_minimum_size = Vector2(16, 16)
+scripts/ui/storage_ui.gd:134:		icon_tex.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+scripts/ui/storage_ui.gd:135:		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+scripts/ui/storage_ui.gd:136:		icon_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/ui/storage_ui.gd:137:		icon_tex.texture = icon
+scripts/ui/talent_tree.gd:13:const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
+scripts/world/merchant.gd:4:const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
+scripts/world/merchant.gd:5:const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+scripts/world/merchant.gd:6:const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
+scripts/world/merchant.gd:258:func _add_shop_row(parent: Control, stock_key: String, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
+scripts/world/merchant.gd:261:	if icon != null:
+scripts/world/merchant.gd:285:	var from_icon: Texture2D = _get_exchange_icon(from_id, from_amount)
+scripts/world/merchant.gd:286:	if from_icon != null:
+scripts/world/merchant.gd:291:	var to_icon: Texture2D = _get_exchange_icon(to_id, to_amount)
+scripts/world/merchant.gd:292:	if to_icon != null:
+scripts/world/merchant.gd:312:		return preload("res://assets/icons/kyrise/coin_02b.png")
+scripts/world/merchant.gd:466:	var icon_rect: TextureRect = TextureRect.new()
+scripts/world/merchant.gd:467:	icon_rect.custom_minimum_size = Vector2(16, 16)
+scripts/world/merchant.gd:468:	icon_rect.size = Vector2(16, 16)
+scripts/world/merchant.gd:469:	icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+scripts/world/merchant.gd:470:	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+scripts/world/merchant.gd:471:	icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scripts/world/merchant.gd:472:	icon_rect.texture = icon
+scripts/world/merchant.gd:593:	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(stack)
+scripts/world/merchant.gd:594:	if icon != null:
+scripts/world/npc_manager.gd:33:			"res://assets/npc_dwarf.png",
+scripts/world/npc_manager.gd:34:			"res://assets/npc_barbarian.png",
+scripts/world/npc_manager.gd:41:			"res://assets/npc_knight_blue.png",
+scripts/world/npc_manager.gd:42:			"res://assets/npc_knight_green.png",
+scripts/world/npc_manager.gd:49:			"res://assets/npc_merchant.png",
+scripts/world/npc_manager.gd:50:			"res://assets/npc_merchant_2.png",
+scripts/world/npc_manager.gd:57:			"res://assets/npc_paladin.png",
+scripts/world/npc_manager.gd:58:			"res://assets/npc_knight_yellow.png",
+scripts/world/npc_manager.gd:65:			"res://assets/npc_elf.png",
+scripts/world/npc_manager.gd:66:			"res://assets/npc_trickster.png",
+scripts/world/npc_manager.gd:407:		return "res://assets/npc_merchant.png"
+scripts/world/portal.gd:7:const DOWN_TEXTURE := preload("res://assets/floor_stairs.png")
+scripts/world/portal.gd:14:		sprite.texture = DOWN_TEXTURE
+scripts/world/raid_system.gd:9:const RAID_ENEMY_SCENE := preload("res://scenes/enemies/raid_enemy.tscn")
+scripts/world/village_npc.gd:59:			var portrait_texture: Texture2D = load(portrait_path) as Texture2D
+scripts/world/village_npc.gd:60:			if portrait_texture != null:
+scripts/world/village_npc.gd:61:				sprite.texture = portrait_texture
+scripts/world/village_npc.gd:62:		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+scenes/building/build_preview.tscn:10:texture_filter = 0
+scenes/building/facilities/bounty_board.tscn:4:[ext_resource type="Texture2D" path="res://assets/wall_banner_yellow.png" id="2_bounty"]
+scenes/building/facilities/bounty_board.tscn:16:texture = ExtResource("2_bounty")
+scenes/building/facilities/bounty_board.tscn:17:texture_filter = 0
+scenes/building/facilities/cooking_bench.tscn:4:[ext_resource type="Texture2D" path="res://assets/torch_no_flame.png" id="2_cook"]
+scenes/building/facilities/cooking_bench.tscn:16:texture = ExtResource("2_cook")
+scenes/building/facilities/cooking_bench.tscn:17:texture_filter = 0
+scenes/building/facilities/repair_bench.tscn:4:[ext_resource type="Texture2D" path="res://assets/boxes_stacked.png" id="2_hydj7"]
+scenes/building/facilities/repair_bench.tscn:16:texture = ExtResource("2_hydj7")
+scenes/building/facilities/repair_bench.tscn:17:texture_filter = 0
+scenes/building/facilities/storage_chest.tscn:4:[ext_resource type="Texture2D" path="res://assets/chest_closed.png" id="2_1lsdb"]
+scenes/building/facilities/storage_chest.tscn:17:texture = ExtResource("2_1lsdb")
+scenes/building/facilities/storage_chest.tscn:18:texture_filter = 0
+scenes/building/facilities/talent_altar.tscn:4:[ext_resource type="Texture2D" path="res://assets/column.png" id="2_tl5yr"]
+scenes/building/facilities/talent_altar.tscn:16:texture = ExtResource("2_tl5yr")
+scenes/building/facilities/talent_altar.tscn:17:texture_filter = 0
+scenes/building/facilities/wood_door.tscn:4:[ext_resource type="Texture2D" path="res://assets/door_closed.png" id="2_kt91d"]
+scenes/building/facilities/wood_door.tscn:16:texture = ExtResource("2_kt91d")
+scenes/building/facilities/wood_door.tscn:17:texture_filter = 0
+scenes/building/facilities/workbench.tscn:4:[ext_resource type="Texture2D" path="res://assets/crate.png" id="2_hm2gj"]
+scenes/building/facilities/workbench.tscn:16:texture = ExtResource("2_hm2gj")
+scenes/building/facilities/workbench.tscn:17:texture_filter = 0
+scenes/building/home_core.tscn:4:[ext_resource type="Texture2D" path="res://assets/column.png" id="2_y3wru"]
+scenes/building/home_core.tscn:18:texture = ExtResource("2_y3wru")
+scenes/building/home_core.tscn:19:texture_filter = 0
+scenes/building/home_core.tscn:33:texture_scale = 3.5
+scenes/dungeon/dungeon_chest.tscn:4:[ext_resource type="Texture2D" path="res://assets/chest_closed.png" id="2_closed"]
+scenes/dungeon/dungeon_chest.tscn:5:[ext_resource type="Texture2D" path="res://assets/chest_open_full.png" id="3_open"]
+scenes/dungeon/dungeon_chest.tscn:12:chest_open_texture = ExtResource("3_open")
+scenes/dungeon/dungeon_chest.tscn:15:texture = ExtResource("2_closed")
+scenes/dungeon/dungeon_chest.tscn:16:texture_filter = 0
+scenes/dungeon/locked_chest.tscn:4:[ext_resource type="Texture2D" path="res://assets/chest_closed.png" id="2_closed"]
+scenes/dungeon/locked_chest.tscn:13:texture = ExtResource("2_closed")
+scenes/dungeon/locked_chest.tscn:15:texture_filter = 0
+scenes/dungeon/loot_drop.tscn:22:texture = SubResource("GradientTexture2D_bqhtw")
+scenes/dungeon/loot_drop.tscn:23:texture_filter = 0
+scenes/dungeon/spike_trap.tscn:4:[ext_resource type="Texture2D" path="res://assets/floor_spikes_anim_f0.png" id="2_tex"]
+scenes/dungeon/spike_trap.tscn:13:texture = ExtResource("2_tex")
+scenes/dungeon/spike_trap.tscn:14:texture_filter = 0
+scenes/dungeon/stairway.tscn:4:[ext_resource type="Texture2D" path="res://assets/floor_stairs.png" id="2_5q9rw"]
+scenes/dungeon/stairway.tscn:16:texture = ExtResource("2_5q9rw")
+scenes/dungeon/stairway.tscn:17:texture_filter = 0
+scenes/enemies/abyss_eye_boss.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_tentackle.png" id="2_tex"]
+scenes/enemies/bat_swarm_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/angel_idle_anim_f0.png" id="2_tex"]
+scenes/enemies/boss_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f0.png" id="2_idle0"]
+scenes/enemies/boss_enemy.tscn:5:[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f1.png" id="3_idle1"]
+scenes/enemies/boss_enemy.tscn:6:[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f2.png" id="4_idle2"]
+scenes/enemies/boss_enemy.tscn:7:[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f3.png" id="5_idle3"]
+scenes/enemies/boss_enemy.tscn:8:[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f0.png" id="6_run0"]
+scenes/enemies/boss_enemy.tscn:9:[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f1.png" id="7_run1"]
+scenes/enemies/boss_enemy.tscn:10:[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f2.png" id="8_run2"]
+scenes/enemies/boss_enemy.tscn:11:[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f3.png" id="9_run3"]
+scenes/enemies/elite_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f0.png" id="2_0f1yq"]
+scenes/enemies/elite_enemy.tscn:5:[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f1.png" id="3_eha8y"]
+scenes/enemies/elite_enemy.tscn:6:[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f2.png" id="4_l3i6y"]
+scenes/enemies/elite_enemy.tscn:7:[ext_resource type="Texture2D" path="res://assets/big_demon_idle_anim_f3.png" id="5_7kjam"]
+scenes/enemies/elite_enemy.tscn:8:[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f0.png" id="6_b23qj"]
+scenes/enemies/elite_enemy.tscn:9:[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f1.png" id="7_4tkdb"]
+scenes/enemies/elite_enemy.tscn:10:[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f2.png" id="8_2t0r7"]
+scenes/enemies/elite_enemy.tscn:11:[ext_resource type="Texture2D" path="res://assets/big_demon_run_anim_f3.png" id="9_9qtg5"]
+scenes/enemies/enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_goblin.png" id="2_j9h2f"]
+scenes/enemies/gargoyle_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_elemental_earth.png" id="2_tex"]
+scenes/enemies/lava_giant_boss.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_elemental_fire.png" id="2_tex"]
+scenes/enemies/melee_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_goblin.png" id="2_6adwy"]
+scenes/enemies/necromancer_boss.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_necromancer.png" id="2_tex"]
+scenes/enemies/projectile.tscn:4:[ext_resource type="Texture2D" path="res://assets/weapon_arrow.png" id="2_g27hm"]
+scenes/enemies/projectile.tscn:13:texture = ExtResource("2_g27hm")
+scenes/enemies/projectile.tscn:14:texture_filter = 0
+scenes/enemies/raid_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_zombie_green.png" id="2_raid"]
+scenes/enemies/ranged_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_necromancer.png" id="2_3w3mx"]
+scenes/enemies/shadow_assassin_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_dark_knight.png" id="2_tex"]
+scenes/enemies/shield_orc_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_ogre.png" id="2_tex"]
+scenes/enemies/slime_enemy.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_elemental_goo.png" id="2_tex"]
+scenes/overworld/test_overworld.tscn:11:[ext_resource type="Texture2D" path="res://assets/floor_stairs.png" id="9_stairs"]
+scenes/overworld/test_overworld.tscn:56:texture = ExtResource("9_stairs")
+scenes/player/attack_effect.tscn:4:[ext_resource type="Texture2D" path="res://assets/weapon_sword_small.png" id="2_h6m0v"]
+scenes/player/attack_effect.tscn:11:texture = ExtResource("2_h6m0v")
+scenes/player/attack_effect.tscn:12:texture_filter = 0
+scenes/player/player.tscn:4:[ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f0.png" id="2_je7p5"]
+scenes/player/player.tscn:5:[ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f1.png" id="3_fm80t"]
+scenes/player/player.tscn:6:[ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f2.png" id="4_gx1jg"]
+scenes/player/player.tscn:7:[ext_resource type="Texture2D" path="res://assets/knight_m_idle_anim_f3.png" id="5_ugbui"]
+scenes/player/player.tscn:8:[ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f0.png" id="6_fcs02"]
+scenes/player/player.tscn:9:[ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f1.png" id="7_myrg7"]
+scenes/player/player.tscn:10:[ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f2.png" id="8_kvlxm"]
+scenes/player/player.tscn:11:[ext_resource type="Texture2D" path="res://assets/knight_m_run_anim_f3.png" id="9_uf5tr"]
+scenes/world/grass_node.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_elemental_plant_small.png" id="2_2a01t"]
+scenes/world/grass_node.tscn:19:texture = ExtResource("2_2a01t")
+scenes/world/iron_node.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_elemental_gold_short.png" id="2_f6876"]
+scenes/world/iron_node.tscn:15:texture = ExtResource("2_f6876")
+scenes/world/merchant.tscn:4:[ext_resource type="Texture2D" path="res://assets/npc_merchant_2.png" id="2_tex"]
+scenes/world/merchant.tscn:13:texture = ExtResource("2_tex")
+scenes/world/merchant.tscn:14:texture_filter = 0
+scenes/world/portal.tscn:4:[ext_resource type="Texture2D" path="res://assets/floor_stairs.png" id="2_0uawm"]
+scenes/world/portal.tscn:16:texture = ExtResource("2_0uawm")
+scenes/world/portal.tscn:17:texture_filter = 0
+scenes/world/resource_node.tscn:15:texture_filter = 0
+scenes/world/rock_node.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_elemental_earth_small.png" id="2_c861x"]
+scenes/world/rock_node.tscn:15:texture = ExtResource("2_c861x")
+scenes/world/tree_node.tscn:4:[ext_resource type="Texture2D" path="res://assets/monster_elemental_plant_small.png" id="2_uju50"]
+scenes/world/tree_node.tscn:15:texture = ExtResource("2_uju50")
+scenes/world/village_npc.tscn:4:[ext_resource type="Texture2D" path="res://assets/npc_elf.png" id="2_village_tex"]
+scenes/world/village_npc.tscn:13:texture = ExtResource("2_village_tex")
+scenes/world/village_npc.tscn:14:texture_filter = 0
