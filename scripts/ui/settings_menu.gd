@@ -436,5 +436,16 @@ func _save_settings() -> void:
 		file.close()
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible:
+		return
+	if event.is_action_pressed("ui_cancel"):
+		if _settings_panel != null and _settings_panel.visible:
+			_show_main_page()
+		else:
+			close_menu()
+		get_viewport().set_input_as_handled()
+
+
 func _get_reset_class_button_text() -> String:
 	return "重選職業" if LocaleManager.get_locale().begins_with("zh") else "Reset Class"

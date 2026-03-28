@@ -11,12 +11,12 @@ const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
 @onready var lifetime_timer: Timer = $LifetimeTimer
 
 var stack_data: Dictionary = {}
-var _player_ref: Node = null
 var _spawn_delay: float = 0.0
 var _pickup_delay: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group("loot_drop")
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
 	if not lifetime_timer.timeout.is_connected(queue_free):
@@ -25,7 +25,6 @@ func _ready() -> void:
 	_update_icon()
 	if _is_equipment():
 		_setup_equipment_visuals()
-	_find_player.call_deferred()
 
 
 func _draw() -> void:
@@ -42,12 +41,6 @@ func _draw() -> void:
 	draw_rect(border_rect.grow(-2.0), border_color.lightened(0.4), false, 1.0)
 
 
-func _find_player() -> void:
-	var players: Array = get_tree().get_nodes_in_group("player")
-	if players.size() > 0:
-		_player_ref = players[0]
-
-
 func _physics_process(delta: float) -> void:
 	if _pickup_delay > 0:
 		_pickup_delay -= delta
@@ -56,16 +49,12 @@ func _physics_process(delta: float) -> void:
 				_on_body_entered(body)
 	if _spawn_delay > 0:
 		_spawn_delay -= delta
+
+
+func try_pickup(body: Node) -> void:
+	if _spawn_delay > 0:
 		return
-	if _player_ref == null or not is_instance_valid(_player_ref):
-		return
-	var dist: float = global_position.distance_to(_player_ref.global_position)
-	var pickup_range: float = 30.0
-	if _player_ref.has_method("get_loot_pickup_range"):
-		pickup_range = _player_ref.get_loot_pickup_range()
-	if dist < pickup_range and dist > 1.0:
-		var dir: Vector2 = (_player_ref.global_position - global_position).normalized()
-		global_position += dir * min(150.0 * delta, dist)
+	_on_body_entered(body)
 
 
 func setup(drop_item_id: String, drop_quantity: int) -> void:

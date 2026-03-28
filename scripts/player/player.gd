@@ -215,7 +215,7 @@ func _input(event: InputEvent) -> void:
 	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
 		return
 
-	if event.is_action_pressed("dev_reset") or event.is_action_pressed("dev_reset_save"):
+	if event.is_action_pressed("dev_reset") or event.is_action_pressed("dev_reset_save") or event.is_action_pressed("dev_class_reset"):
 		return
 
 	if event.is_action_pressed("toggle_build"):
@@ -285,6 +285,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("enter"):
 		_try_secondary_interact()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("pickup_loot"):
+		_pickup_nearby_loot()
+		get_viewport().set_input_as_handled()
 
 
 func _toggle_debug_mode_and_grant_resources() -> void:
@@ -326,6 +329,20 @@ func _try_secondary_interact() -> void:
 	if interactable == null or not interactable.has_method("secondary_interact"):
 		return
 	interactable.secondary_interact(self)
+
+
+func _pickup_nearby_loot() -> void:
+	var pickup_radius: float = 48.0
+	var drops: Array = get_tree().get_nodes_in_group("loot_drop")
+	for drop in drops:
+		if not is_instance_valid(drop):
+			continue
+		var drop_node: Node2D = drop as Node2D
+		if drop_node == null:
+			continue
+		if global_position.distance_to(drop_node.global_position) <= pickup_radius:
+			if drop_node.has_method("try_pickup"):
+				drop_node.try_pickup(self)
 
 
 func _interaction_requires_core(interactable) -> bool:
@@ -593,8 +610,10 @@ func _get_closest_interactable():
 func _configure_input_actions() -> void:
 	_set_key_action("sprint", KEY_SPACE)
 	_set_key_action("debug_toggle", KEY_8)
-	_set_key_action("dev_reset", KEY_0)
+	_set_key_action("dev_reset", KEY_MINUS)
 	_set_key_action("dev_reset_save", KEY_9)
+	_set_key_action("dev_class_reset", KEY_0)
+	_set_key_action("pickup_loot", KEY_F)
 	_set_key_action("dodge", KEY_SHIFT)
 	_set_key_action("use_consumable", KEY_Q)
 	_set_key_action("use_consumable_2", KEY_R)

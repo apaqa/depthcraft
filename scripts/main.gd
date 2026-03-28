@@ -59,6 +59,9 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("dev_reset"):
 		_debug_goto_floor(10)
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("dev_class_reset"):
+		_debug_reset_class()
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("dev_reset_save"):
 		_debug_clear_inventory_and_equipment()
 		get_viewport().set_input_as_handled()
@@ -86,6 +89,15 @@ func _debug_give_resources() -> void:
 			"wheat": 99,
 			"talent_shard": 99,
 		})
+
+
+func _debug_reset_class() -> void:
+	var class_system: Node = get_node_or_null("/root/ClassSystem") as Node
+	if class_system != null and class_system.has_method("reset_class_selection"):
+		class_system.reset_class_selection()
+	else:
+		DirAccess.remove_absolute(OS.get_user_data_dir() + "/class_save.json")
+	get_tree().reload_current_scene()
 
 
 func _debug_clear_inventory_and_equipment() -> void:
