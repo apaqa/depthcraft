@@ -178,7 +178,7 @@ func _refresh() -> void:
 		var item_id: String = str(stack.get("id", ""))
 		if item_type != "resource":
 			continue
-		if item_id == "copper" or item_id == "silver" or item_id == "gold":
+		if item_id == "wooden_coin" or item_id == "copper" or item_id == "silver" or item_id == "gold":
 			continue
 		mat_list_container.add_child(_build_material_row(stack))
 

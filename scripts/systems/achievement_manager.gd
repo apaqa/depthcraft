@@ -2,7 +2,7 @@ extends Node
 
 signal achievement_unlocked(id: String)
 
-const SAVE_PATH := "user://achievements.json"
+const SAVE_PATH: String = "user://achievements.json"
 
 var achievements: Dictionary = {}
 var unlocked_achievements: Dictionary = {}
@@ -23,12 +23,12 @@ func check_achievement(id: String) -> bool:
 	var achievement: Dictionary = achievements[id]
 	match str(achievement.get("condition_type", "")):
 		"stat_at_least":
-			var stat_key := str(achievement.get("stat", ""))
-			var target := int(achievement.get("target", 0))
+			var stat_key: String = str(achievement.get("stat", ""))
+			var target: int = int(achievement.get("target", 0))
 			if int(stats.get(stat_key, 0)) >= target:
 				return unlock_achievement(id)
 		"equipment_slots_filled":
-			var slot_target := int(achievement.get("target", 0))
+			var slot_target: int = int(achievement.get("target", 0))
 			if int(stats.get("equipped_slot_count", 0)) >= slot_target:
 				return unlock_achievement(id)
 	return false
@@ -66,7 +66,7 @@ func get_achievement_list() -> Array[Dictionary]:
 
 
 func set_stat(stat_name: String, value: int, allow_decrease: bool = false) -> void:
-	var current_value := int(stats.get(stat_name, 0))
+	var current_value: int = int(stats.get(stat_name, 0))
 	if not allow_decrease:
 		value = max(value, current_value)
 	stats[stat_name] = value
@@ -114,12 +114,12 @@ func record_floor_reached(floor_number: int) -> void:
 
 
 func record_equipment_state(inventory, equipment_system) -> void:
-	var total_equipment_owned := 0
+	var total_equipment_owned: int = 0
 	if inventory != null and inventory.get("items") != null:
 		for stack in inventory.items:
 			if str((stack as Dictionary).get("type", "")) == "equipment":
 				total_equipment_owned += int((stack as Dictionary).get("quantity", 0))
-	var equipped_slot_count := 0
+	var equipped_slot_count: int = 0
 	if equipment_system != null and equipment_system.has_method("get_slot_order"):
 		for slot_name in equipment_system.get_slot_order():
 			var equipped: Dictionary = equipment_system.get_equipped(str(slot_name))
@@ -137,16 +137,20 @@ func record_equipment_state(inventory, equipment_system) -> void:
 func record_currency_gain(item_id: String, amount: int) -> void:
 	if amount <= 0:
 		return
-	var copper_value := 0
+	var copper_value: int = 0
 	match item_id:
+		"wooden_coin":
+			copper_value = int(amount / 10)
 		"copper":
 			copper_value = amount
 		"silver":
 			copper_value = amount * 10
 		"gold":
-			copper_value = amount * 100
+			copper_value = amount * 1000
 		_:
 			return
+	if copper_value <= 0:
+		return
 	increment_stat("copper_earned_total", copper_value)
 	check_achievement("earn_1000_copper")
 	check_achievement("earn_10000_copper")
@@ -184,7 +188,7 @@ func _load_data() -> void:
 	stats.clear()
 	if not FileAccess.file_exists(SAVE_PATH):
 		return
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if file == null:
 		return
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
@@ -200,7 +204,7 @@ func _load_data() -> void:
 
 
 func _save_data() -> void:
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
 		return
 	file.store_string(JSON.stringify({

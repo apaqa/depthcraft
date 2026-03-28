@@ -8,6 +8,7 @@ const ITEM_NAME_KEYS = {
 	"seed": "item_seed_name",
 	"wheat": "item_wheat_name",
 	"talent_shard": "item_talent_shard_name",
+	"wooden_coin": "item_wooden_coin_name",
 	"copper": "item_copper_name",
 	"silver": "item_silver_name",
 	"gold": "item_gold_name",
@@ -31,6 +32,7 @@ const ITEM_DESC_KEYS = {
 	"seed": "item_seed_desc",
 	"wheat": "item_wheat_desc",
 	"talent_shard": "item_talent_shard_desc",
+	"wooden_coin": "item_wooden_coin_desc",
 	"copper": "item_copper_desc",
 	"silver": "item_silver_desc",
 	"gold": "item_gold_desc",
@@ -103,6 +105,14 @@ const ITEMS = {
 		"type": "resource",
 		"description": "Used at the Talent Altar",
 		"icon": preload("res://assets/icons/kyrise/shard_01a.png"),
+	},
+	"wooden_coin": {
+		"id": "wooden_coin",
+		"name": "Wooden Coin",
+		"max_stack": 9999,
+		"type": "resource",
+		"description": "Starter currency - 10 wooden coins = 1 copper",
+		"icon": preload("res://assets/icons/kyrise/coin_01a.png"),
 	},
 	"copper": {
 		"id": "copper",
@@ -627,6 +637,8 @@ static func get_item_color(item_id: String, item_type: String = "") -> Color:
 			return Color(0.8, 0.7, 0.2, 1.0)
 		"wheat":
 			return Color(0.9, 0.8, 0.3, 1.0)
+		"wooden_coin":
+			return Color(0.58, 0.40, 0.24, 1.0)
 		"copper":
 			return Color(0.80, 0.50, 0.20, 1.0)
 		"silver":
@@ -645,8 +657,8 @@ static func get_item_color(item_id: String, item_type: String = "") -> Color:
 
 
 static func format_currency(copper_total: int) -> String:
-	var g: int = copper_total / 100
-	var s: int = (copper_total % 100) / 10
+	var g: int = copper_total / 1000
+	var s: int = (copper_total % 1000) / 10
 	var c: int = copper_total % 10
 	var parts: Array[String] = []
 	if g > 0:

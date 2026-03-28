@@ -104,7 +104,8 @@ func _spawn_aoe_indicator() -> void:
 
 func _grant_rewards_to_players() -> void:
 	var equipment_reward: Dictionary = _generate_boss_equipment()
-	var gold_amount: int = 1 + int(floor_value / 5)
+	var silver_amount: int = 10 + floor_value * 2
+	var gold_amount: int = 1 if randf() <= minf(0.08 + float(floor_value) * 0.005, 0.22) else 0
 	var shard_amount: int = 4 + int(floor_value / 5)
 	for player_ref in get_tree().get_nodes_in_group("player"):
 		if player_ref == null or not is_instance_valid(player_ref):
@@ -113,11 +114,15 @@ func _grant_rewards_to_players() -> void:
 		if inventory == null:
 			continue
 		_grant_stack(inventory, equipment_reward.duplicate(true))
-		_grant_item(inventory, "gold", gold_amount)
+		_grant_item(inventory, "silver", silver_amount)
+		if gold_amount > 0:
+			_grant_item(inventory, "gold", gold_amount)
 		_grant_item(inventory, "talent_shard", shard_amount)
 		if player_ref.has_method("record_dungeon_loot"):
 			player_ref.record_dungeon_loot(str(equipment_reward.get("id", "")), 1)
-			player_ref.record_dungeon_loot("gold", gold_amount)
+			player_ref.record_dungeon_loot("silver", silver_amount)
+			if gold_amount > 0:
+				player_ref.record_dungeon_loot("gold", gold_amount)
 			player_ref.record_dungeon_loot("talent_shard", shard_amount)
 		if player_ref.has_method("_show_floating_text"):
 			player_ref._show_floating_text(player_ref.global_position, "Boss Reward!", Color(1.0, 0.9, 0.3, 1.0))

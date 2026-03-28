@@ -4,8 +4,8 @@ class_name Enemy
 signal died(enemy_position: Vector2)
 signal damaged(amount: int)
 
-const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
-const PROJECTILE_SCENE := preload("res://scenes/enemies/projectile.tscn")
+const LOOT_DROP_SCENE: PackedScene = preload("res://scenes/dungeon/loot_drop.tscn")
+const PROJECTILE_SCENE: PackedScene = preload("res://scenes/enemies/projectile.tscn")
 
 @export var max_hp: int = 30
 @export var damage: int = 8
@@ -44,6 +44,7 @@ var knockback_velocity: Vector2 = Vector2.ZERO
 var facing_direction: Vector2 = Vector2.RIGHT
 var slow_time_left: float = 0.0
 var slow_multiplier: float = 1.0
+var _currency_floor_value: int = 1
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -61,6 +62,7 @@ func _ready() -> void:
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
 	target = player_target
 	loot_parent = loot_root
+	_currency_floor_value = max(floor_number, 1)
 	if floor_number <= 3:
 		max_hp = 30
 		damage = 8
@@ -79,7 +81,7 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 
 
 func _find_player() -> void:
-	var players := get_tree().get_nodes_in_group("player")
+	var players: Array = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		target = players[0]
 
@@ -92,7 +94,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if target == null or not is_instance_valid(target):
-		var players := get_tree().get_nodes_in_group("player")
+		var players: Array = get_tree().get_nodes_in_group("player")
 		if players.size() > 0:
 			target = players[0]
 		else:
@@ -110,7 +112,7 @@ func _physics_process(delta: float) -> void:
 		slow_multiplier = 1.0
 
 	var distance: float = global_position.distance_to(target.global_position)
-	var effective_speed := speed * slow_multiplier
+	var effective_speed: float = speed * slow_multiplier
 	if distance <= attack_range:
 		is_alerted = true
 		debug_state = "attack"
@@ -120,18 +122,18 @@ func _physics_process(delta: float) -> void:
 	elif distance <= detection_range or (is_alerted and distance <= detection_range * 3.0):
 		is_alerted = true
 		debug_state = "chase"
-		var direction := (target.global_position - global_position).normalized()
+		var direction: Vector2 = (target.global_position - global_position).normalized()
 		if keeps_distance and distance < preferred_distance:
 			direction = -direction
 		if enemy_kind == "bat":
-			var perp := Vector2(-direction.y, direction.x)
+			var perp: Vector2 = Vector2(-direction.y, direction.x)
 			direction = (direction + perp * sin(Time.get_ticks_msec() / 130.0) * 0.55).normalized()
 		if direction.length_squared() > 0.0:
 			facing_direction = direction
 		if global_position.distance_to(_last_position) < 1.0:
 			_stuck_timer += delta
 			if _stuck_timer > 0.5:
-				var random_offset := Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
+				var random_offset: Vector2 = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
 				velocity = (direction + random_offset).normalized() * effective_speed
 				_stuck_timer = 0.0
 			else:
@@ -162,7 +164,7 @@ func _perform_attack() -> void:
 		return
 	if is_ranged:
 		var projectile = PROJECTILE_SCENE.instantiate()
-		var fire_direction := (target.global_position - global_position).normalized()
+		var fire_direction: Vector2 = (target.global_position - global_position).normalized()
 		projectile.setup(global_position + fire_direction * 20.0, fire_direction, damage)
 		get_parent().add_child(projectile)
 		return
@@ -173,9 +175,9 @@ func _perform_attack() -> void:
 func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	if is_dead:
 		return
-	var final_amount := amount
+	var final_amount: int = amount
 	if front_guard_enabled and hit_direction.length_squared() > 0.0:
-		var incoming_from_attacker := -hit_direction.normalized()
+		var incoming_from_attacker: Vector2 = -hit_direction.normalized()
 		if incoming_from_attacker.dot(facing_direction.normalized()) > 0.35:
 			final_amount = int(ceil(final_amount * 0.5))
 	current_hp -= final_amount
@@ -184,7 +186,7 @@ func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	modulate = Color(1, 0.3, 0.3, 1)
 	if hit_direction.length_squared() > 0.0:
 		apply_knockback(hit_direction, 120.0)
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(self, "modulate", Color.WHITE, 0.2)
 	if current_hp <= 0:
 		die()
@@ -206,7 +208,7 @@ func die() -> void:
 	died.emit(global_position)
 	_drop_loot()
 	_drop_gold_loot()
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(queue_free)
 
@@ -218,17 +220,17 @@ func set_ai_paused(paused: bool) -> void:
 func _drop_loot() -> void:
 	if loot_parent == null:
 		return
-	var loot_multiplier := 1.0
+	var loot_multiplier: float = 1.0
 	if target != null and target.has_method("get_loot_drop_multiplier"):
 		loot_multiplier = float(target.get_loot_drop_multiplier())
-	var roll := randf()
-	var running_total := 0.0
+	var roll: float = randf()
+	var running_total: float = 0.0
 	for entry_variant in drop_table:
-		var entry := entry_variant as Dictionary
+		var entry: Dictionary = entry_variant as Dictionary
 		running_total += float(entry.get("chance", 0.0)) * loot_multiplier
 		if roll > min(running_total, 1.0):
 			continue
-		var item_id := str(entry.get("id", ""))
+		var item_id: String = str(entry.get("id", ""))
 		if item_id == "":
 			return
 		var drop = LOOT_DROP_SCENE.instantiate()
@@ -239,7 +241,13 @@ func _drop_loot() -> void:
 
 
 func _drop_gold_loot() -> void:
-	_drop_gold("copper", randi_range(1, 5))
+	var currency_rewards: Array[Dictionary] = _build_currency_rewards(_currency_floor_value)
+	for reward: Dictionary in currency_rewards:
+		_drop_gold(str(reward.get("id", "")), int(reward.get("amount", 0)))
+	if is_elite_enemy():
+		var elite_bonus: Dictionary = _build_elite_currency_bonus(_currency_floor_value)
+		if not elite_bonus.is_empty():
+			_drop_gold(str(elite_bonus.get("id", "")), int(elite_bonus.get("amount", 0)))
 
 
 func _drop_gold(coin_type: String, amount: int) -> void:
@@ -249,6 +257,33 @@ func _drop_gold(coin_type: String, amount: int) -> void:
 	drop.setup(coin_type, amount)
 	drop.global_position = global_position + Vector2(randf_range(-6.0, 6.0), randf_range(-6.0, 6.0))
 	loot_parent.add_child(drop)
+
+
+func _build_currency_rewards(target_floor: int) -> Array[Dictionary]:
+	var rewards: Array[Dictionary] = []
+	if target_floor <= 5:
+		rewards.append({"id": "wooden_coin", "amount": randi_range(1, 3)})
+	elif target_floor <= 10:
+		rewards.append({"id": "wooden_coin", "amount": randi_range(2, 5)})
+		if randf() <= 0.35:
+			rewards.append({"id": "copper", "amount": 1})
+	elif target_floor <= 15:
+		rewards.append({"id": "copper", "amount": randi_range(1, 3)})
+	elif target_floor <= 20:
+		rewards.append({"id": "copper", "amount": randi_range(2, 5)})
+		if randf() <= 0.35:
+			rewards.append({"id": "silver", "amount": 1})
+	else:
+		rewards.append({"id": "silver", "amount": randi_range(1, 2)})
+	return rewards
+
+
+func _build_elite_currency_bonus(target_floor: int) -> Dictionary:
+	if target_floor <= 10:
+		return {"id": "copper", "amount": 1}
+	if target_floor <= 20:
+		return {"id": "silver", "amount": 1}
+	return {"id": "gold", "amount": 1}
 
 
 func is_elite_enemy() -> bool:
@@ -275,7 +310,7 @@ func _setup_hp_bar() -> void:
 func _update_hp_bar() -> void:
 	if hp_bar_root == null or hp_bar_fill == null:
 		return
-	var ratio := clampf(float(current_hp) / float(max(max_hp, 1)), 0.0, 1.0)
+	var ratio: float = clampf(float(current_hp) / float(max(max_hp, 1)), 0.0, 1.0)
 	hp_bar_fill.polygon = PackedVector2Array([Vector2.ZERO, Vector2(24.0 * ratio, 0), Vector2(24.0 * ratio, 4), Vector2(0, 4)])
 	hp_bar_root.visible = current_hp < max_hp and current_hp > 0
 

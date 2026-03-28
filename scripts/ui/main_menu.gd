@@ -13,7 +13,7 @@ extends Control
 
 const CONTINUE_GAME_ZH: String = "\u7e7c\u7e8c\u904a\u6232"
 const NO_SAVE_ZH: String = "\u6c92\u6709\u53ef\u7528\u5b58\u6a94\u3002"
-const SAVE_SUMMARY_ZH: String = "\u5b58\u6a94 1: \u7b2c %d \u5929 / \u6700\u6df1 %d \u5c64 / %dG %dS %dC"
+const SAVE_SUMMARY_ZH: String = "\u5b58\u6a94 1: \u7b2c %d \u5929 / \u6700\u6df1 %d \u5c64 / %dG %dS %dC %dW"
 const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 
 
@@ -133,6 +133,7 @@ func _format_save_summary(meta: Dictionary) -> String:
 	var gold: int = int(meta.get("gold", 0))
 	var silver: int = int(meta.get("silver", 0))
 	var copper: int = int(meta.get("copper", 0))
+	var wooden: int = int(meta.get("wooden_coin", 0))
 	if LocaleManager.get_locale().begins_with("zh"):
-		return SAVE_SUMMARY_ZH % [current_day, deepest_floor, gold, silver, copper]
-	return "Slot 1: Day %d / Deepest Floor %d / %dG %dS %dC" % [current_day, deepest_floor, gold, silver, copper]
+		return SAVE_SUMMARY_ZH % [current_day, deepest_floor, gold, silver, copper, wooden]
+	return "Slot 1: Day %d / Deepest Floor %d / %dG %dS %dC %dW" % [current_day, deepest_floor, gold, silver, copper, wooden]
