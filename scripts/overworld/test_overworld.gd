@@ -103,13 +103,7 @@ func build_ground() -> void:
 			if _generator.is_road_tile(coords):
 				tile_map_layer.set_cell(coords, SOURCE_ROAD, Vector2i.ZERO)
 				continue
-			var tile_type: String = _generator.get_tile_type(coords)
-			# Border and water tiles both render as impassable water
-			if tile_type == "water" or tile_type == "lake" or tile_type == "border":
-				var src: int = SOURCE_WATER if (x + y) % 2 == 0 else SOURCE_WATER_ALT
-				tile_map_layer.set_cell(coords, src, Vector2i.ZERO)
-			else:
-				tile_map_layer.set_cell(coords, SOURCE_GRASS, Vector2i.ZERO)
+			tile_map_layer.set_cell(coords, SOURCE_GRASS, Vector2i.ZERO)
 
 	tile_map_layer.update_internals()
 
@@ -190,7 +184,7 @@ func _is_valid_resource_pos(pos: Vector2, spawn_px: Vector2, entrance_px: Vector
 		return false
 	var tile: Vector2i = Vector2i(int(pos.x) / WorldGenerator.TILE_SIZE, int(pos.y) / WorldGenerator.TILE_SIZE)
 	var tile_type: String = _generator.get_tile_type(tile)
-	return tile_type != "water" and tile_type != "lake" and tile_type != "border"
+	return tile_type != "border"
 
 
 func _spawn_merchant() -> void:
@@ -405,7 +399,7 @@ func _try_append_npc_position(positions: Array[Vector2], candidate_position: Vec
 		floori(candidate_position.y / WorldGenerator.TILE_SIZE)
 	)
 	var tile_type: String = _generator.get_tile_type(tile_position)
-	if tile_type == "water" or tile_type == "lake" or tile_type == "border":
+	if tile_type == "border":
 		return
 	for existing_position: Vector2 in positions:
 		if existing_position.distance_to(candidate_position) < 28.0:

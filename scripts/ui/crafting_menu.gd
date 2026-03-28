@@ -38,6 +38,8 @@ var _repair_dur_lbl: Label = null
 var _repair_cost_lbl: Label = null
 var _repair_action_btn: Button = null
 var _repair_widgets_built: bool = false
+var _repair_detail_icon: Control = null
+var _repair_stats_vbox: VBoxContainer = null
 
 const CATEGORY_KEY_MAP = {
 	"Armor": "cat_armor",
@@ -450,7 +452,12 @@ func _apply_repair_mode_layout(is_repair: bool) -> void:
 		return
 	_repair_placeholder.visible = is_repair
 	_repair_name_lbl.visible = false
-	_repair_dur_bg.visible = false
+	if _repair_detail_icon != null:
+		_repair_detail_icon.visible = false
+	if _repair_stats_vbox != null:
+		_repair_stats_vbox.visible = false
+	if _repair_dur_bg != null:
+		_repair_dur_bg.visible = false
 	_repair_dur_lbl.visible = false
 	_repair_cost_lbl.visible = false
 	_repair_action_btn.visible = false
@@ -459,6 +466,7 @@ func _apply_repair_mode_layout(is_repair: bool) -> void:
 func _ensure_repair_widgets() -> void:
 	if _repair_widgets_built:
 		return
+
 	_repair_placeholder = Label.new()
 	_repair_placeholder.text = LocaleManager.L("repair_prompt")
 	_repair_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -468,22 +476,23 @@ func _ensure_repair_widgets() -> void:
 
 	_repair_name_lbl = Label.new()
 	_repair_name_lbl.visible = false
-	_repair_name_lbl.add_theme_font_size_override("font_size", 18)
+	_repair_name_lbl.add_theme_font_size_override("font_size", 17)
+	_repair_name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_repair_name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_vbox.add_child(_repair_name_lbl)
 
-	_repair_dur_bg = ColorRect.new()
-	_repair_dur_bg.visible = false
-	_repair_dur_bg.custom_minimum_size = Vector2(0, 14)
-	_repair_dur_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_repair_dur_bg.color = Color(0.18, 0.18, 0.2, 1.0)
-	_repair_dur_fill = ColorRect.new()
-	_repair_dur_fill.anchor_top = 0.0
-	_repair_dur_fill.anchor_bottom = 1.0
-	_repair_dur_fill.anchor_left = 0.0
-	_repair_dur_fill.anchor_right = 0.0
-	_repair_dur_fill.color = Color(0.45, 1.0, 0.45, 1.0)
-	_repair_dur_bg.add_child(_repair_dur_fill)
-	detail_vbox.add_child(_repair_dur_bg)
+	# 64×64 icon placeholder (replaced each time in _populate_repair_detail)
+	var icon_row: HBoxContainer = HBoxContainer.new()
+	icon_row.name = "_RepairIconRow"
+	icon_row.visible = false
+	icon_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	detail_vbox.add_child(icon_row)
+	_repair_detail_icon = icon_row
+
+	_repair_stats_vbox = VBoxContainer.new()
+	_repair_stats_vbox.visible = false
+	_repair_stats_vbox.add_theme_constant_override("separation", 2)
+	detail_vbox.add_child(_repair_stats_vbox)
 
 	_repair_dur_lbl = Label.new()
 	_repair_dur_lbl.visible = false
@@ -498,6 +507,7 @@ func _ensure_repair_widgets() -> void:
 	_repair_action_btn = Button.new()
 	_repair_action_btn.visible = false
 	_repair_action_btn.text = LocaleManager.L("repair")
+	_repair_action_btn.custom_minimum_size = Vector2(120, 36)
 	_repair_action_btn.pressed.connect(_on_repair_detail_pressed)
 	detail_vbox.add_child(_repair_action_btn)
 
@@ -543,60 +553,99 @@ func _build_repair_list() -> void:
 
 func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> HBoxContainer:
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	row.add_theme_constant_override("separation", 8)
+	row.custom_minimum_size = Vector2(0, 56)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	# 32×32 icon
-	var icon_holder: Control = _build_item_icon_holder(item)
-	icon_holder.custom_minimum_size = Vector2(32, 32)
-	row.add_child(icon_holder)
-
-	# Name button (select for detail)
-	var label_text: String = _repair_get_display_name(item)
-	if slot_name != "":
-		label_text = "%s [%s]" % [label_text, _repair_translate_slot(slot_name)]
-	else:
-		label_text = "%s [%s]" % [label_text, LocaleManager.L("inventory_short")]
+	# Left: select button containing icon + info (SIZE_EXPAND_FILL)
 	var select_btn: Button = Button.new()
-	select_btn.text = label_text
-	select_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	select_btn.flat = true
 	select_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	select_btn.clip_text = true
-	select_btn.self_modulate = player.equipment_system.get_item_display_color(item)
 	if slot_name != "":
 		var sn: String = slot_name
 		select_btn.pressed.connect(func() -> void: _set_repair_selection(sn, -1))
 	else:
 		var idx: int = inv_idx
 		select_btn.pressed.connect(func() -> void: _set_repair_selection("", idx))
-	row.add_child(select_btn)
 
-	# Durability bar (80px wide, 12px tall)
+	var select_hbox: HBoxContainer = HBoxContainer.new()
+	select_hbox.add_theme_constant_override("separation", 8)
+	select_hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	select_hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	# 48×48 icon
+	var icon_tex: Texture2D = ITEM_DATABASE.get_stack_icon(item)
+	if icon_tex != null:
+		var icon_rect: TextureRect = TextureRect.new()
+		icon_rect.custom_minimum_size = Vector2(48, 48)
+		icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_rect.texture = icon_tex
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		select_hbox.add_child(icon_rect)
+	else:
+		var swatch: ColorRect = ColorRect.new()
+		swatch.custom_minimum_size = Vector2(48, 48)
+		swatch.color = ITEM_DATABASE.get_stack_color(item)
+		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		select_hbox.add_child(swatch)
+
+	# Middle: VBoxContainer with name + dur row
+	var mid_vbox: VBoxContainer = VBoxContainer.new()
+	mid_vbox.add_theme_constant_override("separation", 4)
+	mid_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mid_vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mid_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var rarity: String = str(item.get("rarity", ""))
+	var display_name: String = _repair_get_display_name(item)
+	var slot_tag: String = _repair_translate_slot(slot_name) if slot_name != "" else LocaleManager.L("inventory_short")
+	var name_text: String = ""
+	if rarity != "" and rarity != "Common":
+		name_text = "[%s] %s  (%s)" % [rarity, display_name, slot_tag]
+	else:
+		name_text = "%s  (%s)" % [display_name, slot_tag]
+	var name_lbl: Label = Label.new()
+	name_lbl.text = name_text
+	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
+	name_lbl.clip_text = true
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mid_vbox.add_child(name_lbl)
+
 	var max_dur: int = int(item.get("max_durability", 0))
 	var dur: int = int(item.get("durability", max_dur))
-	var dur_ratio: float = clampf(float(dur) / float(maxi(max_dur, 1)), 0.0, 1.0)
-	var bar_bg: ColorRect = ColorRect.new()
-	bar_bg.custom_minimum_size = Vector2(80, 12)
-	bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
-	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bar_fill: ColorRect = ColorRect.new()
-	bar_fill.anchor_top = 0.0
-	bar_fill.anchor_bottom = 1.0
-	bar_fill.anchor_left = 0.0
-	bar_fill.anchor_right = dur_ratio
-	bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if dur <= 0:
-		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0)
-	else:
-		bar_fill.color = Color(1.0, 0.75, 0.3, 1.0)
-	bar_bg.add_child(bar_fill)
-	row.add_child(bar_bg)
+	var dur_row: HBoxContainer = HBoxContainer.new()
+	dur_row.add_theme_constant_override("separation", 6)
+	dur_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# Inline repair button
+	var dur_bar: ProgressBar = ProgressBar.new()
+	dur_bar.custom_minimum_size = Vector2(200, 12)
+	dur_bar.min_value = 0.0
+	dur_bar.max_value = float(maxi(max_dur, 1))
+	dur_bar.value = float(dur)
+	dur_bar.show_percentage = false
+	dur_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dur_row.add_child(dur_bar)
+
+	var dur_txt: Label = Label.new()
+	dur_txt.text = "%d/%d" % [dur, max_dur]
+	dur_txt.add_theme_font_size_override("font_size", 11)
+	dur_txt.modulate = Color(0.8, 0.8, 0.8, 1.0)
+	dur_txt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dur_row.add_child(dur_txt)
+	mid_vbox.add_child(dur_row)
+
+	select_hbox.add_child(mid_vbox)
+	select_btn.add_child(select_hbox)
+	row.add_child(select_btn)
+
+	# Right: "修理" button (80×40)
 	var repair_btn: Button = Button.new()
 	repair_btn.text = LocaleManager.L("repair")
-	repair_btn.custom_minimum_size = Vector2(56, 0)
+	repair_btn.custom_minimum_size = Vector2(80, 40)
+	repair_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	if slot_name != "":
 		var sn: String = slot_name
 		repair_btn.pressed.connect(func() -> void: _inline_repair_slot(sn))
@@ -622,7 +671,10 @@ func _populate_repair_detail() -> void:
 		_repair_placeholder.text = LocaleManager.L("repair_prompt")
 		_repair_placeholder.visible = true
 		_repair_name_lbl.visible = false
-		_repair_dur_bg.visible = false
+		if _repair_detail_icon != null:
+			_repair_detail_icon.visible = false
+		if _repair_stats_vbox != null:
+			_repair_stats_vbox.visible = false
 		_repair_dur_lbl.visible = false
 		_repair_cost_lbl.visible = false
 		_repair_action_btn.visible = false
@@ -647,23 +699,59 @@ func _populate_repair_detail() -> void:
 
 	var max_dur: int = int(item.get("max_durability", 0))
 	var dur: int = int(item.get("durability", max_dur))
-	var dur_ratio: float = clampf(float(dur) / float(maxi(max_dur, 1)), 0.0, 1.0)
+	var rarity: String = str(item.get("rarity", ""))
 
 	_repair_placeholder.visible = false
-	_repair_name_lbl.text = "%s [%s]" % [_repair_get_display_name(item), slot_label]
+
+	# Name
+	var display_name: String = _repair_get_display_name(item)
+	var name_text: String = ""
+	if rarity != "" and rarity != "Common":
+		name_text = "[%s] %s  [%s]" % [rarity, display_name, slot_label]
+	else:
+		name_text = "%s  [%s]" % [display_name, slot_label]
+	_repair_name_lbl.text = name_text
 	_repair_name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
 	_repair_name_lbl.visible = true
-	_repair_dur_fill.anchor_right = dur_ratio
-	if dur <= 0:
-		_repair_dur_fill.color = Color(1.0, 0.3, 0.3, 1.0)
-	elif dur >= max_dur:
-		_repair_dur_fill.color = Color(0.45, 1.0, 0.45, 1.0)
-	else:
-		_repair_dur_fill.color = Color(1.0, 0.75, 0.3, 1.0)
-	_repair_dur_bg.visible = true
+
+	# 64×64 icon
+	if _repair_detail_icon != null:
+		for ch: Node in _repair_detail_icon.get_children():
+			ch.queue_free()
+		var icon_tex: Texture2D = ITEM_DATABASE.get_stack_icon(item)
+		if icon_tex != null:
+			var icon_rect: TextureRect = TextureRect.new()
+			icon_rect.custom_minimum_size = Vector2(64, 64)
+			icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			icon_rect.texture = icon_tex
+			_repair_detail_icon.add_child(icon_rect)
+		else:
+			var swatch: ColorRect = ColorRect.new()
+			swatch.custom_minimum_size = Vector2(64, 64)
+			swatch.color = ITEM_DATABASE.get_stack_color(item)
+			_repair_detail_icon.add_child(swatch)
+		_repair_detail_icon.visible = true
+
+	# Stats
+	if _repair_stats_vbox != null:
+		for ch: Node in _repair_stats_vbox.get_children():
+			ch.queue_free()
+		var stats: Dictionary = item.get("stats", {}) as Dictionary
+		for stat_id: Variant in stats.keys():
+			var stat_lbl: Label = Label.new()
+			stat_lbl.text = "%s: +%s" % [_pretty_name(str(stat_id)), str(stats[stat_id])]
+			stat_lbl.add_theme_font_size_override("font_size", 12)
+			stat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			_repair_stats_vbox.add_child(stat_lbl)
+		_repair_stats_vbox.visible = _repair_stats_vbox.get_child_count() > 0
+
+	# Durability text
 	_repair_dur_lbl.text = LocaleManager.L("durability_label") % [dur, max_dur]
 	_repair_dur_lbl.visible = true
 
+	# Cost + action button
 	if _repair_selected_slot != "":
 		var cost: Dictionary = player.equipment_system.get_repair_cost(_repair_selected_slot).duplicate()
 		for k: String in cost.keys():
@@ -676,6 +764,7 @@ func _populate_repair_detail() -> void:
 				if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
 					can_afford = false
 			_repair_cost_lbl.text = LocaleManager.L("repair_cost_fmt") % ", ".join(cost_parts)
+			_repair_cost_lbl.modulate = Color(0.45, 1.0, 0.45, 1.0) if can_afford else Color(1.0, 0.45, 0.45, 1.0)
 			_repair_cost_lbl.visible = true
 			_repair_action_btn.disabled = not can_afford
 			_repair_action_btn.visible = dur < max_dur
@@ -689,6 +778,7 @@ func _populate_repair_detail() -> void:
 			var cost_amount: int = maxi(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
 			var can_afford: bool = player.inventory.get_item_count(material) >= cost_amount
 			_repair_cost_lbl.text = LocaleManager.L("repair_cost_single_fmt") % [cost_amount, ITEM_DATABASE.get_display_name(material)]
+			_repair_cost_lbl.modulate = Color(0.45, 1.0, 0.45, 1.0) if can_afford else Color(1.0, 0.45, 0.45, 1.0)
 			_repair_cost_lbl.visible = true
 			_repair_action_btn.disabled = not can_afford
 			_repair_action_btn.visible = true

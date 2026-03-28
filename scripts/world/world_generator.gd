@@ -7,13 +7,10 @@ const CENTER: Vector2i = Vector2i(100, 100)
 const SAFE_RADIUS: int = 15
 # Solid impassable border ring (10-15 tiles wide on each edge)
 const BORDER_WIDTH: int = 12
-# Inner water transition just inside the hard border
-const WATER_TRANSITION: int = 5
 
 # Legacy cluster arrays kept for resource-spawning compatibility
 var forest_clusters: Array = []
 var mountain_clusters: Array = []
-var lake_clusters: Array = []
 var dungeon_entrance_tile: Vector2i = Vector2i(100, 65)
 
 # New generation data
@@ -64,14 +61,10 @@ func _generate_clusters() -> void:
 	for _i in range(mountain_count):
 		mountain_clusters.append(_random_cluster(15, 25))
 
-	var lake_count: int = _rng.randi_range(1, 2)
-	for _i in range(lake_count):
-		lake_clusters.append(_random_cluster(5, 10))
-
 
 func _random_cluster(min_radius: int, max_radius: int) -> Dictionary:
 	var radius: int = _rng.randi_range(min_radius, max_radius)
-	var margin: int = BORDER_WIDTH + WATER_TRANSITION + radius + 5
+	var margin: int = BORDER_WIDTH + radius + 5
 	var cx: int = _rng.randi_range(margin, MAP_SIZE.x - margin)
 	var cy: int = _rng.randi_range(margin, MAP_SIZE.y - margin)
 	return {"center": Vector2i(cx, cy), "radius": radius}
@@ -97,8 +90,8 @@ func _generate_road() -> void:
 			var drift: int = _rng.randi_range(-1, 1)
 			cur_x = clampi(
 				cur_x + drift,
-				BORDER_WIDTH + WATER_TRANSITION + 2,
-				MAP_SIZE.x - BORDER_WIDTH - WATER_TRANSITION - 3
+				BORDER_WIDTH + 2,
+				MAP_SIZE.x - BORDER_WIDTH - 3
 			)
 		for dx in range(-road_half, road_half + 1):
 			road_tiles[Vector2i(cur_x + dx, ty)] = true
@@ -114,12 +107,12 @@ func _generate_decorations() -> void:
 	while decoration_positions.size() < target and attempts < max_attempts:
 		attempts += 1
 		var tx: int = _rng.randi_range(
-			BORDER_WIDTH + WATER_TRANSITION + 2,
-			MAP_SIZE.x - BORDER_WIDTH - WATER_TRANSITION - 3
+			BORDER_WIDTH + 2,
+			MAP_SIZE.x - BORDER_WIDTH - 3
 		)
 		var ty: int = _rng.randi_range(
-			BORDER_WIDTH + WATER_TRANSITION + 2,
-			MAP_SIZE.y - BORDER_WIDTH - WATER_TRANSITION - 3
+			BORDER_WIDTH + 2,
+			MAP_SIZE.y - BORDER_WIDTH - 3
 		)
 		var tile: Vector2i = Vector2i(tx, ty)
 		if get_tile_type(tile) == "plains" and not road_tiles.has(tile):
@@ -130,16 +123,10 @@ func _generate_decorations() -> void:
 # Tile classification (noise-driven with hard border)
 # ---------------------------------------------------------------------------
 func get_tile_type(tile: Vector2i) -> String:
-	# Hard impassable border ring (mountains / deep water wall)
+	# Hard impassable border ring
 	if tile.x < BORDER_WIDTH or tile.x >= MAP_SIZE.x - BORDER_WIDTH \
 			or tile.y < BORDER_WIDTH or tile.y >= MAP_SIZE.y - BORDER_WIDTH:
 		return "border"
-
-	# Water transition zone just inside the border
-	var bx: int = mini(tile.x - BORDER_WIDTH, MAP_SIZE.x - BORDER_WIDTH - 1 - tile.x)
-	var by: int = mini(tile.y - BORDER_WIDTH, MAP_SIZE.y - BORDER_WIDTH - 1 - tile.y)
-	if mini(bx, by) < WATER_TRANSITION:
-		return "water"
 
 	# Safe zone around home core (always clear)
 	var tile_f: Vector2 = Vector2(float(tile.x), float(tile.y))
@@ -157,8 +144,6 @@ func get_tile_type(tile: Vector2i) -> String:
 
 	if height > 0.35:
 		return "mountain"
-	if height < -0.28:
-		return "lake"
 	if moisture > 0.20 and height > -0.10:
 		return "forest"
 	return "plains"
@@ -204,12 +189,12 @@ func sample_plains_positions(count: int) -> Array:
 	while positions.size() < count and attempts < count * 10:
 		attempts += 1
 		var tx: int = _rng.randi_range(
-			BORDER_WIDTH + WATER_TRANSITION + 2,
-			MAP_SIZE.x - BORDER_WIDTH - WATER_TRANSITION - 3
+			BORDER_WIDTH + 2,
+			MAP_SIZE.x - BORDER_WIDTH - 3
 		)
 		var ty: int = _rng.randi_range(
-			BORDER_WIDTH + WATER_TRANSITION + 2,
-			MAP_SIZE.y - BORDER_WIDTH - WATER_TRANSITION - 3
+			BORDER_WIDTH + 2,
+			MAP_SIZE.y - BORDER_WIDTH - 3
 		)
 		if get_tile_type(Vector2i(tx, ty)) == "plains":
 			positions.append(Vector2(tx * TILE_SIZE, ty * TILE_SIZE))
