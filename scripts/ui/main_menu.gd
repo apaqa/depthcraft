@@ -54,6 +54,8 @@ func _on_single_player_pressed() -> void:
 	var network_manager: Node = _get_network_manager()
 	if network_manager != null:
 		network_manager.disconnect_game()
+	if NpcManager != null and NpcManager.has_method("clear_state"):
+		NpcManager.clear_state()
 	AudioManager.play_sfx("ui_close")
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
