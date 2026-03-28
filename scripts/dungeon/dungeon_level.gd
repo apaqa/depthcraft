@@ -124,6 +124,8 @@ func place_player(new_player: Node2D, spawn_override: Variant = null) -> void:
 	if player.get_parent() != self:
 		player.reparent(self)
 	player.global_position = get_spawn_position(spawn_override)
+	if player.has_signal("safe_return_requested") and not player.safe_return_requested.is_connected(_on_return_surface_requested):
+		player.safe_return_requested.connect(_on_return_surface_requested)
 	_update_player_ambient_light()
 	_spawn_enemies()
 	_track_explored_room()

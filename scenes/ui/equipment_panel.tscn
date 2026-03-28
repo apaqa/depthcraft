@@ -21,9 +21,9 @@ color = Color(0, 0, 0, 0.45)
 [node name="PanelContainer" type="PanelContainer" parent="."]
 layout_mode = 1
 anchor_left = 0.1
-anchor_top = 0.125
+anchor_top = 0.05
 anchor_right = 0.9
-anchor_bottom = 0.875
+anchor_bottom = 0.95
 
 [node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
 layout_mode = 2

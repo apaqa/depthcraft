@@ -60,7 +60,7 @@ func setup(drop_item_id: String, drop_quantity: int) -> void:
 	quantity = drop_quantity
 	stack_data.clear()
 	_update_icon()
-	_spawn_delay = 1.5
+	_spawn_delay = 0.0
 
 
 func setup_stack(drop_stack: Dictionary) -> void:
@@ -68,7 +68,7 @@ func setup_stack(drop_stack: Dictionary) -> void:
 	item_id = str(stack_data.get("id", ""))
 	quantity = int(stack_data.get("quantity", 1))
 	_update_icon()
-	_spawn_delay = 1.5
+	_spawn_delay = 0.0
 
 
 func setup_discard(drop_stack: Dictionary) -> void:

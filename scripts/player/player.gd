@@ -24,6 +24,7 @@ signal buffs_changed(active_buffs: Array)
 signal stats_changed
 signal died
 signal status_message_requested(message: String, color: Color, duration: float)
+signal safe_return_requested
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interaction_area: Area2D = $InteractionArea
@@ -312,7 +313,9 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("pickup_loot") and not build_mode and not is_dead:
-		_pickup_nearby_loot()
+		var found_loot: bool = _pickup_nearby_loot()
+		if not found_loot:
+			safe_return_requested.emit()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -384,10 +387,10 @@ func _try_secondary_interact() -> void:
 	interactable.secondary_interact(self)
 
 
-func _pickup_nearby_loot() -> void:
+func _pickup_nearby_loot() -> bool:
 	var pickup_radius: float = 64.0
 	var drops: Array = get_tree().get_nodes_in_group("loot_drop")
-	print("F pressed, searching loot... found ", drops.size(), " drops in group")
+	var picked_any: bool = false
 	for drop in drops:
 		if not is_instance_valid(drop):
 			continue
@@ -395,10 +398,11 @@ func _pickup_nearby_loot() -> void:
 		if drop_node == null:
 			continue
 		var dist: float = global_position.distance_to(drop_node.global_position)
-		print("Found loot: ", drop_node.name, " dist=", dist, " radius=", pickup_radius)
 		if dist <= pickup_radius:
 			if drop_node.has_method("try_pickup"):
 				drop_node.try_pickup(self)
+				picked_any = true
+	return picked_any
 
 
 func _interaction_requires_core(interactable) -> bool:

@@ -385,6 +385,7 @@ func _serialize_progress(main_node: Node) -> Dictionary:
 				if bool(unlocked_data.get(achievement_id_variant, false)):
 					achievement_ids.append(str(achievement_id_variant))
 	achievement_ids.sort()
+	var raw_overworld_seed: Variant = main_node.get("overworld_seed") if main_node != null else null
 	return {
 		"current_day": int(raw_day) if raw_day != null else 1,
 		"deepest_floor": int(raw_floor) if raw_floor != null else 1,
@@ -392,6 +393,7 @@ func _serialize_progress(main_node: Node) -> Dictionary:
 		"total_kills": total_kills,
 		"achievements": achievement_ids,
 		"achievement_stats": achievement_stats,
+		"overworld_seed": int(raw_overworld_seed) if raw_overworld_seed != null else 0,
 	}
 
 
@@ -602,6 +604,9 @@ func _restore_progress(data: Dictionary, main_node: Node) -> void:
 	main_node.set("current_day", int(data.get("current_day", 1)))
 	var deepest_floor_reached: int = int(data.get("deepest_floor", data.get("deepest_floor_reached", 1)))
 	main_node.set("deepest_dungeon_floor_reached", deepest_floor_reached)
+	var saved_overworld_seed: int = int(data.get("overworld_seed", 0))
+	if saved_overworld_seed != 0:
+		main_node.set("overworld_seed", saved_overworld_seed)
 	if WorldLevel != null and WorldLevel.has_method("set_deepest_floor_reached"):
 		WorldLevel.call("set_deepest_floor_reached", deepest_floor_reached)
 	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")

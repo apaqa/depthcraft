@@ -508,56 +508,76 @@ func _build_repair_list() -> void:
 	if player == null:
 		_populate_repair_detail()
 		return
+	var row_count: int = 0
 	for slot_name: String in player.equipment_system.get_slot_order():
 		var item: Dictionary = player.equipment_system.get_equipped(slot_name)
 		if item.is_empty():
 			continue
+		var max_dur: int = int(item.get("max_durability", 0))
+		if max_dur <= 0:
+			continue
+		var dur: int = int(item.get("durability", max_dur))
+		if dur >= max_dur:
+			continue
 		recipe_list_container.add_child(_build_repair_row(item, slot_name, -1))
+		row_count += 1
 	for index: int in range(player.inventory.items.size()):
 		var item: Dictionary = player.inventory.items[index]
 		if str(item.get("type", "")) != "equipment":
 			continue
-		if int(item.get("max_durability", 0)) <= 0:
+		var max_dur: int = int(item.get("max_durability", 0))
+		if max_dur <= 0:
+			continue
+		var dur: int = int(item.get("durability", max_dur))
+		if dur >= max_dur:
 			continue
 		recipe_list_container.add_child(_build_repair_row(item, "", index))
+		row_count += 1
+	if row_count == 0:
+		var empty_lbl: Label = Label.new()
+		empty_lbl.text = LocaleManager.L("repair_none_equipped")
+		empty_lbl.modulate = Color(0.6, 0.6, 0.6, 1.0)
+		recipe_list_container.add_child(empty_lbl)
 	_populate_repair_detail()
 
 
-func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> Button:
-	var row_btn: Button = Button.new()
-	row_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	row_btn.flat = true
+func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> HBoxContainer:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	var hbox: HBoxContainer = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 8)
-	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_child(_build_item_icon_holder(item))
+	# 32×32 icon
+	var icon_holder: Control = _build_item_icon_holder(item)
+	icon_holder.custom_minimum_size = Vector2(32, 32)
+	row.add_child(icon_holder)
 
-	var info_col: VBoxContainer = VBoxContainer.new()
-	info_col.add_theme_constant_override("separation", 4)
-	info_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
+	# Name button (select for detail)
 	var label_text: String = _repair_get_display_name(item)
 	if slot_name != "":
 		label_text = "%s [%s]" % [label_text, _repair_translate_slot(slot_name)]
 	else:
 		label_text = "%s [%s]" % [label_text, LocaleManager.L("inventory_short")]
-	var name_lbl: Label = Label.new()
-	name_lbl.text = label_text
-	name_lbl.self_modulate = player.equipment_system.get_item_display_color(item)
-	name_lbl.clip_text = true
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_col.add_child(name_lbl)
+	var select_btn: Button = Button.new()
+	select_btn.text = label_text
+	select_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	select_btn.flat = true
+	select_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	select_btn.clip_text = true
+	select_btn.self_modulate = player.equipment_system.get_item_display_color(item)
+	if slot_name != "":
+		var sn: String = slot_name
+		select_btn.pressed.connect(func() -> void: _set_repair_selection(sn, -1))
+	else:
+		var idx: int = inv_idx
+		select_btn.pressed.connect(func() -> void: _set_repair_selection("", idx))
+	row.add_child(select_btn)
 
+	# Durability bar (80px wide, 12px tall)
 	var max_dur: int = int(item.get("max_durability", 0))
 	var dur: int = int(item.get("durability", max_dur))
 	var dur_ratio: float = clampf(float(dur) / float(maxi(max_dur, 1)), 0.0, 1.0)
 	var bar_bg: ColorRect = ColorRect.new()
-	bar_bg.custom_minimum_size = Vector2(0, 8)
-	bar_bg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar_bg.custom_minimum_size = Vector2(80, 12)
 	bar_bg.color = Color(0.18, 0.18, 0.2, 1.0)
 	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bar_fill: ColorRect = ColorRect.new()
@@ -568,22 +588,24 @@ func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> But
 	bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if dur <= 0:
 		bar_fill.color = Color(1.0, 0.3, 0.3, 1.0)
-	elif dur >= max_dur:
-		bar_fill.color = Color(0.45, 1.0, 0.45, 1.0)
 	else:
 		bar_fill.color = Color(1.0, 0.75, 0.3, 1.0)
 	bar_bg.add_child(bar_fill)
-	info_col.add_child(bar_bg)
-	hbox.add_child(info_col)
-	row_btn.add_child(hbox)
+	row.add_child(bar_bg)
 
+	# Inline repair button
+	var repair_btn: Button = Button.new()
+	repair_btn.text = LocaleManager.L("repair")
+	repair_btn.custom_minimum_size = Vector2(56, 0)
 	if slot_name != "":
 		var sn: String = slot_name
-		row_btn.pressed.connect(func() -> void: _set_repair_selection(sn, -1))
+		repair_btn.pressed.connect(func() -> void: _inline_repair_slot(sn))
 	else:
 		var idx: int = inv_idx
-		row_btn.pressed.connect(func() -> void: _set_repair_selection("", idx))
-	return row_btn
+		repair_btn.pressed.connect(func() -> void: _inline_repair_inv(idx))
+	row.add_child(repair_btn)
+
+	return row
 
 
 func _set_repair_selection(slot: String, inv_idx: int) -> void:
@@ -691,7 +713,45 @@ func _on_repair_detail_pressed() -> void:
 func _build_repair_list_refresh() -> void:
 	for child: Node in recipe_list_container.get_children():
 		child.queue_free()
+	_repair_selected_slot = ""
+	_repair_selected_inv_index = -1
 	_build_repair_list()
+
+
+func _inline_repair_slot(slot_name: String) -> void:
+	if player == null:
+		return
+	var repair_cost_multiplier: float = _get_repair_cost_multiplier()
+	var cost: Dictionary = player.equipment_system.get_repair_cost(slot_name).duplicate()
+	for k: String in cost.keys():
+		cost[k] = maxi(int(ceil(float(cost[k]) * repair_cost_multiplier)), 1)
+	for resource_id: String in cost.keys():
+		if player.inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
+			if player.has_method("show_status_message"):
+				player.show_status_message(LocaleManager.L("repair_cant_afford"), Color(1.0, 0.45, 0.45, 1.0))
+			return
+	if player.equipment_system.repair_slot(slot_name, player.inventory):
+		_build_repair_list_refresh()
+
+
+func _inline_repair_inv(inv_index: int) -> void:
+	if player == null or inv_index < 0 or inv_index >= player.inventory.items.size():
+		return
+	var item: Dictionary = player.inventory.items[inv_index]
+	var max_dur: int = int(item.get("max_durability", 0))
+	var dur: int = int(item.get("durability", max_dur))
+	if dur >= max_dur:
+		return
+	var lost: int = max_dur - dur
+	var material: String = str(player.equipment_system.get_repair_material("", item))
+	var repair_cost_multiplier: float = _get_repair_cost_multiplier()
+	var cost_amount: int = maxi(int(ceil(float(lost) / 10.0 * repair_cost_multiplier)), 1)
+	if player.inventory.get_item_count(material) < cost_amount:
+		if player.has_method("show_status_message"):
+			player.show_status_message(LocaleManager.L("repair_cant_afford"), Color(1.0, 0.45, 0.45, 1.0))
+		return
+	_do_repair_inventory_item(inv_index)
+	_build_repair_list_refresh()
 
 
 func _do_repair_inventory_item(inv_index: int) -> void:

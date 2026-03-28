@@ -19,7 +19,7 @@ var hp_bar_time_left: float = 0.0
 
 
 func _ready() -> void:
-	set_process(true)
+	set_process(false)
 	_start_pulse()
 	_update_hp_bar()
 
@@ -35,6 +35,8 @@ func place_at(world_position: Vector2) -> void:
 
 func set_raid_active(active: bool) -> void:
 	raid_active = active
+	if raid_active:
+		set_process(true)
 	if hp_bar_root != null:
 		hp_bar_root.visible = (raid_active or hp_bar_time_left > 0.0) and current_hp > 0
 
@@ -44,6 +46,7 @@ func take_raid_damage(amount: int) -> void:
 		return
 	current_hp = max(current_hp - amount, 0)
 	hp_bar_time_left = 2.5
+	set_process(true)
 	_update_hp_bar()
 	if current_hp <= 0:
 		destroyed.emit()
@@ -64,6 +67,8 @@ func _process(delta: float) -> void:
 	hp_bar_time_left = max(hp_bar_time_left - delta, 0.0)
 	if hp_bar_root != null:
 		hp_bar_root.visible = (raid_active or hp_bar_time_left > 0.0) and current_hp > 0
+	if hp_bar_time_left <= 0.0 and not raid_active:
+		set_process(false)
 
 
 func _start_pulse() -> void:

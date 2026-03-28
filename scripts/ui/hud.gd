@@ -77,6 +77,7 @@ var _skill_slot_overlays: Array[ColorRect] = []
 var _skill_slot_cd_labels: Array[Label] = []
 var _skill_slot_name_labels: Array[Label] = []
 var _skill_hint_label: Label = null
+var _skill_system_cache: Node = null
 
 
 func _ready() -> void:
@@ -541,9 +542,11 @@ func _update_minimap(delta: float) -> void:
 
 
 func _update_skill_cooldowns() -> void:
-	var skill_system: Node = get_node_or_null("/root/SkillSystem")
-	if skill_system == null:
+	if _skill_system_cache == null or not is_instance_valid(_skill_system_cache):
+		_skill_system_cache = get_node_or_null("/root/SkillSystem")
+	if _skill_system_cache == null:
 		return
+	var skill_system: Node = _skill_system_cache
 	var snapshots: Array = skill_system.get_equipped_skill_snapshots()
 	const SLOT_W: float = 70.0
 	const SLOT_H: float = 36.0
