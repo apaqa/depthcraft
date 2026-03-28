@@ -1,25 +1,25 @@
 extends Node
 
-const WORKBENCH_SCENE_PATH := "res://scenes/building/facilities/workbench.tscn"
-const STORAGE_CHEST_SCENE_PATH := "res://scenes/building/facilities/storage_chest.tscn"
-const REPAIR_BENCH_SCENE_PATH := "res://scenes/building/facilities/repair_bench.tscn"
-const WOOD_DOOR_SCENE_PATH := "res://scenes/building/facilities/wood_door.tscn"
-const TALENT_ALTAR_SCENE_PATH := "res://scenes/building/facilities/talent_altar.tscn"
-const FARM_PLOT_SCENE_PATH := "res://scenes/building/facilities/farm_plot.tscn"
-const COOKING_BENCH_SCENE_PATH := "res://scenes/building/facilities/cooking_bench.tscn"
-const BOUNTY_BOARD_SCENE_PATH := "res://scenes/building/facilities/bounty_board.tscn"
-const TAVERN_SCENE_PATH := "res://scenes/building/facilities/tavern.tscn"
-const HOME_CORE_SCENE_PATH := "res://scenes/building/home_core.tscn"
-const FULL_TILE_ATLAS := Vector2i.ZERO
-const CATEGORY_ORDER := ["structure", "door_window", "facility", "defense"]
-const CATEGORY_DATA := {
+const WORKBENCH_SCENE_PATH = "res://scenes/building/facilities/workbench.tscn"
+const STORAGE_CHEST_SCENE_PATH = "res://scenes/building/facilities/storage_chest.tscn"
+const REPAIR_BENCH_SCENE_PATH = "res://scenes/building/facilities/repair_bench.tscn"
+const WOOD_DOOR_SCENE_PATH = "res://scenes/building/facilities/wood_door.tscn"
+const TALENT_ALTAR_SCENE_PATH = "res://scenes/building/facilities/talent_altar.tscn"
+const FARM_PLOT_SCENE_PATH = "res://scenes/building/facilities/farm_plot.tscn"
+const COOKING_BENCH_SCENE_PATH = "res://scenes/building/facilities/cooking_bench.tscn"
+const BOUNTY_BOARD_SCENE_PATH = "res://scenes/building/facilities/bounty_board.tscn"
+const TAVERN_SCENE_PATH = "res://scenes/building/facilities/tavern.tscn"
+const HOME_CORE_SCENE_PATH = "res://scenes/building/home_core.tscn"
+const FULL_TILE_ATLAS = Vector2i.ZERO
+const CATEGORY_ORDER = ["structure", "door_window", "facility", "defense"]
+const CATEGORY_DATA = {
 	"structure": {"name": "build_cat_structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
 	"door_window": {"name": "build_cat_door_window", "items": ["wood_door"]},
 	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "repair_bench", "talent_altar", "cooking_bench", "farm_plot", "bounty_board", "tavern", "home_core"]},
 	"defense": {"name": "build_cat_defense", "items": []},
 }
 
-const BUILDINGS := {
+const BUILDINGS = {
 	"wood_wall": {
 		"id": "wood_wall",
 		"name": "wood_wall",
@@ -82,7 +82,7 @@ const BUILDINGS := {
 		"kind": "facility",
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/crate.png"),
+		"preview_texture": preload("res://assets/boxes_stacked.png"),
 	},
 	"storage_chest": {
 		"id": "storage_chest",
@@ -100,7 +100,7 @@ const BUILDINGS := {
 		"kind": "facility",
 		"cost": {"stone": 5, "iron_ore": 3},
 		"scene_path": REPAIR_BENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/boxes_stacked.png"),
+		"preview_texture": preload("res://assets/column_wall.png"),
 	},
 	"talent_altar": {
 		"id": "talent_altar",
@@ -109,7 +109,7 @@ const BUILDINGS := {
 		"kind": "facility",
 		"cost": {"stone": 10, "iron_ore": 5},
 		"scene_path": TALENT_ALTAR_SCENE_PATH,
-		"preview_texture": preload("res://assets/column.png"),
+		"preview_texture": preload("res://assets/floor_gargoyle_red_basin.png"),
 	},
 	"farm_plot": {
 		"id": "farm_plot",
@@ -127,7 +127,7 @@ const BUILDINGS := {
 		"kind": "facility",
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/torch_no_flame.png"),
+		"preview_texture": preload("res://assets/crate.png"),
 	},
 	"bounty_board": {
 		"id": "bounty_board",
@@ -160,7 +160,7 @@ const BUILDINGS := {
 	},
 }
 
-const ORDER := ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "tavern", "home_core"]
+const ORDER = ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "repair_bench", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "tavern", "home_core"]
 
 
 static func get_building(building_id: String) -> Dictionary:
@@ -181,7 +181,7 @@ static func get_category_ids() -> PackedStringArray:
 
 
 static func get_category_name(category_id: String) -> String:
-	var key := str((CATEGORY_DATA.get(category_id, {}) as Dictionary).get("name", category_id))
+	var key: String = str((CATEGORY_DATA.get(category_id, {}) as Dictionary).get("name", category_id))
 	return LocaleManager.L(key)
 
 

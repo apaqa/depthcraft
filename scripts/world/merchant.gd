@@ -308,8 +308,14 @@ func _add_exchange_row(parent: Control, from_id: String, from_amount: int, to_id
 
 
 func _get_exchange_icon(item_id: String, amount: int) -> Texture2D:
-	if item_id == "copper" and amount >= 10:
-		return preload("res://assets/icons/kyrise/coin_02b.png")
+	if amount >= 10:
+		match item_id:
+			"copper":
+				return preload("res://assets/icons/kyrise/coin_03b.png")
+			"silver":
+				return preload("res://assets/icons/kyrise/coin_03c.png")
+			"gold":
+				return preload("res://assets/icons/kyrise/coin_03d.png")
 	return ITEM_DATABASE.get_item_icon(item_id)
 
 

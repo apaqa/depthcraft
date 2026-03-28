@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/talent_altar.gd" id="1_l04ge"]
-[ext_resource type="Texture2D" path="res://assets/column.png" id="2_tl5yr"]
+[ext_resource type="Texture2D" path="res://assets/floor_gargoyle_red_basin.png" id="2_tl5yr"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_altar"]
 size = Vector2(14, 14)

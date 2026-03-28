@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/cooking_bench.gd" id="1_cook"]
-[ext_resource type="Texture2D" path="res://assets/torch_no_flame.png" id="2_cook"]
+[ext_resource type="Texture2D" path="res://assets/crate.png" id="2_cook"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cook_body"]
 size = Vector2(14, 14)

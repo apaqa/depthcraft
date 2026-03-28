@@ -95,6 +95,7 @@ const ITEMS = {
 		"description": "A harvested crop used for cooking",
 		"icon": preload("res://assets/icons/kyrise/leaf_01a.png"),
 	},
+	# Future talent shard tiers: 01a basic, 01b advanced, 01c high, 01g legendary.
 	"talent_shard": {
 		"id": "talent_shard",
 		"name": "Talent Shard",
@@ -420,7 +421,7 @@ const ITEMS = {
 		"type": "consumable",
 		"description": "Wraps wounds and restores health",
 		"effect": {"heal": 20},
-		"icon": preload("res://assets/icons/kyrise/scroll_01a.png"),
+		"icon": preload("res://assets/icons/kyrise/scroll_01b.png"),
 	},
 	"torch": {
 		"id": "torch",
@@ -429,7 +430,7 @@ const ITEMS = {
 		"type": "consumable",
 		"description": "A simple light source for dark spaces",
 		"effect": {"light": true},
-		"icon": preload("res://assets/icons/kyrise/candle_01a.png"),
+		"icon": preload("res://assets/icons/kyrise/candle_01b.png"),
 	},
 	"bread": {
 		"id": "bread",
@@ -447,7 +448,7 @@ const ITEMS = {
 		"type": "consumable",
 		"description": "A hearty stew that restores a large chunk of health",
 		"effect": {"heal": 50},
-		"icon": preload("res://assets/icons/kyrise/cup_01a.png"),
+		"icon": preload("res://assets/icons/kyrise/cup_02b.png"),
 	},
 	"herb_tea": {
 		"id": "herb_tea",
@@ -522,10 +523,14 @@ static func get_equipment_icon(slot_name: String, rarity: String = "Common") -> 
 	match slot_name:
 		"weapon":
 			match normalized_rarity:
-				"rare", "epic":
+				"uncommon":
+					return preload("res://assets/icons/kyrise/sword_01b.png")
+				"rare":
 					return preload("res://assets/icons/kyrise/sword_02a.png")
+				"epic":
+					return preload("res://assets/icons/kyrise/sword_02d.png")
 				"legendary":
-					return preload("res://assets/icons/kyrise/sword_03a.png")
+					return preload("res://assets/icons/kyrise/sword_03e.png")
 				_:
 					return preload("res://assets/icons/kyrise/sword_01a.png")
 		"helmet":
@@ -537,19 +542,71 @@ static func get_equipment_icon(slot_name: String, rarity: String = "Common") -> 
 				"epic":
 					return preload("res://assets/icons/kyrise/helmet_01d.png")
 				"legendary":
-					return preload("res://assets/icons/kyrise/helmet_01e.png")
+					return preload("res://assets/icons/kyrise/helmet_02e.png")
 				_:
 					return preload("res://assets/icons/kyrise/helmet_01a.png")
 		"chest_armor":
-			return preload("res://assets/icons/kyrise/armor_01a.png")
-		"offhand":
-			return preload("res://assets/icons/kyrise/shield_01a.png")
+			match normalized_rarity:
+				"uncommon":
+					return preload("res://assets/icons/kyrise/armor_01b.png")
+				"rare":
+					return preload("res://assets/icons/kyrise/armor_01c.png")
+				"epic":
+					return preload("res://assets/icons/kyrise/armor_01d.png")
+				"legendary":
+					return preload("res://assets/icons/kyrise/armor_01e.png")
+				_:
+					return preload("res://assets/icons/kyrise/armor_01a.png")
+		"offhand", "shield":
+			match normalized_rarity:
+				"uncommon":
+					return preload("res://assets/icons/kyrise/shield_01b.png")
+				"rare":
+					return preload("res://assets/icons/kyrise/shield_02c.png")
+				"epic":
+					return preload("res://assets/icons/kyrise/shield_02d.png")
+				"legendary":
+					return preload("res://assets/icons/kyrise/shield_03e.png")
+				_:
+					return preload("res://assets/icons/kyrise/shield_01a.png")
 		"boots":
-			return preload("res://assets/icons/kyrise/boots_01a.png")
+			match normalized_rarity:
+				"uncommon":
+					return preload("res://assets/icons/kyrise/boots_01b.png")
+				"rare":
+					return preload("res://assets/icons/kyrise/boots_01c.png")
+				"epic":
+					return preload("res://assets/icons/kyrise/boots_01d.png")
+				"legendary":
+					return preload("res://assets/icons/kyrise/boots_01e.png")
+				_:
+					return preload("res://assets/icons/kyrise/boots_01a.png")
 		"accessory":
-			return preload("res://assets/icons/kyrise/ring_01a.png")
+			match normalized_rarity:
+				"uncommon":
+					return preload("res://assets/icons/kyrise/ring_01b.png")
+				"rare":
+					return preload("res://assets/icons/kyrise/necklace_01a.png")
+				"epic":
+					return preload("res://assets/icons/kyrise/necklace_01b.png")
+				"legendary":
+					return preload("res://assets/icons/kyrise/necklace_01c.png")
+				_:
+					return preload("res://assets/icons/kyrise/ring_01a.png")
 		"tool":
 			return preload("res://assets/icons/kyrise/ingot_01b.png")
+		"gloves":
+			match normalized_rarity:
+				"uncommon":
+					return preload("res://assets/icons/kyrise/gloves_01b.png")
+				"rare":
+					return preload("res://assets/icons/kyrise/gloves_01c.png")
+				"epic":
+					return preload("res://assets/icons/kyrise/gloves_01d.png")
+				"legendary":
+					return preload("res://assets/icons/kyrise/gloves_01e.png")
+				_:
+					return preload("res://assets/icons/kyrise/gloves_01a.png")
 		_:
 			return null
 

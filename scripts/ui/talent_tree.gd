@@ -3,41 +3,44 @@ extends Control
 class TalentMapCanvas:
 	extends Control
 
-	var owner_ui = null
+	var owner_ui: Variant = null
 
 	func _draw() -> void:
 		if owner_ui != null:
 			owner_ui._draw_talent_map(self)
 
 
-const TALENT_DATA := preload("res://scripts/talent/talent_data.gd")
+const TALENT_DATA = preload("res://scripts/talent/talent_data.gd")
+const NODE_ICON_LOCKED = preload("res://assets/icons/kyrise/spellbook_01a.png")
+const NODE_ICON_AVAILABLE = preload("res://assets/icons/kyrise/spellbook_01b.png")
+const NODE_ICON_UNLOCKED = preload("res://assets/icons/kyrise/spellbook_01c.png")
 
-const BASE_MAP_SIZE := Vector2(4000, 4000)
-const MAP_CENTER := Vector2(2000, 2000)
-const NODE_SIZE := 68.0
-const GLOW_SIZE := 92.0
-const MAIN_STEP := 150.0
-const SUB_STEP := 110.0
-const MIN_ZOOM := 0.5
-const MAX_ZOOM := 2.0
-const MAP_BACKGROUND := Color(0.08, 0.09, 0.12, 0.98)
-const LINE_LOCKED := Color(0.28, 0.31, 0.36, 0.95)
-const LINE_AVAILABLE := Color(0.76, 0.86, 0.95, 0.95)
-const LINE_UNLOCKED := Color(1.0, 0.82, 0.34, 1.0)
+const BASE_MAP_SIZE = Vector2(4000, 4000)
+const MAP_CENTER = Vector2(2000, 2000)
+const NODE_SIZE = 68.0
+const GLOW_SIZE = 92.0
+const MAIN_STEP = 150.0
+const SUB_STEP = 110.0
+const MIN_ZOOM = 0.5
+const MAX_ZOOM = 2.0
+const MAP_BACKGROUND = Color(0.08, 0.09, 0.12, 0.98)
+const LINE_LOCKED = Color(0.28, 0.31, 0.36, 0.95)
+const LINE_AVAILABLE = Color(0.76, 0.86, 0.95, 0.95)
+const LINE_UNLOCKED = Color(1.0, 0.82, 0.34, 1.0)
 
-const BRANCH_MAIN_DIRECTIONS := {
+const BRANCH_MAIN_DIRECTIONS = {
 	"offense": Vector2(-0.88, -0.62),
 	"defense": Vector2(0.88, -0.62),
 	"support": Vector2(0.0, 1.0),
 }
 
-const BRANCH_SPLIT_ANGLES := {
+const BRANCH_SPLIT_ANGLES = {
 	"offense": [-0.55, 0.38],
 	"defense": [0.55, -0.38],
 	"support": [0.55, -0.55],
 }
 
-const BRANCH_COLORS := {
+const BRANCH_COLORS = {
 	"offense": Color(0.94, 0.42, 0.34, 1.0),
 	"defense": Color(0.34, 0.66, 0.98, 1.0),
 	"support": Color(0.42, 0.88, 0.56, 1.0),
@@ -228,7 +231,7 @@ func _build_branch_positions() -> void:
 
 func _add_branch_markers() -> void:
 	for branch_id in TALENT_DATA.get_branch_ids():
-		var label := Label.new()
+		var label: Label = Label.new()
 		var branch_color: Color = Color.WHITE
 		if BRANCH_COLORS.has(branch_id):
 			branch_color = BRANCH_COLORS[branch_id]
@@ -253,14 +256,14 @@ func _create_node_widget(talent: Dictionary) -> void:
 	if not node_positions.has(talent_id):
 		return
 
-	var wrapper := Control.new()
+	var wrapper: Control = Control.new()
 	wrapper.name = "%sWrapper" % talent_id
 	wrapper.custom_minimum_size = Vector2(148, 122)
 	wrapper.size = wrapper.custom_minimum_size
 	wrapper.position = (node_positions[talent_id] as Vector2) - Vector2(wrapper.size.x * 0.5, 40.0)
 	wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
 
-	var glow := Panel.new()
+	var glow: Panel = Panel.new()
 	glow.name = "Glow"
 	glow.position = Vector2((wrapper.size.x - GLOW_SIZE) * 0.5, -12.0)
 	glow.custom_minimum_size = Vector2(GLOW_SIZE, GLOW_SIZE)
@@ -270,7 +273,7 @@ func _create_node_widget(talent: Dictionary) -> void:
 	glow.visible = false
 	wrapper.add_child(glow)
 
-	var button := Button.new()
+	var button: Button = Button.new()
 	button.name = "NodeButton"
 	button.flat = true
 	button.text = ""
@@ -281,7 +284,17 @@ func _create_node_widget(talent: Dictionary) -> void:
 	button.pressed.connect(_on_talent_selected.bind(talent_id))
 	wrapper.add_child(button)
 
-	var name_label := Label.new()
+	var icon_rect: TextureRect = TextureRect.new()
+	icon_rect.name = "NodeIcon"
+	icon_rect.custom_minimum_size = Vector2(40, 40)
+	icon_rect.size = icon_rect.custom_minimum_size
+	icon_rect.position = button.position + Vector2((NODE_SIZE - icon_rect.size.x) * 0.5, (NODE_SIZE - icon_rect.size.y) * 0.5)
+	icon_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(icon_rect)
+
+	var name_label: Label = Label.new()
 	name_label.name = "NameLabel"
 	name_label.custom_minimum_size = Vector2(wrapper.size.x, 44)
 	name_label.size = name_label.custom_minimum_size
@@ -303,9 +316,10 @@ func _apply_node_visuals(talent: Dictionary) -> void:
 	var wrapper: Control = node_widgets.get(talent_id, null)
 	if wrapper == null:
 		return
-	var button := wrapper.get_node("NodeButton") as Button
-	var glow := wrapper.get_node("Glow") as Panel
-	var name_label := wrapper.get_node("NameLabel") as Label
+	var button: Button = wrapper.get_node("NodeButton") as Button
+	var glow: Panel = wrapper.get_node("Glow") as Panel
+	var icon_rect: TextureRect = wrapper.get_node("NodeIcon") as TextureRect
+	var name_label: Label = wrapper.get_node("NameLabel") as Label
 	var state: String = _get_talent_state(talent_id)
 	var branch_id: String = str(talent.get("branch", ""))
 	var branch_color: Color = Color(0.75, 0.75, 0.75, 1.0)
@@ -334,12 +348,24 @@ func _apply_node_visuals(talent: Dictionary) -> void:
 	button.add_theme_stylebox_override("hover", _make_circle_style(fill_color.lightened(0.08), Color.WHITE, 3))
 	button.add_theme_stylebox_override("pressed", _make_circle_style(fill_color.darkened(0.08), Color.WHITE, 3))
 	button.add_theme_stylebox_override("focus", _make_circle_style(fill_color, Color.WHITE, 4))
+	if icon_rect != null:
+		icon_rect.texture = _get_state_icon(state)
 	name_label.add_theme_color_override("font_color", label_color)
 	name_label.add_theme_font_size_override("font_size", 13)
 
 
+func _get_state_icon(state: String) -> Texture2D:
+	match state:
+		"available":
+			return NODE_ICON_AVAILABLE
+		"unlocked":
+			return NODE_ICON_UNLOCKED
+		_:
+			return NODE_ICON_LOCKED
+
+
 func _make_circle_style(fill_color: Color, border_color: Color, border_width: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
+	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = fill_color
 	style.border_color = border_color
 	style.border_width_left = border_width
@@ -507,7 +533,7 @@ func _jump_to_branch(branch_id: String) -> void:
 
 func _on_map_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
-		var mouse_button := event as InputEventMouseButton
+		var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 		if mouse_button.button_index == MOUSE_BUTTON_LEFT:
 			dragging_map = mouse_button.pressed
 			last_drag_position = mouse_button.position
@@ -516,7 +542,7 @@ func _on_map_gui_input(event: InputEvent) -> void:
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_apply_zoom(zoom_level / 1.1, mouse_button.position)
 	elif event is InputEventMouseMotion and dragging_map:
-		var mouse_motion := event as InputEventMouseMotion
+		var mouse_motion: InputEventMouseMotion = event as InputEventMouseMotion
 		var delta: Vector2 = mouse_motion.position - last_drag_position
 		last_drag_position = mouse_motion.position
 		_set_scroll(Vector2(map_scroll.scroll_horizontal, map_scroll.scroll_vertical) - delta)
@@ -557,7 +583,7 @@ func _set_scroll(target_scroll: Vector2) -> void:
 
 
 func _update_close_btn_pos() -> void:
-	var close_btn := get_node_or_null("CloseButton") as Button
+	var close_btn: Button = get_node_or_null("CloseButton") as Button
 	if close_btn != null:
 		close_btn.position = panel_container.position + Vector2(8, 8)
 
@@ -565,7 +591,7 @@ func _update_close_btn_pos() -> void:
 func _ensure_close_button() -> void:
 	if panel_container == null or get_node_or_null("CloseButton") != null:
 		return
-	var close_button := Button.new()
+	var close_button: Button = Button.new()
 	close_button.name = "CloseButton"
 	close_button.text = "X"
 	close_button.position = panel_container.position + Vector2(8, 8)

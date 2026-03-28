@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/workbench.gd" id="1_yrx5k"]
-[ext_resource type="Texture2D" path="res://assets/crate.png" id="2_hm2gj"]
+[ext_resource type="Texture2D" path="res://assets/boxes_stacked.png" id="2_hm2gj"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1q34x"]
 size = Vector2(14, 14)

@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/dungeon/locked_chest.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/chest_closed.png" id="2_closed"]
+[ext_resource type="Texture2D" path="res://assets/chest_golden_closed.png" id="2_closed"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_locked"]
 radius = 14.0
@@ -11,7 +11,6 @@ script = ExtResource("1_script")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_closed")
-modulate = Color(1, 0.85, 0.3, 1)
 texture_filter = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
