@@ -64,6 +64,9 @@ var boss_stairway = null
 var boss_enemy_ref = null
 var boss_locked_chest = null
 var explored_rooms: Array[int] = []
+var _boss_door_locked: bool = false
+var _boss_door_tiles: Array[Vector2i] = []
+var _boss_door_blockers: Array[Node] = []
 
 
 func _ready() -> void:
@@ -89,7 +92,16 @@ func _track_explored_room() -> void:
 		var room: Rect2i = rooms[room_index] as Rect2i
 		if room.has_point(player_tile) and not explored_rooms.has(room_index):
 			explored_rooms.append(room_index)
+			_on_room_entered(room_index)
 			break
+
+
+func _on_room_entered(room_index: int) -> void:
+	var boss_room_index: int = int(floor_data.get("boss_room_index", -1))
+	if boss_room_index < 0 or room_index != boss_room_index:
+		return
+	if boss_enemy_ref != null and is_instance_valid(boss_enemy_ref) and not _boss_door_locked:
+		call_deferred("_lock_boss_door")
 
 
 func place_player(new_player: Node2D, spawn_override: Variant = null) -> void:
@@ -114,6 +126,9 @@ func _generate_floor() -> void:
 	boss_stairway = null
 	boss_enemy_ref = null
 	boss_locked_chest = null
+	_boss_door_locked = false
+	_boss_door_tiles.clear()
+	_boss_door_blockers.clear()
 	explored_rooms.clear()
 	_draw_floor()
 	_spawn_features()
@@ -307,6 +322,7 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 		achievement_manager.record_enemy_kill(kill_kind)
 	if enemy_ref != null and enemy_ref.has_method("is_boss_enemy") and enemy_ref.is_boss_enemy():
 		boss_enemy_ref = null
+		_unlock_boss_door()
 		if boss_stairway != null and is_instance_valid(boss_stairway):
 			boss_stairway.set_locked(false, LocaleManager.L("prompt_descend_floor") % (current_floor + 1))
 		if boss_locked_chest != null and is_instance_valid(boss_locked_chest):
@@ -384,15 +400,53 @@ func _random_edge_point_in_room(room: Rect2i, rng: RandomNumberGenerator = null)
 	return Vector2(x * 16 + 8, y * 16 + 8)
 
 
-func _spawn_wall_blocker(tile_pos: Vector2i) -> void:
-	var blocker := StaticBody2D.new()
+func _make_wall_blocker(tile_pos: Vector2i) -> StaticBody2D:
+	var blocker: StaticBody2D = StaticBody2D.new()
 	blocker.position = Vector2(tile_pos.x * 16 + 8, tile_pos.y * 16 + 8)
-	var collision := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
+	var collision: CollisionShape2D = CollisionShape2D.new()
+	var shape: RectangleShape2D = RectangleShape2D.new()
 	shape.size = Vector2(17, 17)
 	collision.shape = shape
 	blocker.add_child(collision)
-	wall_collision_root.add_child(blocker)
+	return blocker
+
+
+func _spawn_wall_blocker(tile_pos: Vector2i) -> void:
+	wall_collision_root.add_child(_make_wall_blocker(tile_pos))
+
+
+func _lock_boss_door() -> void:
+	var boss_room_index: int = int(floor_data.get("boss_room_index", -1))
+	var rooms: Array = floor_data.get("rooms", [])
+	if boss_room_index < 0 or boss_room_index >= rooms.size():
+		return
+	_boss_door_locked = true
+	var boss_room: Rect2i = rooms[boss_room_index] as Rect2i
+	var door_tiles: Array[Vector2i] = _get_room_door_tiles(boss_room)
+	_boss_door_tiles.clear()
+	_boss_door_blockers.clear()
+	for door_tile: Vector2i in door_tiles:
+		tile_map_layer.erase_cell(door_tile)
+		wall_tile_map_layer.set_cell(door_tile, _get_wall_source(door_tile), Vector2i.ZERO)
+		var blocker: StaticBody2D = _make_wall_blocker(door_tile)
+		wall_collision_root.add_child(blocker)
+		_boss_door_tiles.append(door_tile)
+		_boss_door_blockers.append(blocker)
+	tile_map_layer.update_internals()
+	wall_tile_map_layer.update_internals()
+
+
+func _unlock_boss_door() -> void:
+	for door_tile: Vector2i in _boss_door_tiles:
+		wall_tile_map_layer.erase_cell(door_tile)
+		tile_map_layer.set_cell(door_tile, _get_floor_source(door_tile), Vector2i.ZERO)
+	tile_map_layer.update_internals()
+	wall_tile_map_layer.update_internals()
+	for blocker: Node in _boss_door_blockers:
+		if is_instance_valid(blocker):
+			blocker.queue_free()
+	_boss_door_tiles.clear()
+	_boss_door_blockers.clear()
 
 
 func get_floor_spawn_config(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
@@ -411,41 +465,69 @@ func get_floor_spawn_config(floor_number: int, rng: RandomNumberGenerator = null
 
 
 func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedScene:
-	var roll := _rng_randf(rng)
+	var roll: float = _rng_randf(rng)
 	if floor_number >= 31:
-		if roll <= 0.16:
+		# All types fully mixed with large number scaling
+		if roll <= 0.14:
 			return MELEE_ENEMY_SCENE
-		if roll <= 0.32:
+		if roll <= 0.28:
 			return SLIME_ENEMY_SCENE
-		if roll <= 0.46:
+		if roll <= 0.42:
 			return RANGED_ENEMY_SCENE
-		if roll <= 0.60:
+		if roll <= 0.56:
 			return SHIELD_ORC_SCENE
-		if roll <= 0.74:
+		if roll <= 0.70:
 			return BAT_SWARM_SCENE
-		if roll <= 0.87:
+		if roll <= 0.85:
 			return SHADOW_ASSASSIN_SCENE
 		return GARGOYLE_SCENE
 	if floor_number >= 21:
+		# All mixed, rare goblin
+		if roll <= 0.08:
+			return MELEE_ENEMY_SCENE
+		if roll <= 0.22:
+			return SLIME_ENEMY_SCENE
+		if roll <= 0.38:
+			return RANGED_ENEMY_SCENE
 		if roll <= 0.55:
-			return GARGOYLE_SCENE
+			return SHIELD_ORC_SCENE
+		if roll <= 0.68:
+			return BAT_SWARM_SCENE
+		if roll <= 0.83:
+			return SHADOW_ASSASSIN_SCENE
+		return GARGOYLE_SCENE
+	if floor_number >= 16:
+		# Skeleton mage and orc dominant
+		if roll <= 0.40:
+			return RANGED_ENEMY_SCENE
+		if roll <= 0.72:
+			return SHIELD_ORC_SCENE
+		if roll <= 0.88:
+			return SHADOW_ASSASSIN_SCENE
+		return BAT_SWARM_SCENE
+	if floor_number >= 11:
+		# No goblin; shadow assassin and slime introduced
+		if roll <= 0.30:
+			return RANGED_ENEMY_SCENE
+		if roll <= 0.56:
+			return SHIELD_ORC_SCENE
 		if roll <= 0.78:
 			return SHADOW_ASSASSIN_SCENE
 		if roll <= 0.92:
-			return SHIELD_ORC_SCENE
-		return RANGED_ENEMY_SCENE
-	if floor_number >= 11:
-		if roll <= 0.38:
-			return RANGED_ENEMY_SCENE
-		if roll <= 0.73:
-			return SHIELD_ORC_SCENE
-		if roll <= 0.93:
-			return SHADOW_ASSASSIN_SCENE
+			return SLIME_ENEMY_SCENE
 		return BAT_SWARM_SCENE
-	if roll <= 0.52:
+	if floor_number >= 6:
+		# Goblin reduced; skeleton mage and orc join
+		if roll <= 0.22:
+			return MELEE_ENEMY_SCENE
+		if roll <= 0.52:
+			return RANGED_ENEMY_SCENE
+		if roll <= 0.74:
+			return SHIELD_ORC_SCENE
+		return BAT_SWARM_SCENE
+	# Floor 1-5: only goblin and bat
+	if roll <= 0.65:
 		return MELEE_ENEMY_SCENE
-	if roll <= 0.87:
-		return SLIME_ENEMY_SCENE
 	return BAT_SWARM_SCENE
 
 
@@ -472,10 +554,12 @@ func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNu
 
 func _spawn_treasure_room(room: Rect2i, room_index: int = -1) -> void:
 	var chest_count := randi_range(3, 5)
+	var chest_modulate: Color = _get_chest_modulate(current_floor)
 	for _idx in range(chest_count):
 		var chest = DUNGEON_CHEST_SCENE.instantiate()
 		chest.global_position = _random_point_in_room(room)
 		chest.setup(loot_root, current_floor)
+		chest.modulate = chest_modulate
 		feature_root.add_child(chest)
 	if room_index >= 0:
 		var treasure_timer: Node = TIMED_TREASURE_ROOM_SCRIPT.new()
@@ -762,8 +846,19 @@ func _spawn_boss_locked_chest(room: Rect2i, rng: RandomNumberGenerator) -> void:
 	var chest = LOCKED_CHEST_SCENE.instantiate()
 	chest.global_position = _random_edge_point_in_room(room, rng)
 	chest.setup(loot_root, current_floor)
+	chest.modulate = _get_chest_modulate(max(current_floor, 21))
 	feature_root.add_child(chest)
 	boss_locked_chest = chest
+
+
+func _get_chest_modulate(floor_number: int) -> Color:
+	if floor_number >= 31:
+		return Color(0.5, 0.9, 1.0)
+	if floor_number >= 21:
+		return Color(1.0, 0.85, 0.3)
+	if floor_number >= 11:
+		return Color(0.75, 0.85, 0.95)
+	return Color(0.8, 0.6, 0.4)
 
 
 func set_gameplay_paused(paused: bool) -> void:

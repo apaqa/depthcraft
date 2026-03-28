@@ -15,9 +15,9 @@ const TRAP_CORRIDOR_CHANCE: float = 0.18
 
 func generate_floor(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
 	var room_count := clampi(4 + floor_number, 5, 8)
-	var size_bonus := mini(floor_number / 4, 3)
-	var min_room_size := MIN_ROOM_SIZE + Vector2i(size_bonus, size_bonus)
-	var max_room_size := MAX_ROOM_SIZE + Vector2i(size_bonus, size_bonus)
+	var size_range: Array[Vector2i] = _get_room_size_range(floor_number)
+	var min_room_size: Vector2i = size_range[0]
+	var max_room_size: Vector2i = size_range[1]
 	var rooms: Array[Rect2i] = []
 	var floor_tiles: Dictionary = {}
 	var corridors: Array = []
@@ -262,4 +262,12 @@ func _assign_corridor_features(corridors: Array, floor_number: int, rng: RandomN
 			"to": to_tile,
 		})
 	return corridor_features
+
+
+static func _get_room_size_range(floor_number: int) -> Array[Vector2i]:
+	if floor_number >= 21:
+		return [Vector2i(12, 12), Vector2i(15, 15)]
+	if floor_number >= 11:
+		return [Vector2i(9, 9), Vector2i(12, 12)]
+	return [Vector2i(7, 7), Vector2i(9, 9)]
 
