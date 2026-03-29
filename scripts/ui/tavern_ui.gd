@@ -22,7 +22,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
-func open_for_player(player: Node, facility: Node) -> void:
+func open_for_player(player: Node, facility: Node, initial_tab: String = "slots") -> void:
 	_player = player
 	_facility = facility
 	if not _built:
@@ -31,7 +31,10 @@ func open_for_player(player: Node, facility: Node) -> void:
 		_slots_panel.setup(player)
 	if _pachinko_panel != null and _pachinko_panel.has_method("setup"):
 		_pachinko_panel.setup(player)
-	_switch_tab("slots")
+	var tab: String = initial_tab
+	if facility != null and facility.has_method("get_tavern_tab"):
+		tab = str(facility.get_tavern_tab())
+	_switch_tab(tab)
 	visible = true
 
 

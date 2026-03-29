@@ -1,9 +1,11 @@
 extends Control
 class_name TavernPachinko
 
-## 5-bin weighted pachinko.
-## Bins: [0, 2, 5, 10, 30] copper  Weights: [0.30, 0.30, 0.20, 0.15, 0.05]
-## Cost 5c → EV = 4.6c
+## Visual pachinko — TextureRect ball (gem_01a.png), 3 peg rows, 5 bins.
+## Multi-step Tween path: start → row1 drift → row2 drift → final bin.
+## Cost 5c  EV ≈ 4.6c
+
+const BALL_TEXTURE: Texture2D = preload("res://assets/icons/kyrise/gem_01a.png")
 
 const DROP_COST: int = 5
 const BIN_PAYOUTS: Array = [0, 2, 5, 10, 30]
@@ -18,11 +20,12 @@ const BIN_COLORS: Array = [
 ]
 const BOARD_W: float = 300.0
 const BOARD_H: float = 200.0
+const BALL_SIZE: float = 20.0
 
 var _player: Node = null
 var _animating: bool = false
 var _result_bin: int = -1
-var _ball_node: ColorRect = null
+var _ball_node: TextureRect = null
 var _result_label: Label = null
 var _drop_btn: Button = null
 var _balance_label: Label = null
@@ -65,7 +68,7 @@ func _build_ui() -> void:
 	_balance_label.add_theme_font_size_override("font_size", 14)
 	vbox.add_child(_balance_label)
 
-	# Board area
+	# Board
 	_board_area = Control.new()
 	_board_area.custom_minimum_size = Vector2(BOARD_W, BOARD_H)
 	_board_area.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -79,11 +82,13 @@ func _build_ui() -> void:
 	_build_pegs()
 	_build_bins()
 
-	# Ball
-	_ball_node = ColorRect.new()
-	_ball_node.color = Color(1.0, 0.88, 0.15, 1.0)
-	_ball_node.size = Vector2(12.0, 12.0)
-	_ball_node.position = Vector2(BOARD_W * 0.5 - 6.0, 8.0)
+	# Ball (TextureRect)
+	_ball_node = TextureRect.new()
+	_ball_node.texture = BALL_TEXTURE
+	_ball_node.size = Vector2(BALL_SIZE, BALL_SIZE)
+	_ball_node.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	_ball_node.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_ball_node.position = Vector2(BOARD_W * 0.5 - BALL_SIZE * 0.5, 8.0)
 	_board_area.add_child(_ball_node)
 
 	_result_label = Label.new()
@@ -101,7 +106,6 @@ func _build_ui() -> void:
 
 
 func _build_pegs() -> void:
-	# Three staggered rows of pegs
 	var peg_rows: Array = [
 		[Vector2(60.0, 42.0), Vector2(120.0, 42.0), Vector2(180.0, 42.0), Vector2(240.0, 42.0)],
 		[Vector2(30.0, 82.0), Vector2(90.0, 82.0), Vector2(150.0, 82.0), Vector2(210.0, 82.0), Vector2(270.0, 82.0)],
@@ -112,21 +116,19 @@ func _build_pegs() -> void:
 			var peg_pos: Vector2 = peg_pos_v as Vector2
 			var peg: ColorRect = ColorRect.new()
 			peg.color = Color(0.75, 0.65, 0.25, 1.0)
-			peg.size = Vector2(7.0, 7.0)
-			peg.position = peg_pos - Vector2(3.5, 3.5)
+			peg.size = Vector2(8.0, 8.0)
+			peg.position = peg_pos - Vector2(4.0, 4.0)
 			_board_area.add_child(peg)
 
 
 func _build_bins() -> void:
 	var bin_w: float = BOARD_W / float(BIN_PAYOUTS.size())
-	# Separator lines
 	for i in range(1, BIN_PAYOUTS.size()):
 		var sep: ColorRect = ColorRect.new()
 		sep.color = Color(0.45, 0.45, 0.5, 0.9)
 		sep.size = Vector2(2.0, 40.0)
 		sep.position = Vector2(float(i) * bin_w - 1.0, BOARD_H - 42.0)
 		_board_area.add_child(sep)
-	# Labels
 	for i in range(BIN_PAYOUTS.size()):
 		var lbl: Label = Label.new()
 		lbl.text = BIN_LABELS[i]
@@ -183,16 +185,27 @@ func _start_ball_animation() -> void:
 	if _ball_node == null or _board_area == null:
 		_on_ball_landed()
 		return
+
 	var bin_w: float = BOARD_W / float(BIN_PAYOUTS.size())
-	var target_x: float = float(_result_bin) * bin_w + bin_w * 0.5 - 6.0
-	var target_pos: Vector2 = Vector2(target_x, BOARD_H - 45.0)
-	_ball_node.position = Vector2(BOARD_W * 0.5 - 6.0, 8.0)
+	var target_x: float = float(_result_bin) * bin_w + bin_w * 0.5 - BALL_SIZE * 0.5
+
+	# Start position
+	var start: Vector2 = Vector2(BOARD_W * 0.5 - BALL_SIZE * 0.5, 8.0)
+	# Waypoints drift left/right as ball bounces off pegs
+	var drift1: float = randf_range(-28.0, 28.0)
+	var drift2: float = drift1 + randf_range(-28.0, 28.0)
+	var wp1: Vector2 = Vector2(clamp(start.x + drift1, 8.0, BOARD_W - BALL_SIZE - 8.0), 65.0)
+	var wp2: Vector2 = Vector2(clamp(start.x + drift2, 8.0, BOARD_W - BALL_SIZE - 8.0), 110.0)
+	var end: Vector2 = Vector2(target_x, BOARD_H - 45.0)
+
+	_ball_node.position = start
+
 	if _active_tween != null and _active_tween.is_valid():
 		_active_tween.kill()
 	_active_tween = create_tween()
-	_active_tween.set_ease(Tween.EASE_IN)
-	_active_tween.set_trans(Tween.TRANS_BOUNCE)
-	_active_tween.tween_property(_ball_node, "position", target_pos, 1.4)
+	_active_tween.tween_property(_ball_node, "position", wp1, 0.40).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
+	_active_tween.tween_property(_ball_node, "position", wp2, 0.40).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
+	_active_tween.tween_property(_ball_node, "position", end, 0.55).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_BOUNCE)
 	_active_tween.finished.connect(_on_ball_landed)
 
 

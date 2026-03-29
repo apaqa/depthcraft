@@ -7,12 +7,14 @@ extends Node2D
 const BUILDING_SAVE: Script = preload("res://scripts/building/building_save.gd")
 const DUNGEON_SCENE: PackedScene = preload("res://scenes/dungeon/dungeon_level.tscn")
 const OVERWORLD_SCENE: PackedScene = preload("res://scenes/overworld/test_overworld.tscn")
+const TAVERN_INTERIOR_SCENE: PackedScene = preload("res://scenes/world/tavern_interior.tscn")
 const TUTORIAL_MANAGER: Script = preload("res://scripts/world/tutorial_manager.gd")
 
 var player
 var _tutorial_manager: Node = null
 var current_level = null
 var current_level_id: String = "overworld"
+var _tavern_entry_position: Vector2 = Vector2.ZERO
 var current_level_seed: int = 0
 var overworld_seed: int = 0
 var dungeon_run_snapshot: Array = []
@@ -188,6 +190,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		current_level.raid_started.connect(_on_raid_started)
 	if current_level.has_signal("raid_countdown_changed") and not current_level.raid_countdown_changed.is_connected(_on_raid_countdown_changed):
 		current_level.raid_countdown_changed.connect(_on_raid_countdown_changed)
+	if current_level.has_signal("exit_tavern_requested") and not current_level.exit_tavern_requested.is_connected(_on_exit_tavern_requested):
+		current_level.exit_tavern_requested.connect(_on_exit_tavern_requested)
 
 	if hud.has_method("bind_level"):
 		hud.bind_level(current_level, current_level_id)
@@ -231,8 +235,19 @@ func _get_level_scene(level_id: String) -> PackedScene:
 			return DUNGEON_SCENE
 		"overworld":
 			return OVERWORLD_SCENE
+		"tavern":
+			return TAVERN_INTERIOR_SCENE
 		_:
 			return null
+
+
+func enter_tavern(entry_pos: Vector2) -> void:
+	_tavern_entry_position = entry_pos
+	_broadcast_scene_change("tavern", 1, 0)
+
+
+func _on_exit_tavern_requested() -> void:
+	_broadcast_scene_change("overworld", 1, 0, _tavern_entry_position, true)
 
 
 func _on_player_portal_requested(target_level_id: String, start_floor: int = 1) -> void:

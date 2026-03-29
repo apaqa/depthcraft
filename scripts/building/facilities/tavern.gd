@@ -11,8 +11,9 @@ func get_interaction_prompt() -> String:
 func interact(player: Node) -> void:
 	if player == null:
 		return
-	if player.has_method("request_tavern_menu"):
-		player.request_tavern_menu(self)
+	var main_node: Node = player.get_tree().current_scene
+	if main_node != null and main_node.has_method("enter_tavern"):
+		main_node.enter_tavern(player.global_position)
 
 
 func requires_home_core() -> bool:
