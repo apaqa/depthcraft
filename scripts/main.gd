@@ -379,6 +379,7 @@ func _on_player_died() -> void:
 	if current_level_id == "dungeon":
 		var death_floor_value: int = int(current_level.get("current_floor")) if current_level != null else 0
 		var death_kills_value: int = int(current_level.get("total_kills")) if current_level != null else 0
+		var npc_day_messages: Array[String] = []
 		var death_summary: Dictionary = {}
 		if player != null and player.has_method("get_dungeon_run_summary"):
 			death_summary = player.get_dungeon_run_summary()
@@ -398,7 +399,7 @@ func _on_player_died() -> void:
 		dungeon_returns_since_raid += 1
 		current_day += 1
 		_sync_quest_day()
-		var npc_day_messages: Array[String] = NpcManager.process_new_day(current_day, player) if NpcManager != null else []
+		npc_day_messages = NpcManager.process_new_day(current_day, player) if NpcManager != null else []
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, death_floor_value)
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if hud.has_method("hide_death_screen"):
@@ -407,49 +408,13 @@ func _on_player_died() -> void:
 		if hud.has_method("fade_from_black"):
 			await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
 		if player != null:
-			var defeated_message: String = "雿仃?颱??啣??"
+			var defeated_message: String = "你失去了戰利品！"
 			if not npc_day_messages.is_empty():
 				defeated_message += " | " + " / ".join(npc_day_messages)
 			player.show_status_message(defeated_message, Color(1.0, 0.75, 0.45, 1.0), 3.0)
 		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 			current_level.trigger_progress_raid()
 		return
-		if hud.has_method("show_death_screen"):
-			var death_floor: Variant = current_level.get("current_floor")
-			var death_kills: Variant = current_level.get("total_kills")
-			hud.show_death_screen({
-				"floor": death_floor if death_floor != null else 0,
-				"kills": death_kills if death_kills != null else 0,
-				"loot_lost": player.dungeon_run_loot.size() if player != null else 0,
-				"loot_items": player.dungeon_run_loot.duplicate() if player != null else [],
-			})
-		await get_tree().create_timer(3.0).timeout
-		if hud.has_method("play_transition"):
-			await hud.play_transition("你死了\n第 %d 層 | %d 擊殺 | 地牢戰利品已遺失" % [int(current_level.get("current_floor")), int(current_level.get("total_kills"))], Color(0.35, 0.0, 0.0, 1.0), 0.25, 0.15)
-		if player != null:
-			player.finish_dungeon_run(false)
-		total_dungeon_runs_completed += 1
-		dungeon_returns_since_raid += 1
-		current_day += 1
-		_sync_quest_day()
-		var npc_day_messages: Array[String] = NpcManager.process_new_day(current_day, player) if NpcManager != null else []
-		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, int(current_level.get("current_floor")))
-		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
-		if player != null:
-			var defeated_message: String = "你失去了戰利品！"
-			if not npc_day_messages.is_empty():
-				defeated_message += " | " + " / ".join(npc_day_messages)
-			player.show_status_message(defeated_message, Color(1.0, 0.75, 0.45, 1.0), 3.0)
-			if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
-				current_level.trigger_progress_raid()
-			if hud.has_method("hide_death_screen"):
-				hud.hide_death_screen()
-			return
-			player.show_status_message("你失去了戰利品！", Color(1.0, 0.75, 0.45, 1.0), 3.0)
-		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
-			current_level.trigger_progress_raid()
-		if hud.has_method("hide_death_screen"):
-			hud.hide_death_screen()
 
 
 func _on_buff_selection_requested(options: Array) -> void:
