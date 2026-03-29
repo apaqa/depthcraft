@@ -9,7 +9,7 @@ const SPIN_COST: int = 10
 const PAYOUT_3_SAME: int = 50
 const PAYOUT_2_SAME: int = 15
 
-const SYMBOL_NAMES: PackedStringArray = PackedStringArray(["CHERRY", "LEMON", "BELL", "STAR", "DIAM"])
+const SYMBOL_NAMES: Array = ["CHERRY", "LEMON", "BELL", "STAR", "DIAM"]
 const SYMBOL_COLORS: Array = [
 	Color(1.0, 0.4, 0.4, 1.0),
 	Color(1.0, 0.92, 0.3, 1.0),
