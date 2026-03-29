@@ -4,6 +4,7 @@ class_name BossEnemy
 const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
 const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
 const LEGENDARY_ITEMS: Script = preload("res://scripts/dungeon/legendary_items.gd")
+const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
 
 const AOE_COOLDOWN: float = 5.0
 const AOE_RADIUS: float = 56.0
@@ -161,12 +162,13 @@ func _force_add_stack(inventory, stack: Dictionary) -> void:
 func _generate_boss_equipment() -> Dictionary:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash("%s:%s:%s" % [name, floor_value, Time.get_ticks_usec()])
-	# Floor 30 (final boss): guarantee a legendary drop
 	if floor_value >= 29:
 		var legendary: Dictionary = LEGENDARY_ITEMS.get_random_legendary(rng)
 		if not legendary.is_empty():
 			return legendary
-	# Regular boss: try for Epic or Legendary
+	var boss_set_drop: Dictionary = ITEM_DATABASE.get_random_boss_set_item(floor_value, rng)
+	if not boss_set_drop.is_empty() and rng.randf() <= 0.5:
+		return boss_set_drop
 	for _attempt in range(16):
 		var reward: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment(floor_value + 2, rng)
 		var rarity: String = str(reward.get("rarity", "Common"))

@@ -28,6 +28,7 @@ var _context_inv_index: int = -1
 var _context_inv_type: String = ""
 var _tooltip_panel: PanelContainer = null
 var _tooltip_vbox: VBoxContainer = null
+var _tooltip_style: StyleBoxFlat = null
 
 
 func _ready() -> void:
@@ -55,18 +56,18 @@ func _ready() -> void:
 	_tooltip_panel.visible = false
 	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.z_index = 10
-	var tooltip_style: StyleBoxFlat = StyleBoxFlat.new()
-	tooltip_style.bg_color = Color(0.08, 0.08, 0.10, 0.93)
-	tooltip_style.border_color = Color(0.35, 0.35, 0.42, 1.0)
-	tooltip_style.border_width_left = 1
-	tooltip_style.border_width_top = 1
-	tooltip_style.border_width_right = 1
-	tooltip_style.border_width_bottom = 1
-	tooltip_style.corner_radius_top_left = 4
-	tooltip_style.corner_radius_top_right = 4
-	tooltip_style.corner_radius_bottom_left = 4
-	tooltip_style.corner_radius_bottom_right = 4
-	_tooltip_panel.add_theme_stylebox_override("panel", tooltip_style)
+	_tooltip_style = StyleBoxFlat.new()
+	_tooltip_style.bg_color = Color(0.08, 0.08, 0.10, 0.93)
+	_tooltip_style.border_color = Color(0.35, 0.35, 0.42, 1.0)
+	_tooltip_style.border_width_left = 1
+	_tooltip_style.border_width_top = 1
+	_tooltip_style.border_width_right = 1
+	_tooltip_style.border_width_bottom = 1
+	_tooltip_style.corner_radius_top_left = 4
+	_tooltip_style.corner_radius_top_right = 4
+	_tooltip_style.corner_radius_bottom_left = 4
+	_tooltip_style.corner_radius_bottom_right = 4
+	_tooltip_panel.add_theme_stylebox_override("panel", _tooltip_style)
 	var tooltip_margin: MarginContainer = MarginContainer.new()
 	tooltip_margin.add_theme_constant_override("margin_left", 10)
 	tooltip_margin.add_theme_constant_override("margin_top", 8)
@@ -615,13 +616,25 @@ func _show_tooltip(stack: Dictionary) -> void:
 	for child: Node in _tooltip_vbox.get_children():
 		child.free()
 	var item_type: String = str(stack.get("type", ""))
+	var compare_mode: bool = false
 	if item_type == "equipment":
-		_fill_equipment_tooltip(_tooltip_vbox, stack)
+		var equipped_item: Dictionary = {}
+		if player != null and player.equipment_system != null:
+			equipped_item = player.equipment_system.get_equipped(str(stack.get("slot", "")))
+		compare_mode = not equipped_item.is_empty()
+		_configure_tooltip_panel(compare_mode)
+		if compare_mode:
+			_fill_equipment_comparison_tooltip(_tooltip_vbox, equipped_item, stack)
+		else:
+			_fill_equipment_tooltip(_tooltip_vbox, stack)
 	elif item_type == "consumable":
+		_configure_tooltip_panel(false)
 		_fill_consumable_tooltip(_tooltip_vbox, stack)
 	elif item_type == "resource":
+		_configure_tooltip_panel(false)
 		_fill_material_tooltip(_tooltip_vbox, stack)
 	else:
+		_configure_tooltip_panel(false)
 		var fallback_label: Label = Label.new()
 		fallback_label.text = ITEM_DATABASE.get_stack_display_name(stack)
 		_tooltip_vbox.add_child(fallback_label)
@@ -634,71 +647,191 @@ func _hide_tooltip() -> void:
 		_tooltip_panel.visible = false
 
 
+func _configure_tooltip_panel(compare_mode: bool) -> void:
+	if _tooltip_panel == null or _tooltip_style == null:
+		return
+	_tooltip_style.bg_color = Color(0.1, 0.1, 0.1, 0.85) if compare_mode else Color(0.08, 0.08, 0.10, 0.93)
+	_tooltip_panel.custom_minimum_size = Vector2(340, 220) if compare_mode else Vector2.ZERO
+
+
 func _fill_equipment_tooltip(container: VBoxContainer, stack: Dictionary) -> void:
+	_append_equipment_card(container, "", stack, _get_item_stat_map(stack), {}, false)
+	var set_id: String = str(stack.get("set_id", ""))
+	if set_id != "":
+		var set_definition: Dictionary = ITEM_DATABASE.get_set_definition(set_id)
+		var set_label: Label = Label.new()
+		set_label.text = str(set_definition.get("name", ""))
+		set_label.add_theme_font_size_override("font_size", 11)
+		set_label.modulate = Color(0.85, 0.75, 1.0, 1.0)
+		container.add_child(set_label)
+
+
+func _fill_equipment_comparison_tooltip(container: VBoxContainer, current_item: Dictionary, new_item: Dictionary) -> void:
+	var current_stats: Dictionary = _get_item_stat_map(current_item)
+	var new_stats: Dictionary = _get_item_stat_map(new_item)
+	var stat_keys: Array[String] = _get_ordered_item_stat_keys(current_stats, new_stats)
+	var columns: HBoxContainer = HBoxContainer.new()
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_theme_constant_override("separation", 10)
+	container.add_child(columns)
+	columns.add_child(_build_comparison_column("當前", current_item, current_stats, new_stats, stat_keys))
+	columns.add_child(VSeparator.new())
+	columns.add_child(_build_comparison_column("新", new_item, new_stats, current_stats, stat_keys))
+
+
+func _build_comparison_column(title: String, stack: Dictionary, stats: Dictionary, other_stats: Dictionary, stat_keys: Array[String]) -> VBoxContainer:
+	var column: VBoxContainer = VBoxContainer.new()
+	column.custom_minimum_size = Vector2(154, 0)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 4)
+	_append_equipment_card(column, title, stack, stats, other_stats, true, stat_keys)
+	return column
+
+
+func _append_equipment_card(container: VBoxContainer, title: String, stack: Dictionary, stats: Dictionary, other_stats: Dictionary, compare_mode: bool, stat_keys: Array[String] = []) -> void:
+	if title != "":
+		var title_label: Label = Label.new()
+		title_label.text = title
+		title_label.add_theme_font_size_override("font_size", 12)
+		title_label.modulate = Color(0.72, 0.72, 0.78, 1.0)
+		container.add_child(title_label)
+	var header_row: HBoxContainer = HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 8)
+	container.add_child(header_row)
+	header_row.add_child(_make_icon_ctrl(ITEM_DATABASE.get_stack_icon(stack), ITEM_DATABASE.get_stack_color(stack), 32))
+	var text_box: VBoxContainer = VBoxContainer.new()
+	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_box.add_theme_constant_override("separation", 2)
+	header_row.add_child(text_box)
 	var name_label: Label = Label.new()
-	name_label.text = ITEM_DATABASE.get_stack_display_name(stack)
+	name_label.text = _get_item_display_name(stack)
 	name_label.self_modulate = ITEM_DATABASE.get_stack_color(stack)
-	name_label.add_theme_font_size_override("font_size", 14)
-	container.add_child(name_label)
-
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.add_theme_font_size_override("font_size", 13)
+	text_box.add_child(name_label)
 	var rarity_slot_label: Label = Label.new()
-	var rarity_str: String = _translate_rarity(str(stack.get("rarity", "Common")))
-	var slot_str: String = _translate_slot(str(stack.get("slot", "")))
-	rarity_slot_label.text = "%s  |  %s" % [rarity_str, slot_str]
-	rarity_slot_label.modulate = Color(0.75, 0.75, 0.75, 1.0)
-	rarity_slot_label.add_theme_font_size_override("font_size", 11)
-	container.add_child(rarity_slot_label)
-
+	rarity_slot_label.text = "%s | %s" % [_translate_rarity(str(stack.get("rarity", "Common"))), _translate_slot(str(stack.get("slot", "")))]
+	rarity_slot_label.modulate = Color(0.72, 0.72, 0.76, 1.0)
+	rarity_slot_label.add_theme_font_size_override("font_size", 10)
+	text_box.add_child(rarity_slot_label)
 	container.add_child(HSeparator.new())
-
-	if player != null and player.has_method("get_stats_summary") and player.has_method("get_stats_summary_for_item"):
-		var current_summary: Dictionary = player.get_stats_summary()
-		var preview_summary: Dictionary = player.get_stats_summary_for_item(stack)
-		var stat_display_names: Dictionary = {
-			"attack": LocaleManager.L("atk"),
-			"defense": LocaleManager.L("def"),
-			"max_hp": LocaleManager.L("hp"),
-			"speed": LocaleManager.L("spd"),
-		}
-		for stat_key in ["attack", "defense", "max_hp", "speed"]:
-			var before_val: float = float(current_summary.get(stat_key, 0.0))
-			var after_val: float = float(preview_summary.get(stat_key, 0.0))
-			var delta: float = after_val - before_val
-			var stat_row: HBoxContainer = HBoxContainer.new()
-			stat_row.add_theme_constant_override("separation", 6)
-			var stat_name_label: Label = Label.new()
-			stat_name_label.text = str(stat_display_names.get(stat_key, stat_key)) + ":"
-			stat_name_label.custom_minimum_size = Vector2(36, 0)
-			stat_name_label.modulate = Color(0.8, 0.8, 0.8, 1.0)
-			stat_name_label.add_theme_font_size_override("font_size", 11)
-			stat_row.add_child(stat_name_label)
-			var val_label: Label = Label.new()
-			val_label.text = "%d -> %d" % [int(round(before_val)), int(round(after_val))]
-			val_label.add_theme_font_size_override("font_size", 11)
-			stat_row.add_child(val_label)
-			var delta_label: Label = Label.new()
-			delta_label.text = "(%+d)" % int(round(delta))
-			delta_label.add_theme_font_size_override("font_size", 11)
-			if delta > 0.5:
-				delta_label.self_modulate = Color(0.3, 0.9, 0.4, 1.0)
-			elif delta < -0.5:
-				delta_label.self_modulate = Color(0.9, 0.3, 0.3, 1.0)
-			else:
-				delta_label.self_modulate = Color(0.65, 0.65, 0.65, 1.0)
-			stat_row.add_child(delta_label)
-			container.add_child(stat_row)
-
+	var resolved_keys: Array[String] = stat_keys if not stat_keys.is_empty() else _get_ordered_item_stat_keys(stats, {})
+	for stat_key: String in resolved_keys:
+		var value: float = float(stats.get(stat_key, 0.0))
+		var other_value: float = float(other_stats.get(stat_key, 0.0))
+		if not compare_mode and is_zero_approx(value):
+			continue
+		container.add_child(_build_stat_compare_row(stat_key, value, other_value, compare_mode))
 	var durability: int = int(stack.get("durability", 0))
 	var max_durability: int = int(stack.get("max_durability", 0))
 	if max_durability > 0:
 		var dur_label: Label = Label.new()
 		dur_label.text = LocaleManager.L("slot_durability") % [durability, max_durability]
-		dur_label.add_theme_font_size_override("font_size", 11)
-		if durability <= 0:
-			dur_label.self_modulate = Color(0.9, 0.3, 0.3, 1.0)
-		else:
-			dur_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+		dur_label.add_theme_font_size_override("font_size", 10)
+		dur_label.modulate = Color(0.72, 0.72, 0.76, 1.0) if durability > 0 else Color(1.0, 0.3, 0.3, 1.0)
 		container.add_child(dur_label)
+
+
+func _build_stat_compare_row(stat_key: String, value: float, other_value: float, compare_mode: bool) -> HBoxContainer:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var name_label: Label = Label.new()
+	name_label.text = "%s:" % _translate_item_stat(stat_key)
+	name_label.custom_minimum_size = Vector2(66, 0)
+	name_label.add_theme_font_size_override("font_size", 11)
+	name_label.modulate = Color(0.82, 0.82, 0.86, 1.0)
+	row.add_child(name_label)
+	var value_label: Label = Label.new()
+	value_label.text = _format_item_stat_value(stat_key, value, other_value, compare_mode)
+	value_label.add_theme_font_size_override("font_size", 11)
+	value_label.self_modulate = _get_stat_compare_color(value, other_value, compare_mode)
+	row.add_child(value_label)
+	return row
+
+
+func _get_item_stat_map(stack: Dictionary) -> Dictionary:
+	return (stack.get("stats", {}) as Dictionary).duplicate(true)
+
+
+func _get_ordered_item_stat_keys(primary_stats: Dictionary, secondary_stats: Dictionary) -> Array[String]:
+	var ordered_keys: Array[String] = []
+	var preferred_order: Array[String] = [
+		"attack", "defense", "max_hp", "crit_chance", "speed_multiplier",
+		"spell_power", "armor_penetration", "block_chance", "lifesteal_ratio",
+		"thorns_damage", "dodge_chance", "cooldown_reduction",
+		"crit_damage_multiplier", "elemental_resistance", "gather_bonus",
+	]
+	for stat_key: String in preferred_order:
+		if primary_stats.has(stat_key) or secondary_stats.has(stat_key):
+			ordered_keys.append(stat_key)
+	for stat_key_variant: Variant in primary_stats.keys():
+		var stat_key: String = str(stat_key_variant)
+		if not ordered_keys.has(stat_key):
+			ordered_keys.append(stat_key)
+	for stat_key_variant: Variant in secondary_stats.keys():
+		var stat_key: String = str(stat_key_variant)
+		if not ordered_keys.has(stat_key):
+			ordered_keys.append(stat_key)
+	return ordered_keys
+
+
+func _translate_item_stat(stat_key: String) -> String:
+	match stat_key:
+		"attack":
+			return "ATK"
+		"defense":
+			return "DEF"
+		"max_hp":
+			return "HP"
+		"crit_chance":
+			return "CRIT"
+		"speed_multiplier":
+			return "SPD"
+		"spell_power":
+			return "SPELL"
+		"armor_penetration":
+			return "PEN"
+		"block_chance":
+			return "BLOCK"
+		"lifesteal_ratio":
+			return "LEECH"
+		"thorns_damage":
+			return "THORNS"
+		"dodge_chance":
+			return "DODGE"
+		"cooldown_reduction":
+			return "CDR"
+		"crit_damage_multiplier":
+			return "CRIT DMG"
+		"elemental_resistance":
+			return "RES"
+		"gather_bonus":
+			return "GATHER"
+		_:
+			return stat_key.replace("_", " ").capitalize()
+
+
+func _format_item_stat_value(stat_key: String, value: float, other_value: float, compare_mode: bool) -> String:
+	var base_text: String = _format_item_stat_number(stat_key, value)
+	if not compare_mode or is_equal_approx(value, other_value):
+		return base_text
+	var marker: String = char(9650) if value > other_value else char(9660)
+	return "%s %s" % [base_text, marker]
+
+func _format_item_stat_number(stat_key: String, value: float) -> String:
+	match stat_key:
+		"crit_chance", "speed_multiplier", "block_chance", "lifesteal_ratio", "dodge_chance", "cooldown_reduction", "crit_damage_multiplier", "elemental_resistance":
+			return "%+d%%" % int(round(value * 100.0))
+		_:
+			return "%+d" % int(round(value))
+
+
+func _get_stat_compare_color(value: float, other_value: float, compare_mode: bool) -> Color:
+	if not compare_mode or is_equal_approx(value, other_value):
+		return Color.WHITE
+	if value > other_value:
+		return Color(0.3, 1.0, 0.3, 1.0)
+	return Color(1.0, 0.3, 0.3, 1.0)
 
 
 func _fill_consumable_tooltip(container: VBoxContainer, stack: Dictionary) -> void:

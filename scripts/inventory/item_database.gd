@@ -48,6 +48,54 @@ const ITEM_DESC_KEYS = {
 	"stew": "item_stew_desc",
 }
 
+const BOSS_SET_DEFINITIONS = {
+	"necromancer_set": {
+		"name": "死靈法師套裝",
+		"floor": 5,
+		"item_ids": ["necromancer_crown", "necromancer_robe", "necromancer_ring"],
+		"bonuses": {
+			2: "攻擊力 +15%",
+			3: "擊殺敵人 10% 機率召喚骷髏僕從 15 秒",
+		},
+	},
+	"lava_set": {
+		"name": "熔岩巨人套裝",
+		"floor": 10,
+		"item_ids": ["lava_helm", "lava_armor", "lava_boots"],
+		"bonuses": {
+			2: "防禦 +20%",
+			3: "受擊時 20% 機率灼燒周圍敵人",
+		},
+	},
+	"abyss_set": {
+		"name": "深淵之眼套裝",
+		"floor": 15,
+		"item_ids": ["abyss_veil", "abyss_cloak", "abyss_amulet"],
+		"bonuses": {
+			2: "暴擊率 +10%",
+			3: "暴擊時恢復 5% 最大生命",
+		},
+	},
+	"shadow_set": {
+		"name": "影刃套裝",
+		"floor": 20,
+		"item_ids": ["shadow_blade", "shadow_armor", "shadow_boots"],
+		"bonuses": {
+			2: "攻速 +15%",
+			3: "連續攻擊 3 次後下一擊必定暴擊",
+		},
+	},
+	"dragon_set": {
+		"name": "龍骨套裝",
+		"floor": 25,
+		"item_ids": ["dragon_crown", "dragon_armor", "dragon_shield"],
+		"bonuses": {
+			2: "最大生命 +25%",
+			3: "生命低於 30% 時獲得 5 秒無敵並回復 50% 生命",
+		},
+	},
+}
+
 const ITEMS = {
 	"wood": {
 		"id": "wood",
@@ -424,6 +472,261 @@ const ITEMS = {
 		"repair_material": "iron_ore",
 		"icon": preload("res://assets/icons/kyrise/necklace_01a.png"),
 	},
+	"necromancer_crown": {
+		"id": "necromancer_crown",
+		"name": "死靈頭冠",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，縈繞著亡者的低語。",
+		"slot": "helmet",
+		"set_id": "necromancer_set",
+		"rarity": "Epic",
+		"stats": {"defense": 7, "max_hp": 16, "spell_power": 5},
+		"durability": 90,
+		"max_durability": 90,
+		"required_level": 5,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/helmet_02e.png"),
+	},
+	"necromancer_robe": {
+		"id": "necromancer_robe",
+		"name": "死靈長袍",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，布面殘留陰冷死氣。",
+		"slot": "chest_armor",
+		"set_id": "necromancer_set",
+		"rarity": "Epic",
+		"stats": {"defense": 11, "max_hp": 24, "spell_power": 8},
+		"durability": 105,
+		"max_durability": 105,
+		"required_level": 5,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/armor_01e.png"),
+	},
+	"necromancer_ring": {
+		"id": "necromancer_ring",
+		"name": "死靈之戒",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，戒面封存著死靈契約。",
+		"slot": "accessory",
+		"set_id": "necromancer_set",
+		"rarity": "Epic",
+		"stats": {"attack": 4, "crit_chance": 0.04, "max_hp": 12},
+		"durability": 80,
+		"max_durability": 80,
+		"required_level": 5,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/ring_03e.png"),
+	},
+	"lava_helm": {
+		"id": "lava_helm",
+		"name": "熔岩盔",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，炙熱頭盔仍殘留熔火裂痕。",
+		"slot": "helmet",
+		"set_id": "lava_set",
+		"rarity": "Epic",
+		"stats": {"defense": 12, "max_hp": 18},
+		"durability": 110,
+		"max_durability": 110,
+		"required_level": 10,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/helmet_01e.png"),
+	},
+	"lava_armor": {
+		"id": "lava_armor",
+		"name": "熔岩甲",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，沉重甲片蘊含火山熱脈。",
+		"slot": "chest_armor",
+		"set_id": "lava_set",
+		"rarity": "Epic",
+		"stats": {"defense": 18, "max_hp": 28},
+		"durability": 130,
+		"max_durability": 130,
+		"required_level": 10,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/armor_01d.png"),
+	},
+	"lava_boots": {
+		"id": "lava_boots",
+		"name": "熔岩靴",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，鞋底能踏過灼熱岩面。",
+		"slot": "boots",
+		"set_id": "lava_set",
+		"rarity": "Epic",
+		"stats": {"defense": 9, "max_hp": 14, "speed_multiplier": -0.01},
+		"durability": 100,
+		"max_durability": 100,
+		"required_level": 10,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/boots_01e.png"),
+	},
+	"abyss_veil": {
+		"id": "abyss_veil",
+		"name": "深淵面紗",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，薄紗後方仿佛有深淵注視。",
+		"slot": "helmet",
+		"set_id": "abyss_set",
+		"rarity": "Epic",
+		"stats": {"defense": 10, "max_hp": 18, "crit_chance": 0.04},
+		"durability": 100,
+		"max_durability": 100,
+		"required_level": 15,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/hat_01c.png"),
+	},
+	"abyss_cloak": {
+		"id": "abyss_cloak",
+		"name": "深淵披風",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，披風邊緣被深淵能量侵染。",
+		"slot": "chest_armor",
+		"set_id": "abyss_set",
+		"rarity": "Epic",
+		"stats": {"defense": 16, "max_hp": 30, "crit_chance": 0.02},
+		"durability": 120,
+		"max_durability": 120,
+		"required_level": 15,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/armor_01c.png"),
+	},
+	"abyss_amulet": {
+		"id": "abyss_amulet",
+		"name": "深淵護符",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，護符中心像是一枚緩慢轉動的瞳孔。",
+		"slot": "accessory",
+		"set_id": "abyss_set",
+		"rarity": "Epic",
+		"stats": {"attack": 6, "crit_chance": 0.05, "max_hp": 16},
+		"durability": 85,
+		"max_durability": 85,
+		"required_level": 15,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/necklace_02c.png"),
+	},
+	"shadow_blade": {
+		"id": "shadow_blade",
+		"name": "影刃",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，刃身輕薄到像是由暗影鍛成。",
+		"slot": "weapon",
+		"set_id": "shadow_set",
+		"rarity": "Epic",
+		"stats": {"attack": 28, "crit_chance": 0.06},
+		"durability": 125,
+		"max_durability": 125,
+		"required_level": 20,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/sword_03d.png"),
+	},
+	"shadow_armor": {
+		"id": "shadow_armor",
+		"name": "影甲",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，護甲邊緣吞沒周圍光線。",
+		"slot": "chest_armor",
+		"set_id": "shadow_set",
+		"rarity": "Epic",
+		"stats": {"defense": 20, "max_hp": 34},
+		"durability": 130,
+		"max_durability": 130,
+		"required_level": 20,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/armor_01d.png"),
+	},
+	"shadow_boots": {
+		"id": "shadow_boots",
+		"name": "影靴",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，步伐落地時幾乎不留聲息。",
+		"slot": "boots",
+		"set_id": "shadow_set",
+		"rarity": "Epic",
+		"stats": {"defense": 11, "speed_multiplier": 0.10, "max_hp": 16},
+		"durability": 105,
+		"max_durability": 105,
+		"required_level": 20,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/boots_01d.png"),
+	},
+	"dragon_crown": {
+		"id": "dragon_crown",
+		"name": "龍骨冠",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，龍骨磨成的冠冕仍保留厚重威壓。",
+		"slot": "helmet",
+		"set_id": "dragon_set",
+		"rarity": "Epic",
+		"stats": {"defense": 18, "max_hp": 28},
+		"durability": 135,
+		"max_durability": 135,
+		"required_level": 25,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/helmet_02d.png"),
+	},
+	"dragon_armor": {
+		"id": "dragon_armor",
+		"name": "龍骨鎧",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，以龍骨與鋼板交錯打造的重鎧。",
+		"slot": "chest_armor",
+		"set_id": "dragon_set",
+		"rarity": "Epic",
+		"stats": {"defense": 28, "max_hp": 48},
+		"durability": 155,
+		"max_durability": 155,
+		"required_level": 25,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/armor_01d.png"),
+	},
+	"dragon_shield": {
+		"id": "dragon_shield",
+		"name": "龍骨盾",
+		"max_stack": 1,
+		"type": "equipment",
+		"description": "Boss 套裝部件，以龍骨盾面承受正面衝擊。",
+		"slot": "offhand",
+		"set_id": "dragon_set",
+		"rarity": "Epic",
+		"stats": {"defense": 20, "max_hp": 34, "block_chance": 0.05},
+		"durability": 145,
+		"max_durability": 145,
+		"required_level": 25,
+		"repair_material": "iron_ore",
+		"source": "boss_set",
+		"icon": preload("res://assets/icons/kyrise/shield_03b.png"),
+	},
 	"bandage": {
 		"id": "bandage",
 		"name": "Bandage",
@@ -782,6 +1085,42 @@ static func get_equipment_rarity_color(rarity: String = "Common") -> Color:
 			return Color(1.0, 0.5, 0.0, 1.0)
 		_:
 			return Color(0.8, 0.8, 0.8, 1.0)
+
+
+static func get_set_definition(set_id: String) -> Dictionary:
+	if not BOSS_SET_DEFINITIONS.has(set_id):
+		return {}
+	return (BOSS_SET_DEFINITIONS[set_id] as Dictionary).duplicate(true)
+
+
+static func get_boss_set_id_for_floor(floor_number: int) -> String:
+	for set_id_variant: Variant in BOSS_SET_DEFINITIONS.keys():
+		var set_id: String = str(set_id_variant)
+		var definition: Dictionary = BOSS_SET_DEFINITIONS[set_id] as Dictionary
+		if int(definition.get("floor", 0)) == floor_number:
+			return set_id
+	return ""
+
+
+static func get_random_boss_set_item(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
+	var set_id: String = get_boss_set_id_for_floor(floor_number)
+	if set_id == "":
+		return {}
+	var definition: Dictionary = get_set_definition(set_id)
+	var item_ids: Array = definition.get("item_ids", [])
+	if item_ids.is_empty():
+		return {}
+	var picked_index: int = rng.randi_range(0, item_ids.size() - 1) if rng != null else randi_range(0, item_ids.size() - 1)
+	var item_id: String = str(item_ids[picked_index])
+	var stack: Dictionary = get_item(item_id)
+	if stack.is_empty():
+		return {}
+	stack["quantity"] = 1
+	stack["rarity"] = "Epic"
+	stack["source"] = "boss_set"
+	stack["floor_found"] = floor_number
+	stack["color"] = get_equipment_rarity_color("Epic")
+	return stack
 
 
 static func get_stack_color(stack: Dictionary) -> Color:
