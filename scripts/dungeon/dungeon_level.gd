@@ -169,15 +169,36 @@ func _draw_floor() -> void:
 	fog_tile_map_layer.clear()
 	for child in wall_collision_root.get_children():
 		child.queue_free()
-	for floor_tile: Vector2i in floor_data.get("floor_tiles", []):
+	var all_floor_tiles: Array = floor_data.get("floor_tiles", [])
+	var all_wall_tiles: Array = floor_data.get("wall_tiles", [])
+	for floor_tile: Vector2i in all_floor_tiles:
 		tile_map_layer.set_cell(floor_tile, _get_floor_source(floor_tile), Vector2i.ZERO)
-		fog_tile_map_layer.set_cell(floor_tile, _get_floor_source(floor_tile), Vector2i.ZERO)
-	for wall_tile: Vector2i in floor_data.get("wall_tiles", []):
+	for wall_tile: Vector2i in all_wall_tiles:
 		wall_tile_map_layer.set_cell(wall_tile, _get_wall_source(wall_tile), Vector2i.ZERO)
-		fog_tile_map_layer.set_cell(wall_tile, _get_wall_source(wall_tile), Vector2i.ZERO)
 		_spawn_wall_blocker(wall_tile)
 	tile_map_layer.update_internals()
 	wall_tile_map_layer.update_internals()
+	# Fill full bounding box (+ 10 tile margin) with fog to cover empty spaces
+	if not all_floor_tiles.is_empty() or not all_wall_tiles.is_empty():
+		var fog_min_x: int = 999999
+		var fog_min_y: int = 999999
+		var fog_max_x: int = -999999
+		var fog_max_y: int = -999999
+		for t: Vector2i in all_floor_tiles:
+			fog_min_x = mini(fog_min_x, t.x)
+			fog_min_y = mini(fog_min_y, t.y)
+			fog_max_x = maxi(fog_max_x, t.x)
+			fog_max_y = maxi(fog_max_y, t.y)
+		for t: Vector2i in all_wall_tiles:
+			fog_min_x = mini(fog_min_x, t.x)
+			fog_min_y = mini(fog_min_y, t.y)
+			fog_max_x = maxi(fog_max_x, t.x)
+			fog_max_y = maxi(fog_max_y, t.y)
+		var fog_expand: int = 10
+		var fog_source_id: int = _get_floor_source(Vector2i.ZERO)
+		for fy: int in range(fog_min_y - fog_expand, fog_max_y + fog_expand + 1):
+			for fx: int in range(fog_min_x - fog_expand, fog_max_x + fog_expand + 1):
+				fog_tile_map_layer.set_cell(Vector2i(fx, fy), fog_source_id, Vector2i.ZERO)
 	fog_tile_map_layer.update_internals()
 	_apply_biome_colors()
 	_update_player_ambient_light()
@@ -632,7 +653,7 @@ func _spawn_treasure_room(room: Rect2i, room_index: int = -1) -> void:
 	var chest_count: int = randi_range(3, 5)
 	var chest_modulate: Color = _get_chest_modulate(current_floor)
 	for _idx in range(chest_count):
-		var spawn_mimic: bool = randf() <= 0.25
+		var spawn_mimic: bool = randf() <= 0.05
 		if spawn_mimic:
 			var mimic: Enemy = MIMIC_ENEMY_SCENE.instantiate() as Enemy
 			mimic.global_position = _random_point_in_room(room)

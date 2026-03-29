@@ -636,7 +636,7 @@ func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> HBo
 	dur_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var dur_bar: ProgressBar = ProgressBar.new()
-	dur_bar.custom_minimum_size = Vector2(160, 10)
+	dur_bar.custom_minimum_size = Vector2(200, 14)
 	dur_bar.min_value = 0.0
 	dur_bar.max_value = float(maxi(max_dur, 1))
 	dur_bar.value = float(dur)
@@ -664,19 +664,6 @@ func _build_repair_row(item: Dictionary, slot_name: String, inv_idx: int) -> HBo
 	select_hbox.add_child(mid_vbox)
 	select_btn.add_child(select_hbox)
 	row.add_child(select_btn)
-
-	# Right: "修理" button (80×36)
-	var repair_btn: Button = Button.new()
-	repair_btn.text = LocaleManager.L("repair")
-	repair_btn.custom_minimum_size = Vector2(80, 36)
-	repair_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	if slot_name != "":
-		var sn: String = slot_name
-		repair_btn.pressed.connect(func() -> void: _inline_repair_slot(sn))
-	else:
-		var idx: int = inv_idx
-		repair_btn.pressed.connect(func() -> void: _inline_repair_inv(idx))
-	row.add_child(repair_btn)
 
 	return row
 

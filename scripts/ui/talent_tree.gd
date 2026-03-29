@@ -11,16 +11,19 @@ class TalentMapCanvas:
 
 
 const TALENT_DATA = preload("res://scripts/talent/talent_data.gd")
-const BRANCH_ICON_OFFENSE: Texture2D = preload("res://assets/icons/kyrise/book_01e.png")
-const BRANCH_ICON_DEFENSE: Texture2D = preload("res://assets/icons/kyrise/book_01c.png")
-const BRANCH_ICON_SUPPORT: Texture2D = preload("res://assets/icons/kyrise/book_01b.png")
+const BRANCH_ICON_OFFENSE_OPEN: Texture2D = preload("res://assets/icons/kyrise/book_03g.png")
+const BRANCH_ICON_OFFENSE_CLOSED: Texture2D = preload("res://assets/icons/kyrise/book_03a.png")
+const BRANCH_ICON_DEFENSE_OPEN: Texture2D = preload("res://assets/icons/kyrise/book_04g.png")
+const BRANCH_ICON_DEFENSE_CLOSED: Texture2D = preload("res://assets/icons/kyrise/book_04a.png")
+const BRANCH_ICON_SUPPORT_OPEN: Texture2D = preload("res://assets/icons/kyrise/book_02g.png")
+const BRANCH_ICON_SUPPORT_CLOSED: Texture2D = preload("res://assets/icons/kyrise/book_02a.png")
 
 const BASE_MAP_SIZE = Vector2(4000, 4000)
 const MAP_CENTER = Vector2(2000, 2000)
 const NODE_SIZE = 68.0
 const GLOW_SIZE = 92.0
-const MAIN_STEP = 150.0
-const SUB_STEP = 110.0
+const MAIN_STEP = 200.0
+const SUB_STEP = 150.0
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 2.0
 const MAP_BACKGROUND = Color(0.08, 0.09, 0.12, 0.98)
@@ -351,25 +354,26 @@ func _apply_node_visuals(talent: Dictionary) -> void:
 	button.add_theme_stylebox_override("pressed", _make_circle_style(fill_color.darkened(0.08), Color.WHITE, 3))
 	button.add_theme_stylebox_override("focus", _make_circle_style(fill_color, Color.WHITE, 4))
 	if icon_rect != null:
-		icon_rect.texture = _get_branch_icon(branch_id)
+		icon_rect.texture = _get_branch_icon(branch_id, state)
 		if state == "locked":
-			icon_rect.modulate = Color(0.4, 0.4, 0.4, 0.8)
+			icon_rect.modulate = Color(0.3, 0.3, 0.3, 0.6)
 		else:
 			icon_rect.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	name_label.add_theme_color_override("font_color", label_color)
 	name_label.add_theme_font_size_override("font_size", 13)
 
 
-func _get_branch_icon(branch_id: String) -> Texture2D:
+func _get_branch_icon(branch_id: String, state: String) -> Texture2D:
+	var is_open: bool = state == "unlocked"
 	match branch_id:
 		"offense":
-			return BRANCH_ICON_OFFENSE
+			return BRANCH_ICON_OFFENSE_OPEN if is_open else BRANCH_ICON_OFFENSE_CLOSED
 		"defense":
-			return BRANCH_ICON_DEFENSE
+			return BRANCH_ICON_DEFENSE_OPEN if is_open else BRANCH_ICON_DEFENSE_CLOSED
 		"support":
-			return BRANCH_ICON_SUPPORT
+			return BRANCH_ICON_SUPPORT_OPEN if is_open else BRANCH_ICON_SUPPORT_CLOSED
 		_:
-			return BRANCH_ICON_DEFENSE
+			return BRANCH_ICON_DEFENSE_OPEN if is_open else BRANCH_ICON_DEFENSE_CLOSED
 
 
 func _make_circle_style(fill_color: Color, border_color: Color, border_width: int) -> StyleBoxFlat:
@@ -546,9 +550,13 @@ func _on_map_gui_input(event: InputEvent) -> void:
 			dragging_map = mouse_button.pressed
 			last_drag_position = mouse_button.position
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_apply_zoom(zoom_level * 1.1, mouse_button.position)
+			if mouse_button.ctrl_pressed:
+				_apply_zoom(zoom_level * 1.1, mouse_button.position)
+				get_viewport().set_input_as_handled()
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_apply_zoom(zoom_level / 1.1, mouse_button.position)
+			if mouse_button.ctrl_pressed:
+				_apply_zoom(zoom_level / 1.1, mouse_button.position)
+				get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and dragging_map:
 		var mouse_motion: InputEventMouseMotion = event as InputEventMouseMotion
 		var delta: Vector2 = mouse_motion.position - last_drag_position
