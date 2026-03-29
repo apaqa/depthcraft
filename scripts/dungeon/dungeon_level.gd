@@ -302,7 +302,7 @@ func _spawn_features() -> void:
 		if _room_has_feature(room_index, "boss_merchant"):
 			_spawn_boss_merchant(room, room_index)
 		if not spawned_wishing_well:
-			spawned_wishing_well = _try_spawn_wishing_well(room, room_index, room_type, features)
+			spawned_wishing_well = _try_spawn_wishing_well(room, room_index)
 		if not spawned_demon_merchant:
 			spawned_demon_merchant = _try_spawn_demon_merchant(room, room_index, room_type, features)
 	_spawn_corridor_features()

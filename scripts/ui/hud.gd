@@ -347,9 +347,11 @@ func _configure_death_overlay() -> void:
 	_death_edge_glow.name = "EdgeGlow"
 	_death_edge_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_death_edge_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_death_edge_glow.material = ShaderMaterial.new()
-	(_death_edge_glow.material as ShaderMaterial).shader = Shader.new()
-	(_death_edge_glow.material as ShaderMaterial).shader.code = "shader_type canvas_item;\nuniform vec4 glow_color : source_color = vec4(1.0, 0.12, 0.12, 0.95);\nuniform float edge_width = 0.18;\nvoid fragment() {\n\tfloat dist = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));\n\tfloat edge = 1.0 - smoothstep(0.0, edge_width, dist);\n\tfloat alpha = edge * edge * glow_color.a;\n\tCOLOR = vec4(glow_color.rgb, alpha);\n}\n"
+	var edge_material: ShaderMaterial = ShaderMaterial.new()
+	var edge_shader: Shader = Shader.new()
+	edge_shader.code = "shader_type canvas_item;\nuniform vec4 glow_color : source_color = vec4(1.0, 0.12, 0.12, 0.95);\nuniform float edge_width = 0.18;\nvoid fragment() {\n\tfloat dist = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));\n\tfloat edge = 1.0 - smoothstep(0.0, edge_width, dist);\n\tfloat alpha = edge * edge * glow_color.a;\n\tCOLOR = vec4(glow_color.rgb, alpha);\n}\n"
+	edge_material.shader = edge_shader
+	_death_edge_glow.material = edge_material
 	death_overlay.add_child(_death_edge_glow)
 	death_overlay.move_child(_death_edge_glow, death_backdrop.get_index() + 1)
 
