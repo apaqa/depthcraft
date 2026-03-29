@@ -1,5 +1,7 @@
 extends Control
 
+signal death_return_requested
+
 const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
 const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
 const HOME_ARROW_SCRIPT = preload("res://scripts/ui/home_arrow.gd")
@@ -34,6 +36,7 @@ const MINIMAP_SCRIPT = preload("res://scripts/ui/minimap.gd")
 @onready var minimap: Control = $Minimap
 @onready var buff_select: Control = $BuffSelect
 @onready var death_overlay: Control = $DeathOverlay
+@onready var death_backdrop: ColorRect = $DeathOverlay/Backdrop
 @onready var death_vbox: VBoxContainer = $DeathOverlay/VBoxContainer
 @onready var death_title_label: Label = $DeathOverlay/VBoxContainer/TitleLabel
 @onready var death_summary_label: Label = $DeathOverlay/VBoxContainer/SummaryLabel
@@ -66,8 +69,11 @@ var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
 var currency_label: Label = null
 var class_label: Label = null
+var hp_penalty_label: Label = null
 var home_arrow: Control = null
-var _consumable_bar_bg: Panel = null
+var _consumable_slot_row: HBoxContainer = null
+var _consumable_slot_views: Array[Dictionary] = []
+var _death_edge_glow: ColorRect = null
 var _tracked_ui_visibility: Dictionary = {}
 var _death_dynamic_nodes: Array[Node] = []
 var _last_minimap_player_tile: Vector2i = Vector2i(-9999, -9999)
@@ -80,6 +86,8 @@ var _skill_hint_label: Label = null
 var _victory_screen: Control = null
 var _skill_system_cache: Node = null
 var _codex_panel: Control = null
+var _set_bonus_panel: PanelContainer = null
+var _set_bonus_label: Label = null
 
 
 func _ready() -> void:
@@ -102,26 +110,47 @@ func _ready() -> void:
 	class_label.add_theme_constant_override("outline_size", 2)
 	class_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 	add_child(class_label)
+
+	hp_penalty_label = Label.new()
+	hp_penalty_label.add_theme_font_size_override("font_size", 12)
+	hp_penalty_label.add_theme_constant_override("outline_size", 2)
+	hp_penalty_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	hp_penalty_label.add_theme_color_override("font_color", Color(0.84, 0.46, 1.0, 1.0))
+	hp_penalty_label.visible = false
+	add_child(hp_penalty_label)
 	refresh_meta_labels()
 	_layout_static_hud()
+	_build_consumable_slot_row()
+	_configure_death_overlay()
 	_layout_bottom_hud()
-
-	_consumable_bar_bg = Panel.new()
-	var cbb_style: StyleBoxFlat = StyleBoxFlat.new()
-	cbb_style.bg_color = Color(0.08, 0.08, 0.1, 0.88)
-	cbb_style.border_color = Color(0.25, 0.25, 0.3, 1.0)
-	cbb_style.border_width_left = 1
-	cbb_style.border_width_top = 1
-	cbb_style.border_width_right = 1
-	cbb_style.border_width_bottom = 1
-	cbb_style.corner_radius_top_left = 4
-	cbb_style.corner_radius_top_right = 4
-	cbb_style.corner_radius_bottom_left = 4
-	cbb_style.corner_radius_bottom_right = 4
-	_consumable_bar_bg.add_theme_stylebox_override("panel", cbb_style)
-	_consumable_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_consumable_bar_bg)
-	move_child(_consumable_bar_bg, consumable_bar.get_index())
+	_set_bonus_panel = PanelContainer.new()
+	_set_bonus_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_set_bonus_panel.visible = false
+	var set_panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	set_panel_style.bg_color = Color(0.08, 0.08, 0.10, 0.72)
+	set_panel_style.border_color = Color(0.28, 0.28, 0.34, 0.9)
+	set_panel_style.border_width_left = 1
+	set_panel_style.border_width_top = 1
+	set_panel_style.border_width_right = 1
+	set_panel_style.border_width_bottom = 1
+	set_panel_style.corner_radius_top_left = 4
+	set_panel_style.corner_radius_top_right = 4
+	set_panel_style.corner_radius_bottom_left = 4
+	set_panel_style.corner_radius_bottom_right = 4
+	_set_bonus_panel.add_theme_stylebox_override("panel", set_panel_style)
+	var set_margin: MarginContainer = MarginContainer.new()
+	set_margin.add_theme_constant_override("margin_left", 8)
+	set_margin.add_theme_constant_override("margin_top", 6)
+	set_margin.add_theme_constant_override("margin_right", 8)
+	set_margin.add_theme_constant_override("margin_bottom", 6)
+	_set_bonus_panel.add_child(set_margin)
+	_set_bonus_label = Label.new()
+	_set_bonus_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_set_bonus_label.add_theme_font_size_override("font_size", 11)
+	_set_bonus_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95, 1.0))
+	_set_bonus_label.add_theme_constant_override("line_spacing", 2)
+	set_margin.add_child(_set_bonus_label)
+	add_child(_set_bonus_panel)
 	update_hp(100, 100)
 	update_bag_label(0, 20)
 	update_consumable_bar([])
@@ -197,11 +226,149 @@ func _ready() -> void:
 		_codex_panel.panel_closed.connect(_on_menu_closed)
 
 
+func _build_consumable_slot_row() -> void:
+	consumable_bar.visible = false
+	_consumable_slot_row = HBoxContainer.new()
+	_consumable_slot_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_consumable_slot_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_consumable_slot_row.add_theme_constant_override("separation", 8)
+	add_child(_consumable_slot_row)
+	move_child(_consumable_slot_row, consumable_bar.get_index())
+	_consumable_slot_views.clear()
+	for slot_index: int in range(2):
+		var slot_panel: Panel = Panel.new()
+		slot_panel.custom_minimum_size = Vector2(56.0, 56.0)
+		slot_panel.size = Vector2(56.0, 56.0)
+		slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var slot_style: StyleBoxFlat = StyleBoxFlat.new()
+		slot_style.bg_color = Color(0.15, 0.15, 0.15, 0.8)
+		slot_style.border_color = Color(0.32, 0.32, 0.32, 0.95)
+		slot_style.border_width_left = 1
+		slot_style.border_width_top = 1
+		slot_style.border_width_right = 1
+		slot_style.border_width_bottom = 1
+		slot_style.corner_radius_top_left = 4
+		slot_style.corner_radius_top_right = 4
+		slot_style.corner_radius_bottom_left = 4
+		slot_style.corner_radius_bottom_right = 4
+		slot_panel.add_theme_stylebox_override("panel", slot_style)
+
+		var icon_rect: TextureRect = TextureRect.new()
+		icon_rect.position = Vector2(4.0, 4.0)
+		icon_rect.size = Vector2(48.0, 48.0)
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot_panel.add_child(icon_rect)
+
+		var quantity_label: Label = Label.new()
+		quantity_label.position = Vector2(0.0, 38.0)
+		quantity_label.size = Vector2(52.0, 14.0)
+		quantity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		quantity_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		quantity_label.add_theme_font_size_override("font_size", 12)
+		quantity_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+		quantity_label.add_theme_constant_override("outline_size", 2)
+		quantity_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+		quantity_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot_panel.add_child(quantity_label)
+
+		var key_label: Label = Label.new()
+		key_label.position = Vector2(5.0, 3.0)
+		key_label.size = Vector2(14.0, 12.0)
+		key_label.text = "Q" if slot_index == 0 else "R"
+		key_label.add_theme_font_size_override("font_size", 10)
+		key_label.add_theme_color_override("font_color", Color(1.0, 0.92, 0.35, 1.0))
+		key_label.add_theme_constant_override("outline_size", 2)
+		key_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+		key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot_panel.add_child(key_label)
+
+		var dashed_overlay: Control = _build_empty_slot_overlay()
+		slot_panel.add_child(dashed_overlay)
+		slot_panel.move_child(quantity_label, slot_panel.get_child_count() - 1)
+		slot_panel.move_child(key_label, slot_panel.get_child_count() - 1)
+		_consumable_slot_row.add_child(slot_panel)
+		_consumable_slot_views.append({
+			"panel": slot_panel,
+			"icon": icon_rect,
+			"quantity": quantity_label,
+			"key": key_label,
+			"dashed": dashed_overlay,
+		})
+
+
+func _build_empty_slot_overlay() -> Control:
+	var overlay: Control = Control.new()
+	overlay.position = Vector2.ZERO
+	overlay.size = Vector2(56.0, 56.0)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var dash_color: Color = Color(0.55, 0.55, 0.55, 0.85)
+	var dash_rects: Array[Rect2] = [
+		Rect2(6.0, 4.0, 10.0, 2.0),
+		Rect2(22.0, 4.0, 10.0, 2.0),
+		Rect2(38.0, 4.0, 10.0, 2.0),
+		Rect2(6.0, 50.0, 10.0, 2.0),
+		Rect2(22.0, 50.0, 10.0, 2.0),
+		Rect2(38.0, 50.0, 10.0, 2.0),
+		Rect2(4.0, 8.0, 2.0, 10.0),
+		Rect2(4.0, 24.0, 2.0, 10.0),
+		Rect2(4.0, 40.0, 2.0, 10.0),
+		Rect2(50.0, 8.0, 2.0, 10.0),
+		Rect2(50.0, 24.0, 2.0, 10.0),
+		Rect2(50.0, 40.0, 2.0, 10.0),
+	]
+	for dash_rect: Rect2 in dash_rects:
+		var dash: ColorRect = ColorRect.new()
+		dash.position = dash_rect.position
+		dash.size = dash_rect.size
+		dash.color = dash_color
+		dash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		overlay.add_child(dash)
+	return overlay
+
+
+func _configure_death_overlay() -> void:
+	death_backdrop.color = Color(0.0, 0.0, 0.0, 0.75)
+	death_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	death_vbox.set_anchors_preset(Control.PRESET_CENTER)
+	death_vbox.offset_left = -250.0
+	death_vbox.offset_top = -190.0
+	death_vbox.offset_right = 250.0
+	death_vbox.offset_bottom = 190.0
+	death_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	death_vbox.add_theme_constant_override("separation", 12)
+	death_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	death_title_label.add_theme_constant_override("outline_size", 3)
+	death_title_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	death_summary_label.visible = false
+	_death_edge_glow = ColorRect.new()
+	_death_edge_glow.name = "EdgeGlow"
+	_death_edge_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_death_edge_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_death_edge_glow.material = ShaderMaterial.new()
+	(_death_edge_glow.material as ShaderMaterial).shader = Shader.new()
+	(_death_edge_glow.material as ShaderMaterial).shader.code = "shader_type canvas_item;\nuniform vec4 glow_color : source_color = vec4(1.0, 0.12, 0.12, 0.95);\nuniform float edge_width = 0.18;\nvoid fragment() {\n\tfloat dist = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));\n\tfloat edge = 1.0 - smoothstep(0.0, edge_width, dist);\n\tfloat alpha = edge * edge * glow_color.a;\n\tCOLOR = vec4(glow_color.rgb, alpha);\n}\n"
+	death_overlay.add_child(_death_edge_glow)
+	death_overlay.move_child(_death_edge_glow, death_backdrop.get_index() + 1)
+
+
 func update_hp(current: int, max_hp: int) -> void:
 	hp_label.text = "%s: %d/%d" % [LocaleManager.L("hp"), current, max_hp]
-	var ratio = float(current) / float(max(max_hp, 1))
+	var ratio: float = float(current) / float(max(max_hp, 1))
 	hp_bar_fill.size.x = HP_BAR_SIZE.x * clampf(ratio, 0.0, 1.0)
 	hp_bar_fill.color = Color(0.85, 0.15, 0.15, 1.0) if ratio > 0.25 else Color(1.0, 0.1, 0.1, 1.0)
+
+
+func update_run_max_hp_penalty(lost_percent: int) -> void:
+	if hp_penalty_label == null:
+		return
+	hp_penalty_label.visible = lost_percent > 0
+	if not hp_penalty_label.visible:
+		hp_penalty_label.text = ""
+		return
+	hp_penalty_label.text = "已損失上限：-%d%%" % max(lost_percent, 0)
 
 
 func bind_player(new_player) -> void:
@@ -211,20 +378,36 @@ func bind_player(new_player) -> void:
 
 	player = new_player
 	inventory = player.inventory
-	player.interaction_prompt_changed.connect(show_interaction_prompt)
-	player.interaction_prompt_cleared.connect(hide_interaction_prompt)
-	player.hp_changed.connect(update_hp)
-	inventory.inventory_changed.connect(_on_inventory_changed)
-	player.equipment_system.equipment_changed.connect(_on_equipment_changed)
-	player.building_system.build_state_changed.connect(_refresh_debug_label)
-	player.crafting_requested.connect(_on_crafting_requested)
-	player.storage_requested.connect(_on_storage_requested)
-	player.repair_requested.connect(_on_repair_requested)
-	player.talent_requested.connect(_on_talent_requested)
-	player.equipment_panel_requested.connect(_on_equipment_requested)
-	player.tavern_requested.connect(_on_tavern_requested)
-	player.buffs_changed.connect(_refresh_buff_icons)
-	player.status_message_requested.connect(show_status_message)
+	if not player.interaction_prompt_changed.is_connected(show_interaction_prompt):
+		player.interaction_prompt_changed.connect(show_interaction_prompt)
+	if not player.interaction_prompt_cleared.is_connected(hide_interaction_prompt):
+		player.interaction_prompt_cleared.connect(hide_interaction_prompt)
+	if not player.hp_changed.is_connected(update_hp):
+		player.hp_changed.connect(update_hp)
+	if player.has_signal("run_max_hp_penalty_changed") and not player.run_max_hp_penalty_changed.is_connected(update_run_max_hp_penalty):
+		player.run_max_hp_penalty_changed.connect(update_run_max_hp_penalty)
+	if not inventory.inventory_changed.is_connected(_on_inventory_changed):
+		inventory.inventory_changed.connect(_on_inventory_changed)
+	if not player.equipment_system.equipment_changed.is_connected(_on_equipment_changed):
+		player.equipment_system.equipment_changed.connect(_on_equipment_changed)
+	if not player.building_system.build_state_changed.is_connected(_refresh_debug_label):
+		player.building_system.build_state_changed.connect(_refresh_debug_label)
+	if not player.crafting_requested.is_connected(_on_crafting_requested):
+		player.crafting_requested.connect(_on_crafting_requested)
+	if not player.storage_requested.is_connected(_on_storage_requested):
+		player.storage_requested.connect(_on_storage_requested)
+	if not player.repair_requested.is_connected(_on_repair_requested):
+		player.repair_requested.connect(_on_repair_requested)
+	if not player.talent_requested.is_connected(_on_talent_requested):
+		player.talent_requested.connect(_on_talent_requested)
+	if not player.equipment_panel_requested.is_connected(_on_equipment_requested):
+		player.equipment_panel_requested.connect(_on_equipment_requested)
+	if not player.tavern_requested.is_connected(_on_tavern_requested):
+		player.tavern_requested.connect(_on_tavern_requested)
+	if not player.buffs_changed.is_connected(_refresh_buff_icons):
+		player.buffs_changed.connect(_refresh_buff_icons)
+	if not player.status_message_requested.is_connected(show_status_message):
+		player.status_message_requested.connect(show_status_message)
 	skill_system = get_node_or_null("/root/SkillSystem")
 	if skill_system != null and not skill_system.skills_changed.is_connected(_refresh_skill_slots):
 		skill_system.skills_changed.connect(_refresh_skill_slots)
@@ -236,6 +419,9 @@ func bind_player(new_player) -> void:
 	_on_equipment_changed()
 	_refresh_debug_label()
 	_refresh_buff_icons(player.get_active_buffs())
+	_refresh_set_bonus_panel()
+	if player.has_method("get_run_max_hp_penalty_percent"):
+		update_run_max_hp_penalty(int(player.get_run_max_hp_penalty_percent()))
 	refresh_meta_labels()
 	_refresh_skill_slots()
 
@@ -341,6 +527,35 @@ func _on_inventory_changed() -> void:
 
 func _on_equipment_changed() -> void:
 	_sync_achievement_equipment_state()
+	_refresh_set_bonus_panel()
+
+
+func _refresh_set_bonus_panel() -> void:
+	if _set_bonus_panel == null or _set_bonus_label == null:
+		return
+	if player == null or player.equipment_system == null or not player.equipment_system.has_method("get_active_set_entries"):
+		_set_bonus_panel.visible = false
+		return
+	var entries: Array = player.equipment_system.get_active_set_entries()
+	if entries.is_empty():
+		_set_bonus_panel.visible = false
+		return
+	var lines: PackedStringArray = []
+	for entry_variant: Variant in entries:
+		var entry: Dictionary = entry_variant as Dictionary
+		var set_name: String = str(entry.get("set_name", ""))
+		if set_name == "":
+			continue
+		lines.append(set_name)
+		for effect_variant: Variant in entry.get("active_effects", []):
+			lines.append(str(effect_variant))
+	if lines.is_empty():
+		_set_bonus_panel.visible = false
+		return
+	_set_bonus_label.text = "\n".join(lines)
+	_set_bonus_panel.visible = true
+	_set_bonus_panel.reset_size()
+	_layout_bottom_hud()
 
 
 func _sync_achievement_equipment_state() -> void:
@@ -754,85 +969,60 @@ func show_death_screen(summary: Dictionary) -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	_death_dynamic_nodes.clear()
-
-	death_vbox.offset_left = -220.0
-	death_vbox.offset_top = -240.0
-	death_vbox.offset_right = 220.0
-	death_vbox.offset_bottom = 160.0
-
-	death_title_label.text = "你死了"
-	death_title_label.add_theme_font_size_override("font_size", 32)
+	death_title_label.text = "你已陣亡"
+	death_title_label.add_theme_font_size_override("font_size", 36)
+	death_title_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2, 1.0))
+	death_summary_label.visible = false
 
 	var floor_num: int = int(summary.get("floor", 0))
 	var kills_num: int = int(summary.get("kills", 0))
-	death_summary_label.text = "第 %d 層  |  擊殺 %d" % [floor_num, kills_num]
-	death_summary_label.add_theme_font_size_override("font_size", 16)
+	var coins_gained: int = int(summary.get("coins_gained", 0))
+	var coins_lost: int = int(summary.get("coins_lost", 0))
+	var equips_gained: int = int(summary.get("equips_gained", 0))
 
-	var loot_loss_note: Label = Label.new()
-	loot_loss_note.text = "失去所有未保存的地牢戰利品"
-	loot_loss_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	loot_loss_note.add_theme_font_size_override("font_size", 13)
-	loot_loss_note.add_theme_color_override("font_color", Color(0.85, 0.35, 0.35, 1.0))
-	death_vbox.add_child(loot_loss_note)
-	_death_dynamic_nodes.append(loot_loss_note)
+	var top_separator: HSeparator = HSeparator.new()
+	death_vbox.add_child(top_separator)
+	_death_dynamic_nodes.append(top_separator)
 
-	var dur_note: Label = Label.new()
-	dur_note.text = "所有裝備耐久度 -20%"
-	dur_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	dur_note.add_theme_font_size_override("font_size", 13)
-	dur_note.add_theme_color_override("font_color", Color(0.85, 0.55, 0.25, 1.0))
-	death_vbox.add_child(dur_note)
-	_death_dynamic_nodes.append(dur_note)
+	var exploration_stats: VBoxContainer = VBoxContainer.new()
+	exploration_stats.add_theme_constant_override("separation", 6)
+	exploration_stats.alignment = BoxContainer.ALIGNMENT_CENTER
+	death_vbox.add_child(exploration_stats)
+	_death_dynamic_nodes.append(exploration_stats)
+	exploration_stats.add_child(_make_death_stat_label("到達層數：%d" % floor_num, Color(1.0, 1.0, 1.0, 1.0), 16))
+	exploration_stats.add_child(_make_death_stat_label("擊殺數：%d" % kills_num, Color(1.0, 1.0, 1.0, 1.0), 16))
+	exploration_stats.add_child(_make_death_stat_label("獲得金幣：%s" % _format_currency_text(coins_gained), Color(1.0, 1.0, 1.0, 1.0), 16))
+	exploration_stats.add_child(_make_death_stat_label("獲得裝備：%d 件" % equips_gained, Color(1.0, 1.0, 1.0, 1.0), 16))
 
-	var loot_items: Array = summary.get("loot_items", [])
-	if not loot_items.is_empty():
-		var sep: HSeparator = HSeparator.new()
-		death_vbox.add_child(sep)
-		_death_dynamic_nodes.append(sep)
+	var middle_separator: HSeparator = HSeparator.new()
+	death_vbox.add_child(middle_separator)
+	_death_dynamic_nodes.append(middle_separator)
 
-		var loot_header: Label = Label.new()
-		loot_header.text = "遺失戰利品："
-		loot_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		loot_header.add_theme_font_size_override("font_size", 13)
-		loot_header.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0))
-		death_vbox.add_child(loot_header)
-		_death_dynamic_nodes.append(loot_header)
+	var loss_stats: VBoxContainer = VBoxContainer.new()
+	loss_stats.add_theme_constant_override("separation", 6)
+	loss_stats.alignment = BoxContainer.ALIGNMENT_CENTER
+	death_vbox.add_child(loss_stats)
+	_death_dynamic_nodes.append(loss_stats)
+	loss_stats.add_child(_make_death_stat_label("失去金幣：%s" % _format_currency_text(coins_lost), Color(1.0, 0.35, 0.35, 1.0), 16))
+	loss_stats.add_child(_make_death_stat_label("裝備耐久損失：20%", Color(1.0, 0.35, 0.35, 1.0), 16))
 
-		var max_shown: int = min(loot_items.size(), 5)
-		for i in range(max_shown):
-			var entry: Dictionary = loot_items[i]
-			var item_id: String = str(entry.get("id", ""))
-			var qty: int = int(entry.get("quantity", 1))
-			var display_name: String = ITEM_DATABASE.get_display_name(item_id) if item_id != "" else item_id
-			if display_name == "":
-				display_name = item_id
-			var item_label: Label = Label.new()
-			item_label.text = "%s x%d" % [display_name, qty]
-			item_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			item_label.add_theme_font_size_override("font_size", 12)
-			item_label.add_theme_color_override("font_color", Color(0.75, 0.55, 0.55, 1.0))
-			death_vbox.add_child(item_label)
-			_death_dynamic_nodes.append(item_label)
+	var spacer: Control = Control.new()
+	spacer.custom_minimum_size = Vector2(0.0, 20.0)
+	death_vbox.add_child(spacer)
+	_death_dynamic_nodes.append(spacer)
 
-		if loot_items.size() > 5:
-			var more_label: Label = Label.new()
-			more_label.text = "...及其他 %d 件" % (loot_items.size() - 5)
-			more_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			more_label.add_theme_font_size_override("font_size", 12)
-			more_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
-			death_vbox.add_child(more_label)
-			_death_dynamic_nodes.append(more_label)
-
-	var sep2: HSeparator = HSeparator.new()
-	death_vbox.add_child(sep2)
-	_death_dynamic_nodes.append(sep2)
+	var button_center: CenterContainer = CenterContainer.new()
+	button_center.custom_minimum_size = Vector2(500.0, 50.0)
+	death_vbox.add_child(button_center)
+	_death_dynamic_nodes.append(button_center)
 
 	var return_btn: Button = Button.new()
-	return_btn.text = "返回據點"
+	return_btn.text = "返回家園"
+	return_btn.custom_minimum_size = Vector2(200.0, 50.0)
 	return_btn.add_theme_font_size_override("font_size", 15)
 	var btn_style: StyleBoxFlat = StyleBoxFlat.new()
-	btn_style.bg_color = Color(0.2, 0.08, 0.08, 0.9)
-	btn_style.border_color = Color(0.6, 0.2, 0.2, 1.0)
+	btn_style.bg_color = Color(0.18, 0.08, 0.08, 0.95)
+	btn_style.border_color = Color(0.72, 0.18, 0.18, 1.0)
 	btn_style.border_width_left = 1
 	btn_style.border_width_top = 1
 	btn_style.border_width_right = 1
@@ -842,14 +1032,16 @@ func show_death_screen(summary: Dictionary) -> void:
 	btn_style.corner_radius_bottom_left = 4
 	btn_style.corner_radius_bottom_right = 4
 	return_btn.add_theme_stylebox_override("normal", btn_style)
-	return_btn.pressed.connect(hide_death_screen)
-	death_vbox.add_child(return_btn)
-	_death_dynamic_nodes.append(return_btn)
+	return_btn.add_theme_stylebox_override("hover", btn_style)
+	return_btn.add_theme_stylebox_override("pressed", btn_style)
+	return_btn.pressed.connect(_on_death_return_pressed)
+	button_center.add_child(return_btn)
 
 	death_overlay.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	death_overlay.visible = true
 	var tween: Tween = create_tween()
 	tween.tween_property(death_overlay, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.5)
+	return
 
 
 func hide_death_screen() -> void:
@@ -859,6 +1051,25 @@ func hide_death_screen() -> void:
 	_death_dynamic_nodes.clear()
 	death_overlay.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	death_overlay.visible = false
+
+
+func _make_death_stat_label(text_value: String, text_color: Color, font_size: int) -> Label:
+	var stat_label: Label = Label.new()
+	stat_label.text = text_value
+	stat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stat_label.add_theme_font_size_override("font_size", font_size)
+	stat_label.add_theme_color_override("font_color", text_color)
+	stat_label.add_theme_constant_override("outline_size", 2)
+	stat_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	return stat_label
+
+
+func _format_currency_text(copper_total: int) -> String:
+	return ITEM_DATABASE.format_currency(maxi(copper_total, 0))
+
+
+func _on_death_return_pressed() -> void:
+	death_return_requested.emit()
 
 
 func show_event_banner(message: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
@@ -923,15 +1134,30 @@ func _update_npc_count_label(recruited_count: int) -> void:
 
 
 func update_consumable_bar(slots: Array) -> void:
-	var labels: Array[String] = []
+	if _consumable_slot_views.is_empty():
+		return
 	for slot_index in range(2):
 		var slot: Dictionary = slots[slot_index] if slot_index < slots.size() else {}
-		var key_name = "Q" if slot_index == 0 else "R"
+		var slot_view: Dictionary = _consumable_slot_views[slot_index]
+		var icon_rect: TextureRect = slot_view.get("icon", null) as TextureRect
+		var quantity_label: Label = slot_view.get("quantity", null) as Label
+		var dashed_overlay: Control = slot_view.get("dashed", null) as Control
 		if slot.is_empty():
-			labels.append(LocaleManager.L("consumable_empty") % key_name)
+			if icon_rect != null:
+				icon_rect.texture = null
+				icon_rect.visible = false
+			if quantity_label != null:
+				quantity_label.text = ""
+			if dashed_overlay != null:
+				dashed_overlay.visible = true
 			continue
-		labels.append("[%s] %s x%d" % [key_name, ITEM_DATABASE.get_stack_display_name(slot), int(slot.get("quantity", 0))])
-	consumable_bar.text = " | ".join(labels)
+		if icon_rect != null:
+			icon_rect.texture = ITEM_DATABASE.get_stack_icon(slot)
+			icon_rect.visible = icon_rect.texture != null
+		if quantity_label != null:
+			quantity_label.text = str(int(slot.get("quantity", 0)))
+		if dashed_overlay != null:
+			dashed_overlay.visible = false
 	_layout_bottom_hud()
 
 
@@ -1084,9 +1310,11 @@ func _layout_static_hud() -> void:
 	var hp_y: float = HUD_TOP_MARGIN
 	var hp_label_w: float = 160.0
 	var hp_bar_x: float = HUD_LEFT_MARGIN + hp_label_w + 4.0
-	var class_x: float = hp_bar_x + HP_BAR_SIZE.x + 6.0
+	var hp_penalty_x: float = hp_bar_x + HP_BAR_SIZE.x + 8.0
+	var class_x: float = hp_penalty_x + 150.0
 	_set_control_rect(hp_label, Vector2(HUD_LEFT_MARGIN, hp_y), Vector2(hp_label_w, HUD_LINE_HEIGHT))
 	_set_control_rect(hp_bar_bg, Vector2(hp_bar_x, hp_y + 4.0), HP_BAR_SIZE)
+	_set_control_rect(hp_penalty_label, Vector2(hp_penalty_x, hp_y), Vector2(146.0, HUD_LINE_HEIGHT))
 	_set_control_rect(class_label, Vector2(class_x, hp_y), CLASS_LABEL_SIZE)
 	hp_bar_fill.position = Vector2.ZERO
 	hp_bar_fill.size = Vector2(HP_BAR_SIZE.x, HP_BAR_SIZE.y)
@@ -1123,23 +1351,22 @@ func _center_skill_slot_row() -> void:
 
 func _layout_bottom_hud() -> void:
 	_center_skill_slot_row()
-	if consumable_bar == null:
-		return
-	var bar_size: Vector2 = consumable_bar.get_combined_minimum_size()
-	bar_size.x = maxf(bar_size.x, 220.0)
-	bar_size.y = maxf(bar_size.y, 24.0)
-	consumable_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	consumable_bar.position = Vector2(-bar_size.x * 0.5, -CONSUMABLE_BAR_BOTTOM_MARGIN - bar_size.y)
-	consumable_bar.size = bar_size
-	if skill_slot_row != null:
-		var skill_bottom: float = skill_slot_row.position.y + skill_slot_row.size.y
-		var consumable_top: float = consumable_bar.position.y
-		if consumable_top < skill_bottom + BOTTOM_UI_GAP:
-			consumable_bar.position.y = skill_bottom + BOTTOM_UI_GAP
-	if _consumable_bar_bg != null:
-		_consumable_bar_bg.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-		_consumable_bar_bg.position = consumable_bar.position - Vector2(6.0, 4.0)
-		_consumable_bar_bg.size = consumable_bar.size + Vector2(12.0, 8.0)
+	if _consumable_slot_row != null:
+		var row_size: Vector2 = Vector2(120.0, 56.0)
+		_consumable_slot_row.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		_consumable_slot_row.position = Vector2(-row_size.x * 0.5, -CONSUMABLE_BAR_BOTTOM_MARGIN - row_size.y)
+		_consumable_slot_row.size = row_size
+		if skill_slot_row != null:
+			var skill_bottom: float = skill_slot_row.position.y + skill_slot_row.size.y
+			var consumable_top: float = _consumable_slot_row.position.y
+			if consumable_top < skill_bottom + BOTTOM_UI_GAP:
+				_consumable_slot_row.position.y = skill_bottom + BOTTOM_UI_GAP
+	if _set_bonus_panel != null and _set_bonus_panel.visible:
+		var set_panel_size: Vector2 = _set_bonus_panel.get_combined_minimum_size()
+		set_panel_size.x = maxf(set_panel_size.x, 220.0)
+		_set_bonus_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+		_set_bonus_panel.position = Vector2(HUD_LEFT_MARGIN, -20.0 - set_panel_size.y)
+		_set_bonus_panel.size = set_panel_size
 
 
 func _on_hud_resized() -> void:

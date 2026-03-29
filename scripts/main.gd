@@ -284,6 +284,8 @@ func _on_player_portal_requested(target_level_id: String, start_floor: int = 1) 
 
 
 func _on_floor_changed(current_floor: int) -> void:
+	if player != null and player.has_method("on_dungeon_floor_changed"):
+		player.on_dungeon_floor_changed(current_floor)
 	if current_floor > 0:
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, current_floor)
 	if hud.has_method("update_floor_label"):
@@ -375,6 +377,43 @@ func _on_player_died() -> void:
 	if achievement_manager != null:
 		achievement_manager.record_player_died()
 	if current_level_id == "dungeon":
+		var death_floor_value: int = int(current_level.get("current_floor")) if current_level != null else 0
+		var death_kills_value: int = int(current_level.get("total_kills")) if current_level != null else 0
+		var death_summary: Dictionary = {}
+		if player != null and player.has_method("get_dungeon_run_summary"):
+			death_summary = player.get_dungeon_run_summary()
+		death_summary["floor"] = death_floor_value
+		death_summary["kills"] = death_kills_value
+		if hud.has_method("show_death_screen"):
+			hud.show_death_screen(death_summary)
+		if player != null:
+			player.set_ui_blocked(true)
+		if hud.has_signal("death_return_requested"):
+			await hud.death_return_requested
+		if hud.has_method("fade_to_black"):
+			await hud.fade_to_black("返回家園...", Color(0, 0, 0, 1), 0.5)
+		if player != null:
+			player.finish_dungeon_run(false)
+		total_dungeon_runs_completed += 1
+		dungeon_returns_since_raid += 1
+		current_day += 1
+		_sync_quest_day()
+		var npc_day_messages: Array[String] = NpcManager.process_new_day(current_day, player) if NpcManager != null else []
+		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, death_floor_value)
+		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
+		if hud.has_method("hide_death_screen"):
+			hud.hide_death_screen()
+		await get_tree().process_frame
+		if hud.has_method("fade_from_black"):
+			await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
+		if player != null:
+			var defeated_message: String = "雿仃?颱??啣??"
+			if not npc_day_messages.is_empty():
+				defeated_message += " | " + " / ".join(npc_day_messages)
+			player.show_status_message(defeated_message, Color(1.0, 0.75, 0.45, 1.0), 3.0)
+		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
+			current_level.trigger_progress_raid()
+		return
 		if hud.has_method("show_death_screen"):
 			var death_floor: Variant = current_level.get("current_floor")
 			var death_kills: Variant = current_level.get("total_kills")

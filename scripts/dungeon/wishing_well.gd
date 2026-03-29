@@ -1,11 +1,79 @@
 extends Area2D
 class_name WishingWell
 
-const DUNGEON_LOOT: Script = preload("res://scripts/dungeon/dungeon_loot.gd")
 const BUFF_SYSTEM: Script = preload("res://scripts/dungeon/buff_system.gd")
 const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
-const LOOT_DROP_SCENE: PackedScene = preload("res://scenes/dungeon/loot_drop.tscn")
 const UI_AUDIO_CLICK_HOOK: Script = preload("res://scripts/ui/ui_audio_click_hook.gd")
+const WELL_TEXTURE: Texture2D = preload("res://assets/floor_gargoyle_blue_basin.png")
+const HEART_ICON: Texture2D = preload("res://assets/ui_heart_full.png")
+
+const PANEL_BG_COLOR: Color = Color(0.05, 0.1, 0.2, 0.9)
+const PANEL_BORDER_COLOR: Color = Color(0.38, 0.68, 0.96, 1.0)
+const TITLE_COLOR: Color = Color(0.72, 0.9, 1.0, 1.0)
+const SUCCESS_COLOR: Color = Color(0.72, 0.92, 1.0, 1.0)
+const ERROR_COLOR: Color = Color(1.0, 0.52, 0.56, 1.0)
+const SMALL_BUFF_POOL: Array[Dictionary] = [
+	{
+		"id": "small_attack",
+		"description": "投入 10 銅幣 -> 隨機小 buff（攻擊 +3，本層）",
+		"result_text": "本層攻擊 +3",
+		"effects": {"attack": 3.0},
+	},
+	{
+		"id": "small_defense",
+		"description": "投入 10 銅幣 -> 隨機小 buff（防禦 +2，本層）",
+		"result_text": "本層防禦 +2",
+		"effects": {"defense": 2.0},
+	},
+	{
+		"id": "small_speed",
+		"description": "投入 10 銅幣 -> 隨機小 buff（速度 +5%，本層）",
+		"result_text": "本層速度 +5%",
+		"effects": {"speed_multiplier": 0.05},
+	},
+]
+const MEDIUM_BUFF_POOL: Array[Dictionary] = [
+	{
+		"id": "medium_attack",
+		"description": "投入 1 銀幣 -> 隨機中 buff（攻擊 +8，整次 run）",
+		"result_text": "本次 run 攻擊 +8",
+		"effects": {"attack": 8.0},
+	},
+	{
+		"id": "medium_defense",
+		"description": "投入 1 銀幣 -> 隨機中 buff（防禦 +6，整次 run）",
+		"result_text": "本次 run 防禦 +6",
+		"effects": {"defense": 6.0},
+	},
+	{
+		"id": "medium_crit",
+		"description": "投入 1 銀幣 -> 隨機中 buff（暴擊 +5%，整次 run）",
+		"result_text": "本次 run 暴擊 +5%",
+		"effects": {"crit_chance": 0.05},
+	},
+]
+const CURSE_POOL: Array[Dictionary] = [
+	{
+		"id": "curse_attack",
+		"name": "虛弱詛咒",
+		"effects": {"attack": -5.0},
+	},
+	{
+		"id": "curse_defense",
+		"name": "脆弱詛咒",
+		"effects": {"defense": -4.0},
+	},
+	{
+		"id": "curse_speed",
+		"name": "遲滯詛咒",
+		"effects": {"speed_multiplier": -0.08},
+	},
+	{
+		"id": "curse_vitality",
+		"name": "枯萎詛咒",
+		"effects": {"max_hp": -12.0},
+	},
+]
 
 var loot_root: Node = null
 var floor_number: int = 1
@@ -15,7 +83,8 @@ var _current_player: Variant = null
 var _ui_canvas: CanvasLayer = null
 var _ui_root: Control = null
 var _message_label: Label = null
-var _well_sprite: AnimatedSprite2D = null
+var _well_sprite: Sprite2D = null
+var _well_light: PointLight2D = null
 
 
 func setup(target_loot_root: Node, target_floor_number: int, seed_value: int) -> void:
@@ -36,13 +105,17 @@ func _exit_tree() -> void:
 
 
 func get_interaction_prompt() -> String:
-	if _is_used:
-		return "Wishing well exhausted"
-	return "Press E to make a wish"
+	return "按 E 觸碰許願池"
 
 
 func interact(player: Variant) -> void:
-	if _is_used or _ui_canvas != null or player == null:
+	if player == null:
+		return
+	if _is_used:
+		if player.has_method("show_status_message"):
+			player.show_status_message("許願池已枯竭", ERROR_COLOR, 2.0)
+		return
+	if _ui_canvas != null:
 		return
 	_current_player = player
 	_open_ui()
@@ -65,57 +138,51 @@ func _build_visuals() -> void:
 		var collision: CollisionShape2D = CollisionShape2D.new()
 		collision.name = "CollisionShape2D"
 		var shape: CircleShape2D = CircleShape2D.new()
-		shape.radius = 16.0
+		shape.radius = 18.0
 		collision.shape = shape
 		add_child(collision)
 
-	if get_node_or_null("Aura") == null:
-		var aura: Polygon2D = Polygon2D.new()
-		aura.name = "Aura"
-		aura.color = Color(0.32, 0.62, 1.0, 0.28)
-		aura.polygon = PackedVector2Array([
-			Vector2(-18.0, 10.0),
-			Vector2(0.0, -18.0),
-			Vector2(18.0, 10.0),
-			Vector2(10.0, 18.0),
-			Vector2(-10.0, 18.0),
-		])
-		add_child(aura)
-		var tween: Tween = create_tween().set_loops()
-		tween.tween_property(aura, "modulate:a", 0.55, 0.8)
-		tween.tween_property(aura, "modulate:a", 0.22, 0.8)
-
-	_well_sprite = get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	_well_sprite = get_node_or_null("Sprite2D") as Sprite2D
 	if _well_sprite == null:
-		_well_sprite = AnimatedSprite2D.new()
-		_well_sprite.name = "AnimatedSprite2D"
-		_well_sprite.sprite_frames = _build_well_frames()
-		_well_sprite.animation = &"default"
+		_well_sprite = Sprite2D.new()
+		_well_sprite.name = "Sprite2D"
+		_well_sprite.texture = WELL_TEXTURE
 		_well_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		_well_sprite.play()
+		_well_sprite.z_index = -1
 		add_child(_well_sprite)
 
+	_well_light = get_node_or_null("PointLight2D") as PointLight2D
+	if _well_light == null:
+		_well_light = PointLight2D.new()
+		_well_light.name = "PointLight2D"
+		_well_light.texture = _build_light_texture()
+		_well_light.texture_scale = 1.6
+		_well_light.energy = 0.5
+		_well_light.color = Color(0.62, 0.84, 1.0, 1.0)
+		_well_light.position = Vector2(0.0, -10.0)
+		add_child(_well_light)
 
-func _build_well_frames() -> SpriteFrames:
-	var frames: SpriteFrames = SpriteFrames.new()
-	frames.add_animation("default")
-	frames.set_animation_loop("default", true)
-	frames.set_animation_speed("default", 5.0)
-	var frame_paths: PackedStringArray = PackedStringArray([
-		"res://assets/wall_fountain_basin_blue_anim_f0.png",
-		"res://assets/wall_fountain_basin_blue_anim_f1.png",
-		"res://assets/wall_fountain_basin_blue_anim_f2.png",
+
+func _build_light_texture() -> Texture2D:
+	var gradient: Gradient = Gradient.new()
+	gradient.colors = PackedColorArray([
+		Color(1.0, 1.0, 1.0, 1.0),
+		Color(1.0, 1.0, 1.0, 0.0),
 	])
-	for frame_path: String in frame_paths:
-		var texture: Texture2D = load(frame_path) as Texture2D
-		if texture != null:
-			frames.add_frame("default", texture)
-	return frames
+	gradient.offsets = PackedFloat32Array([0.0, 1.0])
+	var texture: GradientTexture2D = GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.width = 96
+	texture.height = 96
+	return texture
 
 
 func _refresh_visual_state() -> void:
 	if _well_sprite != null:
-		_well_sprite.modulate = Color(0.64, 0.72, 0.84, 0.92) if _is_used else Color.WHITE
+		_well_sprite.modulate = Color(0.72, 0.8, 0.9, 0.88) if _is_used else Color.WHITE
+	if _well_light != null:
+		_well_light.energy = 0.1 if _is_used else 0.5
 
 
 func _open_ui() -> void:
@@ -125,147 +192,219 @@ func _open_ui() -> void:
 
 	_ui_root = Control.new()
 	_ui_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_ui_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	_ui_canvas.add_child(_ui_root)
 
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.38)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_ui_root.add_child(backdrop)
+
 	var panel: Panel = Panel.new()
-	panel.anchor_left = 0.5
-	panel.anchor_top = 0.5
-	panel.anchor_right = 0.5
-	panel.anchor_bottom = 0.5
-	panel.offset_left = -230.0
-	panel.offset_top = -180.0
-	panel.offset_right = 230.0
-	panel.offset_bottom = 180.0
+	panel.anchor_left = 0.25
+	panel.anchor_top = 0.3
+	panel.anchor_right = 0.75
+	panel.anchor_bottom = 0.7
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.add_theme_stylebox_override("panel", _build_panel_style(PANEL_BG_COLOR, PANEL_BORDER_COLOR))
 	_ui_root.add_child(panel)
 
 	var close_button: Button = Button.new()
 	close_button.text = "X"
-	close_button.position = Vector2(8.0, 8.0)
-	close_button.custom_minimum_size = Vector2(32.0, 32.0)
+	close_button.anchor_left = 1.0
+	close_button.anchor_top = 0.0
+	close_button.anchor_right = 1.0
+	close_button.anchor_bottom = 0.0
+	close_button.offset_left = -42.0
+	close_button.offset_top = 10.0
+	close_button.offset_right = -10.0
+	close_button.offset_bottom = 42.0
 	close_button.pressed.connect(_close_ui)
 	panel.add_child(close_button)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_bottom", 10)
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 18)
 	panel.add_child(margin)
 
-	var vbox: VBoxContainer = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
-	margin.add_child(vbox)
+	var layout: VBoxContainer = VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_theme_constant_override("separation", 10)
+	margin.add_child(layout)
 
 	var title: Label = Label.new()
-	title.text = "Wishing Well"
+	title.text = "許願池"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
-	vbox.add_child(title)
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", TITLE_COLOR)
+	layout.add_child(title)
 
 	var subtitle: Label = Label.new()
-	subtitle.text = "Offer a coin and tempt fate."
+	subtitle.text = "選一個願望，讓水面回應你的代價。"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.modulate = Color(0.78, 0.86, 1.0, 1.0)
-	vbox.add_child(subtitle)
+	subtitle.add_theme_color_override("font_color", Color(0.78, 0.9, 1.0, 1.0))
+	layout.add_child(subtitle)
 
-	vbox.add_child(HSeparator.new())
-	_add_action_row(vbox, ITEM_DATABASE.get_item_icon("copper"), "10 copper - Gain a random buff", _on_offer_copper_pressed)
-	_add_action_row(vbox, ITEM_DATABASE.get_item_icon("silver"), "1 silver - Restore 50% max HP", _on_offer_silver_pressed)
-	_add_action_row(vbox, ITEM_DATABASE.get_item_icon("gold"), "1 gold - Gain a Rare+ item", _on_offer_gold_pressed)
-	vbox.add_child(HSeparator.new())
+	layout.add_child(HSeparator.new())
+
+	var option_box: VBoxContainer = VBoxContainer.new()
+	option_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	option_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	option_box.add_theme_constant_override("separation", 8)
+	layout.add_child(option_box)
+
+	option_box.add_child(_build_option_row(ITEM_DATABASE.get_item_icon("copper"), "投入 10 銅幣 -> 隨機小 buff", Callable(self, "_on_offer_copper_pressed")))
+	option_box.add_child(_build_option_row(ITEM_DATABASE.get_item_icon("silver"), "投入 1 銀幣 -> 隨機中 buff", Callable(self, "_on_offer_silver_pressed")))
+	option_box.add_child(_build_option_row(ITEM_DATABASE.get_item_icon("gold"), "投入 1 金幣 -> 必得稀有祝福", Callable(self, "_on_offer_gold_pressed")))
+	option_box.add_child(_build_option_row(HEART_ICON, "獻祭 10% 生命上限 -> 50% 得祝福 / 50% 得詛咒", Callable(self, "_on_offer_blood_pressed")))
 
 	_message_label = Label.new()
-	_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_message_label.add_theme_color_override("font_color", Color(1.0, 0.46, 0.46, 1.0))
-	vbox.add_child(_message_label)
-
-	var footer: HBoxContainer = HBoxContainer.new()
-	var spacer: Control = Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	footer.add_child(spacer)
-	var footer_close_button: Button = Button.new()
-	footer_close_button.text = "Close"
-	footer_close_button.pressed.connect(_close_ui)
-	footer.add_child(footer_close_button)
-	vbox.add_child(footer)
+	_message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_message_label.add_theme_color_override("font_color", ERROR_COLOR)
+	layout.add_child(_message_label)
 
 	UI_AUDIO_CLICK_HOOK.attach(_ui_root)
 	AudioManager.play_sfx("ui_open")
 
 
-func _add_action_row(parent: Control, icon: Texture2D, description: String, callback: Callable) -> void:
+func _build_option_row(icon: Texture2D, description: String, callback: Callable) -> Control:
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	if icon != null:
-		var icon_rect: TextureRect = TextureRect.new()
-		icon_rect.texture = icon
-		icon_rect.custom_minimum_size = Vector2(30.0, 30.0)
-		icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		row.add_child(icon_rect)
-	var label: Label = Label.new()
-	label.text = description
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
-	var action_button: Button = Button.new()
-	action_button.text = "Offer"
-	action_button.pressed.connect(callback)
-	row.add_child(action_button)
-	parent.add_child(row)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation", 10)
+
+	var icon_rect: TextureRect = TextureRect.new()
+	icon_rect.texture = icon
+	icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.custom_minimum_size = Vector2(26.0, 26.0)
+	row.add_child(icon_rect)
+
+	var description_label: Label = Label.new()
+	description_label.text = description
+	description_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	description_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(description_label)
+
+	var wish_button: Button = Button.new()
+	wish_button.text = "許願"
+	wish_button.custom_minimum_size = Vector2(84.0, 30.0)
+	wish_button.pressed.connect(callback)
+	row.add_child(wish_button)
+
+	return row
+
+
+func _build_panel_style(background_color: Color, border_color: Color) -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = background_color
+	style.border_color = border_color
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
+	return style
 
 
 func _on_offer_copper_pressed() -> void:
 	if not _spend_currency("copper", 10):
-		_set_message("Need 10 copper")
+		_set_message("需要 10 銅幣。")
 		return
-	var buff_pool: Array[Dictionary] = BUFF_SYSTEM.get_buff_pool()
-	if buff_pool.is_empty():
+	var buff_data: Dictionary = SMALL_BUFF_POOL[rng.randi_range(0, SMALL_BUFF_POOL.size() - 1)]
+	if _current_player == null or not _current_player.has_method("apply_floor_stat_modifier"):
 		_refund_currency("copper", 10)
-		_set_message("No blessing answers your wish")
+		_set_message("目前無法接受本層 buff。")
 		return
-	var buff_entry: Dictionary = buff_pool[rng.randi_range(0, buff_pool.size() - 1)]
-	var buff_id: String = str(buff_entry.get("id", ""))
-	if buff_id == "" or _current_player == null or not _current_player.has_method("apply_buff") or not bool(_current_player.apply_buff(buff_id)):
-		_refund_currency("copper", 10)
-		_set_message("The well remains silent")
-		return
-	var buff_name: String = LocaleManager.L("buff_%s_name" % buff_id)
-	_show_floating_text("Blessing", Color(0.68, 0.96, 1.0, 1.0))
-	_complete_use("The well grants %s" % buff_name, Color(0.68, 0.96, 1.0, 1.0))
+	_current_player.apply_floor_stat_modifier(str(buff_data.get("id", "")), buff_data.get("effects", {}))
+	_complete_use("願望實現：%s" % str(buff_data.get("result_text", "")), SUCCESS_COLOR)
 
 
 func _on_offer_silver_pressed() -> void:
-	if _current_player == null:
-		return
-	var current_hp: int = int(_current_player.get("current_hp"))
-	var max_hp: int = int(_current_player.get("max_hp"))
-	if current_hp >= max_hp:
-		_set_message("HP is already full")
-		return
 	if not _spend_currency("silver", 1):
-		_set_message("Need 1 silver")
+		_set_message("需要 1 銀幣。")
 		return
-	var heal_amount: int = maxi(int(round(float(max_hp) * 0.5)), 1)
-	if _current_player.has_method("heal"):
-		_current_player.heal(heal_amount)
-	_show_floating_text("+%d HP" % heal_amount, Color(0.42, 1.0, 0.54, 1.0))
-	_complete_use("The water heals your wounds", Color(0.42, 1.0, 0.54, 1.0))
+	var buff_data: Dictionary = MEDIUM_BUFF_POOL[rng.randi_range(0, MEDIUM_BUFF_POOL.size() - 1)]
+	if _current_player == null or not _current_player.has_method("apply_run_stat_modifier"):
+		_refund_currency("silver", 1)
+		_set_message("目前無法接受本次 run buff。")
+		return
+	_current_player.apply_run_stat_modifier(str(buff_data.get("id", "")), buff_data.get("effects", {}))
+	_complete_use("願望實現：%s" % str(buff_data.get("result_text", "")), SUCCESS_COLOR)
 
 
 func _on_offer_gold_pressed() -> void:
 	if not _spend_currency("gold", 1):
-		_set_message("Need 1 gold")
+		_set_message("需要 1 金幣。")
 		return
-	var equipment: Dictionary = DUNGEON_LOOT.generate_dungeon_equipment_min_rarity(maxi(floor_number, 1), "Rare", rng)
-	if equipment.is_empty():
+	var rare_blessings: Array[String] = _get_rare_blessing_ids()
+	if rare_blessings.is_empty():
 		_refund_currency("gold", 1)
-		_set_message("The well remains silent")
+		_set_message("祝福池暫時沒有稀有祝福。")
 		return
-	_grant_stack_reward(equipment)
-	_complete_use("A treasure rises from the basin", Color(1.0, 0.9, 0.48, 1.0))
+	var blessing_id: String = rare_blessings[rng.randi_range(0, rare_blessings.size() - 1)]
+	if _current_player == null or not _current_player.has_method("apply_buff") or not bool(_current_player.apply_buff(blessing_id)):
+		_refund_currency("gold", 1)
+		_set_message("稀有祝福沒有成功附著。")
+		return
+	var blessing_name: String = LocaleManager.L("buff_%s_name" % blessing_id)
+	_complete_use("願望實現：%s" % blessing_name, Color(1.0, 0.88, 0.42, 1.0))
+
+
+func _on_offer_blood_pressed() -> void:
+	if _current_player == null or not _current_player.has_method("sacrifice_max_hp_percent_for_run"):
+		_set_message("目前無法以生命許願。")
+		return
+	var blessing_result: bool = rng.randf() <= 0.5
+	var blessing_id: String = ""
+	var blessing_name: String = ""
+	var curse_data: Dictionary = {}
+	if blessing_result:
+		var blessing_pool: Array[Dictionary] = BUFF_SYSTEM.get_buff_pool()
+		if blessing_pool.is_empty() or not _current_player.has_method("apply_buff"):
+			_set_message("池水沒有回應。")
+			return
+		var blessing_entry: Dictionary = blessing_pool[rng.randi_range(0, blessing_pool.size() - 1)]
+		blessing_id = str(blessing_entry.get("id", ""))
+		if blessing_id == "":
+			_set_message("池水沒有回應。")
+			return
+		blessing_name = LocaleManager.L("buff_%s_name" % blessing_id)
+	else:
+		if not _current_player.has_method("apply_run_stat_modifier"):
+			_set_message("詛咒沒有成功附著。")
+			return
+		curse_data = CURSE_POOL[rng.randi_range(0, CURSE_POOL.size() - 1)]
+	if int(_current_player.sacrifice_max_hp_percent_for_run(0.10)) <= 0:
+		_set_message("你的生命上限已不足以再獻祭。")
+		return
+	if blessing_result:
+		if not bool(_current_player.apply_buff(blessing_id)):
+			_set_message("祝福沒有成功附著。")
+			return
+		_complete_use("血之願實現：%s" % blessing_name, SUCCESS_COLOR)
+		return
+	_current_player.apply_run_stat_modifier(str(curse_data.get("id", "")), curse_data.get("effects", {}))
+	_complete_use("血之願反噬：%s" % str(curse_data.get("name", "")), Color(0.92, 0.44, 0.88, 1.0))
+
+
+func _get_rare_blessing_ids() -> Array[String]:
+	var blessing_ids: Array[String] = []
+	for buff_entry: Dictionary in BUFF_SYSTEM.get_buff_pool():
+		var buff_id: String = str(buff_entry.get("id", ""))
+		if buff_id == "":
+			continue
+		if BUFF_SYSTEM.get_buff_tier(buff_id) >= 1:
+			blessing_ids.append(buff_id)
+	return blessing_ids
 
 
 func _spend_currency(currency_id: String, amount: int) -> bool:
@@ -286,32 +425,6 @@ func _refund_currency(currency_id: String, amount: int) -> void:
 	inventory.add_item(currency_id, amount)
 
 
-func _grant_stack_reward(stack_data: Dictionary) -> void:
-	var inventory: Variant = _get_inventory()
-	var stack_name: String = str(stack_data.get("name", "Treasure"))
-	if inventory != null and inventory.has_method("add_stack") and bool(inventory.add_stack(stack_data)):
-		if _current_player != null and _current_player.has_method("record_dungeon_loot"):
-			_current_player.record_dungeon_loot(str(stack_data.get("id", "")), int(stack_data.get("quantity", 1)))
-		_show_floating_text(stack_name, Color(1.0, 0.9, 0.48, 1.0))
-		return
-	_spawn_stack_drop(stack_data)
-	_show_status_message("Inventory full, reward dropped nearby", Color(1.0, 0.86, 0.52, 1.0))
-
-
-func _spawn_stack_drop(stack_data: Dictionary) -> void:
-	if loot_root == null:
-		loot_root = get_parent()
-	if loot_root == null:
-		return
-	var drop: Node2D = LOOT_DROP_SCENE.instantiate() as Node2D
-	if drop == null:
-		return
-	drop.global_position = global_position + Vector2(rng.randf_range(-10.0, 10.0), rng.randf_range(-8.0, 8.0))
-	if drop.has_method("setup_stack"):
-		drop.setup_stack(stack_data)
-	loot_root.add_child(drop)
-
-
 func _complete_use(message: String, color: Color) -> void:
 	_is_used = true
 	_refresh_visual_state()
@@ -327,12 +440,7 @@ func _get_inventory() -> Variant:
 
 func _show_status_message(message: String, color: Color) -> void:
 	if _current_player != null and _current_player.has_method("show_status_message"):
-		_current_player.show_status_message(message, color, 2.4)
-
-
-func _show_floating_text(message: String, color: Color) -> void:
-	if _current_player != null and _current_player.has_method("_show_floating_text"):
-		_current_player._show_floating_text(global_position, message, color)
+		_current_player.show_status_message(message, color, 2.6)
 
 
 func _set_message(message: String) -> void:

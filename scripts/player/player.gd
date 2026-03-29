@@ -3,12 +3,13 @@ extends CharacterBody2D
 @export var speed: float = 80.0
 @export var sprint_speed: float = 140.0
 
-const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
-const ATTACK_EFFECT_SCENE = preload("res://scenes/player/attack_effect.tscn")
-const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
-const TALENT_DATA = preload("res://scripts/talent/talent_data.gd")
-const PLAYER_SAVE = preload("res://scripts/player/player_save.gd")
+const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
+const ATTACK_EFFECT_SCENE: PackedScene = preload("res://scenes/player/attack_effect.tscn")
+const BUFF_SYSTEM: Script = preload("res://scripts/dungeon/buff_system.gd")
+const TALENT_DATA: Script = preload("res://scripts/talent/talent_data.gd")
+const PLAYER_SAVE: Script = preload("res://scripts/player/player_save.gd")
 const LEGENDARY_ITEMS: Script = preload("res://scripts/dungeon/legendary_items.gd")
+const SKELETON_SERVANT_SCRIPT: Script = preload("res://scripts/player/skeleton_servant.gd")
 
 signal interaction_prompt_changed(prompt_text: String)
 signal interaction_prompt_cleared
@@ -26,6 +27,7 @@ signal stats_changed
 signal died
 signal status_message_requested(message: String, color: Color, duration: float)
 signal safe_return_requested
+signal run_max_hp_penalty_changed(lost_percent: int)
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interaction_area: Area2D = $InteractionArea
@@ -87,6 +89,20 @@ var sprint_skill_time_left: float = 0.0
 var sprint_skill_multiplier: float = 1.0
 var sprint_afterimage_timer: float = 0.0
 var dungeon_max_hp_penalty: int = 0
+var dungeon_max_hp_penalty_percent: int = 0
+var dungeon_max_hp_reference: int = 0
+var current_dungeon_floor: int = 0
+var _run_stat_modifiers: Dictionary = {}
+var _floor_stat_modifiers: Dictionary = {}
+var set_attack_cooldown_reduction: float = 0.0
+var necromancer_summon_on_kill: bool = false
+var lava_burst_on_hit: bool = false
+var abyss_crit_heal: bool = false
+var shadow_combo_crit: bool = false
+var dragon_emergency_guard: bool = false
+var shadow_combo_count: int = 0
+var shadow_guaranteed_crit_ready: bool = false
+var dragon_guard_trigger_floor: int = -1
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
@@ -549,8 +565,12 @@ func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	var reduced_amount: int = max(int(round(float(max(amount - defense_value, 1)) * (1.0 - armor_reduction))), 1)
 	current_hp = max(current_hp - reduced_amount, 0)
 	equipment_system.consume_damage_durability()
+	var dragon_triggered: bool = _try_trigger_dragon_guard()
+	if lava_burst_on_hit and randf() < 0.2:
+		_trigger_lava_counterburst()
 	hp_changed.emit(current_hp, max_hp)
-	invincible_time_left = 0.8
+	if not dragon_triggered:
+		invincible_time_left = 0.8
 	apply_knockback(hit_direction, 110.0)
 	var tween: Tween = create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color(1, 0.45, 0.45, 1), 0.05)
@@ -608,6 +628,9 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 	query.collision_mask = 4
 	var results: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(query)
 	var total_damage_dealt: int = 0
+	var attack_connected: bool = false
+	var crit_landed: bool = false
+	var guaranteed_crit_ready: bool = shadow_combo_crit and shadow_guaranteed_crit_ready
 	for result: Dictionary in results:
 		var collider: Variant = result.get("collider", null)
 		if collider == null or not collider.has_method("take_damage") or collider == self:
@@ -621,8 +644,12 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 			if execute_enemy_max_hp > 0 and float(execute_enemy_hp) / float(execute_enemy_max_hp) <= 0.3:
 				attack_damage *= 3
 			execute_skill_armed = false
-		if player_stats.get_total_crit_chance() + crit_chance_bonus > 0.0 and randf() < (player_stats.get_total_crit_chance() + crit_chance_bonus):
+		var is_critical: bool = guaranteed_crit_ready
+		if not is_critical and player_stats.get_total_crit_chance() + crit_chance_bonus > 0.0 and randf() < (player_stats.get_total_crit_chance() + crit_chance_bonus):
+			is_critical = true
+		if is_critical:
 			attack_damage *= 2
+			crit_landed = true
 		if player_stats.get_execute_bonus() > 0.0:
 			var enemy_hp: int = int(collider.get("current_hp"))
 			var enemy_max_hp: int = int(collider.get("max_hp"))
@@ -631,15 +658,111 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 		collider.take_damage(attack_damage, attack_direction)
 		if collider.has_method("apply_knockback"):
 			collider.apply_knockback(attack_direction, 120.0)
+		attack_connected = true
 		total_damage_dealt += attack_damage
+		_handle_enemy_kill_trigger(collider)
 	if (lifesteal_ratio + equipment_lifesteal_ratio) > 0.0 and total_damage_dealt > 0:
 		heal(int(max(round(total_damage_dealt * (lifesteal_ratio + equipment_lifesteal_ratio)), 1.0)))
+	if abyss_crit_heal and crit_landed:
+		var heal_amount: int = max(int(round(float(max_hp) * 0.05)), 1)
+		heal(heal_amount)
+		_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.55, 1.0, 0.7, 1.0))
+	_update_shadow_combo_state(attack_connected, guaranteed_crit_ready)
 	# Also hit the closest nearby resource node (trees, rocks, ore)
 	var closest_resource: Variant = _get_closest_interactable()
 	if closest_resource != null and closest_resource.has_method("hit"):
 		last_interacted_resource = closest_resource
 		closest_resource.hit()
 	_save_persistent_state()
+
+
+func _handle_enemy_kill_trigger(enemy_ref: Variant) -> void:
+	if not necromancer_summon_on_kill:
+		return
+	if enemy_ref == null:
+		return
+	if not bool(enemy_ref.get("is_dead")):
+		return
+	if randf() > 0.10:
+		return
+	_spawn_skeleton_servant()
+
+
+func _spawn_skeleton_servant() -> void:
+	var parent_node: Node = get_parent()
+	if parent_node == null:
+		return
+	var servant: Node2D = SKELETON_SERVANT_SCRIPT.new() as Node2D
+	if servant == null:
+		return
+	parent_node.add_child(servant)
+	servant.global_position = global_position + Vector2(randf_range(-12.0, 12.0), randf_range(-10.0, 10.0))
+	if servant.has_method("setup"):
+		var summon_damage: int = max(int(round(float(get_attack_damage()) * 0.55)), 12)
+		servant.setup(self, 15.0, summon_damage)
+	_show_floating_text(global_position, "Skeleton", Color(0.82, 0.92, 1.0, 1.0))
+
+
+func _trigger_lava_counterburst() -> void:
+	var burst_damage: int = max(int(round(float(get_attack_damage()) * 0.6)), 12)
+	var hit_enemy: bool = false
+	for enemy_variant: Variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy: Node2D = enemy_variant as Node2D
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		if bool(enemy.get("is_dead")):
+			continue
+		if enemy.global_position.distance_to(global_position) > 78.0:
+			continue
+		if enemy.has_method("take_damage"):
+			enemy.take_damage(burst_damage, (enemy.global_position - global_position).normalized())
+			hit_enemy = true
+	if hit_enemy:
+		_show_floating_text(global_position, "Flame Burst", Color(1.0, 0.55, 0.2, 1.0))
+
+
+func _try_trigger_dragon_guard() -> bool:
+	if not dragon_emergency_guard:
+		return false
+	if current_hp > int(floor(float(max_hp) * 0.3)):
+		return false
+	var current_floor: int = _get_current_floor_context()
+	if current_floor == dragon_guard_trigger_floor:
+		return false
+	dragon_guard_trigger_floor = current_floor
+	current_hp = min(current_hp + max(int(round(float(max_hp) * 0.5)), 1), max_hp)
+	invincible_time_left = max(invincible_time_left, 5.0)
+	_show_floating_text(global_position, "Dragon Guard", Color(1.0, 0.88, 0.45, 1.0))
+	return true
+
+
+func _update_shadow_combo_state(attack_connected: bool, guaranteed_crit_ready: bool) -> void:
+	if not shadow_combo_crit:
+		shadow_combo_count = 0
+		shadow_guaranteed_crit_ready = false
+		return
+	if not attack_connected:
+		return
+	if guaranteed_crit_ready:
+		shadow_combo_count = 0
+		shadow_guaranteed_crit_ready = false
+		return
+	shadow_combo_count += 1
+	if shadow_combo_count < 3:
+		return
+	shadow_combo_count = 0
+	shadow_guaranteed_crit_ready = true
+	show_status_message("影刃套裝：下一擊必定暴擊", Color(0.75, 0.78, 1.0, 1.0), 1.2)
+
+
+func _get_current_floor_context() -> int:
+	var node: Node = get_parent()
+	while node != null:
+		var floor_value: Variant = node.get("current_floor")
+		if floor_value != null:
+			return int(floor_value)
+		node = node.get_parent()
+	return 0
 
 
 func _spawn_attack_effect(attack_direction: Vector2) -> void:
@@ -723,6 +846,65 @@ func clear_dungeon_buffs() -> void:
 	buffs_changed.emit(get_active_buffs())
 
 
+func apply_run_stat_modifier(modifier_id: String, effects: Dictionary) -> void:
+	if modifier_id == "" or effects.is_empty():
+		return
+	_run_stat_modifiers[modifier_id] = effects.duplicate(true)
+	_refresh_runtime_stat_modifiers()
+
+
+func apply_floor_stat_modifier(modifier_id: String, effects: Dictionary) -> void:
+	if modifier_id == "" or effects.is_empty():
+		return
+	_floor_stat_modifiers[modifier_id] = effects.duplicate(true)
+	_refresh_runtime_stat_modifiers()
+
+
+func on_dungeon_floor_changed(floor_number: int) -> void:
+	if floor_number <= 0:
+		current_dungeon_floor = 0
+		clear_floor_stat_modifiers()
+		return
+	if current_dungeon_floor == floor_number:
+		return
+	current_dungeon_floor = floor_number
+	clear_floor_stat_modifiers()
+
+
+func clear_floor_stat_modifiers() -> void:
+	if _floor_stat_modifiers.is_empty():
+		return
+	_floor_stat_modifiers.clear()
+	_refresh_runtime_stat_modifiers()
+
+
+func clear_run_stat_modifiers() -> void:
+	if _run_stat_modifiers.is_empty():
+		return
+	_run_stat_modifiers.clear()
+	_refresh_runtime_stat_modifiers()
+
+
+func _refresh_runtime_stat_modifiers() -> void:
+	var merged_effects: Dictionary = {}
+	_merge_modifier_effects(merged_effects, _run_stat_modifiers)
+	_merge_modifier_effects(merged_effects, _floor_stat_modifiers)
+	if player_stats != null and player_stats.has_method("set_runtime_bonuses"):
+		player_stats.set_runtime_bonuses(merged_effects)
+
+
+func _merge_modifier_effects(target: Dictionary, source: Dictionary) -> void:
+	for modifier_id_variant: Variant in source.keys():
+		var modifier_id: String = str(modifier_id_variant)
+		var modifier_effects: Variant = source.get(modifier_id, {})
+		if typeof(modifier_effects) != TYPE_DICTIONARY:
+			continue
+		var effect_map: Dictionary = modifier_effects as Dictionary
+		for effect_id_variant: Variant in effect_map.keys():
+			var effect_id: String = str(effect_id_variant)
+			target[effect_id] = float(target.get(effect_id, 0.0)) + float(effect_map[effect_id_variant])
+
+
 func get_active_buffs() -> Array[Dictionary]:
 	var buff_counts: Dictionary = {}
 	for buff_id: String in active_buff_ids:
@@ -748,7 +930,8 @@ func get_attack_damage() -> int:
 
 
 func get_attack_cooldown_duration() -> float:
-	return BASE_ATTACK_COOLDOWN * attack_cooldown_multiplier
+	var set_cooldown_multiplier: float = maxf(1.0 - set_attack_cooldown_reduction, 0.2)
+	return BASE_ATTACK_COOLDOWN * attack_cooldown_multiplier * set_cooldown_multiplier
 
 
 func get_loot_drop_multiplier() -> float:
@@ -773,19 +956,12 @@ func get_stats_summary() -> Dictionary:
 
 
 func get_stats_summary_for_item(item: Dictionary) -> Dictionary:
-	var current_summary: Dictionary = get_stats_summary()
-	var current_bonuses: Dictionary = equipment_system.get_total_bonus_map()
 	var preview_bonuses: Dictionary = equipment_system.get_preview_bonus_map(item)
-	var attack_delta: float = float(preview_bonuses.get("attack", 0.0)) - float(current_bonuses.get("attack", 0.0))
-	var defense_delta: float = float(preview_bonuses.get("defense", 0.0)) - float(current_bonuses.get("defense", 0.0))
-	var hp_delta: float = float(preview_bonuses.get("max_hp", 0.0)) - float(current_bonuses.get("max_hp", 0.0))
-	var preview_speed_bonus: float = player_stats.base_speed * float(preview_bonuses.get("speed_multiplier", 0.0)) + float(preview_bonuses.get("speed", 0.0))
-	var equipment_speed_delta: float = preview_speed_bonus - (float(current_bonuses.get("speed", 0.0)) + player_stats.base_speed * float(current_bonuses.get("speed_multiplier", 0.0)))
 	return {
-		"attack": int(round(float(current_summary.get("attack", 0.0)) + attack_delta)),
-		"defense": int(round(float(current_summary.get("defense", 0.0)) + defense_delta)),
-		"max_hp": int(round(float(current_summary.get("max_hp", 0.0)) + hp_delta)),
-		"speed": int(round(float(current_summary.get("speed", 0.0)) + equipment_speed_delta)),
+		"attack": int(round(float(player_stats.get_attack_with_effects(preview_bonuses)) * damage_multiplier)),
+		"defense": player_stats.get_defense_with_effects(preview_bonuses),
+		"max_hp": max(player_stats.get_max_hp_with_effects(preview_bonuses) + bonus_max_hp - dungeon_max_hp_penalty, 1),
+		"speed": int(round(player_stats.get_speed_with_effects(preview_bonuses))),
 	}
 
 
@@ -838,9 +1014,18 @@ func reset_all_talents() -> void:
 func start_dungeon_run() -> void:
 	dungeon_run_loot.clear()
 	dungeon_max_hp_penalty = 0
+	dungeon_max_hp_penalty_percent = 0
+	dungeon_max_hp_reference = 0
+	current_dungeon_floor = 0
+	_run_stat_modifiers.clear()
+	_floor_stat_modifiers.clear()
+	_refresh_runtime_stat_modifiers()
 	clear_dungeon_buffs()
 	undying_will_available = player_stats.has_undying_will()
 	execute_skill_armed = false
+	shadow_combo_count = 0
+	shadow_guaranteed_crit_ready = false
+	dragon_guard_trigger_floor = -1
 	sprint_skill_time_left = 0.0
 	sprint_skill_multiplier = 1.0
 	var skill_system: Variant = _skill_system()
@@ -849,6 +1034,8 @@ func start_dungeon_run() -> void:
 	var achievement_manager: Variant = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null:
 		achievement_manager.start_dungeon_run()
+	dungeon_max_hp_reference = max(max_hp, 1)
+	run_max_hp_penalty_changed.emit(dungeon_max_hp_penalty_percent)
 
 
 func finish_dungeon_run(safe_return: bool) -> void:
@@ -857,11 +1044,21 @@ func finish_dungeon_run(safe_return: bool) -> void:
 		equipment_system.apply_death_penalty()
 	dungeon_run_loot.clear()
 	dungeon_max_hp_penalty = 0
+	dungeon_max_hp_penalty_percent = 0
+	dungeon_max_hp_reference = 0
+	current_dungeon_floor = 0
+	_run_stat_modifiers.clear()
+	_floor_stat_modifiers.clear()
+	_refresh_runtime_stat_modifiers()
 	clear_dungeon_buffs()
 	execute_skill_armed = false
+	shadow_combo_count = 0
+	shadow_guaranteed_crit_ready = false
+	dragon_guard_trigger_floor = -1
 	sprint_skill_time_left = 0.0
 	sprint_skill_multiplier = 1.0
 	_refresh_all_stats()
+	run_max_hp_penalty_changed.emit(dungeon_max_hp_penalty_percent)
 	_save_persistent_state()
 
 
@@ -878,6 +1075,45 @@ func lose_dungeon_run_loot() -> void:
 		inventory.remove_item(str(entry.get("id", "")), int(entry.get("quantity", 0)))
 
 
+func get_dungeon_run_summary() -> Dictionary:
+	var coins_gained: int = 0
+	var coins_lost: int = 0
+	var equips_gained: int = 0
+	for entry: Dictionary in dungeon_run_loot:
+		var item_id: String = str(entry.get("id", ""))
+		var quantity: int = int(entry.get("quantity", 0))
+		if item_id == "" or quantity <= 0:
+			continue
+		var item_data: Dictionary = ITEM_DATABASE.get_item(item_id)
+		if str(item_data.get("type", "")) == "equipment":
+			equips_gained += quantity
+		coins_gained += _get_currency_copper_value(item_id, quantity)
+		var current_quantity: int = inventory.get_item_count(item_id) if inventory != null else 0
+		coins_lost += _get_currency_copper_value(item_id, mini(quantity, current_quantity))
+	return {
+		"coins_gained": coins_gained,
+		"coins_lost": coins_lost,
+		"equips_gained": equips_gained,
+		"loot_items": dungeon_run_loot.duplicate(true),
+	}
+
+
+func _get_currency_copper_value(item_id: String, quantity: int) -> int:
+	if quantity <= 0:
+		return 0
+	match item_id:
+		"gold":
+			return quantity * 1000
+		"silver":
+			return quantity * 10
+		"copper":
+			return quantity
+		"wooden_coin":
+			return int(floor(float(quantity) / 10.0))
+		_:
+			return 0
+
+
 func show_status_message(message: String, color: Color = Color.WHITE, duration: float = 2.0) -> void:
 	status_message_requested.emit(message, color, duration)
 
@@ -886,16 +1122,22 @@ func get_run_max_hp_penalty() -> int:
 	return dungeon_max_hp_penalty
 
 
+func get_run_max_hp_penalty_percent() -> int:
+	return dungeon_max_hp_penalty_percent
+
+
 func sacrifice_max_hp_percent_for_run(percent: float) -> int:
 	if percent <= 0.0:
 		return 0
-	var sacrifice_amount: int = maxi(int(ceil(float(max_hp) * percent)), 1)
+	if dungeon_max_hp_reference <= 0:
+		dungeon_max_hp_reference = max(max_hp, 1)
+	var sacrifice_amount: int = maxi(int(ceil(float(dungeon_max_hp_reference) * percent)), 1)
 	if max_hp - sacrifice_amount < 1:
 		return 0
 	dungeon_max_hp_penalty += sacrifice_amount
+	dungeon_max_hp_penalty_percent += maxi(int(round(percent * 100.0)), 1)
 	_refresh_all_stats()
-	current_hp = mini(current_hp, max_hp)
-	hp_changed.emit(current_hp, max_hp)
+	run_max_hp_penalty_changed.emit(dungeon_max_hp_penalty_percent)
 	return sacrifice_amount
 
 
@@ -1012,9 +1254,20 @@ func _on_player_stats_changed() -> void:
 
 
 func _on_equipment_changed() -> void:
-	player_stats.set_equipment_bonuses(equipment_system.get_total_bonus_map())
-	equipment_lifesteal_ratio = float(equipment_system.get_total_bonus_map().get("lifesteal_ratio", 0.0))
+	var bonus_map: Dictionary = equipment_system.get_total_bonus_map()
+	player_stats.set_equipment_bonuses(bonus_map)
+	equipment_lifesteal_ratio = float(bonus_map.get("lifesteal_ratio", 0.0))
+	set_attack_cooldown_reduction = float(bonus_map.get("attack_cooldown_reduction", 0.0))
+	necromancer_summon_on_kill = float(bonus_map.get("necromancer_summon_on_kill", 0.0)) > 0.0
+	lava_burst_on_hit = float(bonus_map.get("lava_burst_on_hit", 0.0)) > 0.0
+	abyss_crit_heal = float(bonus_map.get("abyss_crit_heal", 0.0)) > 0.0
+	shadow_combo_crit = float(bonus_map.get("shadow_combo_crit", 0.0)) > 0.0
+	dragon_emergency_guard = float(bonus_map.get("dragon_emergency_guard", 0.0)) > 0.0
+	if not shadow_combo_crit:
+		shadow_combo_count = 0
+		shadow_guaranteed_crit_ready = false
 	_apply_legendary_passives()
+	_refresh_all_stats()
 	_save_persistent_state()
 
 
@@ -1047,27 +1300,50 @@ func set_consumable_slot(slot_index: int, item_id_val: String) -> void:
 
 func get_consumable_slots() -> Array[Dictionary]:
 	var slots: Array[Dictionary] = [{}, {}]
-	for stack in inventory.items:
+	var pinned_ids: Array[String] = [consumable_q_id, consumable_r_id]
+	var used_auto_ids: Array[String] = []
+	for slot_index: int in range(slots.size()):
+		var pinned_id: String = pinned_ids[slot_index]
+		if pinned_id == "":
+			continue
+		slots[slot_index] = _find_consumable_stack_by_id(pinned_id)
+		if not slots[slot_index].is_empty():
+			used_auto_ids.append(str(slots[slot_index].get("id", "")))
+	for slot_index: int in range(slots.size()):
+		if not slots[slot_index].is_empty():
+			continue
+		if pinned_ids[slot_index] != "":
+			continue
+		var fallback_stack: Dictionary = _find_next_available_consumable(used_auto_ids)
+		if fallback_stack.is_empty():
+			continue
+		slots[slot_index] = fallback_stack
+		used_auto_ids.append(str(fallback_stack.get("id", "")))
+	return slots
+
+
+func _find_consumable_stack_by_id(item_id: String) -> Dictionary:
+	if inventory == null or item_id == "":
+		return {}
+	for stack: Dictionary in inventory.items:
 		if str(stack.get("type", "")) != "consumable":
 			continue
-		var id: String = str(stack.get("id", ""))
-		if id == consumable_q_id:
-			slots[0] = stack.duplicate(true)
-		elif id == consumable_r_id:
-			slots[1] = stack.duplicate(true)
-	# Fall back: fill empty slots with any consumable not already pinned
-	if slots[0].is_empty() and slots[1].is_empty():
-		for stack in inventory.items:
-			if str(stack.get("type", "")) != "consumable":
-				continue
-			if slots[0].is_empty():
-				slots[0] = stack.duplicate(true)
-			elif str(stack.get("id", "")) != str(slots[0].get("id", "")):
-				slots[1] = stack.duplicate(true)
-				break
-	while slots.size() > 0 and (slots as Array).back().is_empty():
-		slots.pop_back()
-	return slots
+		if str(stack.get("id", "")) == item_id:
+			return stack.duplicate(true)
+	return {}
+
+
+func _find_next_available_consumable(excluded_ids: Array[String]) -> Dictionary:
+	if inventory == null:
+		return {}
+	for stack: Dictionary in inventory.items:
+		if str(stack.get("type", "")) != "consumable":
+			continue
+		var item_id: String = str(stack.get("id", ""))
+		if excluded_ids.has(item_id):
+			continue
+		return stack.duplicate(true)
+	return {}
 
 
 func use_second_consumable() -> bool:
@@ -1126,6 +1402,8 @@ func _use_consumable_at_slot(slot_index: int) -> bool:
 		_recalculate_buff_state()
 		show_status_message(LocaleManager.L("meal_buff_active"), Color(1.0, 0.85, 0.45, 1.0))
 	consumable_cooldown_left = BANDAGE_COOLDOWN
+	if inventory != null:
+		inventory.inventory_changed.emit()
 	return true
 
 
@@ -1200,4 +1478,3 @@ func _spawn_afterimage() -> void:
 	var tween: Tween = afterimage.create_tween()
 	tween.tween_property(afterimage, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(afterimage.queue_free)
-

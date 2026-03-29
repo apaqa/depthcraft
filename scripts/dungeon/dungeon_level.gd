@@ -7,42 +7,42 @@ signal buff_selection_requested(options: Array)
 signal floor_transition_requested(next_floor: int)
 signal victory_requested
 
-const SOURCE_FLOOR_1 := 0
-const SOURCE_FLOOR_2 := 1
-const SOURCE_FLOOR_3 := 2
-const SOURCE_TOP_LEFT := 100
-const SOURCE_TOP_MID := 101
-const SOURCE_TOP_RIGHT := 102
-const SOURCE_WALL_LEFT := 103
-const SOURCE_WALL_RIGHT := 104
-const SOURCE_WALL_MID := 105
+const SOURCE_FLOOR_1: int = 0
+const SOURCE_FLOOR_2: int = 1
+const SOURCE_FLOOR_3: int = 2
+const SOURCE_TOP_LEFT: int = 100
+const SOURCE_TOP_MID: int = 101
+const SOURCE_TOP_RIGHT: int = 102
+const SOURCE_WALL_LEFT: int = 103
+const SOURCE_WALL_RIGHT: int = 104
+const SOURCE_WALL_MID: int = 105
 
-const DUNGEON_GENERATOR := preload("res://scripts/dungeon/dungeon_generator.gd")
-const BUFF_SYSTEM := preload("res://scripts/dungeon/buff_system.gd")
-const DUNGEON_LOOT := preload("res://scripts/dungeon/dungeon_loot.gd")
-const STAIRWAY_SCENE := preload("res://scenes/dungeon/stairway.tscn")
-const MELEE_ENEMY_SCENE := preload("res://scenes/enemies/melee_enemy.tscn")
-const RANGED_ENEMY_SCENE := preload("res://scenes/enemies/ranged_enemy.tscn")
-const SHIELD_ORC_SCENE := preload("res://scenes/enemies/shield_orc_enemy.tscn")
-const BAT_SWARM_SCENE := preload("res://scenes/enemies/bat_swarm_enemy.tscn")
+const DUNGEON_GENERATOR: Script = preload("res://scripts/dungeon/dungeon_generator.gd")
+const BUFF_SYSTEM: Script = preload("res://scripts/dungeon/buff_system.gd")
+const DUNGEON_LOOT: Script = preload("res://scripts/dungeon/dungeon_loot.gd")
+const STAIRWAY_SCENE: PackedScene = preload("res://scenes/dungeon/stairway.tscn")
+const MELEE_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/melee_enemy.tscn")
+const RANGED_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/ranged_enemy.tscn")
+const SHIELD_ORC_SCENE: PackedScene = preload("res://scenes/enemies/shield_orc_enemy.tscn")
+const BAT_SWARM_SCENE: PackedScene = preload("res://scenes/enemies/bat_swarm_enemy.tscn")
 const SLIME_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/slime_enemy.tscn")
 const SHADOW_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/shadow_enemy.tscn")
 const GARGOYLE_SCENE: PackedScene = preload("res://scenes/enemies/gargoyle_enemy.tscn")
 const MIMIC_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/mimic_enemy.tscn")
-const ELITE_ENEMY_SCENE := preload("res://scenes/enemies/elite_enemy.tscn")
-const BOSS_ENEMY_SCENE := preload("res://scenes/enemies/boss_enemy.tscn")
+const ELITE_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/elite_enemy.tscn")
+const BOSS_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/boss_enemy.tscn")
 const NECROMANCER_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/necromancer_boss.tscn")
 const LAVA_GIANT_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/lava_giant_boss.tscn")
 const ABYSS_EYE_BOSS_SCENE: PackedScene = preload("res://scenes/enemies/abyss_eye_boss.tscn")
-const DUNGEON_CHEST_SCENE := preload("res://scenes/dungeon/dungeon_chest.tscn")
-const LOCKED_CHEST_SCENE := preload("res://scenes/dungeon/locked_chest.tscn")
-const SPIKE_TRAP_SCENE := preload("res://scenes/dungeon/spike_trap.tscn")
-const LOOT_DROP_SCENE := preload("res://scenes/dungeon/loot_drop.tscn")
-const EVENT_ROOM_SCRIPT := preload("res://scripts/dungeon/event_room.gd")
-const CHALLENGE_ROOM_SCRIPT := preload("res://scripts/dungeon/challenge_room.gd")
-const PUZZLE_ROOM_SCRIPT := preload("res://scripts/dungeon/puzzle_room.gd")
-const SAFE_ROOM_SCRIPT := preload("res://scripts/dungeon/safe_room.gd")
-const DUNGEON_MERCHANT_SCRIPT := preload("res://scripts/dungeon/dungeon_merchant.gd")
+const DUNGEON_CHEST_SCENE: PackedScene = preload("res://scenes/dungeon/dungeon_chest.tscn")
+const LOCKED_CHEST_SCENE: PackedScene = preload("res://scenes/dungeon/locked_chest.tscn")
+const SPIKE_TRAP_SCENE: PackedScene = preload("res://scenes/dungeon/spike_trap.tscn")
+const LOOT_DROP_SCENE: PackedScene = preload("res://scenes/dungeon/loot_drop.tscn")
+const EVENT_ROOM_SCRIPT: Script = preload("res://scripts/dungeon/event_room.gd")
+const CHALLENGE_ROOM_SCRIPT: Script = preload("res://scripts/dungeon/challenge_room.gd")
+const PUZZLE_ROOM_SCRIPT: Script = preload("res://scripts/dungeon/puzzle_room.gd")
+const SAFE_ROOM_SCRIPT: Script = preload("res://scripts/dungeon/safe_room.gd")
+const DUNGEON_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/dungeon_merchant.gd")
 const WISHING_WELL_SCRIPT: Script = preload("res://scripts/dungeon/wishing_well.gd")
 const DEMON_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/demon_merchant.gd")
 const TIMED_TREASURE_ROOM_SCRIPT: Script = preload("res://scripts/dungeon/timed_treasure_room.gd")
@@ -78,6 +78,7 @@ var _boss_door_tiles: Array[Vector2i] = []
 var _boss_door_blockers: Array[Node] = []
 var _decoration_texture_cache: Dictionary = {}
 var _decoration_frames_cache: Dictionary = {}
+var _room_decoration_root: Node2D = null
 
 
 func _ready() -> void:
@@ -226,15 +227,15 @@ func _update_player_ambient_light() -> void:
 	if existing != null:
 		existing.queue_free()
 	if current_floor >= 31:
-		var gradient := Gradient.new()
+		var gradient: Gradient = Gradient.new()
 		gradient.colors = PackedColorArray([Color(1.0, 1.0, 1.0, 1.0), Color(1.0, 1.0, 1.0, 0.0)])
 		gradient.offsets = PackedFloat32Array([0.0, 1.0])
-		var grad_tex := GradientTexture2D.new()
+		var grad_tex: GradientTexture2D = GradientTexture2D.new()
 		grad_tex.gradient = gradient
 		grad_tex.width = 128
 		grad_tex.height = 128
 		grad_tex.fill = GradientTexture2D.FILL_RADIAL
-		var light := PointLight2D.new()
+		var light: PointLight2D = PointLight2D.new()
 		light.name = "DungeonAmbientLight"
 		light.texture = grad_tex
 		light.energy = 0.6
@@ -278,7 +279,6 @@ func _spawn_features() -> void:
 		var room: Rect2i = rooms[room_index]
 		var features: Dictionary = room_features[room_index] if room_index < room_features.size() else {}
 		var room_type: String = str(room_types[room_index])
-		_spawn_room_decorations(room, room_index)
 		_spawn_special_room_visuals(room, features)
 		if bool(features.get("event", false)):
 			_spawn_event_room(room, room_index)
@@ -367,6 +367,7 @@ func _spawn_enemies() -> void:
 			_spawn_boss_enemy(rooms[boss_room_index], rng)
 			_spawn_boss_locked_chest(rooms[boss_room_index], rng)
 
+	_spawn_room_decorations_for_all_rooms()
 	set_gameplay_paused(gameplay_paused)
 
 
@@ -375,7 +376,7 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	kills_changed.emit(total_kills)
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null:
-		var kill_kind := "normal"
+		var kill_kind: String = "normal"
 		if enemy_ref != null and enemy_ref.has_method("is_boss_enemy") and enemy_ref.is_boss_enemy():
 			kill_kind = "boss"
 		elif enemy_ref != null and enemy_ref.has_method("is_elite_enemy") and enemy_ref.is_elite_enemy():
@@ -442,12 +443,12 @@ func _random_point_in_room(room: Rect2i, rng: RandomNumberGenerator = null) -> V
 
 
 func _room_center_world(room: Rect2i) -> Vector2:
-	var center_tile := room.position + room.size / 2
+	var center_tile: Vector2i = room.position + room.size / 2
 	return Vector2(center_tile.x * 16 + 8, center_tile.y * 16 + 8)
 
 
 func _random_edge_point_in_room(room: Rect2i, rng: RandomNumberGenerator = null) -> Vector2:
-	var side := _rng_range(rng, 0, 3)
+	var side: int = _rng_range(rng, 0, 3)
 	var x: int
 	var y: int
 	match side:
@@ -601,15 +602,15 @@ func _pick_enemy_scene(floor_number: int, rng: RandomNumberGenerator) -> PackedS
 func _spawn_enemy_instance(enemy_scene: PackedScene, room: Rect2i, rng: RandomNumberGenerator) -> Array[Enemy]:
 	var spawned_enemies: Array[Enemy] = []
 	var enemy: Enemy = enemy_scene.instantiate()
-	var min_group := int(enemy.get("group_spawn_min")) if enemy.get("group_spawn_min") != null else 1
-	var max_group := int(enemy.get("group_spawn_max")) if enemy.get("group_spawn_max") != null else 1
+	var min_group: int = int(enemy.get("group_spawn_min")) if enemy.get("group_spawn_min") != null else 1
+	var max_group: int = int(enemy.get("group_spawn_max")) if enemy.get("group_spawn_max") != null else 1
 	var group_count: int = max(1, min_group)
 	if max_group > group_count:
 		group_count = _rng_range(rng, min_group, max_group)
 	enemy.queue_free()
 	for index in range(group_count):
 		var spawned_enemy: Enemy = enemy_scene.instantiate()
-		var offset := Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0)) * float(index)
+		var offset: Vector2 = Vector2(randf_range(-10.0, 10.0), randf_range(-10.0, 10.0)) * float(index)
 		spawned_enemy.global_position = _random_point_in_room(room, rng) + offset
 		spawned_enemy.configure_for_floor(player, current_floor, loot_root)
 		_apply_floor_scaling(spawned_enemy, 1.4, 1.25, 1.12 if current_floor >= 31 else 1.0)
@@ -686,7 +687,7 @@ func _spawn_secret_merchant_room(room: Rect2i, room_index: int) -> void:
 
 
 func _spawn_empty_room(room: Rect2i) -> void:
-	var pickup_count := randi_range(1, 3)
+	var pickup_count: int = randi_range(1, 3)
 	var resources: Array[String] = ["wood", "stone", "fiber"]
 	for _idx in range(pickup_count):
 		var drop = LOOT_DROP_SCENE.instantiate()
@@ -703,13 +704,13 @@ func _spawn_trap_room(room: Rect2i) -> void:
 
 
 func _spawn_special_room_visuals(room: Rect2i, room_feature: Dictionary) -> void:
-	var has_event := bool(room_feature.get("event", false))
-	var has_challenge := bool(room_feature.get("challenge", false))
+	var has_event: bool = bool(room_feature.get("event", false))
+	var has_challenge: bool = bool(room_feature.get("challenge", false))
 	if not has_event and not has_challenge:
 		return
 
-	var fill_color := Color(0.36, 0.14, 0.44, 0.30)
-	var border_color := Color(0.78, 0.42, 0.96, 0.90)
+	var fill_color: Color = Color(0.36, 0.14, 0.44, 0.30)
+	var border_color: Color = Color(0.78, 0.42, 0.96, 0.90)
 	if has_challenge and has_event:
 		fill_color = Color(0.50, 0.12, 0.22, 0.34)
 		border_color = Color(0.96, 0.48, 0.74, 0.94)
@@ -721,10 +722,10 @@ func _spawn_special_room_visuals(room: Rect2i, room_feature: Dictionary) -> void
 
 
 func _spawn_room_tint(room: Rect2i, fill_color: Color, border_color: Color) -> void:
-	var room_start := Vector2(room.position.x * 16, room.position.y * 16)
-	var room_end := Vector2(room.end.x * 16, room.end.y * 16)
+	var room_start: Vector2 = Vector2(room.position.x * 16, room.position.y * 16)
+	var room_end: Vector2 = Vector2(room.end.x * 16, room.end.y * 16)
 
-	var fill := Polygon2D.new()
+	var fill: Polygon2D = Polygon2D.new()
 	fill.z_index = -1
 	fill.color = fill_color
 	fill.polygon = PackedVector2Array([
@@ -735,7 +736,7 @@ func _spawn_room_tint(room: Rect2i, fill_color: Color, border_color: Color) -> v
 	])
 	feature_root.add_child(fill)
 
-	var border := Line2D.new()
+	var border: Line2D = Line2D.new()
 	border.z_index = -1
 	border.width = 2.0
 	border.default_color = border_color
@@ -772,8 +773,8 @@ func spawn_challenge_room_wave(room_index: int) -> Array:
 		return []
 
 	var room: Rect2i = rooms[room_index]
-	var rng := _create_room_rng(337, room_index)
-	var config := get_floor_spawn_config(current_floor, rng)
+	var rng: RandomNumberGenerator = _create_room_rng(337, room_index)
+	var config: Dictionary = get_floor_spawn_config(current_floor, rng)
 	var enemy_count: int = max(2, rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"])) * 2)
 	var spawned_enemies: Array = []
 	for _enemy_index in range(enemy_count):
@@ -790,8 +791,8 @@ func spawn_challenge_room_reward(room_index: int) -> void:
 		return
 
 	var room: Rect2i = rooms[room_index]
-	var center := _room_center_world(room)
-	var rng := _create_room_rng(389, room_index)
+	var center: Vector2 = _room_center_world(room)
+	var rng: RandomNumberGenerator = _create_room_rng(389, room_index)
 
 	var copper_drop = LOOT_DROP_SCENE.instantiate()
 	copper_drop.global_position = center + Vector2(randf_range(-18.0, 18.0), randf_range(-14.0, 14.0))
@@ -818,8 +819,8 @@ func _get_room_door_tiles(room: Rect2i) -> Array[Vector2i]:
 
 	for y in range(room.position.y, room.end.y):
 		for x in range(room.position.x, room.end.x):
-			var tile_pos := Vector2i(x, y)
-			var is_perimeter := x == room.position.x or x == room.end.x - 1 or y == room.position.y or y == room.end.y - 1
+			var tile_pos: Vector2i = Vector2i(x, y)
+			var is_perimeter: bool = x == room.position.x or x == room.end.x - 1 or y == room.position.y or y == room.end.y - 1
 			if not is_perimeter:
 				continue
 			for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
@@ -858,185 +859,130 @@ func _spawn_boss_merchant(room: Rect2i, room_index: int) -> void:
 	feature_root.add_child(merchant)
 
 
+func _spawn_room_decorations_for_all_rooms() -> void:
+	if _room_decoration_root == null or not is_instance_valid(_room_decoration_root):
+		_room_decoration_root = Node2D.new()
+		_room_decoration_root.name = "RoomDecorationRoot"
+		feature_root.add_child(_room_decoration_root)
+	for child: Node in _room_decoration_root.get_children():
+		child.queue_free()
+	var rooms: Array = floor_data.get("rooms", [])
+	for room_index: int in range(rooms.size()):
+		var room: Rect2i = rooms[room_index] as Rect2i
+		_spawn_room_decorations(room, room_index)
+
+
 func _spawn_room_decorations(room: Rect2i, room_index: int) -> void:
-	var decoration_rng: RandomNumberGenerator = _create_room_rng(463, room_index)
-	var decoration_specs: Array[Dictionary] = _get_room_decoration_specs()
-	if decoration_specs.is_empty():
+	if _room_decoration_root == null or not is_instance_valid(_room_decoration_root):
 		return
-	var decoration_count: int = decoration_rng.randi_range(2, 5)
-	var used_positions: Array[Vector2] = []
-	for _decoration_index: int in range(decoration_count):
-		var spec_index: int = decoration_rng.randi_range(0, decoration_specs.size() - 1)
-		var decoration_spec: Dictionary = decoration_specs[spec_index]
-		var decoration_node: Node2D = _create_room_decoration_node(decoration_spec, decoration_rng)
-		if decoration_node == null:
-			continue
-		var position_value: Variant = _pick_room_decoration_position(room, decoration_spec, used_positions, decoration_rng)
-		if not (position_value is Vector2):
-			decoration_node.queue_free()
-			continue
-		var world_position: Vector2 = position_value as Vector2
-		decoration_node.position = world_position
-		feature_root.add_child(decoration_node)
-		used_positions.append(world_position)
-
-
-func _get_room_decoration_specs() -> Array[Dictionary]:
-	var specs: Array[Dictionary] = []
+	var decoration_rng: RandomNumberGenerator = _create_room_rng(463, room_index)
+	var room_node: Node2D = Node2D.new()
+	room_node.name = "RoomDecorations_%d" % room_index
+	_room_decoration_root.add_child(room_node)
+	var wall_sides: PackedStringArray = PackedStringArray(["top", "bottom", "left", "right"])
 	if current_floor >= 31:
-		specs.append({
-			"placement": "wall",
-			"texture_paths": PackedStringArray(["res://assets/wall_gargoyle_blue_1.png", "res://assets/wall_gargoyle_blue_2.png"]),
-		})
-		specs.append({
-			"placement": "wall",
-			"texture_paths": PackedStringArray(["res://assets/column_wall.png"]),
-		})
-		specs.append({
-			"placement": "wall",
-			"preferred_side": "top",
-			"texture_paths": PackedStringArray(["res://assets/darkness_top.png"]),
-			"modulate": Color(1.0, 1.0, 1.0, 0.9),
-		})
-		specs.append({
-			"placement": "wall",
-			"preferred_side": "bottom",
-			"texture_paths": PackedStringArray(["res://assets/darkness_bottom.png"]),
-			"modulate": Color(1.0, 1.0, 1.0, 0.9),
-		})
-		specs.append({
-			"placement": "wall",
-			"preferred_side": "left",
-			"texture_paths": PackedStringArray(["res://assets/darkness_left.png"]),
-			"modulate": Color(1.0, 1.0, 1.0, 0.9),
-		})
-		specs.append({
-			"placement": "wall",
-			"preferred_side": "right",
-			"texture_paths": PackedStringArray(["res://assets/darkness_right.png"]),
-			"modulate": Color(1.0, 1.0, 1.0, 0.9),
-		})
-		return specs
+		for side_name: String in wall_sides:
+			_maybe_spawn_wall_decoration(room_node, room, decoration_rng, side_name, 0.15, PackedStringArray(["res://assets/wall_gargoyle_blue_1.png"]))
+			_maybe_spawn_wall_decoration(room_node, room, decoration_rng, side_name, 0.20, PackedStringArray(["res://assets/wall_banner_blue.png"]))
+		_spawn_corner_decorations(room_node, room, decoration_rng, "res://assets/column_wall.png", 0.30)
+		return
 	if current_floor >= 21:
-		specs.append({
-			"placement": "floor",
-			"texture_paths": PackedStringArray(["res://assets/floor_gargoyle_red_basin.png"]),
-		})
-		specs.append({
-			"placement": "wall",
-			"texture_paths": PackedStringArray(["res://assets/wall_gargoyle_red_1.png", "res://assets/wall_gargoyle_red_2.png"]),
-		})
-		specs.append({
-			"placement": "floor",
-			"texture_paths": PackedStringArray(["res://assets/floor_gargoyle_red_puddle.png"]),
-			"allow_flip_h": true,
-		})
-		return specs
+		for side_name: String in wall_sides:
+			_maybe_spawn_wall_decoration(room_node, room, decoration_rng, side_name, 0.15, PackedStringArray(["res://assets/wall_gargoyle_red_1.png"]))
+			_maybe_spawn_wall_decoration(room_node, room, decoration_rng, side_name, 0.20, PackedStringArray(["res://assets/wall_banner_red.png"]))
+		if decoration_rng.randf() <= 0.10:
+			_add_static_room_decoration(room_node, "res://assets/floor_gargoyle_red_basin.png", _room_center_world(room))
+		return
 	if current_floor >= 11:
-		specs.append({
-			"placement": "wall",
-			"texture_paths": PackedStringArray(["res://assets/wall_goo.png"]),
-			"allow_flip_h": true,
-		})
-		specs.append({
-			"placement": "floor",
-			"texture_paths": PackedStringArray(["res://assets/skull.png"]),
-			"rotation_range": 20.0,
-		})
-		specs.append({
-			"placement": "wall",
-			"texture_paths": PackedStringArray(["res://assets/wall_drain_gate.png"]),
-		})
-		specs.append({
-			"placement": "floor",
-			"texture_paths": PackedStringArray(["res://assets/icons/kyrise/bone01a.png"]),
-			"rotation_range": 18.0,
-			"scale_min": 0.9,
-			"scale_max": 1.08,
-		})
-		return specs
-	specs.append({
-		"placement": "floor",
-		"texture_paths": PackedStringArray(["res://assets/column.png"]),
-	})
-	specs.append({
-		"placement": "wall",
-		"animated": true,
-		"frames_key": "stone_torch",
-		"frame_paths": PackedStringArray([
-			"res://assets/torch_1.png",
-			"res://assets/torch_2.png",
-			"res://assets/torch_3.png",
-			"res://assets/torch_4.png",
-			"res://assets/torch_5.png",
-			"res://assets/torch_6.png",
-			"res://assets/torch_7.png",
-			"res://assets/torch_8.png",
-		]),
-		"animation_speed": 8.0,
-	})
-	specs.append({
-		"placement": "floor",
-		"texture_paths": PackedStringArray(["res://assets/skull.png"]),
-		"rotation_range": 16.0,
-	})
-	specs.append({
-		"placement": "wall",
-		"texture_paths": PackedStringArray(["res://assets/wall_hole_1.png", "res://assets/wall_hole_2.png"]),
-		"allow_flip_h": true,
-	})
-	return specs
+		for side_name: String in wall_sides:
+			if decoration_rng.randf() <= 0.25:
+				var goo_position: Vector2 = _random_wall_decoration_point(room, decoration_rng, side_name)
+				_add_static_room_decoration(room_node, "res://assets/wall_goo_base.png", goo_position + Vector2(0.0, 6.0))
+				_add_static_room_decoration(room_node, "res://assets/wall_goo.png", goo_position)
+			_maybe_spawn_wall_decoration(room_node, room, decoration_rng, side_name, 0.10, PackedStringArray([
+				"res://assets/wall_banner_red.png",
+				"res://assets/wall_banner_green.png",
+			]))
+		_spawn_floor_skulls(room_node, room, decoration_rng)
+		return
+	for side_name: String in wall_sides:
+		_maybe_spawn_wall_decoration(room_node, room, decoration_rng, side_name, 0.20, PackedStringArray([
+			"res://assets/wall_hole_1.png",
+			"res://assets/wall_hole_2.png",
+		]))
+		if decoration_rng.randf() <= 0.40:
+			_add_torch_room_decoration(room_node, _random_wall_decoration_point(room, decoration_rng, side_name))
+	_spawn_corner_decorations(room_node, room, decoration_rng, "res://assets/column.png", 0.30)
 
 
-func _create_room_decoration_node(decoration_spec: Dictionary, rng: RandomNumberGenerator) -> Node2D:
-	if bool(decoration_spec.get("animated", false)):
-		var frame_paths_variant: Variant = decoration_spec.get("frame_paths", PackedStringArray())
-		var frame_paths: PackedStringArray = PackedStringArray()
-		if frame_paths_variant is PackedStringArray:
-			frame_paths = frame_paths_variant
-		var frames_key: String = str(decoration_spec.get("frames_key", ""))
-		var animation_speed: float = float(decoration_spec.get("animation_speed", 6.0))
-		var frames: SpriteFrames = _get_or_build_decoration_frames(frames_key, frame_paths, animation_speed)
-		if frames.get_frame_count("default") <= 0:
-			return null
-		var animated_sprite: AnimatedSprite2D = AnimatedSprite2D.new()
-		animated_sprite.sprite_frames = frames
-		animated_sprite.animation = &"default"
-		animated_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		animated_sprite.play()
-		return animated_sprite
+func _maybe_spawn_wall_decoration(room_node: Node2D, room: Rect2i, rng: RandomNumberGenerator, side_name: String, chance: float, texture_paths: PackedStringArray) -> void:
+	if rng.randf() > chance or texture_paths.is_empty():
+		return
+	var texture_path: String = texture_paths[rng.randi_range(0, texture_paths.size() - 1)]
+	var world_position: Vector2 = _random_wall_decoration_point(room, rng, side_name)
+	_add_static_room_decoration(room_node, texture_path, world_position)
 
-	var texture_paths_variant: Variant = decoration_spec.get("texture_paths", PackedStringArray())
-	var texture_paths: PackedStringArray = PackedStringArray()
-	if texture_paths_variant is PackedStringArray:
-		texture_paths = texture_paths_variant
-	if texture_paths.is_empty():
-		return null
-	var texture_path: String = texture_paths[0]
-	if texture_paths.size() > 1:
-		texture_path = texture_paths[rng.randi_range(0, texture_paths.size() - 1)]
+
+func _spawn_corner_decorations(room_node: Node2D, room: Rect2i, rng: RandomNumberGenerator, texture_path: String, chance: float) -> void:
+	for corner_index: int in range(4):
+		if rng.randf() > chance:
+			continue
+		_add_static_room_decoration(room_node, texture_path, _get_room_anchor_world(room, corner_index))
+
+
+func _spawn_floor_skulls(room_node: Node2D, room: Rect2i, rng: RandomNumberGenerator) -> void:
+	var placed_count: int = 0
+	for tile_y: int in range(room.position.y + 1, room.end.y - 1):
+		for tile_x: int in range(room.position.x + 1, room.end.x - 1):
+			if placed_count >= 3:
+				return
+			if rng.randf() > 0.05:
+				continue
+			var skull_position: Vector2 = Vector2(tile_x * 16 + 8, tile_y * 16 + 8)
+			_add_static_room_decoration(
+				room_node,
+				"res://assets/skull.png",
+				skull_position + Vector2(rng.randf_range(-2.0, 2.0), rng.randf_range(-2.0, 2.0)),
+				rng.randf_range(-15.0, 15.0)
+			)
+			placed_count += 1
+
+
+func _add_torch_room_decoration(room_node: Node2D, world_position: Vector2) -> void:
+	var frame_paths: PackedStringArray = PackedStringArray([
+		"res://assets/torch_1.png",
+		"res://assets/torch_2.png",
+		"res://assets/torch_3.png",
+		"res://assets/torch_4.png",
+		"res://assets/torch_5.png",
+		"res://assets/torch_6.png",
+		"res://assets/torch_7.png",
+		"res://assets/torch_8.png",
+	])
+	var frames: SpriteFrames = _get_or_build_decoration_frames("stone_wall_torch", frame_paths, 8.0)
+	if frames.get_frame_count("default") <= 0:
+		return
+	var torch_sprite: AnimatedSprite2D = AnimatedSprite2D.new()
+	torch_sprite.position = world_position
+	torch_sprite.z_index = -1
+	torch_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	torch_sprite.sprite_frames = frames
+	torch_sprite.animation = &"default"
+	torch_sprite.play()
+	room_node.add_child(torch_sprite)
+
+
+func _add_static_room_decoration(room_node: Node2D, texture_path: String, world_position: Vector2, rotation_degrees: float = 0.0) -> void:
 	var texture: Texture2D = _load_decoration_texture(texture_path)
 	if texture == null:
-		return null
+		return
 	var sprite: Sprite2D = Sprite2D.new()
 	sprite.texture = texture
+	sprite.position = world_position
+	sprite.rotation_degrees = rotation_degrees
+	sprite.z_index = -1
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	if bool(decoration_spec.get("allow_flip_h", false)) and rng.randf() <= 0.5:
-		sprite.flip_h = true
-	if bool(decoration_spec.get("allow_flip_v", false)) and rng.randf() <= 0.5:
-		sprite.flip_v = true
-	var rotation_range: float = float(decoration_spec.get("rotation_range", 0.0))
-	if rotation_range > 0.0:
-		sprite.rotation_degrees = rng.randf_range(-rotation_range, rotation_range)
-	var scale_min: float = float(decoration_spec.get("scale_min", 1.0))
-	var scale_max: float = float(decoration_spec.get("scale_max", scale_min))
-	var scale_value: float = scale_min
-	if scale_max > scale_min:
-		scale_value = rng.randf_range(scale_min, scale_max)
-	sprite.scale = Vector2.ONE * scale_value
-	if decoration_spec.has("modulate"):
-		sprite.modulate = decoration_spec.get("modulate", Color.WHITE)
-	return sprite
+	room_node.add_child(sprite)
 
 
 func _load_decoration_texture(texture_path: String) -> Texture2D:
@@ -1064,37 +1010,6 @@ func _get_or_build_decoration_frames(cache_key: String, frame_paths: PackedStrin
 	if cache_key != "":
 		_decoration_frames_cache[cache_key] = frames
 	return frames
-
-
-func _pick_room_decoration_position(room: Rect2i, decoration_spec: Dictionary, used_positions: Array[Vector2], rng: RandomNumberGenerator) -> Variant:
-	var placement: String = str(decoration_spec.get("placement", "floor"))
-	for _attempt_index: int in range(12):
-		var candidate: Vector2 = _random_point_in_room(room, rng)
-		if placement == "wall":
-			candidate = _random_wall_decoration_point(room, rng, str(decoration_spec.get("preferred_side", "any")))
-		elif placement == "edge":
-			candidate = _random_edge_point_in_room(room, rng)
-		if candidate.distance_to(_room_center_world(room)) < 18.0:
-			continue
-		if _position_is_too_close(candidate, used_positions, 20.0):
-			continue
-		var reserved_positions: Array[Vector2] = [
-			_get_room_anchor_world(room, 0),
-			_get_room_anchor_world(room, 1),
-			_get_room_anchor_world(room, 2),
-			_get_room_anchor_world(room, 3),
-		]
-		if _position_is_too_close(candidate, reserved_positions, 18.0):
-			continue
-		return candidate
-	return null
-
-
-func _position_is_too_close(candidate: Vector2, points: Array[Vector2], minimum_distance: float) -> bool:
-	for point: Vector2 in points:
-		if candidate.distance_to(point) < minimum_distance:
-			return true
-	return false
 
 
 func _random_wall_decoration_point(room: Rect2i, rng: RandomNumberGenerator, preferred_side: String = "any") -> Vector2:
@@ -1125,20 +1040,9 @@ func _random_wall_decoration_point(room: Rect2i, rng: RandomNumberGenerator, pre
 	return Vector2(tile_x * 16 + 8, tile_y * 16 + 8) + offset
 
 
-func _try_spawn_wishing_well(room: Rect2i, room_index: int, room_type: String, room_features: Dictionary) -> bool:
-	var spawn_room_index: int = int(floor_data.get("spawn_room_index", -1))
-	var exit_room_index: int = int(floor_data.get("exit_room_index", -1))
-	if room_index == spawn_room_index or room_index == exit_room_index:
-		return false
-	if room_type == "boss" or room_type == "treasure" or room_type == "trap" or room_type == "secret_merchant" or room_type == "elite":
-		return false
-	if bool(room_features.get("event", false)) or bool(room_features.get("challenge", false)) or bool(room_features.get("puzzle", false)) or bool(room_features.get("boss_merchant", false)):
-		return false
-	var eligible_room: bool = bool(room_features.get("safe", false)) or room_type == "normal" or room_type == "empty"
-	if not eligible_room:
-		return false
+func _try_spawn_wishing_well(room: Rect2i, room_index: int) -> bool:
 	var room_rng: RandomNumberGenerator = _create_room_rng(541, room_index)
-	if room_rng.randf() > 0.10:
+	if room_rng.randf() > 0.50:
 		return false
 	var well: Area2D = WISHING_WELL_SCRIPT.new() as Area2D
 	if well == null:
@@ -1151,15 +1055,20 @@ func _try_spawn_wishing_well(room: Rect2i, room_index: int, room_type: String, r
 
 
 func _try_spawn_demon_merchant(room: Rect2i, room_index: int, room_type: String, room_features: Dictionary) -> bool:
-	if current_floor < 15:
+	if current_floor < 10:
 		return false
 	var spawn_room_index: int = int(floor_data.get("spawn_room_index", -1))
 	var exit_room_index: int = int(floor_data.get("exit_room_index", -1))
 	if room_index == spawn_room_index or room_index == exit_room_index:
 		return false
-	if room_type != "normal" and room_type != "empty":
+	if room_type == "boss" or room_type == "secret_merchant":
 		return false
-	if bool(room_features.get("safe", false)) or bool(room_features.get("event", false)) or bool(room_features.get("challenge", false)) or bool(room_features.get("puzzle", false)) or bool(room_features.get("boss_merchant", false)):
+	if bool(room_features.get("boss_merchant", false)):
+		return false
+	var is_special_room: bool = room_type == "treasure" or room_type == "trap" or room_type == "elite"
+	if bool(room_features.get("event", false)) or bool(room_features.get("challenge", false)) or bool(room_features.get("puzzle", false)) or bool(room_features.get("safe", false)):
+		is_special_room = true
+	if not is_special_room:
 		return false
 	var room_rng: RandomNumberGenerator = _create_room_rng(577, room_index)
 	if room_rng.randf() > 0.05:
@@ -1237,10 +1146,10 @@ func _spawn_arrow_trap_launcher(tile_pos: Vector2i, direction: Vector2, initial_
 
 
 func _spawn_boss_room_visual(room: Rect2i) -> void:
-	var room_start := Vector2(room.position.x * 16, room.position.y * 16)
-	var room_end := Vector2(room.end.x * 16, room.end.y * 16)
+	var room_start: Vector2 = Vector2(room.position.x * 16, room.position.y * 16)
+	var room_end: Vector2 = Vector2(room.end.x * 16, room.end.y * 16)
 
-	var fill := Polygon2D.new()
+	var fill: Polygon2D = Polygon2D.new()
 	fill.color = Color(0.55, 0.12, 0.12, 0.22)
 	fill.polygon = PackedVector2Array([
 		room_start,
@@ -1250,7 +1159,7 @@ func _spawn_boss_room_visual(room: Rect2i) -> void:
 	])
 	feature_root.add_child(fill)
 
-	var border := Line2D.new()
+	var border: Line2D = Line2D.new()
 	border.width = 3.0
 	border.default_color = Color(1.0, 0.42, 0.18, 0.95)
 	border.closed = true
@@ -1486,7 +1395,7 @@ func get_spawn_position(spawn_override: Variant = null) -> Vector2:
 
 
 func _create_rng(offset: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = int(level_seed) + current_floor * 1009 + offset
 	return rng
 
@@ -1505,8 +1414,8 @@ func _create_room_rng(offset: int, room_index: int) -> RandomNumberGenerator:
 
 func _shuffle_with_rng(values: Array[int], rng: RandomNumberGenerator) -> void:
 	for index in range(values.size() - 1, 0, -1):
-		var swap_index := rng.randi_range(0, index)
-		var current_value := values[index]
+		var swap_index: int = rng.randi_range(0, index)
+		var current_value: int = values[index]
 		values[index] = values[swap_index]
 		values[swap_index] = current_value
 
