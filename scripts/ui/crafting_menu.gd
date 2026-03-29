@@ -941,9 +941,10 @@ func _repair_translate_slot(slot_name: String) -> String:
 # Forge tab
 # ---------------------------------------------------------------------------
 func _apply_forge_mode_layout(is_forge: bool) -> void:
-	detail_text.visible = not is_forge
-	materials_container.visible = not is_forge
-	craft_button.visible = not is_forge
+	if _current_category != "repair":
+		detail_text.visible = not is_forge
+		materials_container.visible = not is_forge
+		craft_button.visible = not is_forge
 	if upgrade_label != null:
 		upgrade_label.visible = false
 	if upgrade_button != null:

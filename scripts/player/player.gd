@@ -819,6 +819,22 @@ func has_talent(talent_id: String) -> bool:
 	return unlocked_talents.has(talent_id)
 
 
+func reset_all_talents() -> void:
+	if unlocked_talents.is_empty():
+		return
+	var total_cost: int = 0
+	for talent_id: String in unlocked_talents:
+		var talent: Dictionary = TALENT_DATA.get_talent(talent_id)
+		total_cost += int(talent.get("cost", 0))
+	var refund: int = int(floor(float(total_cost) * 0.9))
+	unlocked_talents.clear()
+	player_stats.rebuild_talent_bonuses(unlocked_talents)
+	if refund > 0:
+		inventory.add_item("talent_shard", refund)
+	_refresh_all_stats()
+	_save_persistent_state()
+
+
 func start_dungeon_run() -> void:
 	dungeon_run_loot.clear()
 	dungeon_max_hp_penalty = 0

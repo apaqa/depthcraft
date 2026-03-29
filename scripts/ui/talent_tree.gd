@@ -11,9 +11,9 @@ class TalentMapCanvas:
 
 
 const TALENT_DATA = preload("res://scripts/talent/talent_data.gd")
-const NODE_ICON_LOCKED = preload("res://assets/icons/kyrise/spellbook_01a.png")
-const NODE_ICON_AVAILABLE = preload("res://assets/icons/kyrise/spellbook_01b.png")
-const NODE_ICON_UNLOCKED = preload("res://assets/icons/kyrise/spellbook_01c.png")
+const BRANCH_ICON_OFFENSE: Texture2D = preload("res://assets/icons/kyrise/book_01e.png")
+const BRANCH_ICON_DEFENSE: Texture2D = preload("res://assets/icons/kyrise/book_01c.png")
+const BRANCH_ICON_SUPPORT: Texture2D = preload("res://assets/icons/kyrise/book_01b.png")
 
 const BASE_MAP_SIZE = Vector2(4000, 4000)
 const MAP_CENTER = Vector2(2000, 2000)
@@ -74,6 +74,7 @@ var branch_focus_points: Dictionary = {}
 var zoom_level: float = 1.0
 var dragging_map: bool = false
 var last_drag_position: Vector2 = Vector2.ZERO
+var _reset_confirm_dialog: ConfirmationDialog = null
 
 
 func _ready() -> void:
@@ -87,6 +88,7 @@ func _ready() -> void:
 	_setup_top_controls()
 	_setup_detail_panel()
 	_ensure_close_button()
+	_setup_reset_button()
 	_update_zoom()
 	var tt_style: StyleBoxFlat = StyleBoxFlat.new()
 	tt_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
@@ -349,19 +351,25 @@ func _apply_node_visuals(talent: Dictionary) -> void:
 	button.add_theme_stylebox_override("pressed", _make_circle_style(fill_color.darkened(0.08), Color.WHITE, 3))
 	button.add_theme_stylebox_override("focus", _make_circle_style(fill_color, Color.WHITE, 4))
 	if icon_rect != null:
-		icon_rect.texture = _get_state_icon(state)
+		icon_rect.texture = _get_branch_icon(branch_id)
+		if state == "locked":
+			icon_rect.modulate = Color(0.4, 0.4, 0.4, 0.8)
+		else:
+			icon_rect.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	name_label.add_theme_color_override("font_color", label_color)
 	name_label.add_theme_font_size_override("font_size", 13)
 
 
-func _get_state_icon(state: String) -> Texture2D:
-	match state:
-		"available":
-			return NODE_ICON_AVAILABLE
-		"unlocked":
-			return NODE_ICON_UNLOCKED
+func _get_branch_icon(branch_id: String) -> Texture2D:
+	match branch_id:
+		"offense":
+			return BRANCH_ICON_OFFENSE
+		"defense":
+			return BRANCH_ICON_DEFENSE
+		"support":
+			return BRANCH_ICON_SUPPORT
 		_:
-			return NODE_ICON_LOCKED
+			return BRANCH_ICON_DEFENSE
 
 
 func _make_circle_style(fill_color: Color, border_color: Color, border_width: int) -> StyleBoxFlat:
@@ -601,3 +609,50 @@ func _ensure_close_button() -> void:
 	close_button.pressed.connect(close_menu)
 	add_child(close_button)
 	_update_close_btn_pos.call_deferred()
+
+
+func _setup_reset_button() -> void:
+	var top_bar: HBoxContainer = panel_container.get_node_or_null("MarginContainer/VBoxContainer/TopBar") as HBoxContainer
+	if top_bar == null or top_bar.get_node_or_null("ResetButton") != null:
+		return
+	var reset_btn: Button = Button.new()
+	reset_btn.name = "ResetButton"
+	reset_btn.text = "重置天賦"
+	reset_btn.custom_minimum_size = Vector2(100, 36)
+	reset_btn.pressed.connect(_on_reset_button_pressed)
+	var reset_style_normal: StyleBoxFlat = StyleBoxFlat.new()
+	reset_style_normal.bg_color = Color(0.42, 0.12, 0.12, 0.95)
+	reset_style_normal.border_color = Color(0.75, 0.28, 0.28, 1.0)
+	reset_style_normal.border_width_left = 1
+	reset_style_normal.border_width_top = 1
+	reset_style_normal.border_width_right = 1
+	reset_style_normal.border_width_bottom = 1
+	var reset_style_hover: StyleBoxFlat = reset_style_normal.duplicate() as StyleBoxFlat
+	reset_style_hover.bg_color = Color(0.58, 0.18, 0.18, 0.95)
+	reset_btn.add_theme_stylebox_override("normal", reset_style_normal)
+	reset_btn.add_theme_stylebox_override("hover", reset_style_hover)
+	top_bar.add_child(reset_btn)
+
+	_reset_confirm_dialog = ConfirmationDialog.new()
+	_reset_confirm_dialog.title = "確認重置"
+	_reset_confirm_dialog.dialog_text = "重置所有天賦？將返還 90% 的天賦碎片。"
+	_reset_confirm_dialog.confirmed.connect(_on_reset_confirmed)
+	add_child(_reset_confirm_dialog)
+
+
+func _on_reset_button_pressed() -> void:
+	if player == null:
+		return
+	var unlocked_count: int = player.get_unlocked_talents().size()
+	if unlocked_count == 0:
+		return
+	if _reset_confirm_dialog != null:
+		_reset_confirm_dialog.popup_centered()
+
+
+func _on_reset_confirmed() -> void:
+	if player == null:
+		return
+	if player.has_method("reset_all_talents"):
+		player.reset_all_talents()
+	_refresh()
