@@ -7,6 +7,39 @@ const ROLE_GUARD: String = "guard"
 const ROLE_MERCHANT_ASSISTANT: String = "merchant_assistant"
 const ROLE_BLACKSMITH: String = "blacksmith"
 const ROLE_EXPLORER: String = "explorer"
+const ROLE_TRADER: String = "trader"
+
+const TRADER_TRIP_DURATION: int = 3
+
+const TRADER_LOOT_COMMON: Array = [
+	{"id": "wood", "min": 3, "max": 8},
+	{"id": "stone", "min": 3, "max": 8},
+	{"id": "iron_ore", "min": 2, "max": 5},
+	{"id": "fiber", "min": 3, "max": 6},
+	{"id": "copper", "min": 5, "max": 15},
+]
+const TRADER_LOOT_RARE: Array = [
+	{"id": "silver", "min": 1, "max": 3},
+	{"id": "gold", "min": 1, "max": 2},
+	{"id": "talent_shard", "min": 1, "max": 3},
+	{"id": "seed", "min": 2, "max": 5},
+]
+const TRADER_LOOT_SPECIAL: Array = [
+	{"id": "torch", "min": 2, "max": 4},
+	{"id": "bandage", "min": 2, "max": 3},
+	{"id": "herb_tea", "min": 1, "max": 2},
+	{"id": "bread", "min": 2, "max": 4},
+]
+const TRADER_LOOT_BLACK_MARKET: Array = [
+	{"id": "dagger", "min": 1, "max": 1},
+	{"id": "silver_ring", "min": 1, "max": 1},
+	{"id": "leather_cap", "min": 1, "max": 1},
+	{"id": "leather_vest", "min": 1, "max": 1},
+	{"id": "amulet", "min": 1, "max": 1},
+	{"id": "leather_boots", "min": 1, "max": 1},
+]
+# Trades completed required to reach each level (index = level - 1)
+const TRADER_LEVEL_THRESHOLDS: Array = [0, 3, 6, 10, 15]
 
 const DEFAULT_DAY: int = 1
 const FARMER_WHEAT_MIN: int = 1
@@ -42,6 +75,11 @@ const ROLE_BASE_STATS: Dictionary = {
 		"support": 3,
 		"vitality": 22,
 	},
+	ROLE_TRADER: {
+		"trade": 5,
+		"agility": 3,
+		"vitality": 18,
+	},
 }
 
 const ROLE_ORDER: PackedStringArray = [
@@ -50,6 +88,7 @@ const ROLE_ORDER: PackedStringArray = [
 	ROLE_MERCHANT_ASSISTANT,
 	ROLE_BLACKSMITH,
 	ROLE_EXPLORER,
+	ROLE_TRADER,
 ]
 
 const ROLE_DATA: Dictionary = {
@@ -91,6 +130,14 @@ const ROLE_DATA: Dictionary = {
 		"portraits": [
 			"res://assets/npc_elf.png",
 			"res://assets/npc_trickster.png",
+		],
+	},
+	ROLE_TRADER: {
+		"name_zh": "行商",
+		"name_en": "Trader",
+		"portraits": [
+			"res://assets/npc_merchant.png",
+			"res://assets/npc_merchant_2.png",
 		],
 	},
 }
@@ -206,8 +253,11 @@ func get_role_display_name(role: String) -> String:
 
 
 func get_dialog_text(npc_data: Dictionary) -> String:
+	var role: String = str(npc_data.get("role", ""))
 	var npc_name: String = str(npc_data.get("name", "旅人"))
-	var role_name: String = get_role_display_name(str(npc_data.get("role", "")))
+	if role == ROLE_TRADER:
+		return _get_trader_dialog(npc_data)
+	var role_name: String = get_role_display_name(role)
 	if _is_zh_locale():
 		return "你好旅行者，我是 %s，我擅長 %s。要我加入你的據點嗎？" % [npc_name, role_name]
 	return "Hello traveler, I'm %s, and I specialize as a %s. Want me to join your base?" % [npc_name, role_name]
@@ -294,6 +344,13 @@ func process_new_day(day: int, player: Node) -> Array[String]:
 		if total_wheat_harvested > 0 and "inventory" in player and player.inventory != null:
 			if player.inventory.add_item("wheat", total_wheat_harvested):
 				messages.append(_get_farmer_message(total_wheat_harvested))
+
+	# Process traders
+	for i: int in range(recruited_npcs.size()):
+		var npc_data: Dictionary = recruited_npcs[i]
+		if str(npc_data.get("role", "")) != ROLE_TRADER:
+			continue
+		_process_trader_day(npc_data, player, messages)
 
 	_last_processed_day = current_day
 	return messages
@@ -479,6 +536,126 @@ func _get_role_stat_total(role: String, stat_name: String, fallback_per_npc: int
 		var stats: Dictionary = npc_data.get("stats", {}) as Dictionary
 		total_value += int(stats.get(stat_name, fallback_per_npc))
 	return total_value
+
+
+## --- Trader logic ---
+
+func _process_trader_day(npc_data: Dictionary, player: Node, messages: Array[String]) -> void:
+	var next_trade_day: int = int(npc_data.get("next_trade_day", 0))
+	# First time: schedule first trip
+	if next_trade_day <= 0:
+		npc_data["next_trade_day"] = current_day + TRADER_TRIP_DURATION
+		return
+	# Not yet returned
+	if current_day < next_trade_day:
+		return
+	# Trader returns with goods
+	var trade_count: int = int(npc_data.get("trade_count", 0))
+	var trader_level: int = _get_trader_level(trade_count)
+	var loot: Array = _generate_trader_loot(trader_level, trade_count)
+	if player != null and "inventory" in player and player.inventory != null:
+		for entry_variant: Variant in loot:
+			var entry: Dictionary = entry_variant as Dictionary
+			var item_id: String = str(entry.get("id", ""))
+			var qty: int = int(entry.get("quantity", 1))
+			if item_id != "":
+				player.inventory.add_item(item_id, qty)
+		var npc_name: String = str(npc_data.get("name", "行商"))
+		messages.append(_get_trader_return_message(npc_name, trader_level, loot))
+	trade_count += 1
+	npc_data["trade_count"] = trade_count
+	npc_data["trader_level"] = _get_trader_level(trade_count)
+	npc_data["next_trade_day"] = current_day + TRADER_TRIP_DURATION
+
+
+func _get_trader_level(trade_count: int) -> int:
+	var level: int = 1
+	for i: int in range(TRADER_LEVEL_THRESHOLDS.size()):
+		if trade_count >= int(TRADER_LEVEL_THRESHOLDS[i]):
+			level = i + 1
+	return level
+
+
+func _generate_trader_loot(trader_level: int, trade_count: int) -> Array:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = int(hash("trader_loot:%d:%d" % [current_day, trade_count]))
+	var loot: Array = []
+	var item_count: int = 2 + mini(trader_level - 1, 2)  # 2 at level 1, up to 4
+	for _i: int in range(item_count):
+		var roll: float = rng.randf()
+		var entry: Dictionary = {}
+		if roll < 0.70:
+			entry = _pick_loot_entry(rng, TRADER_LOOT_COMMON, trader_level)
+		elif roll < 0.90:
+			entry = _pick_loot_entry(rng, TRADER_LOOT_RARE, trader_level)
+		elif roll < 0.98:
+			entry = _pick_loot_entry(rng, TRADER_LOOT_SPECIAL, 1)
+		else:
+			# Altar discovery — bonus gold + talent shard
+			loot.append({"id": "gold", "quantity": rng.randi_range(3, 5)})
+			loot.append({"id": "talent_shard", "quantity": rng.randi_range(2, 3)})
+			continue
+		if not entry.is_empty():
+			loot.append(entry)
+	# Black market bonus at level 5+
+	if trader_level >= 5 and not TRADER_LOOT_BLACK_MARKET.is_empty():
+		var bm_index: int = rng.randi_range(0, TRADER_LOOT_BLACK_MARKET.size() - 1)
+		var bm_entry: Dictionary = TRADER_LOOT_BLACK_MARKET[bm_index] as Dictionary
+		loot.append({"id": str(bm_entry.get("id", "")), "quantity": 1})
+	return loot
+
+
+func _pick_loot_entry(rng: RandomNumberGenerator, table: Array, level_bonus: int) -> Dictionary:
+	if table.is_empty():
+		return {}
+	var row: Dictionary = table[rng.randi_range(0, table.size() - 1)] as Dictionary
+	var base_min: int = int(row.get("min", 1))
+	var base_max: int = int(row.get("max", 1))
+	var bonus: int = level_bonus - 1  # extra range added per level above 1
+	var qty: int = rng.randi_range(base_min, base_max + bonus)
+	return {"id": str(row.get("id", "")), "quantity": qty}
+
+
+func _get_trader_return_message(npc_name: String, trader_level: int, loot: Array) -> String:
+	var loot_preview: String = ""
+	var shown: int = 0
+	for entry_variant: Variant in loot:
+		var entry: Dictionary = entry_variant as Dictionary
+		if shown >= 3:
+			loot_preview += "..."
+			break
+		if shown > 0:
+			loot_preview += ", "
+		loot_preview += "%s×%d" % [str(entry.get("id", "?")), int(entry.get("quantity", 1))]
+		shown += 1
+	if _is_zh_locale():
+		return "！ %s 帶回商品 [Lv%d]：%s" % [npc_name, trader_level, loot_preview]
+	return "! %s returned with goods [Lv%d]: %s" % [npc_name, trader_level, loot_preview]
+
+
+func _get_trader_dialog(npc_data: Dictionary) -> String:
+	var trader_level: int = int(npc_data.get("trader_level", 1))
+	var next_trade_day: int = int(npc_data.get("next_trade_day", 0))
+	var trade_count: int = int(npc_data.get("trade_count", 0))
+	var black_market_unlocked: bool = trader_level >= 5
+	if next_trade_day > 0 and current_day < next_trade_day:
+		var days_left: int = next_trade_day - current_day
+		if _is_zh_locale():
+			var bm_note: String = " ★ 黑市已開啟！" if black_market_unlocked else ""
+			return "我正在外出採購，%d 天後回來。[Lv%d | 交易%d次]%s" % [days_left, trader_level, trade_count, bm_note]
+		var bm_note: String = " ★ Black Market unlocked!" if black_market_unlocked else ""
+		return "Out trading, back in %d day(s). [Lv%d | %d trades]%s" % [days_left, trader_level, trade_count, bm_note]
+	if _is_zh_locale():
+		return "我已準備出發！3天後帶回好貨。[Lv%d | 交易%d次]" % [trader_level, trade_count]
+	return "Ready to depart! Back with goods in 3 days. [Lv%d | %d trades]" % [trader_level, trade_count]
+
+
+func has_trader_pending_goods() -> bool:
+	for npc_data: Dictionary in get_npcs_by_role(ROLE_TRADER):
+		var next_trade_day: int = int(npc_data.get("next_trade_day", 0))
+		if next_trade_day > 0 and current_day >= next_trade_day:
+			return true
+	return false
 
 
 func _is_zh_locale() -> bool:
