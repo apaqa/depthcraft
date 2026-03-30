@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/world/resource_node.tscn" id="1_nsv4q"]
-[ext_resource type="Texture2D" path="res://assets/assets2/tile_0360.png" id="2_2a01t"]
+[ext_resource type="Texture2D" path="res://assets/assets2/tile_0287.png" id="2_2a01t"]
 
 [node name="GrassNode" instance=ExtResource("1_nsv4q")]
 resource_id = "fiber"
@@ -16,4 +16,5 @@ bonus_drop_min = 1
 bonus_drop_max = 1
 
 [node name="Sprite2D" parent="." index="0"]
+scale = Vector2(0.3, 0.3)
 texture = ExtResource("2_2a01t")

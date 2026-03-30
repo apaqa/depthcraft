@@ -19,6 +19,7 @@ signal respawned
 var current_hits: int = 0
 var is_depleted: bool = false
 var permanently_depleted: bool = false
+var _original_scale: Vector2 = Vector2.ONE
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var body_collision: CollisionShape2D = $CollisionShape2D
@@ -27,7 +28,10 @@ var permanently_depleted: bool = false
 
 
 func _ready() -> void:
-	var timer := get_respawn_timer()
+	var current_sprite: Sprite2D = get_sprite()
+	if current_sprite != null:
+		_original_scale = current_sprite.scale
+	var timer: Timer = get_respawn_timer()
 	if timer != null and not timer.timeout.is_connected(respawn):
 		timer.timeout.connect(respawn)
 
@@ -47,13 +51,13 @@ func gather() -> void:
 	if is_depleted or permanently_depleted:
 		return
 
-	var quantity := randi_range(drop_quantity_min, drop_quantity_max)
+	var quantity: int = randi_range(drop_quantity_min, drop_quantity_max)
 	is_depleted = true
-	var collision := get_body_collision()
+	var collision: CollisionShape2D = get_body_collision()
 	if collision != null:
 		collision.disabled = true
 
-	var area_collision := get_interaction_collision()
+	var area_collision: CollisionShape2D = get_interaction_collision()
 	if area_collision != null:
 		area_collision.disabled = true
 	gathered.emit(resource_id, quantity)
@@ -62,7 +66,7 @@ func gather() -> void:
 	depleted.emit()
 	_play_depleted_feedback()
 
-	var timer := get_respawn_timer()
+	var timer: Timer = get_respawn_timer()
 	if respawn_time > 0.0 and timer != null:
 		timer.start(respawn_time)
 
@@ -72,16 +76,16 @@ func respawn() -> void:
 		return
 	current_hits = 0
 	is_depleted = false
-	var current_sprite := get_sprite()
+	var current_sprite: Sprite2D = get_sprite()
 	if current_sprite != null:
 		current_sprite.visible = true
 		current_sprite.scale = Vector2.ZERO
 
-	var collision := get_body_collision()
+	var collision: CollisionShape2D = get_body_collision()
 	if collision != null:
 		collision.disabled = false
 
-	var area_collision := get_interaction_collision()
+	var area_collision: CollisionShape2D = get_interaction_collision()
 	if area_collision != null:
 		area_collision.disabled = false
 	_play_respawn_feedback()
@@ -102,16 +106,16 @@ func set_permanently_depleted() -> void:
 	permanently_depleted = true
 	is_depleted = true
 	current_hits = hits_to_gather
-	var current_sprite := get_sprite()
+	var current_sprite: Sprite2D = get_sprite()
 	if current_sprite != null:
 		current_sprite.visible = false
-	var collision := get_body_collision()
+	var collision: CollisionShape2D = get_body_collision()
 	if collision != null:
 		collision.disabled = true
-	var area_collision := get_interaction_collision()
+	var area_collision: CollisionShape2D = get_interaction_collision()
 	if area_collision != null:
 		area_collision.disabled = true
-	var timer := get_respawn_timer()
+	var timer: Timer = get_respawn_timer()
 	if timer != null:
 		timer.stop()
 
@@ -125,7 +129,7 @@ func _get_action_verb() -> String:
 
 
 func _play_hit_feedback() -> void:
-	var current_sprite := get_sprite()
+	var current_sprite: Sprite2D = get_sprite()
 	if current_sprite == null:
 		return
 
@@ -134,30 +138,30 @@ func _play_hit_feedback() -> void:
 		return
 
 	current_sprite.position = Vector2.ZERO
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.tween_property(current_sprite, "position", Vector2(2, -1), 0.04)
 	tween.tween_property(current_sprite, "position", Vector2(-2, 1), 0.04)
 	tween.tween_property(current_sprite, "position", Vector2.ZERO, 0.05)
 
 
 func _play_depleted_feedback() -> void:
-	var current_sprite := get_sprite()
+	var current_sprite: Sprite2D = get_sprite()
 	if current_sprite == null:
 		return
-	current_sprite.scale = Vector2.ONE
-	var tween := create_tween()
+	current_sprite.scale = _original_scale
+	var tween: Tween = create_tween()
 	tween.tween_property(current_sprite, "scale", Vector2.ZERO, 0.3)
 	tween.tween_callback(func() -> void: current_sprite.visible = false)
 
 
 func _play_respawn_feedback() -> void:
-	var current_sprite := get_sprite()
+	var current_sprite: Sprite2D = get_sprite()
 	if current_sprite == null:
 		return
 	current_sprite.visible = true
 	current_sprite.scale = Vector2.ZERO
-	var tween := create_tween()
-	tween.tween_property(current_sprite, "scale", Vector2.ONE, 0.5)
+	var tween: Tween = create_tween()
+	tween.tween_property(current_sprite, "scale", _original_scale, 0.5)
 
 
 func get_sprite() -> Sprite2D:

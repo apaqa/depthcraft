@@ -5,11 +5,12 @@ signal border_flash_requested(color: Color)
 signal raid_started
 signal raid_countdown_changed(message: String, color: Color, visible: bool)
 
-const SOURCE_GRASS = 1
+const SOURCE_GRASS = 0
 const SOURCE_GRASS_ALT = 1
 const SOURCE_ROAD = 3
 const SOURCE_WATER = 5
 const SOURCE_WATER_ALT = 6
+const SOURCE_ROAD_ALT = 4
 const BASE_CLEAR_RADIUS = 128.0
 const TREE_SCENE = preload("res://scenes/world/tree_node.tscn")
 const ROCK_SCENE = preload("res://scenes/world/rock_node.tscn")
@@ -97,15 +98,28 @@ func place_player(player: Node2D, spawn_override: Variant = null) -> void:
 func build_ground() -> void:
 	tile_map_layer.clear()
 	var map_size: Vector2i = WorldGenerator.MAP_SIZE
+	var ground_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	ground_rng.seed = generation_seed ^ 0x6A55
 
 	for y in range(map_size.y):
 		for x in range(map_size.x):
 			var coords: Vector2i = Vector2i(x, y)
 			# Use generator road data (supports winding roads)
 			if _generator.is_road_tile(coords):
-				tile_map_layer.set_cell(coords, SOURCE_ROAD, Vector2i.ZERO)
+				# Randomly pick between two road sources: 3=dirt, 4=stony dirt
+				var road_src: int = SOURCE_ROAD
+				if ground_rng.randf() < 0.5:
+					road_src = SOURCE_ROAD_ALT
+				tile_map_layer.set_cell(coords, road_src, Vector2i.ZERO)
 				continue
-			tile_map_layer.set_cell(coords, SOURCE_GRASS, Vector2i.ZERO)
+			# Grass variety: 80% pure green (0), 10% white flowers (1), 10% yellow flowers (2)
+			var grass_roll: float = ground_rng.randf()
+			var grass_src: int = SOURCE_GRASS
+			if grass_roll > 0.9:
+				grass_src = 2
+			elif grass_roll > 0.8:
+				grass_src = SOURCE_GRASS_ALT
+			tile_map_layer.set_cell(coords, grass_src, Vector2i.ZERO)
 
 	tile_map_layer.update_internals()
 
