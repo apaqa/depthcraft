@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/portal.gd" id="1_0xsq8"]
-[ext_resource type="Texture2D" path="res://assets/floor_stairs.png" id="2_0uawm"]
+[ext_resource type="Texture2D" path="res://assets/assets2/tile_0325.png" id="2_0uawm"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_a2"]
 size = Vector2(14, 16)

@@ -8,7 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/portal.tscn" id="6_yx4j8"]
 [ext_resource type="PackedScene" path="res://scenes/world/grass_node.tscn" id="7_f1br0"]
 [ext_resource type="Script" path="res://scripts/world/raid_system.gd" id="8_raid"]
-[ext_resource type="Texture2D" path="res://assets/floor_stairs.png" id="9_stairs"]
+[ext_resource type="Texture2D" path="res://assets/assets2/tile_0325.png" id="9_stairs"]
 
 [node name="TestOverworld" type="Node2D"]
 script = ExtResource("1_tn6a4")

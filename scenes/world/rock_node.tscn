@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/world/resource_node.tscn" id="1_tiud5"]
-[ext_resource type="Texture2D" path="res://assets/monster_elemental_earth_small.png" id="2_c861x"]
+[ext_resource type="Texture2D" path="res://assets/assets2/Tiny Swords (Free Pack)/Rock1.png" id="2_c861x"]
 
 [node name="RockNode" instance=ExtResource("1_tiud5")]
 resource_id = "stone"

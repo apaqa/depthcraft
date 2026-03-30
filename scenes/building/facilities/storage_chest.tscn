@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/storage_chest.gd" id="1_qv3dm"]
-[ext_resource type="Texture2D" path="res://assets/chest_closed.png" id="2_1lsdb"]
+[ext_resource type="Texture2D" path="res://assets/assets2/Tiny Swords (Free Pack)/House3.png" id="2_1lsdb"]
 [ext_resource type="Script" path="res://scripts/inventory/inventory.gd" id="3_y9p3l"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_l2h7w"]

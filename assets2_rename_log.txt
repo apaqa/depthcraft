@@ -1,0 +1,109 @@
+﻿C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack - 複製 (5).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack_v6.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack - 複製 (6).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack_v7.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Attack_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\AttackLeft - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\AttackLeft_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\AttackRight - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\AttackRight_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Body1 - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Body1_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Body2 - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Body2_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\BodyEnd - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\BodyEnd_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\charge - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\charge_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Charge - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Charge_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Charge - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Charge_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Charge - 複製 (5).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Charge_v6.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Charge - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Charge_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\ChargeLeft - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\ChargeLeft_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\ChargeRight - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\ChargeRight_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (10).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v11.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (11).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v12.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (12).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v13.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (13).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v14.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (14).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v15.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (15).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v16.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (16).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v17.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (5).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v6.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (6).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v7.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (7).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v8.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (8).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v9.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製 (9).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v10.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Faceset_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Head - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Head_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (10).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v11.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (11).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v12.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (12).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v13.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (5).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v6.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (6).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v7.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (7).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v8.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (8).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v9.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製 (9).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v10.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Hit_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (10).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v11.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (11).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v12.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (12).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v13.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (13).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v14.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (5).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v6.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (6).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v7.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (7).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v8.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (8).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v9.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製 (9).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v10.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Idle_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump - 複製 (5).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump_v6.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Jump_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Preview - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Preview_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Sprite - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Sprite_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Sprite - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Sprite_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Sprite - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Sprite_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk - 複製 (5).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk_v6.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk - 複製 (6).png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk_v7.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Walk_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Boss\Wing - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Boss\Wing_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Archery - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Archery_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Archery - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Archery_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Archery - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Archery_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Archery - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Archery_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Banner - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Banner_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Barracks - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Barracks_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Barracks - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Barracks_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Barracks - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Barracks_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Barracks - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Barracks_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Castle - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Castle_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Castle - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Castle_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Castle - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Castle_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Castle - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Castle_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House1 - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House1_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House1 - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House1_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House1 - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House1_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House1 - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House1_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House2 - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House2_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House2 - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House2_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House2 - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House2_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House2 - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House2_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House3 - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House3_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House3 - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House3_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House3 - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House3_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House3 - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\House3_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Monastery - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Monastery_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Monastery - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Monastery_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Monastery - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Monastery_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Monastery - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Monastery_v2.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Tower - 複製 (2).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Tower_v3.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Tower - 複製 (3).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Tower_v4.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Tower - 複製 (4).png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Tower_v5.png
+C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Tower - 複製.png -> C:\Users\阮\dungeon-coop\assets\assets2\Tiny Swords (Free Pack)\Tower_v2.png

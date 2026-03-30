@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/wood_door.gd" id="1_v6xj3"]
-[ext_resource type="Texture2D" path="res://assets/door_closed.png" id="2_kt91d"]
+[ext_resource type="Texture2D" path="res://assets/assets2/tile_0334.png" id="2_kt91d"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_9rm0a"]
 size = Vector2(16, 16)

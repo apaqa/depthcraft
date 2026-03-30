@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/world/resource_node.tscn" id="1_5ifwq"]
-[ext_resource type="Texture2D" path="res://assets/monster_elemental_gold_short.png" id="2_f6876"]
+[ext_resource type="Texture2D" path="res://assets/assets2/Tiny Swords (Free Pack)/Gold Stone 3.png" id="2_f6876"]
 
 [node name="IronNode" instance=ExtResource("1_5ifwq")]
 resource_id = "iron_ore"

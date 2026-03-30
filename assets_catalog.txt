@@ -1,94 +1,418 @@
-# assets_catalog.txt - 素材對照表
+# DepthCraft 完整素材目錄（更新版 2026/03/31）
+# 格式：檔名 | 主色調 | 描述
+#
+# 素材包來源與路徑：
+#   res://assets/icons/kyrise/{檔名}.png — Kyrise 16x16 RPG Icon Pack
+#   res://assets/{檔名}.png — 0x72 DungeonTileset v1+v2（地牢用）
+#   res://assets/outdoor/{檔名}.png — Alex's Assets Outdoors（舊局外）
+#   res://assets/icons/{檔名}.png — Alex's Assets RPG Item Pack（Item_系列）
+#   res://assets/assets2/{檔名}.png — Tiny Swords + 混合素材（新局外用）★優先
+#   res://assets/assets2/Boss/{檔名}.gif — Boss 怪物動畫
 
-## res://assets/ (根目錄)
-資料夾路徑 | 檔名 | 描述
---- | --- | ---
-res://assets/ | angel_idle_anim_f0..f3 | 天使，待機動畫序列
-res://assets/ | angel_run_anim_f0..f3 | 天使，跑步動畫序列
-res://assets/ | big_demon_idle_anim_f0..f3 | 大型惡魔，待機動畫序列
-res://assets/ | big_demon_run_anim_f0..f3 | 大型惡魔，跑步動畫序列
-res://assets/ | big_zombie_idle_anim_f0..f3 | 大型殭屍，待機動畫序列
-res://assets/ | big_zombie_run_anim_f0..f3 | 大型殭屍，跑步動畫序列
-res://assets/ | bomb_f0..f2 | 炸彈，動畫序列
-res://assets/ | box / boxes_stacked | 木箱 / 堆疊的木箱，棕色
-res://assets/ | button_blue_up/down | 藍色按鈕，未按下與按下狀態
-res://assets/ | button_red_up/down | 紅色按鈕，未按下與按下狀態
-res://assets/ | chest_closed / chest_open_empty / chest_open_full | 寶箱，關閉/開啟(空)/開啟(滿)狀態
-res://assets/ | chest_empty_open_anim_f0..f2 | 空寶箱開啟動畫序列
-res://assets/ | chest_full_open_anim_f0..f2 | 滿寶箱開啟動畫序列
-res://assets/ | chest_golden_closed / open_empty / open_full | 黃金寶箱各狀態
-res://assets/ | chest_mimic_open_anim_f0..f2 | 擬態怪寶箱開啟動畫序列
-res://assets/ | chort_idle_anim_f0..f3 | 惡魔小鬼，待機動畫序列
-res://assets/ | chort_run_anim_f0..f3 | 惡魔小鬼，跑步動畫序列
-res://assets/ | coin_anim_f0..f3 | 金幣旋轉動畫序列
-res://assets/ | column / column_wall | 圓柱 / 牆面裝飾柱
-res://assets/ | crate | 貨物箱
-res://assets/ | darkness_bottom/top/left/right | 黑暗邊緣陰影
-res://assets/ | doc_idle_anim_f0..f3 | 醫生/學者，待機動畫序列
-res://assets/ | doc_run_anim_f0..f3 | 醫生/學者，跑步動畫序列
-res://assets/ | door_closed / door_open | 門，關閉與開啟狀態
-res://assets/ | dwarf_f_idle_anim_f0..f3 | 女性矮人，待機動畫序列
-res://assets/ | dwarf_m_idle_anim_f0..f3 | 男性矮人，待機動畫序列
-res://assets/ | elf_f_idle_anim_f0..f3 | 女性精靈，待機動畫序列
-res://assets/ | elf_m_idle_anim_f0..f3 | 男性精靈，待機動畫序列
-res://assets/ | flask_big_blue/green/red/yellow | 大型藥水瓶，各種顏色
-res://assets/ | floor_1..8 | 地板磚塊，多種款式
-res://assets/ | floor_spikes_anim_f0..f3 | 地板陷阱尖刺，伸縮動畫序列
-res://assets/ | goblin_idle_anim_f0..f3 | 哥布林，待機動畫序列
-res://assets/ | ice_zombie_anim_f0..f3 | 冰凍殭屍，動畫序列
-res://assets/ | knight_f_idle_anim_f0..f3 | 女性騎士，待機動畫序列
-res://assets/ | knight_m_idle_anim_f0..f3 | 男性騎士，待機動畫序列
-res://assets/ | lizard_f_idle_anim_f0..f3 | 女性蜥蜴人，待機動畫序列
-res://assets/ | lizard_m_idle_anim_f0..f3 | 男性蜥蜴人，待機動畫序列
-res://assets/ | masked_orc_idle_anim_f0..f3 | 蒙面獸人，待機動畫序列
-res://assets/ | monster_* | 多種怪物靜態圖 (bat, bies, demon, elemental 等)
-res://assets/ | npc_* | 多種 NPC 角色圖 (barbarian, merchant, mage, sage 等)
-res://assets/ | orc_shaman_idle_anim_f0..f3 | 獸人祭司，待機動畫序列
-res://assets/ | orc_warrior_idle_anim_f0..f3 | 獸人戰士，待機動畫序列
-res://assets/ | skeletal_idle_anim_f0..f3 | 骷髏人，待機動畫序列
-res://assets/ | torch_1..8 | 火把燃燒動畫序列
-res://assets/ | ui_heart_empty/full/half | UI 血量心形圖示
-res://assets/ | wall_* | 多種牆面與牆緣圖示
-res://assets/ | weapon_* | 多種武器圖示 (katana, axe, bow, dagger, sword 等)
-res://assets/ | wizzard_f_idle_anim_f0..f3 | 女性巫師，待機動畫序列
-res://assets/ | wizzard_m_idle_anim_f0..f3 | 男性巫師，待機動畫序列
+#############################################
+# 第一部分：assets2/ 新素材（優先使用）
+#############################################
 
-## res://assets/icons/
-資料夾路徑 | 檔名 | 描述
---- | --- | ---
-res://assets/icons/ | armor_01a..e | 護甲圖示，多種顏色
-res://assets/icons/ | arrow_01a..03e | 箭矢圖示，多種款式與顏色
-res://assets/icons/ | book_01a..06g | 書籍/法術書圖示，豐富的款式
-res://assets/icons/ | boots_01a..e | 靴子圖示
-res://assets/icons/ | bow_01a..03e | 長弓圖示
-res://assets/icons/ | candy_01a..02g | 糖果圖示
-res://assets/icons/ | coin_01a..05e | 硬幣/錢幣堆圖示
-res://assets/icons/ | crystal_01a..j | 水晶圖示
-res://assets/icons/ | gem_01a..j | 寶石圖示，多種顏色與形狀
-res://assets/icons/ | gift_01a..f | 禮物盒圖示
-res://assets/icons/ | Item__00..71 | 各式雜項道具圖示
-res://assets/icons/ | key_01a..02e | 鑰匙圖示
-res://assets/icons/ | potion_01a..03h | 藥水瓶圖示
-res://assets/icons/ | ring_01a..03e | 戒指圖示
-res://assets/icons/ | scroll_01a..h | 卷軸圖示
-res://assets/icons/ | shard_01a..j | 碎片圖示
-res://assets/icons/ | shield_01a..03e | 盾牌圖示
-res://assets/icons/ | sword_01a..03e | 劍類圖示
-res://assets/icons/ | Sheet | spritesheet，包含多個小圖示 (432x352 像素)
+===========================
+A. Tiny Swords 建築系列 ★局外建築用這些
+路徑：res://assets/assets2/
+規律：原色=藍灰, _v2=藍, _v3=紫, _v4=紅, _v5=黃
+===========================
 
-## res://assets/icons/kyrise/ (重複或變體圖示集)
-資料夾路徑 | 檔名 | 描述
---- | --- | ---
-res://assets/icons/kyrise/ | (與上述 icons 類似) | Kyrise 風格的圖示變體集
-res://assets/icons/kyrise/ | Sheet | spritesheet，包含多個小圖示
+--- 弓箭訓練所 ---
+Archery | 藍灰色 | 弓箭手訓練所建築
+Archery_v2 | 藍色 | 弓箭手訓練所建築
+Archery_v3 | 紫色 | 弓箭手訓練所建築
+Archery_v4 | 紅色 | 弓箭手訓練所建築
+Archery_v5 | 黃色 | 弓箭手訓練所建築
 
-## res://assets/outdoor/
-資料夾路徑 | 檔名 | 描述
---- | --- | ---
-res://assets/outdoor/ | Outdoors_00..53 | 戶外環境圖塊，單張小圖
-res://assets/outdoor/ | OutdoorsTileset | spritesheet，包含所有戶外環境圖塊的集合
+--- 兵營 → 天賦祭壇用 ---
+Barracks | 藍灰色 | 兵營建築
+Barracks_v2 | 藍色 | 兵營建築
+Barracks_v3 | 紫色 | 兵營建築
+Barracks_v4 | 紅色 | 兵營建築
+Barracks_v5 | 黃色 | 兵營建築
 
-## res://assets/ui/
-資料夾路徑 | 檔名 | 描述
---- | --- | ---
-res://assets/ui/ | dungeonui.v1 | spritesheet，包含 UI 框、按鈕、面板等介面元件
+--- 城堡 → 家園核心用 ---
+Castle | 藍灰色 | 城堡建築
+Castle_v2 | 藍色 | 城堡建築
+Castle_v3 | 紫色 | 城堡建築
+Castle_v4 | 紅色 | 城堡建築
+Castle_v5 | 黃色 | 城堡建築
+
+--- 小型民房 → 工作台用 ---
+House1 | 藍灰色 | 小型民房建築
+House1_v2 | 藍色 | 小型民房建築
+House1_v3 | 紫色 | 小型民房建築
+House1_v4 | 紅色 | 小型民房建築
+House1_v5 | 黃色 | 小型民房建築
+
+--- 中型民房 → 酒館用 ---
+House2 | 藍灰色 | 中型民房建築（帶側屋）
+House2_v2 | 藍色 | 中型民房建築
+House2_v3 | 紫色 | 中型民房建築
+House2_v4 | 紅色 | 中型民房建築
+House2_v5 | 黃色 | 中型民房建築
+
+--- 大型民房 → 倉庫/商店用 ---
+House3 | 藍灰色 | 大型長條形民房建築
+House3_v2 | 藍色 | 大型長條形民房建築
+House3_v3 | 紫色 | 大型長條形民房建築
+House3_v4 | 紅色 | 大型長條形民房建築
+House3_v5 | 黃色 | 大型長條形民房建築
+
+--- 修道院 → 烹飪台/廚房用 ---
+Monastery | 藍灰色 | 修道院/教堂建築
+Monastery_v2 | 藍色 | 修道院/教堂建築
+Monastery_v3 | 紫色 | 修道院/教堂建築
+Monastery_v4 | 紅色 | 修道院/教堂建築
+Monastery_v5 | 黃色 | 修道院/教堂建築
+
+--- 防禦塔 ---
+Tower | 藍灰色 | 圓柱形防禦塔
+Tower_v2 | 藍色 | 圓柱形防禦塔
+Tower_v3 | 紫色 | 圓柱形防禦塔
+Tower_v4 | 紅色 | 圓柱形防禦塔
+Tower_v5 | 黃色 | 圓柱形防禦塔
+
+===========================
+B. Tiny Swords 地形系列 ★局外草地用這些
+路徑：res://assets/assets2/
+===========================
+Tilemap_color1 | 亮綠色 | 草地與泥土邊緣貼圖（亮綠）
+Tilemap_color2 | 草綠色 | 草地與泥土邊緣貼圖（草綠）★推薦主草地
+Tilemap_color3 | 深綠色 | 草地與泥土邊緣貼圖（深綠）
+Tilemap_color4 | 橄欖綠 | 草地與泥土邊緣貼圖（橄欖綠）
+Tilemap_color5 | 藍綠色 | 草地與泥土邊緣貼圖（藍綠）
+Water Background color | 水藍色 | 純色水面背景
+Water Foam | 白色 | 水沫/波浪圖案
+
+--- 樹木 ---
+Tree1 | 綠色 | 一排小松樹
+Tree2 | 綠色 | 一排稍大松樹
+Tree3 | 綠色 | 一排小闊葉樹
+Tree4 | 綠色 | 一排稍大闊葉樹
+
+--- 石頭 ---
+Rock1 | 灰藍色 | 單個小石頭
+Rock2 | 灰藍色 | 兩塊石頭
+Rock3 | 灰藍色 | 三塊石頭
+Rock4 | 灰藍色 | 一堆大石頭
+
+--- 金礦 ---
+Gold Stone 1~6 | 金色 | 金礦石（由小到大）
+Gold_Resource | 金色 | 單個小金塊
+Wood Resource | 棕色 | 原木木材
+Meat Resource | 紅色 | 帶骨肉塊
+
+===========================
+C. Tiny Swords UI 系列
+路徑：res://assets/assets2/
+===========================
+Banner | 米色 | 九宮格羊皮紙背景
+Banner_v2 | 米色 | 九宮格羊皮紙背景(變體)
+Banner_Slots | 米色 | 帶邊框羊皮紙背景
+RegularPaper | 米色 | 九宮格羊皮紙
+SpecialPaper | 深灰色 | 九宮格深色紙張背景
+Wood Table | 棕色 | 九宮格木紋面板
+Wood Table_Slots | 棕色 | 帶邊框木紋槽位
+Slots | 棕色 | 物品欄槽位邊框
+BigBlueButton_Pressed | 藍色 | 方形藍按鈕（按下）
+BigBlueButton_Regular | 藍色 | 方形藍按鈕（一般）
+BigRedButton_Pressed | 紅色 | 方形紅按鈕（按下）
+BigRedButton_Regular | 紅色 | 方形紅按鈕（一般）
+SmallBlueRoundButton_Pressed | 藍色 | 圓形藍小按鈕（按下）
+SmallBlueRoundButton_Regular | 藍色 | 圓形藍小按鈕（一般）
+SmallRedRoundButton_Pressed | 紅色 | 圓形紅小按鈕（按下）
+SmallRedRoundButton_Regular | 紅色 | 圓形紅小按鈕（一般）
+SmallBlueSquareButton_Pressed | 藍色 | 方形藍小按鈕（按下）
+SmallBlueSquareButton_Regular | 藍色 | 方形藍小按鈕（一般）
+SmallRedSquareButton_Pressed | 紅色 | 方形紅小按鈕（按下）
+SmallRedSquareButton_Regular | 紅色 | 方形紅小按鈕（一般）
+TinyRoundBlueButton | 藍色 | 極小圓形藍按鈕
+TinyRoundRedButton | 紅色 | 極小圓形紅按鈕
+TinySquareBlueButton | 藍色 | 極小方形藍按鈕
+TinySquareRedButton | 紅色 | 極小方形紅按鈕
+BigRibbons | 多色 | 各色燕尾緞帶
+SmallRibbons | 多色 | 各色小燕尾緞帶
+Ribbon_Black | 黑灰色 | 徽章深色緞帶
+Ribbon_Blue | 藍色 | 徽章藍色緞帶
+Ribbon_Purple | 紫色 | 徽章紫色緞帶
+Ribbon_Red | 紅色 | 徽章紅色緞帶
+Ribbon_Yellow | 黃色 | 徽章黃色緞帶
+Swords | 多色 | 五把垂直排列的劍
+Shadow | 黑色 | 橢圓形半透明陰影
+Cursor_01~04 | 白色 | 鼠標/手指/禁止/瞄準框
+Icon_01 | 棕色 | 木槌圖標
+Icon_02 | 棕色 | 原木圖標
+Icon_03 | 金色 | 硬幣圖標
+Icon_04 | 紅色 | 肉塊圖標
+Icon_05 | 鐵色 | 鐵劍圖標
+Icon_06 | 藍白色 | 盾牌圖標
+Icon_07~12 | 各色 | 箭頭/返回/取消/齒輪/資訊/音符圖標
+Tool_01~04 | 棕色/鐵色 | 木槌/斧頭/匕首/十字鎬
+
+===========================
+D. Tiny Swords 頭像系列
+路徑：res://assets/assets2/
+規律：01~05=藍, 06~10=紅, 11~15=黃, 16~20=紫, 21~25=黑灰
+每組：01騎士羽盔 02圓盔士兵 03尖盔士兵 04禿頭男 05棕髮女
+===========================
+Avatars_01~25 | 各色 | 25 個頭像（5 色 × 5 職業）
+
+===========================
+E. 混合包 tile_ 系列（可用部分）
+路徑：res://assets/assets2/
+===========================
+
+--- 地面 ---
+tile_0009~0015,0035~0042,0062~0064 | 灰色 | 淺灰石板路（含邊角）
+tile_0043~0048,0074~0076,0096 | 木色 | 木質地板（含邊角）
+tile_0065~0069 | 灰色 | 深灰石板路
+tile_0158 | 綠色 | 純綠色圖塊
+tile_0175,0198 | 藍色 | 純水面
+tile_0179~0184,0205~0207 | 棕色 | 泥土地（含邊角）
+
+--- 水道 ---
+tile_0170~0177,0196~0203,0221~0228 | 藍灰色 | 水道與石質邊緣（全方向）
+
+--- 樹木 ---
+tile_0230~0237 | 綠色 | 尖頂/圓頂樹木（各 4 tile 組合）
+tile_0258 | 綠色 | 中型松樹（單格）
+tile_0259~0264 | 綠色 | 大型連體樹冠（6 tile）
+tile_0286~0287 | 綠色 | 小型灌木叢
+tile_0291 | 綠色 | 枯樹/無葉樹幹
+tile_0312~0318 | 紅色 | 秋季紅葉樹木
+tile_0344~0345 | 紅色 | 紅葉盆栽/松樹
+
+--- 家具/裝飾（酒館室內用）---
+tile_0129~0130 | 木色 | 木箱
+tile_0248 | 木色 | 木製工作台 ★帶紅布的桌子可能是這個
+tile_0272 | 木色 | 矮櫃/床頭櫃
+tile_0273~0274 | 木色 | 雙人床
+tile_0299~0300 | 木色 | 單人床
+tile_0302~0303 | 木色 | 書架（滿/空）
+tile_0326 | 木色 | 講台/立式招牌
+tile_0327~0331 | 綠色 | 沙發系列
+tile_0332~0333 | 灰色 | 掛鐘/佈告欄
+tile_0379 | 木色 | 辦公桌
+tile_0380 | 木色 | 木椅
+tile_0381~0384 | 木色 | 衣櫃/雙門櫃
+
+--- 門 ---
+tile_0334~0335 | 木色 | 拱形木門（關/開）★酒館入口用
+tile_0363~0365 | 木色 | 一般木門（關/半開/全開）
+
+--- 護欄/柵欄 ---
+tile_0215~0217 | 灰色 | 石質矮護欄（左/中/右）
+tile_0242~0244 | 灰色/紅色 | 鐵鍊護欄（左/中/右）
+tile_0352~0356 | 灰色 | 鐵絲網圍欄（左/中/右/門柱/門扉）
+
+--- 階梯 ---
+tile_0323~0326 | 灰色 | 石階梯 ★地牢入口用
+tile_0150~0152 | 灰色 | 下凹式台階
+
+--- 橋 ---
+tile_0153~0157 | 木色/灰色 | 帶欄杆石橋
+
+--- 路燈/裝飾 ---
+tile_0162~0169 | 灰色/各色 | 路燈/站牌/告示牌
+tile_0189~0195 | 灰色/綠色 | 各種柱子/立柱
+
+===========================
+F. 混合包道具 icon
+路徑：res://assets/assets2/
+===========================
+Bag | 棕色 | 背包
+Meat | 紅色 | 帶骨肉塊
+Book | 紅色 | 書本
+Dice 4 | 白色 | 骰子
+Letter | 白色 | 封口信件
+MoneyBag | 橘黃色 | 錢袋
+Scroll | 棕色 | 捲起卷軸
+ScrollEmpty | 棕色 | 展開空白卷軸
+ScrollFire | 棕色 | 火屬性卷軸
+ScrollIce | 棕色 | 冰屬性卷軸
+ScrollPlant | 棕色 | 植物屬性卷軸
+ScrollRock | 棕色 | 岩石屬性卷軸
+ScrollThunder | 棕色 | 雷屬性卷軸
+
+===========================
+G. Boss 怪物系列（.gif 動畫）
+路徑：res://assets/assets2/Boss/
+===========================
+
+--- 單眼角獸 ---
+Sprite | 紅色 | 紅色單眼角獸靜態
+Sprite_v2 | 綠色 | 綠色單眼角獸靜態
+IdlePreview | 紅色 | 紅色單眼角獸待機
+IdlePreview_v2 | 綠色 | 綠色單眼角獸待機
+WalkPreview | 紅色 | 紅色單眼角獸步行
+WalkPreview_v2 | 綠色 | 綠色單眼角獸步行
+HitPreview | 紅色 | 紅色單眼角獸受擊
+HitPreview_v2 | 綠色 | 綠色單眼角獸受擊
+Faceset | 紅色 | 紅色單眼角獸頭像
+Faceset_v2 | 綠色 | 綠色單眼角獸頭像
+
+--- 騎士 ---
+Idle_v5 | 藍色 | 藍色小騎士待機
+Idle_v5 對應的其他動作同理
+Walk_v5 | 藍色 | 藍色小騎士步行
+Walk_v6 | 紅色 | 紅色小騎士步行
+AttackLeft | 藍色 | 藍色小騎士向左攻擊
+AttackLeft_v2 | 紅色 | 紅色小騎士向左攻擊
+AttackRight | 藍色 | 藍色小騎士向右攻擊
+AttackRight_v2 | 紅色 | 紅色小騎士向右攻擊
+ChargeLeft | 藍色 | 藍色小騎士向左衝刺
+ChargeLeft_v2 | 紅色 | 紅色小騎士向左衝刺
+ChargeRight | 藍色 | 藍色小騎士向右衝刺
+ChargeRight_v2 | 紅色 | 紅色小騎士向右衝刺
+Hit_v5 | 藍色 | 藍色小騎士受擊
+IdlePreview_v12 | 藍色 | 藍色角盔騎士待機預覽
+IdlePreview_v12 | 紅色 | 紅色角盔騎士待機預覽
+
+--- 圖騰蟲 ---
+Attack | 綠色 | 綠色圖騰蟲攻擊
+Attack_v2 | 橘色 | 橘色圖騰蟲攻擊
+Idle_v3 | 綠色 | 綠色圖騰蟲待機
+Idle_v4 | 橘色 | 橘色圖騰蟲待機
+Walk_v3 | 綠色 | 綠色圖騰蟲步行
+Walk_v4 | 橘色 | 橘色圖騰蟲步行
+Charge | 綠色 | 綠色圖騰蟲衝刺
+Charge_v2 | 橘色 | 橘色圖騰蟲衝刺
+
+--- 螃蟹 ---
+Attack_v3 | 紅色 | 紅色小螃蟹攻擊
+Attack_v4 | 橘色 | 橘色小螃蟹攻擊
+Idle | 紅色 | 紅色小螃蟹待機
+Walk | 紅色 | 紅色小螃蟹步行
+Jump | 紅色 | 紅色小螃蟹跳躍
+Jump_v2 | 橘色 | 橘色小螃蟹跳躍
+Hit | 紅色 | 紅色小螃蟹受擊
+
+--- 青蛙 ---
+Attack_v5 | 綠色 | 綠色小青蛙攻擊
+Attack_v6 | 紅色 | 紅色小青蛙攻擊
+Idle_v2 | 綠色 | 綠色小青蛙待機
+Walk_v2 | 綠色 | 綠色小青蛙步行
+Jump_v3 | 綠色 | 綠色小青蛙跳躍
+Jump_v4 | 紅色 | 紅色小青蛙跳躍
+Charge_v5 | 綠色 | 綠色青蛙衝刺
+Charge_v6 | 紅色 | 紅色青蛙衝刺
+Hit_v2 | 綠色 | 綠色小青蛙受擊
+Hit_v8 | 紅色 | 紅色青蛙受擊
+
+--- 火精靈 ---
+Idle_v6 | 橘色 | 橘色火精靈待機
+Idle_v9 | 藍白色 | 藍白火精靈待機
+Hit_v6 | 橘色 | 橘色火精靈受擊
+Hit_v7 | 藍白色 | 藍白火精靈受擊
+
+--- 熊型野獸 ---
+Idle_v7 | 紅色 | 紅色熊型野獸待機
+Idle_v8 | 黃色 | 黃色熊型野獸待機
+Charge_v3 | 紅色 | 紅色熊型野獸衝刺
+Charge_v4 | 黃色 | 黃色熊型野獸衝刺
+Sprite_v3 | 紅色 | 紅色熊型野獸靜態
+Sprite_v4 | 黃色 | 黃色熊型野獸靜態
+
+--- 史萊姆 ---
+Idle_v12 | 藍色 | 藍色史萊姆待機
+Idle_v13 | 綠色 | 綠色史萊姆待機
+Jump_v5 | 藍色 | 藍色史萊姆跳躍
+Jump_v6 | 綠色 | 綠色史萊姆跳躍
+Hit_v11 | 藍色 | 藍色史萊姆受擊
+Hit_v12 | 綠色 | 綠色史萊姆受擊
+
+--- 蝙蝠 ---
+Attack_v7 | 紅色 | 迷你紅蝙蝠攻擊
+Idle_v11 | 紅色 | 迷你紅蝙蝠待機
+Walk_v7 | 紅色 | 迷你紅蝙蝠步行
+Hit_v10 | 紅色 | 迷你紅蝙蝠受擊
+Hit_v13 | 紅色 | 紅色蝙蝠/惡魔受擊
+
+--- 黑紅惡魔 ---
+AttackPreview | 黑紅色 | 黑紅雙翼惡魔攻擊預覽
+IdlePreview_v15 | 黑紅色 | 黑紅雙翼惡魔待機預覽
+WalkPreview_v7 | 黑紅色 | 黑紅雙翼惡魔步行預覽
+HitPreview_v13 | 黑紅色 | 黑紅雙翼惡魔受擊預覽
+
+--- 龍 ---
+Head | 藍綠色 | 藍綠色龍頭像
+Head_v2 | 黃綠色 | 黃綠色龍頭像
+Wing | 藍綠色 | 龍翅膀
+Wing_v2 | 黃綠色 | 龍翅膀
+Body1 | 藍色 | 藍底圓形身軀
+Body1_v2 | 綠色 | 綠底圓形身軀
+Body2 | 米黃色 | 米黃底圓形身軀
+Body2_v2 | 米黃色 | 米黃底橘心身軀
+BodyEnd | 灰黑色 | 灰黑錐形尾部
+BodyEnd_v2 | 橘色 | 橘色錐形尾部
+
+--- 其他頭像 ---
+Faceset_v3 | 藍色 | 藍色巨獸眼睛頭像
+Faceset_v4 | 紅色 | 紅色巨獸眼睛頭像
+Faceset_v5 | 綠色 | 綠色巨獸眼睛頭像
+Faceset_v6 | 橘色 | 橘色巨獸眼睛頭像
+Faceset_v7 | 藍白色 | 雪人頭像
+Faceset_v8 | 橘色 | 橘色三眼巨獸頭像
+Faceset_v9 | 紅色 | 紅色獸人頭像
+Faceset_v10 | 黃色 | 黃色熊型野獸頭像
+Faceset_v11 | 白色 | 白色史萊姆頭像
+Faceset_v12 | 綠色 | 綠色青蛙頭像
+Faceset_v13 | 紅色 | 紅色青蛙頭像
+Faceset_v14 | 紅色 | 紅色雙角惡魔頭像
+Faceset_v15 | 藍色 | 藍色單眼史萊姆頭像
+Faceset_v16 | 綠色 | 綠色單眼史萊姆頭像
+Faceset_v17 | 紅色 | 紅色天狗/惡魔頭像
+
+--- 特效 ---
+Trans | 粉紅色 | 小光點/變身特效
+TransPreview | 粉紅色 | 變身預覽
+
+#############################################
+# 第二部分：原有素材（簡化引用，完整版見舊目錄）
+#############################################
+
+===========================
+H. Kyrise Icon Pack（裝備/消耗品/書本）
+路徑：res://assets/icons/kyrise/{檔名}.png
+===========================
+# 書本：book_01~06 各 a~g（g=展開），天賦用 02g/03g/04g
+# 法術書：spellbook_01~03 各 a~e
+# 劍：sword_01~03 各 a~e（a=Common e=Legendary）
+# 弓：bow_01~03 各 a~e
+# 法杖：staff_01~03 各 a~e
+# 頭盔：helmet_01~02 各 a~e
+# 胸甲：armor_01 a~e
+# 靴子：boots_01 a~e
+# 手套：gloves_01 a~e
+# 盾牌：shield_01~03 各 a~e
+# 項鍊：necklace_01~03 各 a~e
+# 戒指：ring_01~03 各 a~e
+# 藥水：potion_01~03 各 a~h
+# 硬幣：coin_01~05 各 a~e（a=棕 b=銅 c=銀 d=金 e=藍）
+# 寶石：shard/crystal/gem/pearl 各色
+# 卷軸：scroll_01 a~h
+# 鑰匙：key_01~02 各 a~e
+# 錠：ingot_01 a~e
+# 帽子：hat_01 a~f, hat_02 a~b
+
+===========================
+I. 0x72 DungeonTileset（地牢內部用）
+路徑：res://assets/{檔名}.png
+===========================
+# 地板：floor_1~8, floor_plain, floor_light, floor_ladder, floor_stairs
+# 牆壁：wall_*, Edge_*
+# 裝飾：column, skull, torch_1~8, wall_goo, wall_hole_1/2, wall_banner_*
+# 門：doors_leaf_closed/open, doors_frame_*
+# 寶箱：chest_closed/open/golden/mimic
+# 藥水瓶：flask_big/small × blue/green/red/yellow
+# 角色：knight_m/f, elf_m/f, wizzard_m/f, dwarf_m/f, lizard_m/f, doc, pumpkin_dude
+# 敵人：goblin, skelet, imp, chort, big_demon, zombie系列, ogre, orc系列, necromancer等
+
+===========================
+J. Alex's Outdoors（舊局外，將被 Tiny Swords 替換）
+路徑：res://assets/outdoor/{檔名}.png
+===========================
+# Outdoors_00~53（草地/泥土/水域 tile）— 將逐步替換為 Tilemap_color2

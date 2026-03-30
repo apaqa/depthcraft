@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/world/resource_node.tscn" id="1_ym0o7"]
-[ext_resource type="Texture2D" path="res://assets/monster_elemental_plant_small.png" id="2_uju50"]
+[ext_resource type="Texture2D" path="res://assets/assets2/Tiny Swords (Free Pack)/Tree3.png" id="2_uju50"]
 
 [node name="TreeNode" instance=ExtResource("1_ym0o7")]
 resource_id = "wood"
