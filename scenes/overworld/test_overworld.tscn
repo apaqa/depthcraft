@@ -53,6 +53,7 @@ target_level_id = "dungeon"
 prompt_text = "[E] 進入地牢"
 
 [node name="Sprite2D" parent="ReturnPortal" index="0"]
+scale = Vector2(1.5, 1.5)
 texture = ExtResource("9_stairs")
 
 [node name="RaidSystem" type="Node" parent="."]

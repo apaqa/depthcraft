@@ -28,8 +28,9 @@ func interact(player: Node) -> void:
 	if npc_type == "merchant":
 		if player != null and player.has_method("show_status_message"):
 			player.show_status_message(
-				"神秘商人：請在地牢的黑暗深處尋找我...",
-				Color(0.8, 0.5, 1.0, 1.0), 3.0
+				"The plague doctor is still preparing the trading counter.",
+				Color(0.8, 0.5, 1.0, 1.0),
+				3.0
 			)
 		return
 	if player != null and player.has_method("request_tavern_menu"):

@@ -20,6 +20,8 @@ const MERCHANT_SCENE = preload("res://scenes/world/merchant.tscn")
 const VILLAGE_NPC_SCENE = preload("res://scenes/world/village_npc.tscn")
 const OVERWORLD_ALTAR_SCRIPT: Script = preload("res://scripts/world/overworld_altar.gd")
 const WANDERER_COUNT: int = 4
+const NEARBY_TREE_SCALE: Vector2 = Vector2(1.5, 1.5)
+const NEARBY_TREE_RADIUS: float = 200.0
 
 @onready var tile_map_layer: TileMapLayer = $TileMapLayer
 @onready var building_layer: TileMapLayer = $BuildingLayer
@@ -180,6 +182,39 @@ func _spawn_resource_layout() -> void:
 		deco.position = px
 		add_child(deco)
 		_resource_nodes.append(deco)
+		idx += 1
+
+	_spawn_nearby_trees(spawn_px, idx)
+
+
+func _spawn_nearby_trees(spawn_px: Vector2, start_idx: int) -> void:
+	var offsets: Array[Vector2] = [
+		Vector2(-120.0, -80.0),
+		Vector2(130.0, -60.0),
+		Vector2(-90.0, 100.0),
+		Vector2(150.0, 110.0),
+		Vector2(-40.0, -140.0),
+		Vector2(72.0, 156.0),
+	]
+	var idx: int = start_idx
+	for offset: Vector2 in offsets:
+		var safe_offset: Vector2 = offset
+		if safe_offset.length() > NEARBY_TREE_RADIUS:
+			safe_offset = safe_offset.normalized() * NEARBY_TREE_RADIUS
+		var pos: Vector2 = spawn_px + safe_offset
+		var node: Node2D = TREE_SCENE.instantiate() as Node2D
+		node.name = "NearbyTree_%d" % idx
+		node.position = pos
+		node.z_index = 1
+		node.visible = true
+		var resource_node: ResourceNode = node as ResourceNode
+		if resource_node != null:
+			var sprite: Sprite2D = resource_node.get_sprite()
+			if sprite != null:
+				sprite.visible = true
+				sprite.scale = NEARBY_TREE_SCALE
+		add_child(node)
+		_resource_nodes.append(node)
 		idx += 1
 
 

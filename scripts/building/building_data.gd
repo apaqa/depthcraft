@@ -82,7 +82,7 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1.png"),
+		"preview_texture": preload("res://assets/assets2/tile_0248.png"),
 	},
 	"storage_chest": {
 		"id": "storage_chest",
@@ -127,7 +127,7 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Monastery.png"),
+		"preview_texture": preload("res://assets/crate.png"),
 	},
 	"bounty_board": {
 		"id": "bounty_board",

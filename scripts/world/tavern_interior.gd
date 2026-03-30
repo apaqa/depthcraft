@@ -10,17 +10,28 @@ const TILE: int = 32
 const ROOM_W: int = 15
 const ROOM_H: int = 10
 const DOOR_TILES: int = 3
-const DOOR_X: int = (ROOM_W - DOOR_TILES) / 2 * TILE  # 192 px
-const DOOR_W: int = DOOR_TILES * TILE                  # 96 px
+const DOOR_X: int = (ROOM_W - DOOR_TILES) / 2 * TILE
+const DOOR_W: int = DOOR_TILES * TILE
 
-const FLOOR_COLOR: Color = Color(0.22, 0.15, 0.10, 1.0)
+const FLOOR_COLOR: Color = Color(0.35, 0.22, 0.12, 1.0)
 const WALL_COLOR: Color = Color(0.30, 0.20, 0.13, 1.0)
 const WALL_TOP_COLOR: Color = Color(0.38, 0.24, 0.14, 1.0)
 const DOOR_COLOR: Color = Color(0.50, 0.33, 0.18, 1.0)
+const BAR_COLOR: Color = Color(0.42, 0.26, 0.12, 1.0)
+const DECOR_SCALE: Vector2 = Vector2(1.5, 1.5)
+const NPC_SCALE: Vector2 = Vector2(2.0, 2.0)
+const PIXEL_FILTER: CanvasItem.TextureFilter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+const BARTENDER_TEX: Texture2D = preload("res://assets/dwarf_m_idle_anim_f0.png")
+const GAMBLER_TEX: Texture2D = preload("res://assets/lizard_m_idle_anim_f0.png")
+const MYSTERY_TEX: Texture2D = preload("res://assets/doc_idle_anim_f0.png")
+const BOOKSHELF_TEX: Texture2D = preload("res://assets/assets2/tile_0302.png")
+const CLOCK_TEX: Texture2D = preload("res://assets/assets2/tile_0332.png")
 
 
 func _ready() -> void:
 	_build_room()
+	_build_decorations()
 	_build_npcs()
 	_build_exit_npc()
 
@@ -30,13 +41,11 @@ func get_spawn_position() -> Vector2:
 
 
 func _build_room() -> void:
-	# Floor
 	var floor_rect: ColorRect = ColorRect.new()
 	floor_rect.color = FLOOR_COLOR
 	floor_rect.size = Vector2(float(ROOM_W * TILE), float(ROOM_H * TILE))
 	add_child(floor_rect)
 
-	# Walls (visual + physics)
 	_add_wall(
 		Vector2.ZERO,
 		Vector2(float(ROOM_W * TILE), float(TILE)),
@@ -52,36 +61,31 @@ func _build_room() -> void:
 		Vector2(float(TILE), float((ROOM_H - 2) * TILE)),
 		WALL_COLOR
 	)
-	# Bottom wall — left of door
 	_add_wall(
 		Vector2(0.0, float((ROOM_H - 1) * TILE)),
 		Vector2(float(DOOR_X), float(TILE)),
 		WALL_COLOR
 	)
-	# Bottom wall — right of door
 	_add_wall(
 		Vector2(float(DOOR_X + DOOR_W), float((ROOM_H - 1) * TILE)),
 		Vector2(float(ROOM_W * TILE) - float(DOOR_X + DOOR_W), float(TILE)),
 		WALL_COLOR
 	)
 
-	# Door visual (no collision — acts as exit zone)
 	var door_vis: ColorRect = ColorRect.new()
 	door_vis.color = DOOR_COLOR
 	door_vis.size = Vector2(float(DOOR_W), float(TILE))
 	door_vis.position = Vector2(float(DOOR_X), float((ROOM_H - 1) * TILE))
 	add_child(door_vis)
 
-	# Bar counter (decorative)
 	var bar: ColorRect = ColorRect.new()
-	bar.color = Color(0.42, 0.26, 0.12, 1.0)
+	bar.color = BAR_COLOR
 	bar.size = Vector2(float(ROOM_W * TILE) - float(2 * TILE) - 10.0, float(TILE / 2) + 6.0)
 	bar.position = Vector2(float(TILE) + 5.0, float(2 * TILE) - 2.0)
 	add_child(bar)
 
-	# Tavern sign
 	var sign_lbl: Label = Label.new()
-	sign_lbl.text = "地下酒館"
+	sign_lbl.text = "Rust Lantern"
 	sign_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sign_lbl.add_theme_font_size_override("font_size", 18)
 	sign_lbl.modulate = Color(1.0, 0.85, 0.4, 1.0)
@@ -95,60 +99,79 @@ func _add_wall(pos: Vector2, size: Vector2, color: Color) -> void:
 	vis.size = size
 	vis.position = pos
 	add_child(vis)
+
 	var body: StaticBody2D = StaticBody2D.new()
 	body.position = pos + size * 0.5
+
 	var shape: RectangleShape2D = RectangleShape2D.new()
 	shape.size = size
+
 	var col: CollisionShape2D = CollisionShape2D.new()
 	col.shape = shape
 	body.add_child(col)
 	add_child(body)
 
 
+func _build_decorations() -> void:
+	var bookshelf: Sprite2D = Sprite2D.new()
+	bookshelf.texture = BOOKSHELF_TEX
+	bookshelf.scale = DECOR_SCALE
+	bookshelf.texture_filter = PIXEL_FILTER
+	bookshelf.position = Vector2(float(3 * TILE) + float(TILE) * 0.5, float(TILE) + 10.0)
+	add_child(bookshelf)
+
+	var clock: Sprite2D = Sprite2D.new()
+	clock.texture = CLOCK_TEX
+	clock.scale = DECOR_SCALE
+	clock.texture_filter = PIXEL_FILTER
+	clock.position = Vector2(float(11 * TILE) + float(TILE) * 0.5, float(TILE) + 10.0)
+	add_child(clock)
+
+
 func _build_npcs() -> void:
 	_add_npc(
 		Vector2(float(3 * TILE), float(3 * TILE)),
-		"slots", "酒保", "[E] 老虎機", Color(0.85, 0.6, 0.25, 1.0)
+		"slots",
+		"Bartender",
+		"[E] Slots",
+		BARTENDER_TEX
 	)
 	_add_npc(
 		Vector2(float(7 * TILE), float(3 * TILE)),
-		"pachinko", "賭徒", "[E] 彈珠台", Color(0.35, 0.65, 0.95, 1.0)
+		"pachinko",
+		"Gambler",
+		"[E] Pachinko",
+		GAMBLER_TEX
 	)
 	_add_npc(
 		Vector2(float(11 * TILE), float(3 * TILE)),
-		"merchant", "神秘商人", "[E] 交易", Color(0.65, 0.25, 0.85, 1.0)
+		"merchant",
+		"Mystery Merchant",
+		"[E] Trade",
+		MYSTERY_TEX
 	)
 
 
-func _add_npc(world_pos: Vector2, npc_type: String, npc_name: String, prompt: String, color: Color) -> void:
+func _add_npc(world_pos: Vector2, npc_type: String, npc_name: String, prompt: String, tex: Texture2D) -> void:
 	var npc_node: TavernNpc = TavernNpc.new()
 	npc_node.npc_type = npc_type
 	npc_node.prompt_text = prompt
 	npc_node.position = world_pos + Vector2(float(TILE) * 0.5, 0.0)
 
-	# Head
-	var head: ColorRect = ColorRect.new()
-	head.color = color.lightened(0.3)
-	head.size = Vector2(18.0, 18.0)
-	head.position = Vector2(-9.0, -58.0)
-	npc_node.add_child(head)
+	var char_sprite: Sprite2D = Sprite2D.new()
+	char_sprite.texture = tex
+	char_sprite.scale = NPC_SCALE
+	char_sprite.position = Vector2(0.0, -24.0)
+	char_sprite.texture_filter = PIXEL_FILTER
+	npc_node.add_child(char_sprite)
 
-	# Body
-	var body_rect: ColorRect = ColorRect.new()
-	body_rect.color = color
-	body_rect.size = Vector2(22.0, 36.0)
-	body_rect.position = Vector2(-11.0, -40.0)
-	npc_node.add_child(body_rect)
-
-	# Name label
 	var name_lbl: Label = Label.new()
 	name_lbl.text = npc_name
 	name_lbl.add_theme_font_size_override("font_size", 11)
 	name_lbl.modulate = Color(1.0, 1.0, 0.75, 1.0)
-	name_lbl.position = Vector2(-22.0, -75.0)
+	name_lbl.position = Vector2(-38.0, -55.0)
 	npc_node.add_child(name_lbl)
 
-	# Interaction detection area
 	var area: Area2D = Area2D.new()
 	var circle: CircleShape2D = CircleShape2D.new()
 	circle.radius = 40.0
@@ -170,14 +193,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_exit_npc() -> void:
 	var exit_node: TavernNpc = TavernNpc.new()
 	exit_node.npc_type = "exit"
-	exit_node.prompt_text = "[E] 離開酒館"
+	exit_node.prompt_text = "[E] Exit Tavern"
 	exit_node.position = Vector2(
 		float(ROOM_W * TILE) * 0.5,
 		float((ROOM_H - 1) * TILE) + float(TILE) * 0.5
 	)
 
 	var lbl: Label = Label.new()
-	lbl.text = "[E] 出口"
+	lbl.text = "[E] Exit"
 	lbl.add_theme_font_size_override("font_size", 11)
 	lbl.modulate = Color(0.9, 0.8, 0.5, 1.0)
 	lbl.position = Vector2(-18.0, -12.0)

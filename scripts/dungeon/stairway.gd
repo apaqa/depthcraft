@@ -10,8 +10,9 @@ signal return_surface_requested
 @export var is_locked: bool = false
 @export var locked_prompt_text: String = "prompt_locked"
 
-const DOWN_TEXTURE := preload("res://assets/floor_stairs.png")
-const UP_TEXTURE := preload("res://assets/stairs_top.png")
+const DOWN_TEXTURE: Texture2D = preload("res://assets/floor_stairs.png")
+const UP_TEXTURE: Texture2D = preload("res://assets/stairs_top.png")
+const STAIR_SCALE: Vector2 = Vector2(1.5, 1.5)
 
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -21,7 +22,7 @@ func _ready() -> void:
 
 
 func get_interaction_prompt() -> String:
-	var key := locked_prompt_text if is_locked else prompt_text
+	var key: String = locked_prompt_text if is_locked else prompt_text
 	return LocaleManager.L(key) if not key.begins_with("[") else key
 
 
@@ -56,6 +57,7 @@ func set_locked(locked: bool, unlocked_prompt: String = "", new_locked_prompt: S
 func _apply_stair_visual() -> void:
 	if sprite == null:
 		return
+	sprite.scale = STAIR_SCALE
 	if stair_variant == "up":
 		sprite.texture = UP_TEXTURE
 		sprite.modulate = Color(0.82, 0.88, 1.0, 1.0)
