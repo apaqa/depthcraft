@@ -91,7 +91,7 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"wood": 3},
 		"scene_path": STORAGE_CHEST_SCENE_PATH,
-		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House3.png"),
+		"preview_texture": preload("res://assets/crate.png"),
 	},
 	"repair_bench": {
 		"id": "repair_bench",

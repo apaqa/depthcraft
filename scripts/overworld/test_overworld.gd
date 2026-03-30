@@ -123,7 +123,7 @@ func _spawn_resource_layout() -> void:
 	var idx: int = 0
 
 	for cluster: Dictionary in _generator.forest_clusters:
-		var count: int = clampi(cluster.radius / 2, 10, 25)
+		var count: int = clampi(cluster.radius / 6, 3, 8)
 		for pos: Vector2 in _generator.sample_positions_in_cluster(cluster, count):
 			if not _is_valid_resource_pos(pos, spawn_px, entrance_px, safe_dist, entrance_clear):
 				continue

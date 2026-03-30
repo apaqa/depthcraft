@@ -12,4 +12,5 @@ drop_quantity_max = 2
 respawn_time = 300.0
 
 [node name="Sprite2D" parent="." index="0"]
+scale = Vector2(0.15, 0.15)
 texture = ExtResource("2_f6876")
