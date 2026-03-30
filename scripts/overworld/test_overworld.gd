@@ -104,22 +104,13 @@ func build_ground() -> void:
 	for y in range(map_size.y):
 		for x in range(map_size.x):
 			var coords: Vector2i = Vector2i(x, y)
-			# Use generator road data (supports winding roads)
 			if _generator.is_road_tile(coords):
-				# Randomly pick between two road sources: 3=dirt, 4=stony dirt
 				var road_src: int = SOURCE_ROAD
 				if ground_rng.randf() < 0.5:
 					road_src = SOURCE_ROAD_ALT
 				tile_map_layer.set_cell(coords, road_src, Vector2i.ZERO)
 				continue
-			# Grass variety: 80% pure green (0), 10% white flowers (1), 10% yellow flowers (2)
-			var grass_roll: float = ground_rng.randf()
-			var grass_src: int = SOURCE_GRASS
-			if grass_roll > 0.9:
-				grass_src = 2
-			elif grass_roll > 0.8:
-				grass_src = SOURCE_GRASS_ALT
-			tile_map_layer.set_cell(coords, grass_src, Vector2i.ZERO)
+			tile_map_layer.set_cell(coords, SOURCE_GRASS, Vector2i.ZERO)
 
 	tile_map_layer.update_internals()
 
