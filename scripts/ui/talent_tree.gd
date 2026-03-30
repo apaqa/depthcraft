@@ -552,11 +552,15 @@ func _on_map_gui_input(event: InputEvent) -> void:
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_UP:
 			if mouse_button.ctrl_pressed:
 				_apply_zoom(zoom_level * 1.1, mouse_button.position)
-				get_viewport().set_input_as_handled()
+			else:
+				_set_scroll(Vector2(float(map_scroll.scroll_horizontal), float(map_scroll.scroll_vertical) - 60.0))
+			get_viewport().set_input_as_handled()
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			if mouse_button.ctrl_pressed:
 				_apply_zoom(zoom_level / 1.1, mouse_button.position)
-				get_viewport().set_input_as_handled()
+			else:
+				_set_scroll(Vector2(float(map_scroll.scroll_horizontal), float(map_scroll.scroll_vertical) + 60.0))
+			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and dragging_map:
 		var mouse_motion: InputEventMouseMotion = event as InputEventMouseMotion
 		var delta: Vector2 = mouse_motion.position - last_drag_position

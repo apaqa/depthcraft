@@ -1,6 +1,6 @@
 extends SceneTree
 
-func _init() -> void:
+func _initialize() -> void:
 	var dir: DirAccess = DirAccess.open("res://scripts")
 	_scan_dir(dir, "res://scripts")
 	quit()
