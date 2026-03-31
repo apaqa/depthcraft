@@ -1,0 +1,18 @@
+# 美術替換報告
+# 生成時間：2026-03-31 13:07:12.345203
+
+## 建築對應表
+home_core: res://assets/assets2/Castle.png scale=(0.12, 0.12) # 家園核心 - 城堡
+workbench: res://assets/assets2/House1.png scale=(0.18, 0.18) # 工作台 - 藍色小民房
+cooking: res://assets/assets2/Monastery.png scale=(0.18, 0.18) # 烹飪台 - 修道院
+tavern: res://assets/assets2/House2.png scale=(0.18, 0.18) # 酒館 - 紅色民房
+talent: res://assets/column.png scale=(2.0, 2.0) # 天賦祭壇 - 石柱
+storage: res://assets/chest_closed.png scale=(2.0, 2.0) # 倉庫 - 關閉寶箱
+defense_tower: res://assets/assets2/Tower.png scale=(0.12, 0.12) # 防禦塔
+bounty: res://assets/assets2/tile_0326.png scale=(2.5, 2.5) # 賞金板 - 木製講台
+repair: res://assets/assets2/House1_v2.png scale=(0.18, 0.18) # 修理台 - 藍色民房變體（如果存在）
+
+## 資源節點對應表
+tree: res://assets/assets2/tile_0258.png scale=(2.5, 2.5) # 樹木 - 單格松樹
+fiber: res://assets/assets2/tile_0287.png scale=(1.0, 1.0) # 纖維 - 圓形灌木叢
+wood: res://assets/wood_01a.png scale=(1.5, 1.5) # 木頭 - 帶皮原木

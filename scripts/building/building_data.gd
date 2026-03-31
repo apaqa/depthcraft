@@ -82,7 +82,7 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/boxes_stacked.png"),
+		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1.png"),
 	},
 	"storage_chest": {
 		"id": "storage_chest",
@@ -100,7 +100,7 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"stone": 5, "iron_ore": 3},
 		"scene_path": REPAIR_BENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/column_wall.png"),
+		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1_v2.png"),
 	},
 	"talent_altar": {
 		"id": "talent_altar",
@@ -109,7 +109,7 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"stone": 10, "iron_ore": 5},
 		"scene_path": TALENT_ALTAR_SCENE_PATH,
-		"preview_texture": preload("res://assets/floor_gargoyle_red_basin.png"),
+		"preview_texture": preload("res://assets/column.png"),
 	},
 	"farm_plot": {
 		"id": "farm_plot",
@@ -127,7 +127,7 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/crate.png"),
+		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Monastery.png"),
 	},
 	"bounty_board": {
 		"id": "bounty_board",
@@ -137,7 +137,7 @@ const BUILDINGS = {
 		"cost": {"wood": 8, "stone": 4},
 		"base_max_hp": 60,
 		"scene_path": BOUNTY_BOARD_SCENE_PATH,
-		"preview_texture": preload("res://assets/wall_banner_yellow.png"),
+		"preview_texture": preload("res://assets/assets2/tile_0326.png"),
 	},
 	"tavern": {
 		"id": "tavern",
@@ -147,7 +147,7 @@ const BUILDINGS = {
 		"cost": {"wood": 10, "stone": 5, "copper": 20},
 		"base_max_hp": 80,
 		"scene_path": TAVERN_SCENE_PATH,
-		"preview_texture": preload("res://assets/wall_banner_yellow.png"),
+		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House2.png"),
 	},
 	"home_core": {
 		"id": "home_core",
@@ -156,7 +156,7 @@ const BUILDINGS = {
 		"kind": "core",
 		"cost": {"wood": 10, "stone": 5},
 		"scene_path": HOME_CORE_SCENE_PATH,
-		"preview_texture": preload("res://assets/column.png"),
+		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Castle.png"),
 	},
 }
 

@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/tavern.gd" id="1_tavern"]
+[ext_resource type="Texture2D" path="res://assets/assets2/Tiny Swords (Free Pack)/House2.png" id="2_tavern"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_tavern_body"]
 size = Vector2(20, 20)
@@ -10,6 +11,11 @@ radius = 28.0
 
 [node name="Tavern" type="StaticBody2D"]
 script = ExtResource("1_tavern")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.18, 0.18)
+texture = ExtResource("2_tavern")
+texture_filter = 0
 
 [node name="Sign" type="Polygon2D" parent="."]
 color = Color(0.55, 0.32, 0.1, 1)
