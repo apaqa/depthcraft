@@ -11,7 +11,7 @@ signal return_surface_requested
 @export var locked_prompt_text: String = "prompt_locked"
 
 const DOWN_TEXTURE := preload("res://assets/floor_stairs.png")
-const UP_TEXTURE := preload("res://assets/stairs_top.png")
+const UP_TEXTURE := preload("res://assets/floor_ladder.png")
 
 @onready var sprite: Sprite2D = $Sprite2D
 

@@ -14,9 +14,15 @@ const STAIRWAY_SCENE: PackedScene = preload("res://scenes/dungeon/stairway.tscn"
 const DUNGEON_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/dungeon_merchant.gd")
 const FLOOR_TELEPORTER_SCRIPT: Script = preload("res://scripts/dungeon/floor_teleporter_npc.gd")
 
-const FLOOR_COLOR: Color = Color(0.18, 0.14, 0.10, 1.0)
-const WALL_COLOR: Color = Color(0.24, 0.17, 0.11, 1.0)
-const WALL_TOP_COLOR: Color = Color(0.30, 0.21, 0.13, 1.0)
+const TEX_FLOOR: Texture2D = preload("res://assets/floor_5.png")
+const TEX_WALL_MID: Texture2D = preload("res://assets/wall_mid.png")
+const TEX_WALL_TOP: Texture2D = preload("res://assets/wall_top_center.png")
+const TEX_CRATE: Texture2D = preload("res://assets/crate.png")
+const TEX_DWARF: Texture2D = preload("res://assets/dwarf_m_idle_anim_f0.png")
+const TEX_LIZARD: Texture2D = preload("res://assets/lizard_m_idle_anim_f0.png")
+const TEX_DOC: Texture2D = preload("res://assets/doc_idle_anim_f0.png")
+const TEX_WIZARD: Texture2D = preload("res://assets/wizzard_m_idle_anim_f0.png")
+const TILE_SCALE: Vector2 = Vector2(2.0, 2.0)
 
 
 func _ready() -> void:
@@ -36,30 +42,29 @@ func place_player(new_player: Node, spawn_pos: Vector2) -> void:
 
 
 func _build_room() -> void:
-	var floor_rect: ColorRect = ColorRect.new()
-	floor_rect.color = FLOOR_COLOR
-	floor_rect.size = Vector2(float(ROOM_W * TILE), float(ROOM_H * TILE))
-	add_child(floor_rect)
+	# Tile the floor with dungeon floor sprites
+	for ty: int in range(1, ROOM_H - 1):
+		for tx: int in range(1, ROOM_W - 1):
+			_place_tile(TEX_FLOOR, Vector2(float(tx * TILE), float(ty * TILE)))
 
-	# Top wall
-	_add_wall(Vector2.ZERO, Vector2(float(ROOM_W * TILE), float(TILE)), WALL_TOP_COLOR)
-	# Left wall
-	_add_wall(Vector2(0.0, float(TILE)), Vector2(float(TILE), float((ROOM_H - 2) * TILE)), WALL_COLOR)
-	# Right wall
-	_add_wall(
-		Vector2(float((ROOM_W - 1) * TILE), float(TILE)),
-		Vector2(float(TILE), float((ROOM_H - 2) * TILE)),
-		WALL_COLOR
-	)
-	# Bottom wall
-	_add_wall(Vector2(0.0, float((ROOM_H - 1) * TILE)), Vector2(float(ROOM_W * TILE), float(TILE)), WALL_COLOR)
+	# Top wall row (wall_top texture)
+	for tx: int in range(ROOM_W):
+		_add_wall_tile(TEX_WALL_TOP, Vector2(float(tx * TILE), 0.0), Vector2(float(TILE), float(TILE)))
+	# Bottom wall row
+	for tx: int in range(ROOM_W):
+		_add_wall_tile(TEX_WALL_MID, Vector2(float(tx * TILE), float((ROOM_H - 1) * TILE)), Vector2(float(TILE), float(TILE)))
+	# Left wall column
+	for ty: int in range(1, ROOM_H - 1):
+		_add_wall_tile(TEX_WALL_MID, Vector2(0.0, float(ty * TILE)), Vector2(float(TILE), float(TILE)))
+	# Right wall column
+	for ty: int in range(1, ROOM_H - 1):
+		_add_wall_tile(TEX_WALL_MID, Vector2(float((ROOM_W - 1) * TILE), float(ty * TILE)), Vector2(float(TILE), float(TILE)))
 
-	# Bar counter (decorative)
-	var bar: ColorRect = ColorRect.new()
-	bar.color = Color(0.35, 0.22, 0.10, 1.0)
-	bar.size = Vector2(float(ROOM_W * TILE) - float(2 * TILE) - 10.0, float(TILE / 2) + 6.0)
-	bar.position = Vector2(float(TILE) + 5.0, float(2 * TILE) - 2.0)
-	add_child(bar)
+	# Bar counter — crates in a row
+	var bar_start_x: int = 2
+	var bar_end_x: int = ROOM_W - 2
+	for bx: int in range(bar_start_x, bar_end_x):
+		_place_tile(TEX_CRATE, Vector2(float(bx * TILE), float(2 * TILE)))
 
 	# Tavern sign
 	var sign_lbl: Label = Label.new()
@@ -68,15 +73,27 @@ func _build_room() -> void:
 	sign_lbl.add_theme_font_size_override("font_size", 18)
 	sign_lbl.modulate = Color(1.0, 0.85, 0.4, 1.0)
 	sign_lbl.position = Vector2(float(ROOM_W * TILE) * 0.5 - 88.0, 4.0)
+	sign_lbl.z_index = 2
 	add_child(sign_lbl)
 
 
-func _add_wall(pos: Vector2, size: Vector2, color: Color) -> void:
-	var vis: ColorRect = ColorRect.new()
-	vis.color = color
-	vis.size = size
-	vis.position = pos
-	add_child(vis)
+func _place_tile(tex: Texture2D, pos: Vector2) -> void:
+	var spr: Sprite2D = Sprite2D.new()
+	spr.texture = tex
+	spr.scale = TILE_SCALE
+	spr.centered = false
+	spr.position = pos
+	add_child(spr)
+
+
+func _add_wall_tile(tex: Texture2D, pos: Vector2, size: Vector2) -> void:
+	var spr: Sprite2D = Sprite2D.new()
+	spr.texture = tex
+	spr.scale = TILE_SCALE
+	spr.centered = false
+	spr.position = pos
+	spr.z_index = 1
+	add_child(spr)
 
 	var body: StaticBody2D = StaticBody2D.new()
 	body.position = pos + size * 0.5
@@ -89,15 +106,15 @@ func _add_wall(pos: Vector2, size: Vector2, color: Color) -> void:
 
 
 func _build_npcs() -> void:
-	# Slots bartender
+	# Slots bartender (dwarf sprite)
 	_add_tavern_npc(
 		Vector2(float(2 * TILE), float(3 * TILE)),
-		"slots", "酒保", "[E] 老虎機", Color(0.85, 0.60, 0.25, 1.0)
+		"slots", "酒保", "[E] 老虎機", TEX_DWARF
 	)
-	# Pachinko gambler
+	# Pachinko gambler (lizard sprite)
 	_add_tavern_npc(
 		Vector2(float(5 * TILE), float(3 * TILE)),
-		"pachinko", "賭徒", "[E] 彈珠台", Color(0.35, 0.65, 0.95, 1.0)
+		"pachinko", "賭徒", "[E] 彈珠台", TEX_LIZARD
 	)
 
 	# Dungeon merchant — Area2D with DungeonMerchant script, self-initialises in _ready
@@ -120,30 +137,24 @@ func _add_tavern_npc(
 	npc_type: String,
 	npc_name: String,
 	prompt: String,
-	color: Color
+	tex: Texture2D
 ) -> void:
 	var npc_node: TavernNpc = TavernNpc.new()
 	npc_node.npc_type = npc_type
 	npc_node.prompt_text = prompt
 	npc_node.position = world_pos + Vector2(float(TILE) * 0.5, 0.0)
 
-	var head: ColorRect = ColorRect.new()
-	head.color = color.lightened(0.3)
-	head.size = Vector2(18.0, 18.0)
-	head.position = Vector2(-9.0, -58.0)
-	npc_node.add_child(head)
-
-	var body_rect: ColorRect = ColorRect.new()
-	body_rect.color = color
-	body_rect.size = Vector2(22.0, 36.0)
-	body_rect.position = Vector2(-11.0, -40.0)
-	npc_node.add_child(body_rect)
+	var sprite: Sprite2D = Sprite2D.new()
+	sprite.texture = tex
+	sprite.scale = Vector2(2.0, 2.0)
+	sprite.position = Vector2(0.0, -24.0)
+	npc_node.add_child(sprite)
 
 	var name_lbl: Label = Label.new()
 	name_lbl.text = npc_name
 	name_lbl.add_theme_font_size_override("font_size", 11)
 	name_lbl.modulate = Color(1.0, 1.0, 0.75, 1.0)
-	name_lbl.position = Vector2(-22.0, -75.0)
+	name_lbl.position = Vector2(-22.0, -55.0)
 	npc_node.add_child(name_lbl)
 
 	var area: Area2D = Area2D.new()
@@ -211,29 +222,22 @@ func _maybe_spawn_dark_wizard() -> void:
 
 
 func _add_dark_wizard(world_pos: Vector2) -> void:
-	var color: Color = Color(0.40, 0.15, 0.55, 1.0)
 	var npc_node: TavernNpc = TavernNpc.new()
 	npc_node.npc_type = "dark_wizard"
 	npc_node.prompt_text = "[E] 除咒（2 金幣）"
 	npc_node.position = world_pos
 
-	var head: ColorRect = ColorRect.new()
-	head.color = color.lightened(0.2)
-	head.size = Vector2(18.0, 18.0)
-	head.position = Vector2(-9.0, -58.0)
-	npc_node.add_child(head)
-
-	var body_rect: ColorRect = ColorRect.new()
-	body_rect.color = color
-	body_rect.size = Vector2(22.0, 36.0)
-	body_rect.position = Vector2(-11.0, -40.0)
-	npc_node.add_child(body_rect)
+	var sprite: Sprite2D = Sprite2D.new()
+	sprite.texture = TEX_WIZARD
+	sprite.scale = Vector2(2.0, 2.0)
+	sprite.position = Vector2(0.0, -24.0)
+	npc_node.add_child(sprite)
 
 	var name_lbl: Label = Label.new()
 	name_lbl.text = "暗黑巫師"
 	name_lbl.add_theme_font_size_override("font_size", 11)
 	name_lbl.modulate = Color(0.85, 0.55, 1.0, 1.0)
-	name_lbl.position = Vector2(-22.0, -75.0)
+	name_lbl.position = Vector2(-22.0, -55.0)
 	npc_node.add_child(name_lbl)
 
 	var area: Area2D = Area2D.new()

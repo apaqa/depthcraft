@@ -29,25 +29,18 @@ var _current_player: Variant = null
 
 
 func _build_visual() -> void:
-	var color: Color = Color(0.55, 0.35, 0.85, 1.0)
-
-	var head: ColorRect = ColorRect.new()
-	head.color = color.lightened(0.3)
-	head.size = Vector2(18.0, 18.0)
-	head.position = Vector2(-9.0, -58.0)
-	add_child(head)
-
-	var body_rect: ColorRect = ColorRect.new()
-	body_rect.color = color
-	body_rect.size = Vector2(22.0, 36.0)
-	body_rect.position = Vector2(-11.0, -40.0)
-	add_child(body_rect)
+	var tex: Texture2D = preload("res://assets/doc_idle_anim_f0.png")
+	var sprite: Sprite2D = Sprite2D.new()
+	sprite.texture = tex
+	sprite.scale = Vector2(2.0, 2.0)
+	sprite.position = Vector2(0.0, -24.0)
+	add_child(sprite)
 
 	var name_lbl: Label = Label.new()
 	name_lbl.text = "傳送師"
 	name_lbl.add_theme_font_size_override("font_size", 11)
 	name_lbl.modulate = Color(0.85, 0.65, 1.0, 1.0)
-	name_lbl.position = Vector2(-22.0, -75.0)
+	name_lbl.position = Vector2(-22.0, -55.0)
 	add_child(name_lbl)
 
 	var area: Area2D = Area2D.new()
