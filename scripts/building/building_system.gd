@@ -235,30 +235,6 @@ func get_preview_modulate(tile_pos: Vector2i) -> Color:
 	return Color(1.0, 0.3, 0.3, 0.5)
 
 
-func get_selected_building_texture() -> Texture2D:
-	var building := get_selected_building()
-	if building.is_empty():
-		return null
-
-	if building.has("preview_texture"):
-		return building.get("preview_texture", null)
-
-	if building_layer == null:
-		return null
-
-	var source := building_layer.tile_set.get_source(int(building["tile_source_id"]))
-	if source == null:
-		return null
-	return source.texture
-
-
-func get_selected_building_preview_scale() -> Vector2:
-	var building: Dictionary = get_selected_building()
-	if building.is_empty():
-		return Vector2.ONE
-	return building.get("preview_scale", Vector2.ONE) as Vector2
-
-
 func get_selected_building_tile_size() -> Vector2i:
 	var building := get_selected_building()
 	if building.is_empty():

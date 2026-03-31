@@ -2,7 +2,6 @@ extends Node
 
 const WORKBENCH_SCENE_PATH = "res://scenes/building/facilities/workbench.tscn"
 const STORAGE_CHEST_SCENE_PATH = "res://scenes/building/facilities/storage_chest.tscn"
-const REPAIR_BENCH_SCENE_PATH = "res://scenes/building/facilities/repair_bench.tscn"
 const WOOD_DOOR_SCENE_PATH = "res://scenes/building/facilities/wood_door.tscn"
 const TALENT_ALTAR_SCENE_PATH = "res://scenes/building/facilities/talent_altar.tscn"
 const FARM_PLOT_SCENE_PATH = "res://scenes/building/facilities/farm_plot.tscn"
@@ -15,7 +14,7 @@ const CATEGORY_ORDER = ["structure", "door_window", "facility", "defense"]
 const CATEGORY_DATA = {
 	"structure": {"name": "build_cat_structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
 	"door_window": {"name": "build_cat_door_window", "items": ["wood_door"]},
-	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "talent_altar", "cooking_bench", "farm_plot", "tavern", "home_core"]},
+	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "talent_altar", "cooking_bench", "farm_plot", "bounty_board", "tavern", "home_core"]},
 	"defense": {"name": "build_cat_defense", "items": []},
 }
 
@@ -88,7 +87,7 @@ const BUILDINGS = {
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/tile_511.png"),
-		"preview_scale": Vector2(2.5, 2.5),
+		"preview_scale": Vector2( 0.5, 0.5),
 	},
 	"storage_chest": {
 		"id": "storage_chest",
@@ -99,16 +98,6 @@ const BUILDINGS = {
 		"scene_path": STORAGE_CHEST_SCENE_PATH,
 		"preview_texture": preload("res://assets/chest_closed.png"),
 		"preview_scale": Vector2(1.0, 1.0),
-	},
-	"repair_bench": {
-		"id": "repair_bench",
-		"name": "repair_bench",
-		"category": "facility",
-		"kind": "facility",
-		"cost": {"stone": 5, "iron_ore": 3},
-		"scene_path": REPAIR_BENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1_v2.png"),
-		"preview_scale": Vector2(0.35, 0.35),
 	},
 	"talent_altar": {
 		"id": "talent_altar",
@@ -138,7 +127,7 @@ const BUILDINGS = {
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/tile_131.png"),
-		"preview_scale": Vector2(2.5, 2.5),
+		"preview_scale": Vector2( 0.5, 0.5),
 	},
 	"bounty_board": {
 		"id": "bounty_board",
@@ -170,14 +159,16 @@ const BUILDINGS = {
 		"cost": {"wood": 10, "stone": 5},
 		"scene_path": HOME_CORE_SCENE_PATH,
 		"preview_texture": preload("res://assets/wall_banner_blue.png"),
-		"preview_scale": Vector2(2.5, 2.5),
+		"preview_scale": Vector2(1.5, 1.5),
 	},
 }
 
-const ORDER = ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "talent_altar", "farm_plot", "cooking_bench", "tavern", "home_core"]
+const ORDER = ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "tavern", "home_core"]
 
 
 static func get_building(building_id: String) -> Dictionary:
+	if building_id == "repair_bench":
+		building_id = "workbench"
 	if not BUILDINGS.has(building_id):
 		return {}
 	return BUILDINGS[building_id].duplicate(true)
