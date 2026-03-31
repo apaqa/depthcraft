@@ -213,7 +213,7 @@ func _spawn_altars() -> void:
 	altar_rng.seed = generation_seed ^ 0xA17A4
 	var placed: int = 0
 	var attempts: int = 0
-	while placed < 4 and attempts < 200:
+	while placed < 2 and attempts < 200:
 		attempts += 1
 		var px: float = altar_rng.randf_range(float(WorldGenerator.TILE_SIZE) * 4.0, map_size.x - float(WorldGenerator.TILE_SIZE) * 4.0)
 		var py: float = altar_rng.randf_range(float(WorldGenerator.TILE_SIZE) * 4.0, map_size.y - float(WorldGenerator.TILE_SIZE) * 4.0)
