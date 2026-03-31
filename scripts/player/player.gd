@@ -1295,7 +1295,7 @@ func set_consumable_slot(slot_index: int, item_id_val: String) -> void:
 	elif slot_index == 1:
 		consumable_r_id = item_id_val
 	if inventory != null:
-		inventory.inventory_changed.emit()
+		inventory.mark_dirty()
 
 
 func get_consumable_slots() -> Array[Dictionary]:
@@ -1403,7 +1403,7 @@ func _use_consumable_at_slot(slot_index: int) -> bool:
 		show_status_message(LocaleManager.L("meal_buff_active"), Color(1.0, 0.85, 0.45, 1.0))
 	consumable_cooldown_left = BANDAGE_COOLDOWN
 	if inventory != null:
-		inventory.inventory_changed.emit()
+		inventory.mark_dirty()
 	return true
 
 

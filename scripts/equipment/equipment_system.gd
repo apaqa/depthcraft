@@ -353,8 +353,8 @@ func repair_all_equipment(inventory = null) -> int:
 			repaired_count += 1
 	if repaired_count > 0:
 		_notify_equipment_changed()
-		if inventory != null and inventory.has_signal("inventory_changed"):
-			inventory.inventory_changed.emit()
+		if inventory != null and inventory.has_method("mark_dirty"):
+			inventory.mark_dirty()
 	return repaired_count
 
 

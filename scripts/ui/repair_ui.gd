@@ -328,7 +328,7 @@ func _on_repair_inventory_pressed(inv_index: int) -> void:
 		return
 	player.inventory.remove_item(material, cost_amount)
 	item["durability"] = max_dur
-	player.inventory.inventory_changed.emit()
+	player.inventory.mark_dirty()
 	_refresh()
 
 

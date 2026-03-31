@@ -871,7 +871,7 @@ func _do_repair_inventory_item(inv_index: int) -> void:
 		return
 	player.inventory.remove_item(material, cost_amount)
 	item["durability"] = max_dur
-	player.inventory.inventory_changed.emit()
+	player.inventory.mark_dirty()
 
 
 func _get_repair_cost_multiplier() -> float:
@@ -1118,7 +1118,7 @@ func _on_forge_action_pressed() -> void:
 	if success:
 		_build_forge_list()
 		_populate_forge_detail()
-		player.inventory.inventory_changed.emit()
+		player.inventory.mark_dirty()
 	else:
 		_forge_cost_lbl.text = "材料不足！"
 		_forge_cost_lbl.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2, 1.0))

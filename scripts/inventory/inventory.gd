@@ -26,6 +26,10 @@ func _process(delta: float) -> void:
 			inventory_changed.emit()
 
 
+func mark_dirty() -> void:
+	_mark_dirty()
+
+
 func _mark_dirty() -> void:
 	if not _dirty:
 		_dirty = true
@@ -240,7 +244,7 @@ func load_state(saved_items: Array) -> void:
 		if typeof(stack_variant) != TYPE_DICTIONARY:
 			continue
 		items.append((stack_variant as Dictionary).duplicate(true))
-	inventory_changed.emit()
+	_mark_dirty()
 
 
 func _duplicate_items(source_items: Array[Dictionary]) -> Array[Dictionary]:

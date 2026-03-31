@@ -659,7 +659,7 @@ func _on_sell_item(stack_index: int) -> void:
 	var currency: String = str(price_info.get("currency", "copper"))
 	var amount_per: int = int(price_info.get("amount", 1))
 	inv.items.remove_at(stack_index)
-	inv.inventory_changed.emit()
+	inv.mark_dirty()
 	inv.add_item(currency, amount_per * qty)
 	if _message_label != null:
 		_message_label.text = ""

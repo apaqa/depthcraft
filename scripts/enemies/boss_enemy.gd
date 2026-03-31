@@ -156,7 +156,7 @@ func _grant_stack(inventory, stack: Dictionary) -> void:
 
 func _force_add_stack(inventory, stack: Dictionary) -> void:
 	inventory.items.append(stack.duplicate(true))
-	inventory.inventory_changed.emit()
+	inventory.mark_dirty()
 
 
 func _generate_boss_equipment() -> Dictionary:

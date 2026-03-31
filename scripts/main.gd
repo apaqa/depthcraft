@@ -111,8 +111,8 @@ func _debug_clear_inventory_and_equipment() -> void:
 		var inv: Object = p.get("inventory")
 		if inv != null:
 			inv.items.clear()
-			if inv.has_signal("inventory_changed"):
-				inv.inventory_changed.emit()
+			if inv.has_method("mark_dirty"):
+				inv.mark_dirty()
 		var eq: Object = p.get("equipment_system")
 		if eq != null:
 			for slot_name: String in eq.SLOT_ORDER:
