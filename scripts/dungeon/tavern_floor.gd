@@ -10,14 +10,10 @@ extends Node2D
 ##       Col  9     = vertical wall, gap rows 3-4
 ##       Cols 10-18 = gambler room (lizard + merchant)
 ##   Row 6        : horizontal wall, gaps cols 4-5 / 14-15
-##   Rows 7-8     : central corridor
-##   Row 9        : horizontal wall, gaps cols 3-4 / 9-10 / 15-16
-##   Rows 10-13   : lower rooms
-##       Cols 1-5   = stairs down (enter dungeon)
-##       Col  6     = vertical wall, gap rows 10-11
-##       Cols 7-12  = teleporter room
-##       Col  13    = vertical wall, gap rows 10-11
-##       Cols 14-18 = stairs up (return to surface)
+##   Rows 7-13    : lower open area
+##       Left side  = spawn + return-to-surface stairs
+##       Right wall = dungeon entrance (embedded, scaled up)
+##       Right side = teleporter next to dungeon entrance
 ##   Row 14       : bottom wall
 
 signal enter_dungeon_requested(floor_number: int)
@@ -52,8 +48,8 @@ func _ready() -> void:
 
 
 func get_spawn_position() -> Vector2:
-	# Centre of the corridor
-	return Vector2(float(10 * TILE), float(8 * TILE))
+	# Left side, near the return-to-surface stairs
+	return Vector2(float(2 * TILE), float(9 * TILE))
 
 
 func place_player(new_player: Node, spawn_pos: Vector2) -> void:
@@ -110,6 +106,10 @@ func _define_walls(walls: Dictionary) -> void:
 		walls[Vector2i(x, ROOM_H - 1)] = true
 	for y: int in range(1, ROOM_H - 1):
 		walls[Vector2i(0, y)] = true
+	# Right wall with gap for dungeon entrance (rows 8-10 open)
+	for y: int in range(1, ROOM_H - 1):
+		if y == 8 or y == 9 or y == 10:
+			continue
 		walls[Vector2i(ROOM_W - 1, y)] = true
 
 	# --- upper vertical divider: col 9, rows 1-5, gap rows 3-4 ---
@@ -121,20 +121,6 @@ func _define_walls(walls: Dictionary) -> void:
 		if x == 4 or x == 5 or x == 14 or x == 15:
 			continue
 		walls[Vector2i(x, 6)] = true
-
-	# --- horizontal divider row 9, gaps at 3-4, 9-10, 15-16 ---
-	for x: int in range(1, ROOM_W - 1):
-		if x == 3 or x == 4 or x == 9 or x == 10 or x == 15 or x == 16:
-			continue
-		walls[Vector2i(x, 9)] = true
-
-	# --- lower vertical divider col 6, rows 10-13, gap rows 10-11 ---
-	for y: int in [12, 13]:
-		walls[Vector2i(6, y)] = true
-
-	# --- lower vertical divider col 13, rows 10-13, gap rows 10-11 ---
-	for y: int in [12, 13]:
-		walls[Vector2i(13, y)] = true
 
 
 # ---------------------------------------------------------------------------
@@ -191,10 +177,10 @@ func _build_npcs() -> void:
 	merchant.position = Vector2(float(16 * TILE), float(3 * TILE))
 	add_child(merchant)
 
-	# Lower-centre room — floor teleporter
+	# Right side — floor teleporter, next to dungeon entrance
 	var teleporter: Node2D = Node2D.new()
 	teleporter.set_script(FLOOR_TELEPORTER_SCRIPT)
-	teleporter.position = Vector2(float(10 * TILE), float(11 * TILE))
+	teleporter.position = Vector2(float(16 * TILE), float(9 * TILE))
 	add_child(teleporter)
 	if teleporter.has_signal("floor_selected"):
 		teleporter.floor_selected.connect(_on_teleporter_floor_selected)
@@ -245,24 +231,9 @@ func _on_teleporter_floor_selected(floor_number: int) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_stairways() -> void:
-	# Lower-left room — down stairs (enter dungeon)
-	var down_stair: Node = STAIRWAY_SCENE.instantiate()
-	down_stair.position = Vector2(float(3 * TILE), float(11 * TILE))
-	down_stair.set("prompt_text", "[E] 進入地牢")
-	add_child(down_stair)
-	if down_stair.has_signal("descend_requested"):
-		down_stair.descend_requested.connect(_on_down_stair_activated)
-
-	var down_lbl: Label = Label.new()
-	down_lbl.text = "[E] 進入地牢"
-	down_lbl.add_theme_font_size_override("font_size", 10)
-	down_lbl.modulate = Color(1.0, 0.90, 0.50, 1.0)
-	down_lbl.position = Vector2(float(3 * TILE) - 22.0, float(11 * TILE) - 34.0)
-	add_child(down_lbl)
-
-	# Lower-right room — up stairs (return to surface)
+	# Left side — up stairs (return to surface), near spawn
 	var up_stair: Node = STAIRWAY_SCENE.instantiate()
-	up_stair.position = Vector2(float(16 * TILE), float(11 * TILE))
+	up_stair.position = Vector2(float(2 * TILE), float(11 * TILE))
 	up_stair.set("stair_variant", "up")
 	up_stair.set("prompt_text", "[E] 返回地表")
 	add_child(up_stair)
@@ -273,8 +244,28 @@ func _build_stairways() -> void:
 	up_lbl.text = "[E] 返回地表"
 	up_lbl.add_theme_font_size_override("font_size", 10)
 	up_lbl.modulate = Color(0.75, 0.90, 1.0, 1.0)
-	up_lbl.position = Vector2(float(16 * TILE) - 22.0, float(11 * TILE) - 34.0)
+	up_lbl.position = Vector2(float(2 * TILE) - 22.0, float(11 * TILE) - 34.0)
 	add_child(up_lbl)
+
+	# Right wall — down stairs (enter dungeon), embedded in wall gap
+	var down_stair: Node = STAIRWAY_SCENE.instantiate()
+	# Position at the right wall opening (rows 8-10)
+	down_stair.position = Vector2(float(18 * TILE) + 16.0, float(9 * TILE))
+	down_stair.set("prompt_text", "[E] 進入地牢")
+	add_child(down_stair)
+	if down_stair.has_signal("descend_requested"):
+		down_stair.descend_requested.connect(_on_down_stair_activated)
+	# Scale the stairway sprite to fill the wall opening (3 tiles tall)
+	var stair_sprite: Node = down_stair.get_node_or_null("Sprite2D")
+	if stair_sprite != null:
+		stair_sprite.set("scale", Vector2(3.0, 5.0))
+
+	var down_lbl: Label = Label.new()
+	down_lbl.text = "[E] 進入地牢"
+	down_lbl.add_theme_font_size_override("font_size", 10)
+	down_lbl.modulate = Color(1.0, 0.90, 0.50, 1.0)
+	down_lbl.position = Vector2(float(17 * TILE), float(8 * TILE) - 10.0)
+	add_child(down_lbl)
 
 
 func _on_down_stair_activated() -> void:
@@ -294,8 +285,8 @@ func _maybe_spawn_dark_wizard() -> void:
 	rng.randomize()
 	if rng.randf() >= 0.20:
 		return
-	# Spawns in the lower-centre room
-	_add_dark_wizard(Vector2(float(8 * TILE), float(11 * TILE)))
+	# Spawns in the corridor area
+	_add_dark_wizard(Vector2(float(10 * TILE), float(9 * TILE)))
 
 
 func _add_dark_wizard(world_pos: Vector2) -> void:

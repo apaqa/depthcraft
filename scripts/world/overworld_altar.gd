@@ -116,20 +116,22 @@ func _pay_cost(player: Variant) -> bool:
 
 func _apply_effect(player: Variant) -> void:
 	if _effect.is_empty():
+		print("ALTAR: _effect is empty, skipping")
 		return
 	var stat: String = str(_effect.get("stat", ""))
 	var value: int = int(_effect.get("value", 0))
 	var is_blessing: bool = str(_effect.get("type", "")) == "blessing"
 	var effect_name: String = str(_effect.get("zh", ""))
+	print("ALTAR: applying effect ", _effect)
 
 	# Apply permanent stat on player_stats (flat additive)
 	var player_stats: Node = null
 	if player.has_method("get_node_or_null"):
 		player_stats = player.get_node_or_null("PlayerStats")
-	if player_stats != null and player_stats.has_method("add_permanent_bonus"):
-		player_stats.call("add_permanent_bonus", stat, value)
-	elif player_stats != null:
+	print("ALTAR: player_stats = ", player_stats)
+	if player_stats != null:
 		_apply_stat_fallback(player_stats, stat, value)
+		print("ALTAR: applied stat fallback for ", stat, " value=", value)
 
 	if player.has_method("show_status_message"):
 		var sign_str: String = "+" if value >= 0 else ""
