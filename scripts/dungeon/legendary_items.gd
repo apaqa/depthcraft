@@ -233,3 +233,24 @@ static func apply_legendary_passive(player: Node, item: Dictionary) -> void:
 		"damage_reduction_passive":
 			if player.get("armor_reduction") != null:
 				player.set("armor_reduction", minf(float(player.get("armor_reduction")) + 0.20, 0.85))
+		"on_kill_aoe":
+			if player.get("legend_on_kill_aoe") != null:
+				player.set("legend_on_kill_aoe", true)
+		"block_heal":
+			if player.get("legend_block_heal") != null:
+				player.set("legend_block_heal", true)
+		"crit_lifesteal":
+			if player.get("legend_crit_lifesteal") != null:
+				player.set("legend_crit_lifesteal", true)
+		"dodge_on_sprint":
+			if player.get("legend_dodge_on_sprint") != null:
+				player.set("legend_dodge_on_sprint", true)
+		"eclipse_crit":
+			if player.get("legend_eclipse_crit") != null:
+				player.set("legend_eclipse_crit", true)
+		"chain_lightning":
+			if player.get("legend_chain_lightning") != null:
+				player.set("legend_chain_lightning", true)
+		"kill_count_bonus":
+			if player.get("legend_kill_count_bonus") != null:
+				player.set("legend_kill_count_bonus", true)

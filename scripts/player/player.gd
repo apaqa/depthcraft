@@ -103,6 +103,14 @@ var dragon_emergency_guard: bool = false
 var shadow_combo_count: int = 0
 var shadow_guaranteed_crit_ready: bool = false
 var dragon_guard_trigger_floor: int = -1
+var legend_on_kill_aoe: bool = false
+var legend_block_heal: bool = false
+var legend_crit_lifesteal: bool = false
+var legend_dodge_on_sprint: bool = false
+var legend_eclipse_crit: bool = false
+var legend_chain_lightning: bool = false
+var legend_kill_count_bonus: bool = false
+var legend_kill_count: int = 0
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
@@ -555,11 +563,16 @@ func request_tavern_menu(facility) -> void:
 func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	if is_dead or invincible_time_left > 0.0:
 		return
-	if dodge_chance > 0.0 and randf() < dodge_chance:
+	var effective_dodge: float = dodge_chance
+	if legend_dodge_on_sprint and sprint_skill_time_left > 0.0:
+		effective_dodge += 0.30
+	if effective_dodge > 0.0 and randf() < effective_dodge:
 		_show_floating_text(global_position, "Dodge", Color(0.75, 1.0, 1.0, 1.0))
 		return
 	if player_stats.get_block_chance() > 0.0 and randf() < player_stats.get_block_chance():
 		_show_floating_text(global_position, "Block", Color(0.7, 0.85, 1.0, 1.0))
+		if legend_block_heal:
+			heal(max(int(round(float(max_hp) * 0.05)), 1))
 		return
 	var defense_value: int = player_stats.get_total_defense()
 	var reduced_amount: int = max(int(round(float(max(amount - defense_value, 1)) * (1.0 - armor_reduction))), 1)
@@ -648,7 +661,7 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 		if not is_critical and player_stats.get_total_crit_chance() + crit_chance_bonus > 0.0 and randf() < (player_stats.get_total_crit_chance() + crit_chance_bonus):
 			is_critical = true
 		if is_critical:
-			attack_damage *= 2
+			attack_damage = attack_damage * (4 if legend_eclipse_crit else 2)
 			crit_landed = true
 		if player_stats.get_execute_bonus() > 0.0:
 			var enemy_hp: int = int(collider.get("current_hp"))
@@ -667,6 +680,10 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 		var heal_amount: int = max(int(round(float(max_hp) * 0.05)), 1)
 		heal(heal_amount)
 		_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.55, 1.0, 0.7, 1.0))
+	if legend_crit_lifesteal and crit_landed and total_damage_dealt > 0:
+		heal(max(int(round(float(total_damage_dealt) * 0.10)), 1))
+	if legend_chain_lightning and attack_connected and randf() < 0.20:
+		_trigger_chain_lightning()
 	_update_shadow_combo_state(attack_connected, guaranteed_crit_ready)
 	# Also hit the closest nearby resource node (trees, rocks, ore)
 	var closest_resource: Variant = _get_closest_interactable()
@@ -677,15 +694,19 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 
 
 func _handle_enemy_kill_trigger(enemy_ref: Variant) -> void:
-	if not necromancer_summon_on_kill:
-		return
 	if enemy_ref == null:
 		return
 	if not bool(enemy_ref.get("is_dead")):
 		return
-	if randf() > 0.10:
-		return
-	_spawn_skeleton_servant()
+	if necromancer_summon_on_kill and randf() < 0.10:
+		_spawn_skeleton_servant()
+	if legend_on_kill_aoe:
+		_trigger_legend_kill_aoe()
+	if legend_kill_count_bonus:
+		legend_kill_count += 1
+		if legend_kill_count % 10 == 0:
+			damage_multiplier = minf(damage_multiplier + 0.02, damage_multiplier + 0.50 - maxf(damage_multiplier - 1.0, 0.0))
+			_show_floating_text(global_position, "ATK+2%", Color(0.9, 0.5, 1.0, 1.0))
 
 
 func _spawn_skeleton_servant() -> void:
@@ -719,6 +740,42 @@ func _trigger_lava_counterburst() -> void:
 			hit_enemy = true
 	if hit_enemy:
 		_show_floating_text(global_position, "Flame Burst", Color(1.0, 0.55, 0.2, 1.0))
+
+
+func _trigger_legend_kill_aoe() -> void:
+	var aoe_damage: int = max(int(round(float(get_attack_damage()) * 0.40)), 1)
+	var hit_enemy: bool = false
+	for enemy_variant: Variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy: Node2D = enemy_variant as Node2D
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		if bool(enemy.get("is_dead")):
+			continue
+		if enemy.global_position.distance_to(global_position) > 80.0:
+			continue
+		if enemy.has_method("take_damage"):
+			enemy.take_damage(aoe_damage, (enemy.global_position - global_position).normalized())
+			hit_enemy = true
+	if hit_enemy:
+		_show_floating_text(global_position, "Ragnarok", Color(1.0, 0.3, 0.1, 1.0))
+
+
+func _trigger_chain_lightning() -> void:
+	var chain_damage: int = max(int(round(float(get_attack_damage()) * 0.50)), 1)
+	var hit_count: int = 0
+	for enemy_variant: Variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy: Node2D = enemy_variant as Node2D
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		if bool(enemy.get("is_dead")):
+			continue
+		if enemy.global_position.distance_to(global_position) > 100.0:
+			continue
+		if enemy.has_method("take_damage"):
+			enemy.take_damage(chain_damage, (enemy.global_position - global_position).normalized())
+			hit_count += 1
+	if hit_count > 0:
+		_show_floating_text(global_position, "Lightning", Color(0.8, 0.9, 1.0, 1.0))
 
 
 func _try_trigger_dragon_guard() -> bool:
@@ -1266,6 +1323,13 @@ func _on_equipment_changed() -> void:
 	if not shadow_combo_crit:
 		shadow_combo_count = 0
 		shadow_guaranteed_crit_ready = false
+	legend_on_kill_aoe = false
+	legend_block_heal = false
+	legend_crit_lifesteal = false
+	legend_dodge_on_sprint = false
+	legend_eclipse_crit = false
+	legend_chain_lightning = false
+	legend_kill_count_bonus = false
 	_apply_legendary_passives()
 	_refresh_all_stats()
 	_save_persistent_state()
