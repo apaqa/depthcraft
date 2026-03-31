@@ -160,15 +160,22 @@ func _add_wall_tile(tex: Texture2D, pos: Vector2, size: Vector2) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_npcs() -> void:
-	# Upper-left room — bartender (dwarf)
-	_add_tavern_npc(
-		Vector2(float(4 * TILE), float(4 * TILE)),
-		"slots", "酒保", "[E] 老虎機", TEX_DWARF
-	)
-	# Upper-right room — gambler (lizard)
+	# Upper-left room — bartender merchant (dwarf sprite, uses DungeonMerchant shop)
+	var bartender: Area2D = Area2D.new()
+	bartender.set_script(DUNGEON_MERCHANT_SCRIPT)
+	bartender.position = Vector2(float(4 * TILE), float(4 * TILE))
+	# Pre-add dwarf Sprite2D so DungeonMerchant._ensure_visuals() keeps it
+	var bar_spr: Sprite2D = Sprite2D.new()
+	bar_spr.name = "Sprite2D"
+	bar_spr.texture = TEX_DWARF
+	bar_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bartender.add_child(bar_spr)
+	add_child(bartender)
+
+	# Upper-right room — gambler (lizard) — opens slot machine / pachinko tabs
 	_add_tavern_npc(
 		Vector2(float(13 * TILE), float(3 * TILE)),
-		"pachinko", "賭徒", "[E] 彈珠台", TEX_LIZARD
+		"pachinko", "賭徒", "[E] 賭徒 — 試試手氣", TEX_LIZARD
 	)
 
 	# Upper-right room — dungeon merchant
