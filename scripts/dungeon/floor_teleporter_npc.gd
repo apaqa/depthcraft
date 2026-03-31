@@ -15,7 +15,7 @@ func _ready() -> void:
 
 
 func get_interaction_prompt() -> String:
-	return "[E] 傳送到檢查點"
+	return LocaleManager.L("teleporter_prompt")
 
 
 func interact(player: Node) -> void:
@@ -37,7 +37,7 @@ func _build_visual() -> void:
 	add_child(sprite)
 
 	var name_lbl: Label = Label.new()
-	name_lbl.text = "傳送師"
+	name_lbl.text = LocaleManager.L("teleporter_name")
 	name_lbl.add_theme_font_size_override("font_size", 11)
 	name_lbl.modulate = Color(0.85, 0.65, 1.0, 1.0)
 	name_lbl.position = Vector2(-22.0, -55.0)
@@ -115,13 +115,13 @@ func _open_panel(player: Variant) -> void:
 	margin.add_child(vbox)
 
 	var title: Label = Label.new()
-	title.text = "傳送到檢查點"
+	title.text = LocaleManager.L("teleporter_title")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 20)
 	vbox.add_child(title)
 
 	var hint: Label = Label.new()
-	hint.text = "第 1 層免費，之後每層 10 銅幣"
+	hint.text = LocaleManager.L("teleporter_hint")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.modulate = Color(0.82, 0.82, 0.88, 1.0)
@@ -136,11 +136,11 @@ func _open_panel(player: Variant) -> void:
 	var inventory: Variant = player.get("inventory") if player != null else null
 	for floor_num: int in floors:
 		var cost: int = _get_cost(floor_num)
-		var btn_text: String = "第 %d 層" % floor_num
+		var btn_text: String = LocaleManager.L("teleporter_floor_label") % floor_num
 		if cost > 0:
-			btn_text += " — %d 銅幣" % cost
+			btn_text += LocaleManager.L("teleporter_floor_cost") % cost
 		else:
-			btn_text += " — 免費"
+			btn_text += LocaleManager.L("teleporter_floor_free")
 
 		var can_afford: bool = true
 		if cost > 0 and inventory != null and inventory.has_method("get_item_count"):
@@ -155,7 +155,7 @@ func _open_panel(player: Variant) -> void:
 		btn_list.add_child(btn)
 
 	var close_btn: Button = Button.new()
-	close_btn.text = "取消"
+	close_btn.text = LocaleManager.L("teleporter_cancel")
 	close_btn.custom_minimum_size = Vector2(0.0, 32.0)
 	close_btn.pressed.connect(_close_panel)
 	vbox.add_child(close_btn)

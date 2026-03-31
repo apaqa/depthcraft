@@ -72,8 +72,8 @@ func get_interaction_prompt() -> String:
 	if _used:
 		return ""
 	if _cost_type == "gold":
-		return "[E] 暗黑祭壇 — %d 銅幣" % _cost_amount
-	return "[E] 暗黑祭壇 — 獻祭 %d 生命上限" % _cost_amount
+		return LocaleManager.L("dark_altar_prompt_copper") % _cost_amount
+	return LocaleManager.L("dark_altar_prompt_hp") % _cost_amount
 
 
 func interact(player: Variant) -> void:
@@ -93,7 +93,7 @@ func _pay_cost(player: Variant) -> bool:
 			return false
 		if not inv.has_item("copper", _cost_amount):
 			if player.has_method("show_status_message"):
-				player.show_status_message("銅幣不足", Color(1.0, 0.4, 0.4, 1.0))
+				player.show_status_message(LocaleManager.L("dark_altar_no_copper"), Color(1.0, 0.4, 0.4, 1.0))
 			return false
 		inv.remove_item("copper", _cost_amount)
 		return true
@@ -106,7 +106,7 @@ func _pay_cost(player: Variant) -> bool:
 	var cur_max_hp: int = int(player_stats.get("base_max_hp")) if player_stats.get("base_max_hp") != null else 100
 	if cur_max_hp - _cost_amount < 10:
 		if player.has_method("show_status_message"):
-			player.show_status_message("生命上限不足", Color(1.0, 0.4, 0.4, 1.0))
+			player.show_status_message(LocaleManager.L("dark_altar_no_hp"), Color(1.0, 0.4, 0.4, 1.0))
 		return false
 	player_stats.set("base_max_hp", cur_max_hp - _cost_amount)
 	if player_stats.has_signal("stats_changed"):
@@ -120,7 +120,7 @@ func _apply_effect(player: Variant) -> void:
 	var stat: String = str(_effect.get("stat", ""))
 	var value: int = int(_effect.get("value", 0))
 	var is_blessing: bool = str(_effect.get("type", "")) == "blessing"
-	var effect_name: String = str(_effect.get("zh", ""))
+	var effect_name: String = LocaleManager.L("dark_altar_effect_" + str(_effect.get("id", "")))
 
 	# Apply permanent stat on player_stats (flat additive)
 	var player_stats: Node = null
@@ -132,10 +132,10 @@ func _apply_effect(player: Variant) -> void:
 	if player.has_method("show_status_message"):
 		var sign_str: String = "+" if value >= 0 else ""
 		if is_blessing:
-			player.show_status_message("黑暗中傳來低語...", Color(1.0, 0.9, 0.3, 1.0))
+			player.show_status_message(LocaleManager.L("dark_altar_whisper"), Color(1.0, 0.9, 0.3, 1.0))
 			player.show_status_message("%s %s%d" % [effect_name, sign_str, value], Color(0.3, 0.9, 0.3, 1.0))
 		else:
-			player.show_status_message("交易的代價...", Color(0.9, 0.3, 0.3, 1.0))
+			player.show_status_message(LocaleManager.L("dark_altar_price"), Color(0.9, 0.3, 0.3, 1.0))
 			player.show_status_message("%s %s%d" % [effect_name, sign_str, value], Color(0.9, 0.3, 0.3, 1.0))
 
 
