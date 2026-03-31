@@ -550,5 +550,16 @@
   "teleporter_floor_label": "Floor %d",
   "teleporter_floor_cost": " — %d copper",
   "teleporter_floor_free": " — Free",
-  "teleporter_cancel": "Cancel"
+  "teleporter_cancel": "Cancel",
+  "enemy_bat": "Bat",
+  "enemy_goblin": "Goblin",
+  "enemy_skeleton": "Skeleton",
+  "enemy_slime": "Slime",
+  "enemy_mimic": "Mimic",
+  "enemy_gargoyle": "Gargoyle",
+  "enemy_shadow_assassin": "Shadow Assassin",
+  "enemy_shadow": "Shadow",
+  "enemy_shield_orc": "Shield Orc",
+  "enemy_zombie": "Zombie",
+  "enemy_spider": "Spider"
 }

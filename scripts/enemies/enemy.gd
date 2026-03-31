@@ -70,6 +70,7 @@ func _ready() -> void:
 		var codex: Node = get_node_or_null("/root/CodexManager")
 		if codex != null:
 			codex.record_enemy_seen(enemy_kind)
+	call_deferred("_update_prefix_label")
 
 
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
@@ -427,29 +428,56 @@ func _apply_single_prefix_stats(prefix_id: String) -> void:
 
 
 func _update_prefix_label() -> void:
-	if _prefixes.is_empty():
-		if _prefix_label != null and is_instance_valid(_prefix_label):
-			_prefix_label.queue_free()
-			_prefix_label = null
-		return
+	var is_boss: bool = has_method("is_boss_enemy") and is_boss_enemy()
+	var is_elite: bool = is_elite_enemy()
+
+	# Determine label color
+	var label_color: Color = Color(1.0, 0.6, 0.1, 1.0)
+	if is_boss:
+		label_color = Color(1.0, 0.2, 0.2, 1.0)
+	elif is_elite:
+		label_color = Color(1.0, 0.9, 0.0, 1.0)
+	elif not _prefixes.is_empty():
+		label_color = MonsterPrefix.get_prefix_color(str(_prefixes[0]))
+
+	# Build prefix portion of the name
 	var prefix_names: Array[String] = []
 	for pid: String in _prefixes:
 		var zh_name: String = MonsterPrefix.get_prefix_display_name(pid)
 		if zh_name != "":
 			prefix_names.append(zh_name)
-	var display_name: String = " ".join(prefix_names)
-	if display_name == "":
+
+	# Build kind name
+	var kind_key: String = "enemy_" + enemy_kind
+	var kind_name: String = LocaleManager.L(kind_key)
+	if kind_name == kind_key:
+		kind_name = enemy_kind
+
+	# Compose display text
+	var display_name: String = ""
+	if not prefix_names.is_empty():
+		display_name = " ".join(prefix_names) + " " + kind_name
+	elif is_boss or is_elite:
+		display_name = kind_name
+	else:
+		# Plain enemy with no prefixes — no label needed
+		if _prefix_label != null and is_instance_valid(_prefix_label):
+			_prefix_label.queue_free()
+			_prefix_label = null
 		return
+
 	if _prefix_label == null or not is_instance_valid(_prefix_label):
 		_prefix_label = Label.new()
-		_prefix_label.add_theme_font_size_override("font_size", 9)
 		_prefix_label.add_theme_constant_override("outline_size", 2)
 		_prefix_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		_prefix_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_prefix_label.position = Vector2(-24, -30)
 		add_child(_prefix_label)
+
+	var font_size: int = 11 if is_boss else 9
+	_prefix_label.add_theme_font_size_override("font_size", font_size)
 	_prefix_label.text = display_name
-	_prefix_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.1, 1.0))
+	_prefix_label.add_theme_color_override("font_color", label_color)
 
 
 func _update_animation(direction: Vector2) -> void:

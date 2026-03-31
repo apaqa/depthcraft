@@ -550,5 +550,16 @@
   "teleporter_floor_label": "第 %d 層",
   "teleporter_floor_cost": " — %d 銅幣",
   "teleporter_floor_free": " — 免費",
-  "teleporter_cancel": "取消"
+  "teleporter_cancel": "取消",
+  "enemy_bat": "蝙蝠",
+  "enemy_goblin": "哥布林",
+  "enemy_skeleton": "骷髏",
+  "enemy_slime": "史萊姆",
+  "enemy_mimic": "寶箱怪",
+  "enemy_gargoyle": "石像鬼",
+  "enemy_shadow_assassin": "暗影刺客",
+  "enemy_shadow": "暗影",
+  "enemy_shield_orc": "盾牌獸人",
+  "enemy_zombie": "殭屍",
+  "enemy_spider": "蜘蛛"
 }
