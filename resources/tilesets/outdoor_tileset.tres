@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://dtvt244hk84uu" path="res://assets/outdoor/Outdoors_08.png" id="1_grass0"]
 [ext_resource type="Texture2D" uid="uid://d5ydeqc0f8wm" path="res://assets/outdoor/Outdoors_04.png" id="2_grass1"]
 [ext_resource type="Texture2D" uid="uid://df6bx4l7s5g3j" path="res://assets/outdoor/Outdoors_05.png" id="3_grass2"]
-[ext_resource type="Texture2D" uid="uid://bkingrw2vm0f5" path="res://assets/outdoor/Outdoors_20.png" id="4_road0"]
+[ext_resource type="Texture2D" uid="uid://bkingrw2vm0f5" path="res://assets/outdoor/Outdoors_22.png" id="4_road0"]
 [ext_resource type="Texture2D" uid="uid://cgww2eyy1cvhw" path="res://assets/outdoor/Outdoors_21.png" id="5_road1"]
 [ext_resource type="Texture2D" uid="uid://cibprbyq01u3f" path="res://assets/outdoor/Outdoors_40.png" id="6_water0"]
 [ext_resource type="Texture2D" uid="uid://cppy5pdyjvkgo" path="res://assets/outdoor/Outdoors_44.png" id="7_water1"]
