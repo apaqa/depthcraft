@@ -1,12 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep \"\\\\.png$\")",
-      "Bash(python3 -c \":*)",
-      "Read(//usr/**)",
-      "Bash(command -v python3 python)",
-      "Bash(py -c \"import struct; print\\(''ok''\\)\")",
-      "Bash(py -c \":*)"
+      "Bash(grep \"\\\\.png$\")"
     ]
   }
 }
