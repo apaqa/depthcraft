@@ -138,6 +138,11 @@ func _serialize_player(player: Node) -> Dictionary:
 	var attack_value: int = 0
 	var defense_value: int = 0
 	var speed_value: float = 0.0
+	var base_attack_value: int = 8
+	var base_defense_value: int = 0
+	var base_max_hp_value: int = 100
+	var base_speed_value: float = 80.0
+	var loot_bonus_value: float = 0.0
 	var player_stats: Node = player.get_node_or_null("PlayerStats")
 	if player_stats != null:
 		if player_stats.has_method("get_total_attack"):
@@ -146,6 +151,21 @@ func _serialize_player(player: Node) -> Dictionary:
 			defense_value = int(player_stats.call("get_total_defense"))
 		if player_stats.has_method("get_total_speed"):
 			speed_value = float(player_stats.call("get_total_speed"))
+		var ps_base_atk: Variant = player_stats.get("base_attack")
+		if ps_base_atk != null:
+			base_attack_value = int(ps_base_atk)
+		var ps_base_def: Variant = player_stats.get("base_defense")
+		if ps_base_def != null:
+			base_defense_value = int(ps_base_def)
+		var ps_base_hp: Variant = player_stats.get("base_max_hp")
+		if ps_base_hp != null:
+			base_max_hp_value = int(ps_base_hp)
+		var ps_base_spd: Variant = player_stats.get("base_speed")
+		if ps_base_spd != null:
+			base_speed_value = float(ps_base_spd)
+		var ps_loot: Variant = player_stats.get("loot_bonus")
+		if ps_loot != null:
+			loot_bonus_value = float(ps_loot)
 	var raw_speed: Variant = player.get("speed")
 	if is_zero_approx(speed_value) and raw_speed != null:
 		speed_value = float(raw_speed)
@@ -169,6 +189,13 @@ func _serialize_player(player: Node) -> Dictionary:
 		"attack": attack_value,
 		"defense": defense_value,
 		"speed": speed_value,
+		"base_stats": {
+			"base_attack": base_attack_value,
+			"base_defense": base_defense_value,
+			"base_max_hp": base_max_hp_value,
+			"base_speed": base_speed_value,
+			"loot_bonus": loot_bonus_value,
+		},
 	}
 
 
@@ -410,8 +437,26 @@ func _restore_player(data: Dictionary, player: Node) -> void:
 		for t: Variant in (raw_talents as Array):
 			talent_strings.append(str(t))
 	player.set("unlocked_talents", talent_strings)
-	# Rebuild talent bonuses in player_stats
+	# Restore permanent altar base stats before rebuilding talent bonuses
 	var player_stats: Node = player.get_node_or_null("PlayerStats")
+	var base_stats_data: Dictionary = data.get("base_stats", {}) as Dictionary
+	if player_stats != null and not base_stats_data.is_empty():
+		var saved_base_atk: Variant = base_stats_data.get("base_attack", null)
+		if saved_base_atk != null:
+			player_stats.set("base_attack", int(saved_base_atk))
+		var saved_base_def: Variant = base_stats_data.get("base_defense", null)
+		if saved_base_def != null:
+			player_stats.set("base_defense", int(saved_base_def))
+		var saved_base_hp: Variant = base_stats_data.get("base_max_hp", null)
+		if saved_base_hp != null:
+			player_stats.set("base_max_hp", int(saved_base_hp))
+		var saved_base_spd: Variant = base_stats_data.get("base_speed", null)
+		if saved_base_spd != null:
+			player_stats.set("base_speed", float(saved_base_spd))
+		var saved_loot: Variant = base_stats_data.get("loot_bonus", null)
+		if saved_loot != null:
+			player_stats.set("loot_bonus", float(saved_loot))
+	# Rebuild talent bonuses in player_stats
 	if player_stats != null and player_stats.has_method("rebuild_talent_bonuses"):
 		player_stats.call("rebuild_talent_bonuses", talent_strings)
 	var saved_speed: float = float(data.get("speed", player.get("speed")))
