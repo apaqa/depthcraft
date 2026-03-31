@@ -14,16 +14,17 @@ func _process(_delta: float) -> void:
 		visible = false
 		return
 
-	var texture: Texture2D = building_system.get_selected_building_texture()
-	if texture == null:
+	var building_id: String = building_system.get_selected_building_id()
+	var data: Dictionary = BuildingData.get_building(building_id)
+	if not data.has("preview_texture"):
 		visible = false
 		return
 
 	var tile_pos: Vector2i = building_system.get_hovered_tile_pos()
 	var tile_size: Vector2i = building_system.get_selected_building_tile_size()
 	global_position = building_system.get_preview_world_position(tile_pos, tile_size)
-	sprite.texture = texture
-	sprite.scale = building_system.get_selected_building_preview_scale()
+	sprite.texture = data["preview_texture"] as Texture2D
+	sprite.scale = data.get("preview_scale", Vector2.ONE) as Vector2
 	sprite.modulate = building_system.get_preview_modulate(tile_pos)
 	visible = true
 
