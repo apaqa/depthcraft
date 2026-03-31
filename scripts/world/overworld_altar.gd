@@ -20,8 +20,7 @@ const CURSE_POOL: Array[Dictionary] = [
 var _used: bool = false
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _effect: Dictionary = {}
-var _altar_sprite: ColorRect = null
-var _label: Label = null
+var _altar_sprite: Sprite2D = null
 
 
 func _ready() -> void:
@@ -42,23 +41,12 @@ func _roll_effect() -> void:
 
 
 func _build_visuals() -> void:
-	var is_blessing: bool = str(_effect.get("type", "blessing")) == "blessing"
-	var altar_color: Color = Color(0.3, 0.5, 1.0, 0.85) if is_blessing else Color(0.6, 0.1, 0.6, 0.85)
-
-	_altar_sprite = ColorRect.new()
-	_altar_sprite.size = Vector2(20.0, 28.0)
-	_altar_sprite.position = Vector2(-10.0, -28.0)
-	_altar_sprite.color = altar_color
-	add_child(_altar_sprite)
-
-	_label = Label.new()
-	_label.position = Vector2(-24.0, -44.0)
-	_label.add_theme_font_size_override("font_size", 9)
-	_label.add_theme_color_override("font_color", Color.WHITE)
-	_label.add_theme_constant_override("outline_size", 2)
-	_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	_label.text = str(_effect.get("zh", "祭壇"))
-	add_child(_label)
+	var spr: Sprite2D = Sprite2D.new()
+	spr.texture = preload("res://assets/column (2).png")
+	spr.scale = Vector2(1.5, 1.5)
+	spr.position = Vector2(0.0, -20.0)
+	add_child(spr)
+	_altar_sprite = spr
 
 	var col_shape: CollisionShape2D = CollisionShape2D.new()
 	var rect_shape: RectangleShape2D = RectangleShape2D.new()
@@ -70,10 +58,8 @@ func _build_visuals() -> void:
 
 func get_interaction_prompt() -> String:
 	if _used:
-		return LocaleManager.L("altar_used")
-	var effect_name: String = str(_effect.get("zh", "祭壇"))
-	var type_text: String = LocaleManager.L("altar_curse") if str(_effect.get("type", "")) == "curse" else LocaleManager.L("altar_blessing")
-	return "[E] %s: %s" % [type_text, effect_name]
+		return ""
+	return "[E] " + LocaleManager.L("altar_mystery") + " - 10 Gold"
 
 
 func interact(player: Variant) -> void:
@@ -81,9 +67,8 @@ func interact(player: Variant) -> void:
 		return
 	_used = true
 	_apply_effect(player)
-	_label.text = "✓"
 	if _altar_sprite != null:
-		_altar_sprite.color = Color(0.35, 0.35, 0.35, 0.6)
+		_altar_sprite.modulate = Color(0.35, 0.35, 0.35, 0.6)
 
 
 func _apply_effect(player: Variant) -> void:

@@ -127,7 +127,7 @@ const BUILDINGS = {
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/tile_131.png"),
-		"preview_scale": Vector2( 0.5, 0.5),
+		"preview_scale": Vector2(0.25, 0.25),
 	},
 	"bounty_board": {
 		"id": "bounty_board",
