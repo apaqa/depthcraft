@@ -87,7 +87,7 @@ const BUILDINGS = {
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/tile_511.png"),
-		"preview_scale": Vector2( 0.5, 0.5),
+		"preview_scale": Vector2(0.40, 0.40),
 	},
 	"storage_chest": {
 		"id": "storage_chest",
@@ -127,7 +127,7 @@ const BUILDINGS = {
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/tile_131.png"),
-		"preview_scale": Vector2(0.25, 0.25),
+		"preview_scale": Vector2(0.30, 0.30),
 	},
 	"bounty_board": {
 		"id": "bounty_board",

@@ -67,8 +67,7 @@ func interact(player: Variant) -> void:
 		return
 	_used = true
 	_apply_effect(player)
-	if _altar_sprite != null:
-		_altar_sprite.modulate = Color(0.35, 0.35, 0.35, 0.6)
+	queue_free()
 
 
 func _apply_effect(player: Variant) -> void:
