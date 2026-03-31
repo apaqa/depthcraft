@@ -1,7 +1,7 @@
 [gd_resource type="TileSet" format=3 uid="uid://outdoor_tileset_v1"]
 
 [ext_resource type="Texture2D" uid="uid://dtvt244hk84uu" path="res://assets/outdoor/Outdoors_08.png" id="1_grass0"]
-[ext_resource type="Texture2D" uid="uid://b2srjieh31k8o" path="res://assets/outdoor/Outdoors_04.png" id="2_grass1"]
+[ext_resource type="Texture2D" uid="uid://b2srjieh31k8o" path="res://assets/outdoor/Outdoors_09.png" id="2_grass1"]
 [ext_resource type="Texture2D" uid="uid://df6bx4l7s5g3j" path="res://assets/outdoor/Outdoors_05.png" id="3_grass2"]
 [ext_resource type="Texture2D" uid="uid://dg6hsu3om8exj" path="res://assets/outdoor/Outdoors_22.png" id="4_road0"]
 [ext_resource type="Texture2D" uid="uid://cgww2eyy1cvhw" path="res://assets/outdoor/Outdoors_21.png" id="5_road1"]
