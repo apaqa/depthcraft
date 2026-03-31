@@ -22,6 +22,8 @@ var _equipment_button: Button = null
 var _equipment_offer: Dictionary = {}
 var _equipment_price: int = 0
 var _floor_number: int = 1
+var override_items: Array = []
+var override_title: String = ""
 
 
 func setup(floor_number: int, rng: RandomNumberGenerator = null) -> void:
@@ -137,7 +139,7 @@ func _open_shop() -> void:
 	margin.add_child(vbox)
 
 	var title: Label = Label.new()
-	title.text = LocaleManager.L("boss_merchant_title")
+	title.text = override_title if override_title != "" else LocaleManager.L("boss_merchant_title")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(title)
@@ -150,12 +152,14 @@ func _open_shop() -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	for item_offer: Dictionary in SHOP_ITEMS:
+	var items_to_show: Array = override_items if not override_items.is_empty() else SHOP_ITEMS
+	for item_offer: Dictionary in items_to_show:
 		_add_item_row(vbox, item_offer)
 
 	vbox.add_child(HSeparator.new())
-	_add_equipment_row(vbox)
-	vbox.add_child(HSeparator.new())
+	if override_items.is_empty():
+		_add_equipment_row(vbox)
+		vbox.add_child(HSeparator.new())
 
 	_message_label = Label.new()
 	_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

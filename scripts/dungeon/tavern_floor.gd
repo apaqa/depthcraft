@@ -160,10 +160,16 @@ func _add_wall_tile(tex: Texture2D, pos: Vector2, size: Vector2) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_npcs() -> void:
-	# Upper-left room — bartender merchant (dwarf sprite, uses DungeonMerchant shop)
+	# Upper-left room — bartender merchant (dwarf sprite, tavern-specific items)
 	var bartender: Area2D = Area2D.new()
 	bartender.set_script(DUNGEON_MERCHANT_SCRIPT)
 	bartender.position = Vector2(float(4 * TILE), float(4 * TILE))
+	bartender.set("override_title", "酒保 — 買賣")
+	bartender.set("override_items", [
+		{"id": "stew", "quantity": 1, "price": 12},
+		{"id": "bread", "quantity": 2, "price": 3},
+		{"id": "bandage", "quantity": 3, "price": 2},
+	])
 	# Pre-add dwarf Sprite2D so DungeonMerchant._ensure_visuals() keeps it
 	var bar_spr: Sprite2D = Sprite2D.new()
 	bar_spr.name = "Sprite2D"
@@ -265,7 +271,7 @@ func _build_stairways() -> void:
 	# Scale the stairway sprite to fill the wall opening (3 tiles tall)
 	var stair_sprite: Node = down_stair.get_node_or_null("Sprite2D")
 	if stair_sprite != null:
-		stair_sprite.set("scale", Vector2(3.0, 5.0))
+		stair_sprite.set("scale", Vector2(2.0, 2.0))
 
 	var down_lbl: Label = Label.new()
 	down_lbl.text = "[E] 進入地牢"

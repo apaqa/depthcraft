@@ -1,6 +1,7 @@
 extends Area2D
 class_name DungeonStairway
 
+# NOTE: "descend_requested" is used for both up/down stairs; refactor later
 signal descend_requested
 signal return_surface_requested
 
