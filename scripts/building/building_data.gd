@@ -88,7 +88,7 @@ const BUILDINGS = {
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1.png"),
-		"preview_scale": Vector2(0.18, 0.18),
+		"preview_scale": Vector2(0.35, 0.35),
 	},
 	"storage_chest": {
 		"id": "storage_chest",
@@ -98,7 +98,7 @@ const BUILDINGS = {
 		"cost": {"wood": 3},
 		"scene_path": STORAGE_CHEST_SCENE_PATH,
 		"preview_texture": preload("res://assets/chest_closed.png"),
-		"preview_scale": Vector2(2.0, 2.0),
+		"preview_scale": Vector2(2.5, 2.5),
 	},
 	"repair_bench": {
 		"id": "repair_bench",
@@ -108,7 +108,7 @@ const BUILDINGS = {
 		"cost": {"stone": 5, "iron_ore": 3},
 		"scene_path": REPAIR_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1_v2.png"),
-		"preview_scale": Vector2(0.18, 0.18),
+		"preview_scale": Vector2(0.35, 0.35),
 	},
 	"talent_altar": {
 		"id": "talent_altar",
@@ -118,7 +118,7 @@ const BUILDINGS = {
 		"cost": {"stone": 10, "iron_ore": 5},
 		"scene_path": TALENT_ALTAR_SCENE_PATH,
 		"preview_texture": preload("res://assets/column.png"),
-		"preview_scale": Vector2(2.0, 2.0),
+		"preview_scale": Vector2(2.5, 2.5),
 	},
 	"farm_plot": {
 		"id": "farm_plot",
@@ -138,7 +138,7 @@ const BUILDINGS = {
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Monastery.png"),
-		"preview_scale": Vector2(0.18, 0.18),
+		"preview_scale": Vector2(0.35, 0.35),
 	},
 	"bounty_board": {
 		"id": "bounty_board",
@@ -160,7 +160,7 @@ const BUILDINGS = {
 		"base_max_hp": 80,
 		"scene_path": TAVERN_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House2.png"),
-		"preview_scale": Vector2(0.18, 0.18),
+		"preview_scale": Vector2(0.35, 0.35),
 	},
 	"home_core": {
 		"id": "home_core",
@@ -170,7 +170,7 @@ const BUILDINGS = {
 		"cost": {"wood": 10, "stone": 5},
 		"scene_path": HOME_CORE_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Castle.png"),
-		"preview_scale": Vector2(0.12, 0.12),
+		"preview_scale": Vector2(0.40, 0.40),
 	},
 }
 

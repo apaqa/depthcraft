@@ -13,7 +13,7 @@ radius = 18.0
 script = ExtResource("1_kgw6y")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-scale = Vector2(0.18, 0.18)
+scale = Vector2(0.35, 0.35)
 texture = ExtResource("2_hydj7")
 texture_filter = 0
 
