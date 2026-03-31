@@ -21,13 +21,25 @@ var _used: bool = false
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _effect: Dictionary = {}
 var _altar_sprite: Sprite2D = null
+var _cost_type: String = ""
+var _cost_amount: int = 0
 
 
 func _ready() -> void:
 	monitoring = true
 	monitorable = true
+	_roll_cost()
 	_roll_effect()
 	_build_visuals()
+
+
+func _roll_cost() -> void:
+	if _rng.randf() < 0.5:
+		_cost_type = "gold"
+		_cost_amount = int(_rng.randf_range(10.0, 200.0))
+	else:
+		_cost_type = "hp"
+		_cost_amount = _rng.randi_range(5, 20)
 
 
 func _roll_effect() -> void:
@@ -59,15 +71,47 @@ func _build_visuals() -> void:
 func get_interaction_prompt() -> String:
 	if _used:
 		return ""
-	return "[E] " + LocaleManager.L("altar_mystery") + " - 10 Gold"
+	if _cost_type == "gold":
+		return "[E] 暗黑祭壇 — %d 銅幣" % _cost_amount
+	return "[E] 暗黑祭壇 — 獻祭 %d 生命上限" % _cost_amount
 
 
 func interact(player: Variant) -> void:
 	if _used or player == null:
 		return
+	if not _pay_cost(player):
+		return
 	_used = true
 	_apply_effect(player)
 	queue_free()
+
+
+func _pay_cost(player: Variant) -> bool:
+	if _cost_type == "gold":
+		var inv: Node = player.get("inventory")
+		if inv == null:
+			return false
+		if not inv.has_item("copper", _cost_amount):
+			if player.has_method("show_status_message"):
+				player.show_status_message("銅幣不足", Color(1.0, 0.4, 0.4, 1.0))
+			return false
+		inv.remove_item("copper", _cost_amount)
+		return true
+	# hp cost
+	var player_stats: Node = null
+	if player.has_method("get_node_or_null"):
+		player_stats = player.get_node_or_null("PlayerStats")
+	if player_stats == null:
+		return false
+	var cur_max_hp: int = int(player_stats.get("base_max_hp")) if player_stats.get("base_max_hp") != null else 100
+	if cur_max_hp - _cost_amount < 10:
+		if player.has_method("show_status_message"):
+			player.show_status_message("生命上限不足", Color(1.0, 0.4, 0.4, 1.0))
+		return false
+	player_stats.set("base_max_hp", cur_max_hp - _cost_amount)
+	if player_stats.has_signal("stats_changed"):
+		player_stats.emit_signal("stats_changed")
+	return true
 
 
 func _apply_effect(player: Variant) -> void:
@@ -76,7 +120,6 @@ func _apply_effect(player: Variant) -> void:
 	var stat: String = str(_effect.get("stat", ""))
 	var value: int = int(_effect.get("value", 0))
 	var is_blessing: bool = str(_effect.get("type", "")) == "blessing"
-	var msg_color: Color = Color(0.4, 0.8, 1.0, 1.0) if is_blessing else Color(0.9, 0.3, 0.9, 1.0)
 	var effect_name: String = str(_effect.get("zh", ""))
 
 	# Apply permanent stat on player_stats (flat additive)
@@ -86,12 +129,16 @@ func _apply_effect(player: Variant) -> void:
 	if player_stats != null and player_stats.has_method("add_permanent_bonus"):
 		player_stats.call("add_permanent_bonus", stat, value)
 	elif player_stats != null:
-		# Fallback: directly modify a known stat property
 		_apply_stat_fallback(player_stats, stat, value)
 
 	if player.has_method("show_status_message"):
 		var sign_str: String = "+" if value >= 0 else ""
-		player.show_status_message("%s %s%d" % [effect_name, sign_str, value], msg_color)
+		if is_blessing:
+			player.show_status_message("黑暗中傳來低語...", Color(1.0, 0.9, 0.3, 1.0))
+			player.show_status_message("%s %s%d" % [effect_name, sign_str, value], Color(0.3, 0.9, 0.3, 1.0))
+		else:
+			player.show_status_message("交易的代價...", Color(0.9, 0.3, 0.3, 1.0))
+			player.show_status_message("%s %s%d" % [effect_name, sign_str, value], Color(0.9, 0.3, 0.3, 1.0))
 
 
 func _apply_stat_fallback(player_stats: Node, stat: String, value: int) -> void:
