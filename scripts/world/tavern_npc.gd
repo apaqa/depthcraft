@@ -32,5 +32,12 @@ func interact(player: Node) -> void:
 				Color(0.8, 0.5, 1.0, 1.0), 3.0
 			)
 		return
+	if npc_type == "dark_wizard":
+		if player != null and player.has_method("show_status_message"):
+			player.show_status_message(
+				"暗黑巫師：「2 金幣可除去一個詛咒（功能開發中）」",
+				Color(0.85, 0.55, 1.0, 1.0), 3.5
+			)
+		return
 	if player != null and player.has_method("request_tavern_menu"):
 		player.request_tavern_menu(self)

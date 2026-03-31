@@ -11,9 +11,11 @@ func get_interaction_prompt() -> String:
 func interact(player: Node) -> void:
 	if player == null:
 		return
-	var main_node: Node = player.get_tree().current_scene
-	if main_node != null and main_node.has_method("enter_tavern"):
-		main_node.enter_tavern(player.global_position)
+	if player.has_method("show_status_message"):
+		player.show_status_message(
+			"酒館已搬到地下！請前往地牢入口。",
+			Color(0.85, 0.75, 0.45, 1.0), 3.0
+		)
 
 
 func requires_home_core() -> bool:

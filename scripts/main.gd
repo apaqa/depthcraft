@@ -8,6 +8,7 @@ const BUILDING_SAVE: Script = preload("res://scripts/building/building_save.gd")
 const DUNGEON_SCENE: PackedScene = preload("res://scenes/dungeon/dungeon_level.tscn")
 const OVERWORLD_SCENE: PackedScene = preload("res://scenes/overworld/test_overworld.tscn")
 const TAVERN_INTERIOR_SCENE: PackedScene = preload("res://scenes/world/tavern_interior.tscn")
+const TAVERN_FLOOR_SCENE: PackedScene = preload("res://scenes/dungeon/tavern_floor.tscn")
 const TUTORIAL_MANAGER: Script = preload("res://scripts/world/tutorial_manager.gd")
 
 var player
@@ -192,6 +193,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		current_level.raid_countdown_changed.connect(_on_raid_countdown_changed)
 	if current_level.has_signal("exit_tavern_requested") and not current_level.exit_tavern_requested.is_connected(_on_exit_tavern_requested):
 		current_level.exit_tavern_requested.connect(_on_exit_tavern_requested)
+	if current_level.has_signal("enter_dungeon_requested") and not current_level.enter_dungeon_requested.is_connected(_on_enter_dungeon_from_tavern_floor):
+		current_level.enter_dungeon_requested.connect(_on_enter_dungeon_from_tavern_floor)
 
 	if hud.has_method("bind_level"):
 		hud.bind_level(current_level, current_level_id)
@@ -237,6 +240,8 @@ func _get_level_scene(level_id: String) -> PackedScene:
 			return OVERWORLD_SCENE
 		"tavern":
 			return TAVERN_INTERIOR_SCENE
+		"tavern_floor":
+			return TAVERN_FLOOR_SCENE
 		_:
 			return null
 
@@ -268,6 +273,16 @@ func _on_player_portal_requested(target_level_id: String, start_floor: int = 1) 
 		player.show_status_message(surface_message, Color(0.85, 1.0, 0.85, 1.0), 4.0)
 		return
 		player.show_status_message("Waiting for host...", Color(0.85, 0.9, 1.0, 1.0), 1.5)
+		return
+	if current_level_id == "overworld" and target_level_id == "tavern_floor":
+		if current_level != null and current_level.has_method("get_dungeon_entrance_position"):
+			overworld_return_position = current_level.get_dungeon_entrance_position()
+		await hud.fade_to_black("進入地下酒館...", Color(0, 0, 0, 1), 0.8)
+		_broadcast_scene_change("tavern_floor", 1, 0)
+		await get_tree().process_frame
+		_reset_all_cameras()
+		await get_tree().create_timer(0.3).timeout
+		await hud.fade_from_black(Color(0, 0, 0, 1), 0.8)
 		return
 	if current_level_id == "overworld" and target_level_id == "dungeon" and current_level != null and current_level.has_method("get_dungeon_entrance_position"):
 		overworld_return_position = current_level.get_dungeon_entrance_position()
@@ -301,9 +316,27 @@ func _on_kills_changed(kills: int) -> void:
 		hud.update_kills_label(kills)
 
 
+func _on_enter_dungeon_from_tavern_floor(floor_number: int) -> void:
+	if _is_multiplayer_enabled() and not _is_host():
+		return
+	await hud.fade_to_black("第 %d 層" % floor_number, Color(0, 0, 0, 1), 0.8)
+	current_level_seed = _create_level_seed()
+	_broadcast_scene_change("dungeon", floor_number, current_level_seed)
+	await get_tree().process_frame
+	_reset_all_cameras()
+	await get_tree().create_timer(0.3).timeout
+	await hud.fade_from_black(Color(0, 0, 0, 1), 0.8)
+
+
 func _on_return_to_surface_requested() -> void:
 	if _is_multiplayer_enabled() and not _is_host():
 		request_return_to_surface.rpc_id(1)
+		return
+	if current_level_id == "tavern_floor":
+		await hud.fade_to_black("返回地面...", Color(0, 0, 0, 1), 0.5)
+		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
+		await get_tree().process_frame
+		await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
 		return
 	var floor_reached: int = int(current_level.get("current_floor")) if current_level != null else 0
 	var kill_count: int = int(current_level.get("total_kills")) if current_level != null else 0
