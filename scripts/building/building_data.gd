@@ -15,7 +15,7 @@ const CATEGORY_ORDER = ["structure", "door_window", "facility", "defense"]
 const CATEGORY_DATA = {
 	"structure": {"name": "build_cat_structure", "items": ["wood_wall", "stone_wall", "wood_floor", "stone_floor"]},
 	"door_window": {"name": "build_cat_door_window", "items": ["wood_door"]},
-	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "talent_altar", "cooking_bench", "farm_plot", "bounty_board", "tavern", "home_core"]},
+	"facility": {"name": "build_cat_facility", "items": ["workbench", "storage_chest", "talent_altar", "cooking_bench", "farm_plot", "tavern", "home_core"]},
 	"defense": {"name": "build_cat_defense", "items": []},
 }
 
@@ -87,8 +87,8 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1.png"),
-		"preview_scale": Vector2(0.35, 0.35),
+		"preview_texture": preload("res://assets/assets2/tile_511.png"),
+		"preview_scale": Vector2(2.5, 2.5),
 	},
 	"storage_chest": {
 		"id": "storage_chest",
@@ -98,7 +98,7 @@ const BUILDINGS = {
 		"cost": {"wood": 3},
 		"scene_path": STORAGE_CHEST_SCENE_PATH,
 		"preview_texture": preload("res://assets/chest_closed.png"),
-		"preview_scale": Vector2(2.5, 2.5),
+		"preview_scale": Vector2(1.0, 1.0),
 	},
 	"repair_bench": {
 		"id": "repair_bench",
@@ -118,7 +118,7 @@ const BUILDINGS = {
 		"cost": {"stone": 10, "iron_ore": 5},
 		"scene_path": TALENT_ALTAR_SCENE_PATH,
 		"preview_texture": preload("res://assets/column.png"),
-		"preview_scale": Vector2(2.5, 2.5),
+		"preview_scale": Vector2(1.0, 1.0),
 	},
 	"farm_plot": {
 		"id": "farm_plot",
@@ -137,8 +137,8 @@ const BUILDINGS = {
 		"kind": "facility",
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
-		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Monastery.png"),
-		"preview_scale": Vector2(0.35, 0.35),
+		"preview_texture": preload("res://assets/assets2/tile_131.png"),
+		"preview_scale": Vector2(2.5, 2.5),
 	},
 	"bounty_board": {
 		"id": "bounty_board",
@@ -159,8 +159,8 @@ const BUILDINGS = {
 		"cost": {"wood": 10, "stone": 5, "copper": 20},
 		"base_max_hp": 80,
 		"scene_path": TAVERN_SCENE_PATH,
-		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House2.png"),
-		"preview_scale": Vector2(0.35, 0.35),
+		"preview_texture": preload("res://assets/floor_ladder.png"),
+		"preview_scale": Vector2(2.5, 2.5),
 	},
 	"home_core": {
 		"id": "home_core",
@@ -169,12 +169,12 @@ const BUILDINGS = {
 		"kind": "core",
 		"cost": {"wood": 10, "stone": 5},
 		"scene_path": HOME_CORE_SCENE_PATH,
-		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Castle.png"),
-		"preview_scale": Vector2(0.40, 0.40),
+		"preview_texture": preload("res://assets/wall_banner_blue.png"),
+		"preview_scale": Vector2(2.5, 2.5),
 	},
 }
 
-const ORDER = ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "talent_altar", "farm_plot", "cooking_bench", "bounty_board", "tavern", "home_core"]
+const ORDER = ["wood_wall", "wood_floor", "stone_wall", "stone_floor", "wood_door", "workbench", "storage_chest", "talent_altar", "farm_plot", "cooking_bench", "tavern", "home_core"]
 
 
 static func get_building(building_id: String) -> Dictionary:

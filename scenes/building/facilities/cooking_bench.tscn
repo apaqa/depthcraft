@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/cooking_bench.gd" id="1_cook"]
-[ext_resource type="Texture2D" path="res://assets/assets2/Tiny Swords (Free Pack)/Monastery.png" id="2_cook"]
+[ext_resource type="Texture2D" path="res://assets/assets2/tile_131.png" id="2_cook"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cook_body"]
 size = Vector2(14, 14)
@@ -13,7 +13,7 @@ radius = 18.0
 script = ExtResource("1_cook")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-scale = Vector2(0.35, 0.35)
+scale = Vector2(2.5, 2.5)
 texture = ExtResource("2_cook")
 texture_filter = 0
 

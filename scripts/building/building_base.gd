@@ -52,6 +52,8 @@ func initialize_building(building: Dictionary, target_system, tile_pos: Vector2i
 		max_hp = 1
 	current_hp = clampi(int(data.get("current_hp", max_hp)), 0, max_hp)
 	_load_extra_state(data)
+	if building.has("preview_scale"):
+		_base_sprite_scale = building.get("preview_scale", Vector2.ONE) as Vector2
 	call_deferred("_refresh_runtime_state")
 
 
