@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/bounty_board.gd" id="1_bounty"]
-[ext_resource type="Texture2D" path="res://assets/wall_banner_yellow.png" id="2_bounty"]
+[ext_resource type="Texture2D" path="res://assets/assets2/tile_0326.png" id="2_bounty"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bounty_body"]
 size = Vector2(14, 16)
@@ -13,6 +13,7 @@ radius = 18.0
 script = ExtResource("1_bounty")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(2.5, 2.5)
 texture = ExtResource("2_bounty")
 texture_filter = 0
 

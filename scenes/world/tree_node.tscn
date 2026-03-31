@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" path="res://assets/assets2/tile_0258.png" id="2_uju50"]
 
 [node name="TreeNode" instance=ExtResource("1_ym0o7")]
+z_index = 1
 resource_id = "wood"
 resource_name = "Tree"
 hits_to_gather = 3

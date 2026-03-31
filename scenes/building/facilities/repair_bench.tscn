@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/building/facilities/repair_bench.gd" id="1_kgw6y"]
-[ext_resource type="Texture2D" path="res://assets/column_wall.png" id="2_hydj7"]
+[ext_resource type="Texture2D" path="res://assets/assets2/Tiny Swords (Free Pack)/House1_v2.png" id="2_hydj7"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wn1ph"]
 size = Vector2(14, 14)
@@ -13,6 +13,7 @@ radius = 18.0
 script = ExtResource("1_kgw6y")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.18, 0.18)
 texture = ExtResource("2_hydj7")
 texture_filter = 0
 
