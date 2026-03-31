@@ -22,7 +22,7 @@ const TEX_DWARF: Texture2D = preload("res://assets/dwarf_m_idle_anim_f0.png")
 const TEX_LIZARD: Texture2D = preload("res://assets/lizard_m_idle_anim_f0.png")
 const TEX_DOC: Texture2D = preload("res://assets/doc_idle_anim_f0.png")
 const TEX_WIZARD: Texture2D = preload("res://assets/wizzard_m_idle_anim_f0.png")
-const TILE_SCALE: Vector2 = Vector2(2.0, 2.0)
+const TILE_SCALE: Vector2 = Vector2(1.0, 1.0)
 
 
 func _ready() -> void:
@@ -146,7 +146,7 @@ func _add_tavern_npc(
 
 	var sprite: Sprite2D = Sprite2D.new()
 	sprite.texture = tex
-	sprite.scale = Vector2(2.0, 2.0)
+	sprite.scale = Vector2(1.0, 1.0)
 	sprite.position = Vector2(0.0, -24.0)
 	npc_node.add_child(sprite)
 
@@ -229,7 +229,7 @@ func _add_dark_wizard(world_pos: Vector2) -> void:
 
 	var sprite: Sprite2D = Sprite2D.new()
 	sprite.texture = TEX_WIZARD
-	sprite.scale = Vector2(2.0, 2.0)
+	sprite.scale = Vector2(1.0, 1.0)
 	sprite.position = Vector2(0.0, -24.0)
 	npc_node.add_child(sprite)
 

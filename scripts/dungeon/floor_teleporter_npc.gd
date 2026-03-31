@@ -32,7 +32,7 @@ func _build_visual() -> void:
 	var tex: Texture2D = preload("res://assets/doc_idle_anim_f0.png")
 	var sprite: Sprite2D = Sprite2D.new()
 	sprite.texture = tex
-	sprite.scale = Vector2(2.0, 2.0)
+	sprite.scale = Vector2(1.0, 1.0)
 	sprite.position = Vector2(0.0, -24.0)
 	add_child(sprite)
 
