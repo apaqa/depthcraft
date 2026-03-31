@@ -13,6 +13,7 @@ func configure_tile(building: Dictionary, target_system, tile_pos: Vector2i, dat
 		sprite.name = "Sprite2D"
 		add_child(sprite)
 	sprite.texture = building.get("preview_texture", null)
+	sprite.scale = building.get("preview_scale", Vector2.ONE) as Vector2
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 	var collision := get_node_or_null("CollisionShape2D") as CollisionShape2D

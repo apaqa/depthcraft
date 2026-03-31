@@ -252,6 +252,13 @@ func get_selected_building_texture() -> Texture2D:
 	return source.texture
 
 
+func get_selected_building_preview_scale() -> Vector2:
+	var building: Dictionary = get_selected_building()
+	if building.is_empty():
+		return Vector2.ONE
+	return building.get("preview_scale", Vector2.ONE) as Vector2
+
+
 func get_selected_building_tile_size() -> Vector2i:
 	var building := get_selected_building()
 	if building.is_empty():

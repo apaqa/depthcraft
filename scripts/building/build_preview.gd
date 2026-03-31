@@ -23,6 +23,7 @@ func _process(_delta: float) -> void:
 	var tile_size: Vector2i = building_system.get_selected_building_tile_size()
 	global_position = building_system.get_preview_world_position(tile_pos, tile_size)
 	sprite.texture = texture
+	sprite.scale = building_system.get_selected_building_preview_scale()
 	sprite.modulate = building_system.get_preview_modulate(tile_pos)
 	visible = true
 

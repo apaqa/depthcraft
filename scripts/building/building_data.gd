@@ -28,6 +28,7 @@ const BUILDINGS = {
 		"cost": {"wood": 2},
 		"has_collision": true,
 		"preview_texture": preload("res://assets/crate.png"),
+		"preview_scale": Vector2(2.0, 2.0),
 		"tile_source_id": 106,
 		"tile_atlas_coords": FULL_TILE_ATLAS,
 	},
@@ -39,6 +40,7 @@ const BUILDINGS = {
 		"cost": {"wood": 1},
 		"has_collision": false,
 		"preview_texture": preload("res://assets/floor_5.png"),
+		"preview_scale": Vector2(2.0, 2.0),
 		"tile_source_id": 3,
 		"tile_atlas_coords": FULL_TILE_ATLAS,
 	},
@@ -50,6 +52,7 @@ const BUILDINGS = {
 		"cost": {"stone": 3},
 		"has_collision": true,
 		"preview_texture": preload("res://assets/wall_missing_brick_1.png"),
+		"preview_scale": Vector2(2.0, 2.0),
 		"tile_source_id": 107,
 		"tile_atlas_coords": FULL_TILE_ATLAS,
 	},
@@ -61,6 +64,7 @@ const BUILDINGS = {
 		"cost": {"stone": 2},
 		"has_collision": false,
 		"preview_texture": preload("res://assets/floor_8.png"),
+		"preview_scale": Vector2(2.0, 2.0),
 		"tile_source_id": 4,
 		"tile_atlas_coords": FULL_TILE_ATLAS,
 	},
@@ -74,6 +78,7 @@ const BUILDINGS = {
 		"has_collision": false,
 		"scene_path": WOOD_DOOR_SCENE_PATH,
 		"preview_texture": preload("res://assets/door_closed.png"),
+		"preview_scale": Vector2(2.0, 2.0),
 	},
 	"workbench": {
 		"id": "workbench",
@@ -83,6 +88,7 @@ const BUILDINGS = {
 		"cost": {"wood": 5},
 		"scene_path": WORKBENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1.png"),
+		"preview_scale": Vector2(0.18, 0.18),
 	},
 	"storage_chest": {
 		"id": "storage_chest",
@@ -92,6 +98,7 @@ const BUILDINGS = {
 		"cost": {"wood": 3},
 		"scene_path": STORAGE_CHEST_SCENE_PATH,
 		"preview_texture": preload("res://assets/chest_closed.png"),
+		"preview_scale": Vector2(2.0, 2.0),
 	},
 	"repair_bench": {
 		"id": "repair_bench",
@@ -101,6 +108,7 @@ const BUILDINGS = {
 		"cost": {"stone": 5, "iron_ore": 3},
 		"scene_path": REPAIR_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House1_v2.png"),
+		"preview_scale": Vector2(0.18, 0.18),
 	},
 	"talent_altar": {
 		"id": "talent_altar",
@@ -110,6 +118,7 @@ const BUILDINGS = {
 		"cost": {"stone": 10, "iron_ore": 5},
 		"scene_path": TALENT_ALTAR_SCENE_PATH,
 		"preview_texture": preload("res://assets/column.png"),
+		"preview_scale": Vector2(2.0, 2.0),
 	},
 	"farm_plot": {
 		"id": "farm_plot",
@@ -119,6 +128,7 @@ const BUILDINGS = {
 		"cost": {"wood": 2, "stone": 2},
 		"scene_path": FARM_PLOT_SCENE_PATH,
 		"preview_texture": preload("res://assets/floor_mud_mid_1.png"),
+		"preview_scale": Vector2(2.0, 2.0),
 	},
 	"cooking_bench": {
 		"id": "cooking_bench",
@@ -128,6 +138,7 @@ const BUILDINGS = {
 		"cost": {"stone": 3, "wood": 2},
 		"scene_path": COOKING_BENCH_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Monastery.png"),
+		"preview_scale": Vector2(0.18, 0.18),
 	},
 	"bounty_board": {
 		"id": "bounty_board",
@@ -138,6 +149,7 @@ const BUILDINGS = {
 		"base_max_hp": 60,
 		"scene_path": BOUNTY_BOARD_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/tile_0326.png"),
+		"preview_scale": Vector2(2.5, 2.5),
 	},
 	"tavern": {
 		"id": "tavern",
@@ -148,6 +160,7 @@ const BUILDINGS = {
 		"base_max_hp": 80,
 		"scene_path": TAVERN_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/House2.png"),
+		"preview_scale": Vector2(0.18, 0.18),
 	},
 	"home_core": {
 		"id": "home_core",
@@ -157,6 +170,7 @@ const BUILDINGS = {
 		"cost": {"wood": 10, "stone": 5},
 		"scene_path": HOME_CORE_SCENE_PATH,
 		"preview_texture": preload("res://assets/assets2/Tiny Swords (Free Pack)/Castle.png"),
+		"preview_scale": Vector2(0.12, 0.12),
 	},
 }
 
