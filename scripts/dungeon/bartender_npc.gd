@@ -57,6 +57,7 @@ var _refresh_count: int = 0
 var _purchased_ids: Array[String] = []
 var _btn_nodes: Array[Button] = []
 var _balance_label: Label = null
+var _detail_label: Label = null
 
 
 func _ready() -> void:
@@ -95,9 +96,9 @@ func _open_ui() -> void:
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -260.0
+	panel.offset_left = -320.0
 	panel.offset_top = -220.0
-	panel.offset_right = 260.0
+	panel.offset_right = 320.0
 	panel.offset_bottom = 220.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var style: StyleBoxFlat = StyleBoxFlat.new()
@@ -152,6 +153,17 @@ func _open_ui() -> void:
 		var btn: Button = _build_drink_button(drink)
 		_btn_nodes.append(btn)
 		drink_list.add_child(btn)
+
+	# Detail area for hovered drink
+	_detail_label = Label.new()
+	_detail_label.text = "將滑鼠移到飲品上查看詳情"
+	_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_detail_label.add_theme_font_size_override("font_size", 12)
+	_detail_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+	_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_label.custom_minimum_size = Vector2(0, 28)
+	_detail_label.process_mode = Node.PROCESS_MODE_ALWAYS
+	vbox.add_child(_detail_label)
 
 	vbox.add_child(HSeparator.new())
 
@@ -218,7 +230,19 @@ func _build_drink_button(drink: Dictionary) -> Button:
 	btn.add_theme_stylebox_override("hover", hover_style)
 	if not already:
 		btn.pressed.connect(_on_drink_purchased.bind(drink_id))
+	btn.mouse_entered.connect(_on_drink_hovered.bind(drink))
 	return btn
+
+
+func _on_drink_hovered(drink: Dictionary) -> void:
+	if _detail_label == null:
+		return
+	var name_str: String = str(drink.get("name", ""))
+	var desc_str: String = str(drink.get("desc", ""))
+	var price: int = int(drink.get("price", 0))
+	_detail_label.text = "%s (%d 銅) — %s" % [name_str, price, desc_str]
+	var drink_color: Color = drink.get("color", Color(0.8, 0.8, 0.8, 1.0)) as Color
+	_detail_label.modulate = drink_color.lightened(0.3)
 
 
 func _on_drink_purchased(drink_id: String) -> void:
