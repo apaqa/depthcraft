@@ -765,5 +765,9 @@
   "lore_tavern": "The entrance to the underground tavern. Adventurers trade stories and intel here.",
   "lore_dark_altar": "Ominous energy seeps from the cracks. Some say it's a window to the abyss.",
   "lore_repair_bench": "A well-worn whetstone. In the depths, equipment is as vital as life itself.",
-  "lore_farm_plot": "A small patch of tilled earth. Even at the edge of the abyss, life finds a way."
+  "lore_farm_plot": "A small patch of tilled earth. Even at the edge of the abyss, life finds a way.",
+  "biome_intro_dungeon": "The call of the abyss never ceases...",
+  "biome_intro_dark": "The light fades. The air carries the scent of decay.",
+  "biome_intro_lava": "The temperature rises sharply. Magma flows through cracks in the walls.",
+  "biome_intro_abyss": "You have surpassed all known exploration records. Everything here is unknown."
 }

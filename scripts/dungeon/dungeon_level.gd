@@ -85,6 +85,7 @@ func _ready() -> void:
 	_ensure_fog_layer()
 	_generate_floor()
 	set_process(true)
+	call_deferred("_show_biome_intro")
 
 
 func _process(delta: float) -> void:
@@ -411,6 +412,24 @@ func _on_descend_requested() -> void:
 
 func _on_return_surface_requested() -> void:
 	return_to_surface_requested.emit()
+
+
+func _show_biome_intro() -> void:
+	var biome_key: String = ""
+	if current_floor == 1:
+		biome_key = "biome_intro_dungeon"
+	elif current_floor == 11:
+		biome_key = "biome_intro_dark"
+	elif current_floor == 21:
+		biome_key = "biome_intro_lava"
+	elif current_floor == 31:
+		biome_key = "biome_intro_abyss"
+	if biome_key == "":
+		return
+	# Wait a frame for player to be placed
+	await get_tree().process_frame
+	if player != null and player.has_method("show_status_message"):
+		player.show_status_message(LocaleManager.L(biome_key), Color(0.85, 0.75, 1.0, 1.0), 3.5)
 
 
 func _get_floor_source(coords: Vector2i) -> int:
