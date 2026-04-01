@@ -196,8 +196,13 @@ func _get_unlocked_floors() -> Array[int]:
 	var deepest: int = _get_deepest_floor()
 	var cp: int = CHECKPOINT_STEP
 	while cp <= deepest:
-		floors.append(cp)
+		if not floors.has(cp):
+			floors.append(cp)
 		cp += CHECKPOINT_STEP
+	# Floor 5 is always available
+	if not floors.has(5):
+		floors.append(5)
+		floors.sort()
 	return floors
 
 
@@ -214,4 +219,6 @@ func _get_deepest_floor() -> int:
 func _get_cost(floor_num: int) -> int:
 	if floor_num <= 1:
 		return 0
+	if floor_num == 5:
+		return 50
 	return floor_num * COST_PER_FLOOR
