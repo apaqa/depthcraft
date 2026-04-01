@@ -351,18 +351,20 @@ func _on_return_to_surface_requested() -> void:
 		request_return_to_surface.rpc_id(1)
 		return
 	if current_level_id == "tavern_floor":
-		await hud.fade_to_black("返回地面...", Color(0, 0, 0, 1), 0.5)
+		# Tavern → overworld
+		await hud.fade_to_black(LocaleManager.L("returning_surface"), Color(0, 0, 0, 1), 0.5)
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		await get_tree().process_frame
 		await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
 		return
+	# Dungeon → tavern
 	var floor_reached: int = int(current_level.get("current_floor")) if current_level != null else 0
 	var kill_count: int = int(current_level.get("total_kills")) if current_level != null else 0
 	var item_count: int = 0
 	if player != null:
 		for entry in player.dungeon_run_loot:
 			item_count += int(entry.get("quantity", 0))
-	await hud.fade_to_black("返回地面...", Color(0, 0, 0, 1), 0.5)
+	await hud.fade_to_black(LocaleManager.L("returning_tavern"), Color(0, 0, 0, 1), 0.5)
 	if player != null:
 		player.finish_dungeon_run(true)
 	total_dungeon_runs_completed += 1
@@ -373,18 +375,14 @@ func _on_return_to_surface_requested() -> void:
 	deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, floor_reached)
 	if dungeon_returns_since_raid == 2 and player != null and player.has_method("show_status_message"):
 		player.show_status_message(LocaleManager.L("raid_warning"), Color(1.0, 0.4, 0.4, 1.0), 4.0)
-	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
-	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3 and _total_play_time >= 300.0:
-		current_level.trigger_progress_raid()
+	_broadcast_scene_change("tavern_floor", 1, 0)
 	await get_tree().process_frame
 	await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
 	if player != null:
-		var surface_message: String = "已抵達第 %d 層 | %d 擊殺 | %d 件戰利品" % [floor_reached, kill_count, item_count]
+		var surface_message: String = LocaleManager.L("dungeon_run_summary") % [floor_reached, kill_count, item_count]
 		if not npc_day_messages.is_empty():
 			surface_message += " | " + " / ".join(npc_day_messages)
 		player.show_status_message(surface_message, Color(0.85, 1.0, 0.85, 1.0), 4.0)
-		return
-		player.show_status_message("已抵達第 %d 層 | %d 擊殺 | %d 件戰利品" % [floor_reached, kill_count, item_count], Color(0.85, 1.0, 0.85, 1.0), 4.0)
 
 
 func _on_victory_requested() -> void:
@@ -445,7 +443,7 @@ func _on_player_died() -> void:
 		if hud.has_signal("death_return_requested"):
 			await hud.death_return_requested
 		if hud.has_method("fade_to_black"):
-			await hud.fade_to_black("返回家園...", Color(0, 0, 0, 1), 0.5)
+			await hud.fade_to_black(LocaleManager.L("returning_tavern"), Color(0, 0, 0, 1), 0.5)
 		if player != null:
 			player.finish_dungeon_run(false)
 		total_dungeon_runs_completed += 1
@@ -456,19 +454,17 @@ func _on_player_died() -> void:
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, death_floor_value)
 		if dungeon_returns_since_raid == 2 and player != null and player.has_method("show_status_message"):
 			player.show_status_message(LocaleManager.L("raid_warning"), Color(1.0, 0.4, 0.4, 1.0), 4.0)
-		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
+		_broadcast_scene_change("tavern_floor", 1, 0)
 		if hud.has_method("hide_death_screen"):
 			hud.hide_death_screen()
 		await get_tree().process_frame
 		if hud.has_method("fade_from_black"):
 			await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
 		if player != null:
-			var defeated_message: String = "你失去了戰利品！"
+			var defeated_message: String = LocaleManager.L("death_loot_lost")
 			if not npc_day_messages.is_empty():
 				defeated_message += " | " + " / ".join(npc_day_messages)
 			player.show_status_message(defeated_message, Color(1.0, 0.75, 0.45, 1.0), 3.0)
-		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3 and _total_play_time >= 300.0:
-			current_level.trigger_progress_raid()
 		return
 
 

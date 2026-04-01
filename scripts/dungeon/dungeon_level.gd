@@ -261,7 +261,7 @@ func _spawn_features() -> void:
 
 	var return_exit = STAIRWAY_SCENE.instantiate()
 	return_exit.global_position = floor_data.get("spawn_point", Vector2.ZERO)
-	return_exit.prompt_text = LocaleManager.L("prompt_return_surface")
+	return_exit.prompt_text = "[E] " + LocaleManager.L("prompt_return_tavern")
 	return_exit.uses_secondary_input = true
 	if return_exit.has_method("set_stair_variant"):
 		return_exit.set_stair_variant("up")

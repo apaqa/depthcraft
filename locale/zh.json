@@ -705,5 +705,10 @@
   "equip_shield": "盾牌",
   "equip_accessory": "飾品",
   "equip_chest_armor": "胸甲",
-  "equip_offhand": "副手"
+  "equip_offhand": "副手",
+  "prompt_return_tavern": "返回酒館",
+  "returning_tavern": "返回酒館...",
+  "returning_surface": "返回地表...",
+  "dungeon_run_summary": "已抵達第 %d 層 | %d 擊殺 | %d 件戰利品",
+  "death_loot_lost": "你失去了戰利品！"
 }

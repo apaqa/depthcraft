@@ -29,15 +29,14 @@ func get_interaction_prompt() -> String:
 func interact(_player) -> void:
 	if is_locked:
 		return
-	if not uses_secondary_input:
+	if uses_secondary_input:
+		return_surface_requested.emit()
+	else:
 		descend_requested.emit()
 
 
 func secondary_interact(_player) -> void:
-	if is_locked:
-		return
-	if uses_secondary_input:
-		return_surface_requested.emit()
+	interact(_player)
 
 
 func set_stair_variant(variant: String) -> void:

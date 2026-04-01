@@ -705,5 +705,10 @@
   "equip_shield": "Shield",
   "equip_accessory": "Accessory",
   "equip_chest_armor": "Chest Armor",
-  "equip_offhand": "Offhand"
+  "equip_offhand": "Offhand",
+  "prompt_return_tavern": "Return to Tavern",
+  "returning_tavern": "Returning to Tavern...",
+  "returning_surface": "Returning to Surface...",
+  "dungeon_run_summary": "Reached Floor %d | %d Kills | %d Loot",
+  "death_loot_lost": "You lost your loot!"
 }
