@@ -5,7 +5,21 @@ const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
 const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
 const MERCHANT_TEXTURE = preload("res://assets/npc_merchant_2.png")
 const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
-const SHOP_ITEMS = [
+const SHOP_CONSUMABLES: Array[Dictionary] = [
+	{"id": "bandage", "quantity": 1, "price": 5, "desc_key": "item_bandage_desc"},
+	{"id": "bread", "quantity": 1, "price": 5, "desc_key": "item_bread_desc"},
+	{"id": "torch", "quantity": 3, "price": 6, "desc_key": "item_torch_desc"},
+]
+const SHOP_EQUIPMENT: Array[Dictionary] = [
+	{"id": "gift_copper", "quantity": 1, "price": 50, "desc_key": "gift_copper_desc"},
+	{"id": "gift_silver", "quantity": 1, "price": 500, "desc_key": "gift_silver_desc"},
+	{"id": "gift_gold", "quantity": 1, "price": 20000, "desc_key": "gift_gold_desc"},
+]
+const SHOP_SPECIAL: Array[Dictionary] = [
+	{"id": "mystery_blessing", "quantity": 1, "price": 100, "desc_key": "mystery_blessing_desc"},
+]
+# Legacy compat
+const SHOP_ITEMS: Array[Dictionary] = [
 	{"id": "bandage", "quantity": 1, "price": 5},
 	{"id": "bread", "quantity": 1, "price": 5},
 	{"id": "torch", "quantity": 3, "price": 6},
@@ -45,6 +59,15 @@ var _equipment_price: int = 0
 var _floor_number: int = 1
 var override_items: Array = []
 var override_title: String = ""
+var _detail_icon: TextureRect = null
+var _detail_name: Label = null
+var _detail_desc: Label = null
+var _detail_price: Label = null
+var _detail_buy_btn: Button = null
+var _detail_placeholder: Label = null
+var _item_list_container: VBoxContainer = null
+var _active_tab: int = 0
+var _tab_buttons: Array[Button] = []
 
 
 func setup(floor_number: int, rng: RandomNumberGenerator = null) -> void:
@@ -125,78 +148,206 @@ func _open_shop() -> void:
 	_shop_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_shop_canvas.add_child(_shop_root)
 
+	# Backdrop
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.5)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_shop_root.add_child(backdrop)
+
+	# Main panel 80% screen
 	var panel: Panel = Panel.new()
 	panel.anchor_left = 0.1
 	panel.anchor_top = 0.1
 	panel.anchor_right = 0.9
 	panel.anchor_bottom = 0.9
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.09, 0.1, 0.13, 0.97)
+	panel_style.border_color = Color(0.4, 0.35, 0.25, 1.0)
+	panel_style.border_width_left = 1
+	panel_style.border_width_top = 1
+	panel_style.border_width_right = 1
+	panel_style.border_width_bottom = 1
+	panel_style.corner_radius_top_left = 6
+	panel_style.corner_radius_top_right = 6
+	panel_style.corner_radius_bottom_left = 6
+	panel_style.corner_radius_bottom_right = 6
+	panel.add_theme_stylebox_override("panel", panel_style)
 	_shop_root.add_child(panel)
 
-	var close_button: Button = Button.new()
-	close_button.name = "CloseButton"
-	close_button.text = "X"
-	close_button.position = panel.position + Vector2(8, 8)
-	close_button.custom_minimum_size = Vector2(32, 32)
-	close_button.size = Vector2(32, 32)
-	close_button.z_index = 100
-	close_button.pressed.connect(_close_shop)
-	_shop_root.add_child(close_button)
+	var outer_margin: MarginContainer = MarginContainer.new()
+	outer_margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	outer_margin.add_theme_constant_override("margin_left", 16)
+	outer_margin.add_theme_constant_override("margin_right", 16)
+	outer_margin.add_theme_constant_override("margin_top", 12)
+	outer_margin.add_theme_constant_override("margin_bottom", 12)
+	panel.add_child(outer_margin)
 
-	var margin: MarginContainer = MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_bottom", 10)
-	panel.add_child(margin)
+	var outer_vbox: VBoxContainer = VBoxContainer.new()
+	outer_vbox.add_theme_constant_override("separation", 8)
+	outer_margin.add_child(outer_vbox)
 
-	var vbox: VBoxContainer = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
-	margin.add_child(vbox)
-
+	# Title
 	var title: Label = Label.new()
 	title.text = override_title if override_title != "" else LocaleManager.L("boss_merchant_title")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 18)
-	vbox.add_child(title)
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(1.0, 0.92, 0.65, 1.0))
+	outer_vbox.add_child(title)
+	outer_vbox.add_child(HSeparator.new())
 
-	var subtitle: Label = Label.new()
-	subtitle.text = LocaleManager.L("boss_merchant_subtitle")
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.modulate = Color(0.84, 0.84, 0.84, 1.0)
-	vbox.add_child(subtitle)
+	# Main content: left (items) + right (detail)
+	var content_hbox: HBoxContainer = HBoxContainer.new()
+	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_hbox.add_theme_constant_override("separation", 12)
+	outer_vbox.add_child(content_hbox)
 
-	vbox.add_child(HSeparator.new())
+	# Left side (60%)
+	var left_panel: VBoxContainer = VBoxContainer.new()
+	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_panel.size_flags_stretch_ratio = 1.5
+	left_panel.add_theme_constant_override("separation", 6)
+	content_hbox.add_child(left_panel)
 
-	var items_to_show: Array = override_items if not override_items.is_empty() else SHOP_ITEMS
-	for item_offer: Dictionary in items_to_show:
-		_add_item_row(vbox, item_offer)
+	# Tabs (only show if not override_items / has multiple categories)
+	var is_dungeon_shop: bool = override_items.is_empty()
+	if is_dungeon_shop:
+		var tab_row: HBoxContainer = HBoxContainer.new()
+		tab_row.add_theme_constant_override("separation", 4)
+		left_panel.add_child(tab_row)
+		_tab_buttons.clear()
+		var tab_names: Array[String] = [
+			LocaleManager.L("shop_tab_consumables"),
+			LocaleManager.L("shop_tab_equipment"),
+			LocaleManager.L("shop_tab_special"),
+		]
+		for i: int in range(tab_names.size()):
+			var tab_btn: Button = Button.new()
+			tab_btn.text = tab_names[i]
+			tab_btn.custom_minimum_size = Vector2(80, 28)
+			tab_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			tab_btn.pressed.connect(_switch_tab.bind(i))
+			tab_row.add_child(tab_btn)
+			_tab_buttons.append(tab_btn)
 
-	vbox.add_child(HSeparator.new())
-	if override_items.is_empty():
-		_add_equipment_row(vbox)
-		vbox.add_child(HSeparator.new())
+	# Item list (scrollable)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left_panel.add_child(scroll)
+	_item_list_container = VBoxContainer.new()
+	_item_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_item_list_container.add_theme_constant_override("separation", 4)
+	scroll.add_child(_item_list_container)
 
-	_message_label = Label.new()
-	_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_message_label.add_theme_color_override("font_color", Color(1.0, 0.42, 0.42, 1.0))
-	vbox.add_child(_message_label)
+	# Right side (40%): detail panel
+	var right_panel: VBoxContainer = VBoxContainer.new()
+	right_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_panel.size_flags_stretch_ratio = 1.0
+	right_panel.add_theme_constant_override("separation", 10)
+	content_hbox.add_child(right_panel)
+	_build_detail_panel(right_panel)
 
+	outer_vbox.add_child(HSeparator.new())
+
+	# Footer
 	var footer: HBoxContainer = HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 8)
+	outer_vbox.add_child(footer)
 	_gold_label = Label.new()
 	_gold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_gold_label.add_theme_font_size_override("font_size", 14)
+	_gold_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.35, 1.0))
 	footer.add_child(_gold_label)
-	var footer_close_button: Button = Button.new()
-	footer_close_button.text = LocaleManager.L("close_button")
-	footer_close_button.pressed.connect(_close_shop)
-	footer.add_child(footer_close_button)
-	vbox.add_child(footer)
+	_message_label = Label.new()
+	_message_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_message_label.add_theme_color_override("font_color", Color(1.0, 0.42, 0.42, 1.0))
+	footer.add_child(_message_label)
+	var close_btn: Button = Button.new()
+	close_btn.text = LocaleManager.L("close_button")
+	close_btn.custom_minimum_size = Vector2(80, 30)
+	close_btn.pressed.connect(_close_shop)
+	footer.add_child(close_btn)
 
+	# Populate
+	if is_dungeon_shop:
+		_switch_tab(0)
+	else:
+		_populate_item_list(override_items)
 	_update_gold_label()
-	_refresh_equipment_offer_row()
 	UI_AUDIO_CLICK_HOOK.attach(_shop_root)
 	AudioManager.play_sfx("ui_open")
+
+
+func _build_detail_panel(parent: VBoxContainer) -> void:
+	_detail_placeholder = Label.new()
+	_detail_placeholder.text = LocaleManager.L("shop_select_item")
+	_detail_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_detail_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_detail_placeholder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_detail_placeholder.modulate = Color(0.5, 0.5, 0.55, 1.0)
+	_detail_placeholder.add_theme_font_size_override("font_size", 14)
+	parent.add_child(_detail_placeholder)
+	_detail_icon = TextureRect.new()
+	_detail_icon.custom_minimum_size = Vector2(48, 48)
+	_detail_icon.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	_detail_icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	_detail_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_detail_icon.visible = false
+	parent.add_child(_detail_icon)
+	_detail_name = Label.new()
+	_detail_name.add_theme_font_size_override("font_size", 18)
+	_detail_name.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8, 1.0))
+	_detail_name.visible = false
+	parent.add_child(_detail_name)
+	_detail_desc = Label.new()
+	_detail_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_desc.add_theme_font_size_override("font_size", 13)
+	_detail_desc.modulate = Color(0.75, 0.78, 0.85, 1.0)
+	_detail_desc.visible = false
+	parent.add_child(_detail_desc)
+	_detail_price = Label.new()
+	_detail_price.add_theme_font_size_override("font_size", 14)
+	_detail_price.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3, 1.0))
+	_detail_price.visible = false
+	parent.add_child(_detail_price)
+	_detail_buy_btn = Button.new()
+	_detail_buy_btn.text = LocaleManager.L("buy")
+	_detail_buy_btn.custom_minimum_size = Vector2(120, 36)
+	_detail_buy_btn.visible = false
+	parent.add_child(_detail_buy_btn)
+
+
+func _switch_tab(tab_index: int) -> void:
+	_active_tab = tab_index
+	for i: int in range(_tab_buttons.size()):
+		_tab_buttons[i].modulate = Color(1.0, 0.9, 0.5, 1.0) if i == tab_index else Color(0.7, 0.7, 0.7, 1.0)
+	var items: Array[Dictionary] = []
+	match tab_index:
+		0:
+			items = SHOP_CONSUMABLES
+		1:
+			items = SHOP_EQUIPMENT
+		2:
+			items = SHOP_SPECIAL
+	_populate_item_list(items)
+
+
+func _populate_item_list(items: Array) -> void:
+	if _item_list_container == null:
+		return
+	for child: Node in _item_list_container.get_children():
+		child.queue_free()
+	# Equipment offer row for equipment tab
+	if _active_tab == 1 and override_items.is_empty():
+		_add_equipment_row(_item_list_container)
+		_refresh_equipment_offer_row()
+	for item_offer: Variant in items:
+		if item_offer is Dictionary:
+			_add_item_row(_item_list_container, item_offer as Dictionary)
+	_clear_detail()
 
 
 func _add_item_row(parent: Control, item_offer: Dictionary) -> void:
@@ -217,7 +368,10 @@ func _add_item_row(parent: Control, item_offer: Dictionary) -> void:
 		icon = preload("res://assets/icons/kyrise/crystal_01c.png")
 	elif GIFT_ICONS.has(offer_id):
 		icon = GIFT_ICONS[offer_id]
-	_add_shop_row(parent, display_name, int(item_offer.get("price", 0)), _on_buy_item.bind(offer_id, quantity, int(item_offer.get("price", 0))), icon)
+	var price: int = int(item_offer.get("price", 0))
+	var desc_key: String = str(item_offer.get("desc_key", ""))
+	var desc_text: String = LocaleManager.L(desc_key) if desc_key != "" else str(item_data.get("description", ""))
+	_add_shop_row(parent, display_name, price, _on_buy_item.bind(offer_id, quantity, price), icon, offer_id, desc_text)
 
 
 func _add_equipment_row(parent: Control) -> void:
@@ -234,20 +388,70 @@ func _add_equipment_row(parent: Control) -> void:
 	parent.add_child(row)
 
 
-func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null) -> void:
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	if icon != null:
-		row.add_child(_make_icon_rect(icon))
-	var label: Label = Label.new()
-	label.text = "%s  %s" % [label_text, ITEM_DATABASE.format_currency(price)]
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
-	var button: Button = Button.new()
-	button.text = LocaleManager.L("buy")
-	button.pressed.connect(callback)
-	row.add_child(button)
-	parent.add_child(row)
+func _add_shop_row(parent: Control, label_text: String, price: int, callback: Callable, icon: Texture2D = null, item_id: String = "", desc_text: String = "") -> void:
+	var row_btn: Button = Button.new()
+	row_btn.custom_minimum_size = Vector2(0, 32)
+	row_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	row_btn.text = "  %s    %s" % [label_text, ITEM_DATABASE.format_currency(price)]
+	var row_style: StyleBoxFlat = StyleBoxFlat.new()
+	row_style.bg_color = Color(0.14, 0.15, 0.2, 0.8)
+	row_style.corner_radius_top_left = 4
+	row_style.corner_radius_top_right = 4
+	row_style.corner_radius_bottom_left = 4
+	row_style.corner_radius_bottom_right = 4
+	var hover_style: StyleBoxFlat = StyleBoxFlat.new()
+	hover_style.bg_color = Color(0.22, 0.24, 0.32, 0.9)
+	hover_style.corner_radius_top_left = 4
+	hover_style.corner_radius_top_right = 4
+	hover_style.corner_radius_bottom_left = 4
+	hover_style.corner_radius_bottom_right = 4
+	row_btn.add_theme_stylebox_override("normal", row_style)
+	row_btn.add_theme_stylebox_override("hover", hover_style)
+	row_btn.add_theme_stylebox_override("pressed", hover_style)
+	row_btn.add_theme_stylebox_override("focus", hover_style)
+	row_btn.add_theme_color_override("font_color", Color(0.92, 0.93, 0.97, 1.0))
+	row_btn.pressed.connect(_show_detail.bind(label_text, desc_text, price, icon, callback))
+	parent.add_child(row_btn)
+
+
+func _show_detail(name_text: String, desc_text: String, price: int, icon: Texture2D, buy_callback: Callable) -> void:
+	if _detail_placeholder != null:
+		_detail_placeholder.visible = false
+	if _detail_icon != null:
+		_detail_icon.texture = icon
+		_detail_icon.visible = icon != null
+	if _detail_name != null:
+		_detail_name.text = name_text
+		_detail_name.visible = true
+	if _detail_desc != null:
+		_detail_desc.text = desc_text if desc_text != "" else "..."
+		_detail_desc.visible = true
+	if _detail_price != null:
+		_detail_price.text = ITEM_DATABASE.format_currency(price)
+		_detail_price.visible = true
+	if _detail_buy_btn != null:
+		# Disconnect old
+		for conn: Dictionary in _detail_buy_btn.pressed.get_connections():
+			_detail_buy_btn.pressed.disconnect(conn["callable"])
+		_detail_buy_btn.pressed.connect(buy_callback)
+		_detail_buy_btn.visible = true
+		_detail_buy_btn.text = LocaleManager.L("buy")
+
+
+func _clear_detail() -> void:
+	if _detail_placeholder != null:
+		_detail_placeholder.visible = true
+	if _detail_icon != null:
+		_detail_icon.visible = false
+	if _detail_name != null:
+		_detail_name.visible = false
+	if _detail_desc != null:
+		_detail_desc.visible = false
+	if _detail_price != null:
+		_detail_price.visible = false
+	if _detail_buy_btn != null:
+		_detail_buy_btn.visible = false
 
 
 func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
@@ -414,6 +618,14 @@ func _close_shop() -> void:
 	_equipment_icon = null
 	_equipment_label = null
 	_equipment_button = null
+	_detail_icon = null
+	_detail_name = null
+	_detail_desc = null
+	_detail_price = null
+	_detail_buy_btn = null
+	_detail_placeholder = null
+	_item_list_container = null
+	_tab_buttons.clear()
 
 
 func _calculate_equipment_price(_floor_number: int, equipment_offer: Dictionary) -> int:

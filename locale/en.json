@@ -710,5 +710,16 @@
   "returning_tavern": "Returning to Tavern...",
   "returning_surface": "Returning to Surface...",
   "dungeon_run_summary": "Reached Floor %d | %d Kills | %d Loot",
-  "death_loot_lost": "You lost your loot!"
+  "death_loot_lost": "You lost your loot!",
+  "shop_tab_consumables": "Consumables",
+  "shop_tab_equipment": "Equipment",
+  "shop_tab_special": "Special",
+  "shop_select_item": "Click an item for details",
+  "item_bandage_desc": "Bandage wounds, restore 20 HP",
+  "item_bread_desc": "Eat bread, restore 15 HP",
+  "item_torch_desc": "Light the way for 60 seconds",
+  "gift_copper_desc": "Copper gift box: random Common/Uncommon/Rare gear",
+  "gift_silver_desc": "Silver gift box: chance for Epic gear",
+  "gift_gold_desc": "Gold gift box: tiny chance for Legendary gear",
+  "mystery_blessing_desc": "Receive a random blessing from mysterious powers"
 }

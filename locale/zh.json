@@ -710,5 +710,16 @@
   "returning_tavern": "返回酒館...",
   "returning_surface": "返回地表...",
   "dungeon_run_summary": "已抵達第 %d 層 | %d 擊殺 | %d 件戰利品",
-  "death_loot_lost": "你失去了戰利品！"
+  "death_loot_lost": "你失去了戰利品！",
+  "shop_tab_consumables": "消耗品",
+  "shop_tab_equipment": "裝備",
+  "shop_tab_special": "特殊",
+  "shop_select_item": "點擊商品查看詳情",
+  "item_bandage_desc": "包紮傷口，回復 20 血量",
+  "item_bread_desc": "補充體力，回復 15 血量",
+  "item_torch_desc": "照亮前方，持續 60 秒",
+  "gift_copper_desc": "銅禮物盒，隨機獲得白/綠/藍裝備",
+  "gift_silver_desc": "銀禮物盒，有機會獲得紫色裝備",
+  "gift_gold_desc": "金禮物盒，有極小機率獲得傳奇裝備",
+  "mystery_blessing_desc": "從神秘力量中獲得一個隨機祝福"
 }

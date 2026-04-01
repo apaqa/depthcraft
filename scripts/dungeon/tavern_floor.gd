@@ -185,10 +185,15 @@ func _build_npcs() -> void:
 		"pachinko", "賭徒", "[E] 賭徒 — 試試手氣", TEX_LIZARD
 	)
 
-	# Upper-right room — dungeon merchant
+	# Upper-right room — tavern merchant (consumables only, no dungeon specials)
 	var merchant: Area2D = Area2D.new()
 	merchant.set_script(DUNGEON_MERCHANT_SCRIPT)
 	merchant.position = Vector2(float(16 * TILE), float(3 * TILE))
+	merchant.set("override_items", [
+		{"id": "bandage", "quantity": 1, "price": 5},
+		{"id": "bread", "quantity": 1, "price": 5},
+		{"id": "torch", "quantity": 3, "price": 6},
+	])
 	add_child(merchant)
 
 	# Right side — floor teleporter, next to dungeon entrance
