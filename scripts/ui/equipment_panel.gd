@@ -722,6 +722,52 @@ func _append_equipment_card(container: VBoxContainer, title: String, stack: Dict
 		if not compare_mode and is_zero_approx(value):
 			continue
 		container.add_child(_build_stat_compare_row(stat_key, value, other_value, compare_mode))
+	# Main stat display
+	var main_stat_type: String = str(stack.get("main_stat_type", ""))
+	var main_stat_value: int = int(stack.get("main_stat_value", 0))
+	if main_stat_type != "" and main_stat_value > 0:
+		container.add_child(HSeparator.new())
+		var main_header: Label = Label.new()
+		main_header.text = LocaleManager.L("equip_main_stat")
+		main_header.add_theme_font_size_override("font_size", 10)
+		main_header.modulate = Color(1.0, 0.9, 0.5, 1.0)
+		container.add_child(main_header)
+		var main_row: Label = Label.new()
+		var main_display: String = _translate_item_stat(main_stat_type)
+		if _is_percent_stat(main_stat_type):
+			main_row.text = "  %s: %d%%" % [main_display, main_stat_value]
+		else:
+			main_row.text = "  %s: +%d" % [main_display, main_stat_value]
+		main_row.add_theme_font_size_override("font_size", 12)
+		main_row.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8, 1.0))
+		container.add_child(main_row)
+	# Sub stats display
+	var sub_stats: Array = stack.get("sub_stats", []) as Array
+	if not sub_stats.is_empty():
+		var sub_header: Label = Label.new()
+		sub_header.text = LocaleManager.L("equip_sub_stats")
+		sub_header.add_theme_font_size_override("font_size", 10)
+		sub_header.modulate = Color(0.7, 0.75, 0.85, 1.0)
+		container.add_child(sub_header)
+		for sub_entry: Variant in sub_stats:
+			var sub: Dictionary = sub_entry as Dictionary
+			var sub_type: String = str(sub.get("type", ""))
+			var sub_value: float = float(sub.get("value", 0.0))
+			var sub_row: Label = Label.new()
+			sub_row.text = "  %s: +%.1f%%" % [_translate_item_stat(sub_type), sub_value]
+			sub_row.add_theme_font_size_override("font_size", 11)
+			sub_row.modulate = Color(0.65, 0.68, 0.75, 1.0)
+			container.add_child(sub_row)
+	# Forge level display
+	var forge_level: int = int(stack.get("forge_level", 0))
+	var max_forge: int = int(stack.get("max_forge", 0))
+	if max_forge > 0:
+		var forge_label: Label = Label.new()
+		forge_label.text = LocaleManager.L("equip_forge_level") % [forge_level, max_forge]
+		forge_label.add_theme_font_size_override("font_size", 10)
+		forge_label.modulate = Color(0.9, 0.7, 0.3, 1.0) if forge_level > 0 else Color(0.55, 0.55, 0.6, 1.0)
+		container.add_child(forge_label)
+	# Durability
 	var durability: int = int(stack.get("durability", 0))
 	var max_durability: int = int(stack.get("max_durability", 0))
 	if max_durability > 0:
@@ -776,6 +822,10 @@ func _get_ordered_item_stat_keys(primary_stats: Dictionary, secondary_stats: Dic
 
 
 func _translate_item_stat(stat_key: String) -> String:
+	var locale_key: String = "stat_" + stat_key
+	var translated: String = LocaleManager.L(locale_key)
+	if translated != locale_key:
+		return translated
 	match stat_key:
 		"attack":
 			return "ATK"
@@ -809,6 +859,10 @@ func _translate_item_stat(stat_key: String) -> String:
 			return "GATHER"
 		_:
 			return stat_key.replace("_", " ").capitalize()
+
+
+func _is_percent_stat(stat_key: String) -> bool:
+	return stat_key == "crit_chance" or stat_key == "crit_damage_multiplier" or stat_key == "speed_multiplier" or stat_key == "dodge_chance" or stat_key == "lifesteal_ratio"
 
 
 func _format_item_stat_value(stat_key: String, value: float, other_value: float, compare_mode: bool) -> String:
