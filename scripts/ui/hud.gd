@@ -64,11 +64,9 @@ const BOTTOM_UI_GAP = 10.0
 var player: Node = null
 var inventory: Node = null
 var current_level: Node = null
-var _blessing_input_lock_msec: int = 0
+var _blessing_panel: BlessingChoicePanel = null
 var _blessing_stage: int = 0
 var _blessing_pending_theme: String = ""
-var _blessing_pending_choice: String = ""
-var _blessing_needs_processing: bool = false
 var current_level_id: String = ""
 var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
@@ -180,8 +178,7 @@ func _ready() -> void:
 		quest_board_ui.close_requested.connect(_on_menu_closed)
 	if tavern_ui.has_signal("close_requested") and not tavern_ui.close_requested.is_connected(_on_menu_closed):
 		tavern_ui.close_requested.connect(_on_menu_closed)
-	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_buff_chosen):
-		buff_select.buff_chosen.connect(_on_buff_chosen)
+	_setup_blessing_panel()
 	# Note: _codex_panel is created later in _ready after fullscreen_map
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null and not achievement_manager.achievement_unlocked.is_connected(_on_achievement_unlocked):
@@ -737,7 +734,7 @@ func _on_menu_closed() -> void:
 
 
 func _is_modal_open() -> bool:
-	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or quest_board_ui.visible or tavern_ui.visible or buff_select.visible or (settings_menu != null and settings_menu.visible) or (_codex_panel != null and _codex_panel.visible)
+	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or quest_board_ui.visible or tavern_ui.visible or buff_select.visible or (_blessing_panel != null and _blessing_panel.visible) or (settings_menu != null and settings_menu.visible) or (_codex_panel != null and _codex_panel.visible)
 
 
 func _on_achievement_unlocked(id: String) -> void:
@@ -764,10 +761,6 @@ func _toggle_settings_menu() -> void:
 
 
 func _process(delta: float) -> void:
-	if _blessing_needs_processing:
-		_blessing_needs_processing = false
-		_process_blessing_choice(_blessing_pending_choice)
-		_blessing_pending_choice = ""
 	_update_minimap(delta)
 	_update_skill_cooldowns()
 
@@ -912,55 +905,13 @@ func _build_item_icon_holder(stack: Dictionary) -> Control:
 	return swatch
 
 
-func open_buff_selection(options: Array, level) -> void:
-	current_level = level
-	var player_stacks: Dictionary = {}
-	if player != null and player.has_method("get_buff_stacks"):
-		player_stacks = player.get_buff_stacks()
-	buff_select.open_with_options(options, player_stacks)
-	if player != null:
-		player.set_ui_blocked(true)
-	if current_level != null and current_level.has_method("set_gameplay_paused"):
-		current_level.set_gameplay_paused(true)
-
-
-func _on_buff_chosen(buff_id: String) -> void:
-	if player != null:
-		player.apply_buff(buff_id)
-		player.set_ui_blocked(false)
-	if current_level != null and current_level.has_method("set_gameplay_paused"):
-		current_level.set_gameplay_paused(false)
+func open_buff_selection(options: Array, level: Variant) -> void:
+	# Legacy stub — old buff system removed, redirect to blessing
+	open_blessing_selection(options, level)
 
 
 func open_blessing_selection(options: Array, level: Variant) -> void:
 	current_level = level
-	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
-	if bs_node != null and bs_node.has_method("has_empty_main_slot") and bs_node.has_empty_main_slot():
-		_blessing_stage = 1
-		_open_blessing_panel(bs_node.generate_theme_choices(), LocaleManager.L("blessing_select_theme"))
-	elif bs_node != null:
-		_blessing_stage = 3
-		_open_blessing_panel(bs_node.generate_sub_choices(), LocaleManager.L("blessing_select_sub"))
-	else:
-		_blessing_stage = 3
-		_open_blessing_panel(options, LocaleManager.L("blessing_select_title"))
-
-
-func _open_blessing_panel(options: Array, title_text: String) -> void:
-	_blessing_input_lock_msec = Time.get_ticks_msec() + 500
-	if buff_select == null:
-		return
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	# Disconnect before reconnecting to avoid double-fire
-	if buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
-		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
-	buff_select.process_mode = Node.PROCESS_MODE_ALWAYS
-	var typed_options: Array[Dictionary] = []
-	for opt: Variant in options:
-		if opt is Dictionary:
-			typed_options.append(opt as Dictionary)
-	buff_select.open_with_options(typed_options, {})
-	buff_select.title_label.text = title_text
 	if player != null and is_instance_valid(player):
 		player.set_ui_blocked(true)
 		if "_is_charging" in player:
@@ -970,73 +921,83 @@ func _open_blessing_panel(options: Array, title_text: String) -> void:
 	if current_level != null and is_instance_valid(current_level) and current_level.has_method("set_gameplay_paused"):
 		current_level.set_gameplay_paused(true)
 	get_tree().paused = true
-	if buff_select.has_signal("buff_chosen"):
-		buff_select.buff_chosen.connect(_on_blessing_chosen)
-
-
-func _close_blessing_panel() -> void:
-	if buff_select != null:
-		if buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
-			buff_select.buff_chosen.disconnect(_on_blessing_chosen)
-		buff_select.close_menu()
-		buff_select.process_mode = Node.PROCESS_MODE_INHERIT
-	_blessing_stage = 0
-	_blessing_pending_theme = ""
-	_blessing_pending_choice = ""
-	_blessing_needs_processing = false
-	process_mode = Node.PROCESS_MODE_INHERIT
-	if player != null and is_instance_valid(player):
-		player.set_ui_blocked(false)
-	if current_level != null and is_instance_valid(current_level) and current_level.has_method("set_gameplay_paused"):
-		current_level.set_gameplay_paused(false)
-	get_tree().paused = false
-
-
-func _on_blessing_chosen(chosen_id: String) -> void:
-	if Time.get_ticks_msec() < _blessing_input_lock_msec:
+	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
+	if bs_node == null:
+		_finish_blessing_flow()
 		return
-	# Disconnect immediately to prevent double-fire
-	if buff_select != null and buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
-		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
-	# Store chosen_id and process next frame via _pending flag
-	# This avoids re-entrancy: modifying buff_select inside its own signal emission
-	_blessing_pending_choice = chosen_id
-	_blessing_needs_processing = true
+	if bs_node.has_method("has_empty_main_slot") and bs_node.has_empty_main_slot():
+		_blessing_stage = 1
+		_show_blessing_choices(bs_node.generate_theme_choices())
+	else:
+		_blessing_stage = 3
+		_show_blessing_choices(bs_node.generate_sub_choices())
 
 
-func _process_blessing_choice(chosen_id: String) -> void:
+func _setup_blessing_panel() -> void:
+	_blessing_panel = BlessingChoicePanel.new()
+	_blessing_panel.name = "BlessingChoicePanel"
+	_blessing_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_blessing_panel)
+
+
+func _show_blessing_choices(choices: Array[Dictionary]) -> void:
+	if _blessing_panel == null:
+		_finish_blessing_flow()
+		return
+	if choices.is_empty():
+		_finish_blessing_flow()
+		return
+	# Disconnect any prior connection
+	if _blessing_panel.blessing_chosen.is_connected(_on_blessing_panel_chosen):
+		_blessing_panel.blessing_chosen.disconnect(_on_blessing_panel_chosen)
+	_blessing_panel.open_with_choices(choices)
+	_blessing_panel.blessing_chosen.connect(_on_blessing_panel_chosen, CONNECT_ONE_SHOT)
+
+
+func _on_blessing_panel_chosen(chosen_id: String) -> void:
 	if chosen_id == "":
-		_close_blessing_panel()
+		_finish_blessing_flow()
 		return
 	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
-	if bs_node == null or not is_instance_valid(bs_node):
-		_close_blessing_panel()
+	if bs_node == null:
+		_finish_blessing_flow()
 		return
 	if _blessing_stage == 1:
-		# Stage 1: theme chosen
 		_blessing_pending_theme = chosen_id
 		if bs_node.is_theme_assigned(chosen_id):
 			_blessing_stage = 3
-			_open_blessing_panel(bs_node.generate_sub_choices_for_theme(chosen_id), LocaleManager.L("blessing_select_sub"))
+			_show_blessing_choices(bs_node.generate_sub_choices_for_theme(chosen_id))
 			return
 		var empty_slots: Array[String] = bs_node.get_empty_slots()
 		if empty_slots.size() <= 1:
 			if not empty_slots.is_empty():
 				bs_node.assign_main_slot(empty_slots[0], chosen_id)
-			_close_blessing_panel()
+			_finish_blessing_flow()
 			return
 		_blessing_stage = 2
-		_open_blessing_panel(bs_node.generate_slot_choices(chosen_id), LocaleManager.L("blessing_select_slot"))
+		_show_blessing_choices(bs_node.generate_slot_choices(chosen_id))
 		return
 	if _blessing_stage == 2:
 		bs_node.assign_main_slot(chosen_id, _blessing_pending_theme)
-		_close_blessing_panel()
+		_finish_blessing_flow()
 		return
 	if _blessing_stage == 3:
 		bs_node.add_sub_blessing(chosen_id)
-		_close_blessing_panel()
+		_finish_blessing_flow()
 		return
-	_close_blessing_panel()
+	_finish_blessing_flow()
+
+
+func _finish_blessing_flow() -> void:
+	_blessing_stage = 0
+	_blessing_pending_theme = ""
+	if _blessing_panel != null:
+		_blessing_panel.close_panel()
+	if player != null and is_instance_valid(player):
+		player.set_ui_blocked(false)
+	if current_level != null and is_instance_valid(current_level) and current_level.has_method("set_gameplay_paused"):
+		current_level.set_gameplay_paused(false)
+	get_tree().paused = false
 
 
 func _refresh_buff_icons(active_buffs: Array) -> void:

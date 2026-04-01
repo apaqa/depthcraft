@@ -2,7 +2,6 @@ extends Enemy
 class_name BossEnemy
 
 const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
-const BUFF_SYSTEM = preload("res://scripts/dungeon/buff_system.gd")
 const LEGENDARY_ITEMS: Script = preload("res://scripts/dungeon/legendary_items.gd")
 const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
 
@@ -205,12 +204,11 @@ func _request_buff_selection() -> void:
 	if buff_selection_requested:
 		return
 	var level: Variant = get_parent()
-	while level != null and not level.has_signal("buff_selection_requested"):
+	while level != null and not level.has_signal("blessing_selection_requested"):
 		level = level.get_parent()
-	if level == null or not level.has_signal("buff_selection_requested"):
+	if level == null or not level.has_signal("blessing_selection_requested"):
 		return
 	buff_selection_requested = true
 	if level.has_method("set_gameplay_paused"):
 		level.set_gameplay_paused(true)
-	var buff_options: Array[Dictionary] = BUFF_SYSTEM.generate_random_buffs(3)
-	level.buff_selection_requested.emit(buff_options)
+	level.blessing_selection_requested.emit([])

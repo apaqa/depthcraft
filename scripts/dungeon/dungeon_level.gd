@@ -19,7 +19,6 @@ const SOURCE_WALL_RIGHT: int = 104
 const SOURCE_WALL_MID: int = 105
 
 const DUNGEON_GENERATOR: Script = preload("res://scripts/dungeon/dungeon_generator.gd")
-const BUFF_SYSTEM: Script = preload("res://scripts/dungeon/buff_system.gd")
 const DUNGEON_LOOT: Script = preload("res://scripts/dungeon/dungeon_loot.gd")
 const STAIRWAY_SCENE: PackedScene = preload("res://scenes/dungeon/stairway.tscn")
 const MELEE_ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/melee_enemy.tscn")
@@ -398,12 +397,8 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 		elites_killed_this_floor += 1
 		_apply_elite_chain_enhancement()
 		set_gameplay_paused(true)
-		var bs_node: Node = get_node_or_null("/root/BlessingSystem")
-		if bs_node != null and randf() < 0.5:
-			# Blessing selection — the HUD handles the multi-stage flow
+		if randf() < 0.5:
 			blessing_selection_requested.emit([])
-		else:
-			buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())
 
 
 func _on_descend_requested() -> void:
