@@ -235,6 +235,8 @@ func load_state(saved_items: Array) -> void:
 	for stack_variant in saved_items:
 		if typeof(stack_variant) != TYPE_DICTIONARY:
 			continue
+		if items.size() >= max_slots:
+			break
 		items.append((stack_variant as Dictionary).duplicate(true))
 	_mark_dirty()
 
