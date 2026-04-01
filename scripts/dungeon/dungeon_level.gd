@@ -1376,8 +1376,18 @@ func _reveal_tile_radius(center_tile: Vector2i, radius: int) -> void:
 			_reveal_tile(Vector2i(x, y))
 
 
+func _has_dungeon_tile(tile_pos: Vector2i) -> bool:
+	if tile_map_layer != null and tile_map_layer.get_cell_source_id(tile_pos) >= 0:
+		return true
+	if wall_tile_map_layer != null and wall_tile_map_layer.get_cell_source_id(tile_pos) >= 0:
+		return true
+	return false
+
+
 func _reveal_tile(tile_pos: Vector2i) -> void:
 	if revealed_tiles.has(tile_pos):
+		return
+	if not _has_dungeon_tile(tile_pos):
 		return
 	revealed_tiles[tile_pos] = true
 	if fog_tile_map_layer != null:
