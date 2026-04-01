@@ -18,8 +18,8 @@ const BRANCH_ICON_DEFENSE_CLOSED: Texture2D = preload("res://assets/icons/kyrise
 const BRANCH_ICON_SUPPORT_OPEN: Texture2D = preload("res://assets/icons/kyrise/book_02g.png")
 const BRANCH_ICON_SUPPORT_CLOSED: Texture2D = preload("res://assets/icons/kyrise/book_02a.png")
 
-const BASE_MAP_SIZE = Vector2(4000, 4000)
-const MAP_CENTER = Vector2(2000, 2000)
+const BASE_MAP_SIZE = Vector2(6000, 4500)
+const MAP_CENTER = Vector2(3000, 2250)
 const NODE_SIZE = 68.0
 const GLOW_SIZE = 92.0
 const MAIN_STEP = 200.0
