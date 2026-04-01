@@ -155,8 +155,6 @@ func _on_class_chosen(class_id: String) -> void:
 			ps.base_attack = 8
 			ps.base_speed = 80.0
 			class_system.apply_to_stats(ps)
-	if _current_player.has_method("reset_all_talents"):
-		_current_player.reset_all_talents()
 	if _current_player.has_method("refresh_class_visuals"):
 		_current_player.refresh_class_visuals()
 	if _current_player.has_method("_refresh_all_stats"):

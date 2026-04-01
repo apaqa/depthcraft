@@ -403,6 +403,16 @@ func is_boss_enemy() -> bool:
 	return false
 
 
+func _get_normal_enemy_stats(floor_number: int) -> Dictionary:
+	if floor_number <= 3:
+		return {"hp": 30, "damage": 8}
+	if floor_number <= 6:
+		return {"hp": 50, "damage": 12}
+	if floor_number <= 10:
+		return {"hp": 80, "damage": 18}
+	return {"hp": 100 + floor_number * 5, "damage": 22 + floor_number * 2}
+
+
 func _setup_hp_bar() -> void:
 	hp_bar_root = Node2D.new()
 	hp_bar_root.position = Vector2(-12, -20)

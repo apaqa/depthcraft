@@ -402,16 +402,6 @@ func _generate_boss_equipment() -> Dictionary:
 	return fallback
 
 
-func _get_normal_enemy_stats(floor_number: int) -> Dictionary:
-	if floor_number <= 3:
-		return {"hp": 30, "damage": 8}
-	if floor_number <= 6:
-		return {"hp": 50, "damage": 12}
-	if floor_number <= 10:
-		return {"hp": 80, "damage": 18}
-	return {"hp": 100 + floor_number * 5, "damage": 22 + floor_number * 2}
-
-
 func _request_buff_selection() -> void:
 	if buff_selection_requested:
 		return
