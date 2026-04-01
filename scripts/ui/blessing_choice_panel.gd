@@ -3,6 +3,25 @@ class_name BlessingChoicePanel
 
 signal blessing_chosen(blessing_id: String)
 
+const THEME_ICONS: Dictionary = {
+	"fire": preload("res://assets/icons/kyrise/crystal_01b.png"),
+	"ice": preload("res://assets/icons/kyrise/crystal_01a.png"),
+	"poison": preload("res://assets/icons/kyrise/crystal_01d.png"),
+	"crit": preload("res://assets/icons/kyrise/crystal_01e.png"),
+	"lifesteal": preload("res://assets/icons/kyrise/crystal_01c.png"),
+	"generic": preload("res://assets/icons/kyrise/gem_01a.png"),
+	"speed": preload("res://assets/icons/kyrise/gem_01b.png"),
+}
+const THEME_BG_COLORS: Dictionary = {
+	"fire": Color(0.3, 0.05, 0.0, 0.8),
+	"ice": Color(0.0, 0.1, 0.3, 0.8),
+	"poison": Color(0.0, 0.2, 0.0, 0.8),
+	"crit": Color(0.3, 0.2, 0.0, 0.8),
+	"lifesteal": Color(0.25, 0.0, 0.05, 0.8),
+	"generic": Color(0.15, 0.15, 0.15, 0.8),
+	"speed": Color(0.1, 0.15, 0.25, 0.8),
+}
+
 var _input_lock_until: int = 0
 var _choice_made: bool = false
 
@@ -74,43 +93,108 @@ func _rebuild_ui(choices: Array[Dictionary]) -> void:
 		center.add_child(empty_label)
 
 
-func _build_card(data: Dictionary) -> Button:
+func _build_card(data: Dictionary) -> Control:
 	var blessing_id: String = str(data.get("id", ""))
+	var theme: String = str(data.get("theme", "generic"))
 	var card_color: Color = Color(0.3, 0.3, 0.4, 1.0)
 	var color_val: Variant = data.get("color", null)
 	if color_val is Color:
 		card_color = color_val
+	var bg_color: Color = THEME_BG_COLORS.get(theme, THEME_BG_COLORS.get("generic", Color(0.15, 0.15, 0.15, 0.8))) as Color
 
 	var btn: Button = Button.new()
-	btn.custom_minimum_size = Vector2(180, 220)
+	btn.custom_minimum_size = Vector2(190, 260)
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	btn.focus_mode = Control.FOCUS_NONE
+	btn.text = ""
 
 	var normal_style: StyleBoxFlat = _make_card_style(card_color, 0.12)
+	normal_style.bg_color = bg_color
 	var hover_style: StyleBoxFlat = _make_card_style(card_color, 0.28)
+	hover_style.bg_color = bg_color.lightened(0.15)
 	var pressed_style: StyleBoxFlat = _make_card_style(card_color, 0.06)
 	btn.add_theme_stylebox_override("normal", normal_style)
 	btn.add_theme_stylebox_override("hover", hover_style)
 	btn.add_theme_stylebox_override("pressed", pressed_style)
 	btn.add_theme_stylebox_override("focus", hover_style)
-	btn.add_theme_color_override("font_color", Color(0.96, 0.97, 1.0, 1.0))
-
-	var display_name: String = LocaleManager.L(str(data.get("name", blessing_id)))
-	var tier: String = str(data.get("tier", "sub"))
-	var tier_label: String = LocaleManager.L("blessing_cat_main") if tier == "main" else LocaleManager.L("blessing_cat_sub")
-	var description: String = LocaleManager.L(str(data.get("description", "")))
-	var category: String = LocaleManager.L(str(data.get("category", "")))
-	var stacks: int = int(data.get("current_stacks", 0))
-	var stack_text: String = ""
-	if stacks > 0:
-		stack_text = " Lv.%d->%d" % [stacks, stacks + 1]
-
-	btn.text = "%s%s\n[%s]\n%s\n%s" % [display_name, stack_text, category, description, tier_label]
 	btn.pressed.connect(_on_card_pressed.bind(blessing_id))
 
-	# Border effect
+	# Content layout inside button
+	var content: VBoxContainer = VBoxContainer.new()
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_theme_constant_override("separation", 6)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# Margin
+	var margin: MarginContainer = MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(margin)
+
+	var inner: VBoxContainer = VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 6)
+	inner.alignment = BoxContainer.ALIGNMENT_CENTER
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(inner)
+
+	# Icon
+	var icon_texture: Texture2D = THEME_ICONS.get(theme, THEME_ICONS.get("generic", null)) as Texture2D
+	if icon_texture != null:
+		var icon_container: CenterContainer = CenterContainer.new()
+		icon_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var icon: TextureRect = TextureRect.new()
+		icon.texture = icon_texture
+		icon.custom_minimum_size = Vector2(48, 48)
+		icon.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_container.add_child(icon)
+		inner.add_child(icon_container)
+
+	# Name
+	var display_name: String = LocaleManager.L(str(data.get("name", blessing_id)))
+	var stacks: int = int(data.get("current_stacks", 0))
+	if stacks > 0:
+		display_name += " Lv.%d->%d" % [stacks, stacks + 1]
+	var name_lbl: Label = Label.new()
+	name_lbl.text = display_name
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.add_theme_color_override("font_color", card_color.lightened(0.5))
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(name_lbl)
+
+	# Tier / category
+	var tier: String = str(data.get("tier", "sub"))
+	var tier_text: String = LocaleManager.L("blessing_cat_main") if tier == "main" else LocaleManager.L("blessing_cat_sub")
+	var cat_text: String = LocaleManager.L(str(data.get("category", "")))
+	var tier_lbl: Label = Label.new()
+	tier_lbl.text = "[%s] %s" % [cat_text, tier_text]
+	tier_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tier_lbl.add_theme_font_size_override("font_size", 11)
+	tier_lbl.modulate = Color(0.65, 0.65, 0.7, 1.0)
+	tier_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(tier_lbl)
+
+	# Description
+	var description: String = LocaleManager.L(str(data.get("description", "")))
+	var desc_lbl: Label = Label.new()
+	desc_lbl.text = description
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.add_theme_font_size_override("font_size", 12)
+	desc_lbl.modulate = Color(0.75, 0.78, 0.85, 1.0)
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(desc_lbl)
+
+	# Border
 	var border: Control = Control.new()
 	border.name = "Border"
 	border.mouse_filter = Control.MOUSE_FILTER_IGNORE

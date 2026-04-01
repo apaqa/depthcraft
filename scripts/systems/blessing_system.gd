@@ -302,6 +302,7 @@ func generate_theme_choices() -> Array[Dictionary]:
 			break
 		choices.append({
 			"id": theme,
+			"theme": theme,
 			"name": THEME_NAME_KEYS.get(theme, theme),
 			"description": THEME_DESC_KEYS.get(theme, ""),
 			"category": "blessing_cat_theme",
@@ -319,6 +320,7 @@ func generate_slot_choices(theme: String) -> Array[Dictionary]:
 	for slot_id: String in empty_slots:
 		choices.append({
 			"id": slot_id,
+			"theme": theme,
 			"name": SLOT_NAME_KEYS.get(slot_id, slot_id),
 			"description": theme_name,
 			"category": "blessing_cat_slot",
