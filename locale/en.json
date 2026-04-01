@@ -756,5 +756,14 @@
   "boss_shadow_mage": "Shadow Mage",
   "boss_lava_golem": "Lava Golem",
   "boss_abyss_warden": "Abyss Warden",
-  "boss_lord_of_abyss": "Lord of the Abyss"
+  "boss_lord_of_abyss": "Lord of the Abyss",
+  "lore_home_core": "This banner declares your sovereignty. The first settlers claimed their land with nothing but a flag.",
+  "lore_workbench": "Ancient craftsman's wisdom. Legends say artifacts were forged here.",
+  "lore_cooking_bench": "A simple but practical cooking station. Good food is an adventurer's best companion.",
+  "lore_talent_altar": "A pillar covered in runes. Those who touch it hear whispers from the abyss.",
+  "lore_storage": "A reliable chest. The most precious thing isn't treasure, but a place to keep it.",
+  "lore_tavern": "The entrance to the underground tavern. Adventurers trade stories and intel here.",
+  "lore_dark_altar": "Ominous energy seeps from the cracks. Some say it's a window to the abyss.",
+  "lore_repair_bench": "A well-worn whetstone. In the depths, equipment is as vital as life itself.",
+  "lore_farm_plot": "A small patch of tilled earth. Even at the edge of the abyss, life finds a way."
 }

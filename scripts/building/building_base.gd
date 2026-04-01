@@ -23,6 +23,10 @@ var _hp_bar_root: Node2D = null
 var _hp_bar_fill: Polygon2D = null
 
 
+func get_lore_key() -> String:
+	return "lore_" + building_id
+
+
 func _ready() -> void:
 	set_process(false)
 	_ensure_visual_refs()

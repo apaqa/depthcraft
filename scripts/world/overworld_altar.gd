@@ -68,6 +68,10 @@ func _build_visuals() -> void:
 	add_child(col_shape)
 
 
+func get_lore_key() -> String:
+	return "lore_dark_altar"
+
+
 func get_interaction_prompt() -> String:
 	if _used:
 		return ""

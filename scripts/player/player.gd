@@ -593,7 +593,13 @@ func _update_prompt() -> void:
 		if interactable.has_method("get") and interactable.get("is_depleted") == true:
 			interaction_prompt_cleared.emit()
 			return
-		interaction_prompt_changed.emit(interactable.get_interaction_prompt())
+		var prompt_text: String = interactable.get_interaction_prompt()
+		if Input.is_key_pressed(KEY_ALT) and interactable.has_method("get_lore_key"):
+			var lore_key: String = str(interactable.get_lore_key())
+			var lore_text: String = LocaleManager.L(lore_key)
+			if lore_text != lore_key and lore_text != "":
+				prompt_text += "\n" + lore_text
+		interaction_prompt_changed.emit(prompt_text)
 		return
 	interaction_prompt_cleared.emit()
 

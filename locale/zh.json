@@ -756,5 +756,14 @@
   "boss_shadow_mage": "暗影巫師",
   "boss_lava_golem": "熔岩巨獸",
   "boss_abyss_warden": "深淵看守者",
-  "boss_lord_of_abyss": "深淵之主"
+  "boss_lord_of_abyss": "深淵之主",
+  "lore_home_core": "這面旗幟代表你在這片土地的主權。據說最初的開拓者就是靠著一面旗幟宣告領地的。",
+  "lore_workbench": "古代工匠的智慧結晶。曾經有人用它打造出傳說中的神器。",
+  "lore_cooking_bench": "簡陋但實用的烹飪台。好的食物是冒險者最好的夥伴。",
+  "lore_talent_altar": "刻滿符文的石柱，觸摸它的人會聽到來自深淵的低語。",
+  "lore_storage": "可靠的木箱。冒險者最珍貴的不是寶物，而是保管寶物的地方。",
+  "lore_tavern": "通往地下酒館的入口。在那裡，冒險者們交換情報和故事。",
+  "lore_dark_altar": "不祥的氣息從裂縫中湧出。有人說這是通往深淵的窗口。",
+  "lore_repair_bench": "久經磨損的砥石。在冒險中，裝備跟性命一樣重要。",
+  "lore_farm_plot": "一小塊開墾過的土地。即使在深淵邊緣，生命也會找到出路。"
 }
