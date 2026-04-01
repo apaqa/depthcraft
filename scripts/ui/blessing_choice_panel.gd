@@ -205,10 +205,11 @@ func _build_card(data: Dictionary) -> Control:
 		icon_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var icon: TextureRect = TextureRect.new()
 		icon.texture = icon_texture
-		icon.custom_minimum_size = Vector2(48, 48)
-		icon.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.custom_minimum_size = Vector2(64, 64)
+		icon.size = Vector2(64, 64)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon_container.add_child(icon)
 		inner.add_child(icon_container)
