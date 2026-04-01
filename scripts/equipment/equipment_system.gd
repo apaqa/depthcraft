@@ -4,6 +4,7 @@ class_name EquipmentSystem
 signal equipment_changed
 
 const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
+const DUNGEON_LOOT: Script = preload("res://scripts/dungeon/dungeon_loot.gd")
 const SLOT_ORDER: Array[String] = ["weapon", "helmet", "chest_armor", "boots", "accessory", "offhand", "tool"]
 const DISPLAY_STATS: Array[String] = ["attack", "defense", "max_hp", "speed"]
 const SET_ORDER: Array[String] = ["necromancer_set", "lava_set", "abyss_set", "shadow_set", "dragon_set"]
@@ -138,40 +139,65 @@ func get_forge_max_level(item: Dictionary) -> int:
 	return int(FORGE_MAX_BY_RARITY.get(rarity, 3))
 
 
-func forge_item(slot_name: String, player_inventory) -> bool:
+func forge_item(slot_name: String, player_inventory) -> Dictionary:
 	var item: Dictionary = get_equipped(slot_name)
 	if item.is_empty():
-		return false
+		return {}
 	var forge_level: int = int(item.get("forge_level", 0))
-	var max_level: int = get_forge_max_level(item)
+	var max_level: int = int(item.get("max_forge", get_forge_max_level(item)))
 	if forge_level >= max_level:
-		return false
-	var item_level: int = maxi(int(item.get("required_level", 1)), 1)
-	var forge_times: int = forge_level + 1
-	var copper_cost: int = 10 * item_level * forge_times
-	var iron_cost: int = forge_times
+		return {}
+	var cost: Dictionary = get_forge_cost(slot_name)
+	if cost.is_empty():
+		return {}
+	var stone_cost: int = int(cost.get("stone", 0))
+	var iron_cost: int = int(cost.get("iron_ore", 0))
 	if player_inventory == null:
-		return false
-	if not player_inventory.pay_copper(copper_cost):
-		return false
-	if not player_inventory.remove_item("iron_ore", iron_cost):
-		player_inventory.add_item("copper", copper_cost)
-		return false
+		return {}
+	if not player_inventory.has_item("stone", stone_cost):
+		return {}
+	if not player_inventory.has_item("iron_ore", iron_cost):
+		return {}
+	player_inventory.remove_item("stone", stone_cost)
+	player_inventory.remove_item("iron_ore", iron_cost)
 	item["forge_level"] = forge_level + 1
-	var stats: Dictionary = item.get("stats", {})
-	for stat_name: String in stats.keys():
-		var base_value: float = float(stats[stat_name])
-		if stat_name == "attack" or stat_name == "defense":
-			stats[stat_name] = base_value * 1.05
-		else:
-			stats[stat_name] = base_value * 1.03
-	item["stats"] = stats
+	# Boost main stat by 3-5%
+	var main_boost_pct: float = float(randi_range(3, 5)) * 0.01
+	var main_stat_val: int = int(item.get("main_stat_value", 0))
+	if main_stat_val > 0:
+		var boost: int = maxi(int(round(float(main_stat_val) * main_boost_pct)), 1)
+		item["main_stat_value"] = main_stat_val + boost
+	# Boost random sub stat by 3-5%
+	var boosted_sub: String = ""
+	var sub_stats: Array = item.get("sub_stats", []) as Array
+	if not sub_stats.is_empty():
+		var sub_index: int = randi() % sub_stats.size()
+		var sub_entry: Dictionary = sub_stats[sub_index] as Dictionary
+		var sub_boost: float = float(randi_range(3, 5)) * 0.1
+		sub_entry["value"] = float(sub_entry.get("value", 0.0)) + sub_boost
+		sub_stats[sub_index] = sub_entry
+		item["sub_stats"] = sub_stats
+		boosted_sub = str(sub_entry.get("type", ""))
+	# Rebuild merged stats
+	_rebuild_item_stats(item)
 	_equipped[slot_name] = item
 	_notify_equipment_changed()
 	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null and achievement_manager.has_method("record_forge"):
 		achievement_manager.record_forge()
-	return true
+	return {"success": true, "boosted_sub": boosted_sub}
+
+
+func _rebuild_item_stats(item: Dictionary) -> void:
+	# Recalculate stats from base + affixes + main stat + sub stats
+	var slot: String = str(item.get("slot", "weapon"))
+	var rarity: String = str(item.get("rarity", "Common"))
+	var floor_found: int = int(item.get("floor_found", 1))
+	var quality_mult: float = float(DUNGEON_LOOT.QUALITY_MULTIPLIERS.get(rarity, 1.0))
+	var base_power: int = int(round((3 + floor_found * 2) * quality_mult))
+	item["stats"] = DUNGEON_LOOT._generate_base_stats(slot, base_power)
+	DUNGEON_LOOT._apply_affixes_to_stats(item)
+	DUNGEON_LOOT._apply_main_and_sub_to_stats(item)
 
 
 func get_forge_cost(slot_name: String) -> Dictionary:
@@ -179,13 +205,13 @@ func get_forge_cost(slot_name: String) -> Dictionary:
 	if item.is_empty():
 		return {}
 	var forge_level: int = int(item.get("forge_level", 0))
-	var item_level: int = maxi(int(item.get("required_level", 1)), 1)
-	var forge_times: int = forge_level + 1
+	var stone_cost: int = (forge_level + 1) * 2
+	var iron_cost: int = maxi(forge_level, 1)
 	return {
-		"copper": 10 * item_level * forge_times,
-		"iron_ore": forge_times,
+		"stone": stone_cost,
+		"iron_ore": iron_cost,
 		"current_forge_level": forge_level,
-		"max_forge_level": get_forge_max_level(item),
+		"max_forge_level": int(item.get("max_forge", get_forge_max_level(item))),
 	}
 
 
