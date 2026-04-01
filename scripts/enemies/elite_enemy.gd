@@ -11,19 +11,22 @@ var pulse_time: float = 0.0
 
 func _ready() -> void:
 	super._ready()
-	animated_sprite.modulate = Color(1.0, 0.45, 0.45, 1.0)
-	scale = Vector2(1.15, 1.15)
+	# Gold tint to distinguish from normal enemies
+	animated_sprite.modulate = Color(1.0, 0.85, 0.3, 1.0)
+	scale = Vector2(1.5, 1.5)
 
 
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
 	target = player_target
 	loot_parent = loot_root
 	floor_value = floor_number
-	max_hp = 300 + floor_number * 40
+	# Base stats from normal enemy, then 3x HP and 2x ATK
+	var normal: Dictionary = _get_normal_enemy_stats(floor_number)
+	max_hp = int(normal["hp"]) * 3
 	current_hp = max_hp
-	damage = 25 + floor_number * 5
+	damage = int(normal["damage"]) * 2
 	speed = 35.0
-	detection_range = 140.0
+	detection_range = 160.0
 	attack_range = 28.0
 	attack_cooldown = 1.2
 	drop_table.clear()
