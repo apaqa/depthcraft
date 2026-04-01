@@ -2,11 +2,8 @@ extends Node
 class_name Inventory
 
 const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
-const WOODEN_PER_COPPER: int = 10
-const COPPER_PER_SILVER: int = 10
+const COPPER_PER_SILVER: int = 100
 const SILVER_PER_GOLD: int = 100
-const WOODEN_PER_SILVER: int = WOODEN_PER_COPPER * COPPER_PER_SILVER
-const WOODEN_PER_GOLD: int = WOODEN_PER_SILVER * SILVER_PER_GOLD
 
 signal inventory_changed
 
@@ -139,18 +136,14 @@ func get_item_count(item_id: String) -> int:
 
 
 func get_total_copper() -> int:
-	return int(get_total_wooden_value() / WOODEN_PER_COPPER)
-
-
-func get_total_wooden_value() -> int:
-	return get_item_count("wooden_coin") + get_item_count("copper") * WOODEN_PER_COPPER + get_item_count("silver") * WOODEN_PER_SILVER + get_item_count("gold") * WOODEN_PER_GOLD
+	return get_item_count("copper") + get_item_count("silver") * COPPER_PER_SILVER + get_item_count("gold") * SILVER_PER_GOLD * COPPER_PER_SILVER
 
 
 func pay_copper(amount: int) -> bool:
 	var payment: Dictionary = get_exact_currency_payment(amount)
 	if payment.is_empty():
 		return false
-	for coin_type: String in ["gold", "silver", "copper", "wooden_coin"]:
+	for coin_type: String in ["gold", "silver", "copper"]:
 		var coin_count: int = int(payment.get(coin_type, 0))
 		if coin_count > 0 and not remove_item(coin_type, coin_count):
 			return false
@@ -160,15 +153,14 @@ func pay_copper(amount: int) -> bool:
 func get_exact_currency_payment(amount: int) -> Dictionary:
 	if amount <= 0:
 		return {}
-	var total_wooden_value: int = get_total_wooden_value()
-	var required_wooden_value: int = amount * WOODEN_PER_COPPER
-	if total_wooden_value < required_wooden_value:
+	var total_copper: int = get_total_copper()
+	if total_copper < amount:
 		return {}
-	return _get_exact_currency_payment(required_wooden_value)
+	return _get_exact_currency_payment(amount)
 
 
 func refund_currency(payment: Dictionary) -> void:
-	for coin_type: String in ["gold", "silver", "copper", "wooden_coin"]:
+	for coin_type: String in ["gold", "silver", "copper"]:
 		var coin_count: int = int(payment.get(coin_type, 0))
 		if coin_count > 0:
 			add_item(coin_type, coin_count)
@@ -254,28 +246,24 @@ func _duplicate_items(source_items: Array[Dictionary]) -> Array[Dictionary]:
 	return copied_items
 
 
-func _get_exact_currency_payment(required_wooden_value: int) -> Dictionary:
-	var remaining_wooden_value: int = required_wooden_value
+func _get_exact_currency_payment(required_copper: int) -> Dictionary:
+	var remaining: int = required_copper
+	var copper_per_gold: int = COPPER_PER_SILVER * SILVER_PER_GOLD
 	var payment: Dictionary = {
 		"gold": 0,
 		"silver": 0,
 		"copper": 0,
-		"wooden_coin": 0,
 	}
-	var gold_needed: int = mini(get_item_count("gold"), int(remaining_wooden_value / WOODEN_PER_GOLD))
+	var gold_needed: int = mini(get_item_count("gold"), int(remaining / copper_per_gold))
 	payment["gold"] = gold_needed
-	remaining_wooden_value -= gold_needed * WOODEN_PER_GOLD
+	remaining -= gold_needed * copper_per_gold
 
-	var silver_needed: int = mini(get_item_count("silver"), int(remaining_wooden_value / WOODEN_PER_SILVER))
+	var silver_needed: int = mini(get_item_count("silver"), int(remaining / COPPER_PER_SILVER))
 	payment["silver"] = silver_needed
-	remaining_wooden_value -= silver_needed * WOODEN_PER_SILVER
+	remaining -= silver_needed * COPPER_PER_SILVER
 
-	var copper_needed: int = mini(get_item_count("copper"), int(remaining_wooden_value / WOODEN_PER_COPPER))
+	var copper_needed: int = mini(get_item_count("copper"), remaining)
 	payment["copper"] = copper_needed
-	remaining_wooden_value -= copper_needed * WOODEN_PER_COPPER
+	remaining -= copper_needed
 
-	var wooden_needed: int = mini(get_item_count("wooden_coin"), remaining_wooden_value)
-	payment["wooden_coin"] = wooden_needed
-	remaining_wooden_value -= wooden_needed
-
-	return payment if remaining_wooden_value == 0 else {}
+	return payment if remaining == 0 else {}

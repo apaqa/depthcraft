@@ -195,3 +195,6 @@ func _on_body_entered(body: Node) -> void:
 				text_color = _get_rarity_border_color()
 			body._show_floating_text(global_position, "+%d %s" % [quantity, item_name], text_color)
 		queue_free()
+	else:
+		if body.has_method("show_status_message"):
+			body.show_status_message(LocaleManager.L("bag_full"), Color(1.0, 0.4, 0.4, 1.0), 1.5)

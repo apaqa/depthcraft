@@ -98,6 +98,7 @@ var dungeon_max_hp_reference: int = 0
 var current_dungeon_floor: int = 0
 var _run_stat_modifiers: Dictionary = {}
 var _floor_stat_modifiers: Dictionary = {}
+var _tavern_buffs: Array[Dictionary] = []
 var set_attack_cooldown_reduction: float = 0.0
 var necromancer_summon_on_kill: bool = false
 var lava_burst_on_hit: bool = false
@@ -1465,6 +1466,8 @@ func start_dungeon_run() -> void:
 	_floor_stat_modifiers.clear()
 	_refresh_runtime_stat_modifiers()
 	clear_dungeon_buffs()
+	equipment_system.mark_entry_equipment()
+	_apply_tavern_buffs()
 	undying_will_available = player_stats.has_undying_will()
 	execute_skill_armed = false
 	shadow_combo_count = 0
@@ -1485,7 +1488,13 @@ func start_dungeon_run() -> void:
 func finish_dungeon_run(safe_return: bool) -> void:
 	if not safe_return:
 		lose_dungeon_run_loot()
+		equipment_system.strip_dungeon_equipment()
+		inventory.remove_item("copper", inventory.get_item_count("copper"))
+		inventory.remove_item("silver", inventory.get_item_count("silver"))
+		inventory.remove_item("gold", inventory.get_item_count("gold"))
 		equipment_system.apply_death_penalty()
+	equipment_system.clear_entry_locks()
+	_tavern_buffs.clear()
 	dungeon_run_loot.clear()
 	dungeon_max_hp_penalty = 0
 	dungeon_max_hp_penalty_percent = 0
@@ -1512,6 +1521,25 @@ func record_dungeon_loot(item_id: String, quantity: int) -> void:
 			entry["quantity"] = int(entry.get("quantity", 0)) + quantity
 			return
 	dungeon_run_loot.append({"id": item_id, "quantity": quantity})
+
+
+func add_tavern_buff(buff_type: String, buff_value: float) -> void:
+	_tavern_buffs.append({"type": buff_type, "value": buff_value})
+
+
+func _apply_tavern_buffs() -> void:
+	for buff: Dictionary in _tavern_buffs:
+		var btype: String = str(buff.get("type", ""))
+		var bval: float = float(buff.get("value", 0.0))
+		match btype:
+			"damage_multiplier":
+				damage_multiplier += bval
+			"armor_reduction":
+				armor_reduction += bval
+			"loot_drop_multiplier":
+				loot_drop_multiplier += bval
+			"move_speed_multiplier":
+				move_speed_multiplier += bval
 
 
 func lose_dungeon_run_loot() -> void:

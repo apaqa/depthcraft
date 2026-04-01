@@ -143,14 +143,12 @@ func record_currency_gain(item_id: String, amount: int) -> void:
 		return
 	var copper_value: int = 0
 	match item_id:
-		"wooden_coin":
-			copper_value = int(amount / 10)
 		"copper":
 			copper_value = amount
 		"silver":
-			copper_value = amount * 10
+			copper_value = amount * 100
 		"gold":
-			copper_value = amount * 1000
+			copper_value = amount * 10000
 		_:
 			return
 	if copper_value <= 0:

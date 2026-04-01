@@ -234,12 +234,23 @@ func _build_slot_row(slot_name: String, item: Dictionary) -> Button:
 	if not item.is_empty():
 		var durability: int = int(item.get("durability", 0))
 		var max_durability: int = int(item.get("max_durability", 0))
+		var dur_row: HBoxContainer = HBoxContainer.new()
+		dur_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		dur_row.add_theme_constant_override("separation", 6)
 		var durability_label: Label = Label.new()
 		durability_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		durability_label.text = LocaleManager.L("slot_durability") % [durability, max_durability]
 		durability_label.add_theme_font_size_override("font_size", 10)
 		durability_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
-		info_column.add_child(durability_label)
+		dur_row.add_child(durability_label)
+		if bool(item.get("entry_locked", false)):
+			var lock_lbl: Label = Label.new()
+			lock_lbl.text = "[鎖]"
+			lock_lbl.add_theme_font_size_override("font_size", 10)
+			lock_lbl.modulate = Color(1.0, 0.85, 0.2, 1.0)
+			lock_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			dur_row.add_child(lock_lbl)
+		info_column.add_child(dur_row)
 
 	content.add_child(info_column)
 	button.add_child(content)

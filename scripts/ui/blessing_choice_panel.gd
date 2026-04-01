@@ -4,11 +4,16 @@ class_name BlessingChoicePanel
 signal blessing_chosen(blessing_id: String)
 
 const THEME_ICONS: Dictionary = {
-	"fire": preload("res://assets/icons/kyrise/crystal_01b.png"),
-	"ice": preload("res://assets/icons/kyrise/crystal_01a.png"),
-	"poison": preload("res://assets/icons/kyrise/crystal_01d.png"),
-	"crit": preload("res://assets/icons/kyrise/crystal_01e.png"),
-	"lifesteal": preload("res://assets/icons/kyrise/crystal_01c.png"),
+	"fire": preload("res://assets/icons/blessing_fire.png"),
+	"ice": preload("res://assets/icons/blessing_ice.png"),
+	"poison": preload("res://assets/icons/blessing_poison.png"),
+	"crit": preload("res://assets/icons/blessing_crit.png"),
+	"lifesteal": preload("res://assets/icons/blessing_lifesteal.png"),
+	"dodge": preload("res://assets/icons/blessing_dodge.png"),
+	"counter": preload("res://assets/icons/blessing_counter.png"),
+	"skill": preload("res://assets/icons/blessing_skill.png"),
+	"wealth": preload("res://assets/icons/blessing_wealth.png"),
+	"summon": preload("res://assets/icons/blessing_summon.png"),
 	"generic": preload("res://assets/icons/kyrise/gem_01a.png"),
 	"speed": preload("res://assets/icons/kyrise/gem_01b.png"),
 }
@@ -18,6 +23,11 @@ const THEME_BG_COLORS: Dictionary = {
 	"poison": Color(0.0, 0.2, 0.0, 0.8),
 	"crit": Color(0.3, 0.2, 0.0, 0.8),
 	"lifesteal": Color(0.25, 0.0, 0.05, 0.8),
+	"dodge": Color(0.05, 0.2, 0.25, 0.8),
+	"counter": Color(0.2, 0.05, 0.2, 0.8),
+	"skill": Color(0.05, 0.1, 0.3, 0.8),
+	"wealth": Color(0.25, 0.2, 0.0, 0.8),
+	"summon": Color(0.1, 0.0, 0.25, 0.8),
 	"generic": Color(0.15, 0.15, 0.15, 0.8),
 	"speed": Color(0.1, 0.15, 0.25, 0.8),
 }

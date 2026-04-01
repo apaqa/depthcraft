@@ -21,10 +21,8 @@ const BASE_STOCKS: Dictionary = {
 	"mystery_equipment": 1,
 }
 const EXCHANGE_RECIPES = [
-	{"from_id": "wooden_coin", "from_amount": 10, "to_id": "copper", "to_amount": 1},
-	{"from_id": "copper", "from_amount": 1, "to_id": "wooden_coin", "to_amount": 10},
-	{"from_id": "copper", "from_amount": 10, "to_id": "silver", "to_amount": 1},
-	{"from_id": "silver", "from_amount": 1, "to_id": "copper", "to_amount": 10},
+	{"from_id": "copper", "from_amount": 100, "to_id": "silver", "to_amount": 1},
+	{"from_id": "silver", "from_amount": 1, "to_id": "copper", "to_amount": 100},
 	{"from_id": "silver", "from_amount": 100, "to_id": "gold", "to_amount": 1},
 	{"from_id": "gold", "from_amount": 1, "to_id": "silver", "to_amount": 100},
 ]
@@ -460,21 +458,17 @@ func _update_gold_label() -> void:
 	var gold_count: int = 0
 	var silver_count: int = 0
 	var copper_count: int = 0
-	var wooden_count: int = 0
 	if inv != null:
 		gold_count = int(inv.get_item_count("gold"))
 		silver_count = int(inv.get_item_count("silver"))
 		copper_count = int(inv.get_item_count("copper"))
-		wooden_count = int(inv.get_item_count("wooden_coin"))
-	_gold_label.text = "%s: %d   %s: %d   %s: %d   %s: %d" % [
+	_gold_label.text = "%s: %d   %s: %d   %s: %d" % [
 		ITEM_DATABASE.get_display_name("gold"),
 		gold_count,
 		ITEM_DATABASE.get_display_name("silver"),
 		silver_count,
 		ITEM_DATABASE.get_display_name("copper"),
 		copper_count,
-		ITEM_DATABASE.get_display_name("wooden_coin"),
-		wooden_count,
 	]
 
 
@@ -670,7 +664,7 @@ func _is_sellable(stack: Dictionary) -> bool:
 	if stack.is_empty():
 		return false
 	var item_id: String = str(stack.get("id", ""))
-	if item_id == "wooden_coin" or item_id == "copper" or item_id == "silver" or item_id == "gold":
+	if item_id == "copper" or item_id == "silver" or item_id == "gold":
 		return false
 	return true
 

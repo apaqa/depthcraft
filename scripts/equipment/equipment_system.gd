@@ -273,6 +273,32 @@ func consume_damage_durability() -> void:
 	_reduce_durability(["helmet", "chest_armor", "boots", "offhand", "accessory"], 1, true)
 
 
+func mark_entry_equipment() -> void:
+	for slot_name: String in SLOT_ORDER:
+		var item: Dictionary = _equipped.get(slot_name, {})
+		if not item.is_empty():
+			item["entry_locked"] = true
+			_equipped[slot_name] = item
+
+
+func clear_entry_locks() -> void:
+	for slot_name: String in SLOT_ORDER:
+		var item: Dictionary = _equipped.get(slot_name, {})
+		if item.has("entry_locked"):
+			item.erase("entry_locked")
+			_equipped[slot_name] = item
+
+
+func strip_dungeon_equipment() -> void:
+	for slot_name: String in SLOT_ORDER:
+		var item: Dictionary = _equipped.get(slot_name, {})
+		if item.is_empty():
+			continue
+		if not bool(item.get("entry_locked", false)):
+			_equipped[slot_name] = {}
+	_notify_equipment_changed()
+
+
 func apply_death_penalty() -> void:
 	for slot_name: String in SLOT_ORDER:
 		var item: Dictionary = _equipped.get(slot_name, {})

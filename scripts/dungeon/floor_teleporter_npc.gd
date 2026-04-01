@@ -8,6 +8,7 @@ signal floor_selected(floor_number: int)
 
 const CHECKPOINT_STEP: int = 5
 const COST_PER_FLOOR: int = 10
+const SHARD_COST: int = 3
 
 
 func _ready() -> void:
@@ -146,13 +147,32 @@ func _open_panel(player: Variant) -> void:
 		if cost > 0 and inventory != null and inventory.has_method("get_item_count"):
 			can_afford = int(inventory.get_item_count("copper")) >= cost
 
+		var row: HBoxContainer = HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_theme_constant_override("separation", 6)
+
 		var btn: Button = Button.new()
 		btn.text = btn_text
 		btn.custom_minimum_size = Vector2(0.0, 34.0)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.disabled = not can_afford
 		btn.pressed.connect(_on_floor_picked.bind(floor_num, cost))
-		btn_list.add_child(btn)
+		row.add_child(btn)
+
+		if cost > 0:
+			var shard_count: int = 0
+			if inventory != null and inventory.has_method("get_item_count"):
+				shard_count = int(inventory.get_item_count("talent_shard"))
+			var can_shard: bool = shard_count >= SHARD_COST
+			var shard_btn: Button = Button.new()
+			shard_btn.text = "碎片 x%d" % SHARD_COST
+			shard_btn.custom_minimum_size = Vector2(80.0, 34.0)
+			shard_btn.disabled = not can_shard
+			shard_btn.modulate = Color(0.85, 0.65, 1.0, 1.0)
+			shard_btn.pressed.connect(_on_floor_shard_picked.bind(floor_num))
+			row.add_child(shard_btn)
+
+		btn_list.add_child(row)
 
 	var close_btn: Button = Button.new()
 	close_btn.text = LocaleManager.L("teleporter_cancel")
@@ -167,6 +187,16 @@ func _on_floor_picked(floor_num: int, cost: int) -> void:
 		var inventory: Variant = player.get("inventory")
 		if inventory != null and inventory.has_method("remove_item"):
 			inventory.remove_item("copper", cost)
+	_close_panel()
+	floor_selected.emit(floor_num)
+
+
+func _on_floor_shard_picked(floor_num: int) -> void:
+	var player: Variant = _current_player
+	if player != null:
+		var inventory: Variant = player.get("inventory")
+		if inventory != null and inventory.has_method("remove_item"):
+			inventory.remove_item("talent_shard", SHARD_COST)
 	_close_panel()
 	floor_selected.emit(floor_num)
 

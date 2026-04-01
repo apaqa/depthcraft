@@ -7,10 +7,11 @@ class_name TavernPachinko
 
 const BALL_TEXTURE: Texture2D = preload("res://assets/icons/kyrise/gem_01a.png")
 
-const DROP_COST: int = 5
-const BIN_PAYOUTS: Array = [0, 2, 5, 10, 30]
+const BET_OPTIONS: Array[int] = [10, 50, 100]
+const BET_LABELS: Array[String] = ["10 銅", "50 銅", "1 銀"]
+# Base payouts at 10c bet — multiply by bet/10 for larger bets
+const BIN_BASE_PAYOUTS: Array = [0, 4, 10, 20, 60]
 const BIN_WEIGHTS: Array = [0.30, 0.30, 0.20, 0.15, 0.05]
-const BIN_LABELS: Array = ["×", "2c", "5c", "10c", "30c"]
 const BIN_COLORS: Array = [
 	Color(0.5, 0.5, 0.5, 1.0),
 	Color(0.55, 0.85, 0.55, 1.0),
@@ -31,6 +32,8 @@ var _drop_btn: Button = null
 var _balance_label: Label = null
 var _board_area: Control = null
 var _active_tween: Tween = null
+var _current_bet: int = 10
+var _bet_btns: Array[Button] = []
 
 
 func _ready() -> void:
@@ -56,12 +59,24 @@ func _build_ui() -> void:
 	title.modulate = Color(0.7, 0.9, 1.0, 1.0)
 	vbox.add_child(title)
 
-	var info: Label = Label.new()
-	info.text = "每次: %d 銅幣" % DROP_COST
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info.modulate = Color(0.75, 0.75, 0.75, 1.0)
-	info.add_theme_font_size_override("font_size", 13)
-	vbox.add_child(info)
+	var bet_row: HBoxContainer = HBoxContainer.new()
+	bet_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	bet_row.add_theme_constant_override("separation", 8)
+	var bet_lbl: Label = Label.new()
+	bet_lbl.text = "賭注:"
+	bet_lbl.add_theme_font_size_override("font_size", 13)
+	bet_lbl.modulate = Color(0.8, 0.8, 0.8, 1.0)
+	bet_row.add_child(bet_lbl)
+	_bet_btns.clear()
+	for bi: int in range(BET_OPTIONS.size()):
+		var bb: Button = Button.new()
+		bb.text = BET_LABELS[bi]
+		bb.custom_minimum_size = Vector2(60.0, 26.0)
+		bb.pressed.connect(_on_bet_selected.bind(bi))
+		bet_row.add_child(bb)
+		_bet_btns.append(bb)
+	vbox.add_child(bet_row)
+	_update_bet_buttons()
 
 	_balance_label = Label.new()
 	_balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -98,7 +113,7 @@ func _build_ui() -> void:
 	vbox.add_child(_result_label)
 
 	_drop_btn = Button.new()
-	_drop_btn.text = "投球 (-%d 銅幣)" % DROP_COST
+	_drop_btn.text = "投球 (-%d 銅幣)" % _current_bet
 	_drop_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_drop_btn.custom_minimum_size = Vector2(200.0, 40.0)
 	_drop_btn.pressed.connect(_on_drop_pressed)
@@ -122,16 +137,18 @@ func _build_pegs() -> void:
 
 
 func _build_bins() -> void:
-	var bin_w: float = BOARD_W / float(BIN_PAYOUTS.size())
-	for i in range(1, BIN_PAYOUTS.size()):
+	var bin_w: float = BOARD_W / float(BIN_BASE_PAYOUTS.size())
+	for i in range(1, BIN_BASE_PAYOUTS.size()):
 		var sep: ColorRect = ColorRect.new()
 		sep.color = Color(0.45, 0.45, 0.5, 0.9)
 		sep.size = Vector2(2.0, 40.0)
 		sep.position = Vector2(float(i) * bin_w - 1.0, BOARD_H - 42.0)
 		_board_area.add_child(sep)
-	for i in range(BIN_PAYOUTS.size()):
+	for i in range(BIN_BASE_PAYOUTS.size()):
+		var base_val: int = int(BIN_BASE_PAYOUTS[i])
+		var lbl_text: String = "x" if base_val == 0 else "%dx" % (base_val / 10)
 		var lbl: Label = Label.new()
-		lbl.text = BIN_LABELS[i]
+		lbl.text = lbl_text
 		lbl.modulate = BIN_COLORS[i]
 		lbl.add_theme_font_size_override("font_size", 13)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -148,16 +165,34 @@ func _refresh_balance() -> void:
 	_balance_label.text = "餘額: %d 銅幣" % total
 
 
+func _on_bet_selected(bet_index: int) -> void:
+	if _animating:
+		return
+	if bet_index >= 0 and bet_index < BET_OPTIONS.size():
+		_current_bet = BET_OPTIONS[bet_index]
+	if _drop_btn != null:
+		_drop_btn.text = "投球 (-%d 銅幣)" % _current_bet
+	_update_bet_buttons()
+
+
+func _update_bet_buttons() -> void:
+	for bi: int in range(_bet_btns.size()):
+		if bi >= BET_OPTIONS.size():
+			break
+		var is_active: bool = BET_OPTIONS[bi] == _current_bet
+		_bet_btns[bi].modulate = Color(1.0, 1.0, 1.0, 1.0) if is_active else Color(0.6, 0.6, 0.6, 1.0)
+
+
 func _on_drop_pressed() -> void:
 	if _animating or _player == null:
 		return
 	var total: int = _player.inventory.get_total_copper()
-	if total < DROP_COST:
+	if total < _current_bet:
 		if _result_label != null:
 			_result_label.text = "銅幣不足！"
 			_result_label.modulate = Color(1.0, 0.4, 0.4, 1.0)
 		return
-	var paid: bool = _player.inventory.pay_copper(DROP_COST)
+	var paid: bool = _player.inventory.pay_copper(_current_bet)
 	if not paid:
 		return
 	_refresh_balance()
@@ -186,7 +221,7 @@ func _start_ball_animation() -> void:
 		_on_ball_landed()
 		return
 
-	var bin_w: float = BOARD_W / float(BIN_PAYOUTS.size())
+	var bin_w: float = BOARD_W / float(BIN_BASE_PAYOUTS.size())
 	var target_x: float = float(_result_bin) * bin_w + bin_w * 0.5 - BALL_SIZE * 0.5
 
 	# Start position
@@ -213,9 +248,10 @@ func _on_ball_landed() -> void:
 	_animating = false
 	if _drop_btn != null:
 		_drop_btn.disabled = false
-	if _result_bin < 0 or _result_bin >= BIN_PAYOUTS.size():
+	if _result_bin < 0 or _result_bin >= BIN_BASE_PAYOUTS.size():
 		return
-	var payout: int = int(BIN_PAYOUTS[_result_bin])
+	var bet_mult: int = _current_bet / 10
+	var payout: int = int(BIN_BASE_PAYOUTS[_result_bin]) * bet_mult
 	if payout > 0 and _player != null:
 		_player.inventory.add_item("copper", payout)
 		_refresh_balance()

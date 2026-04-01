@@ -67,6 +67,7 @@ var current_level: Node = null
 var _blessing_panel: BlessingChoicePanel = null
 var _blessing_stage: int = 0
 var _blessing_pending_theme: String = ""
+var _blessing_reroll_count: int = 0
 var _status_panel: BlessingStatusPanel = null
 var current_level_id: String = ""
 var fullscreen_map: Control = null
@@ -912,6 +913,9 @@ func open_buff_selection(options: Array, level: Variant) -> void:
 
 
 func open_blessing_selection(options: Array, level: Variant) -> void:
+	_blessing_reroll_count = 0
+	if _blessing_panel != null:
+		_blessing_panel.reset_reroll()
 	current_level = level
 	if player != null and is_instance_valid(player):
 		player.set_ui_blocked(true)
@@ -950,6 +954,19 @@ func toggle_status_panel() -> void:
 	_status_panel.toggle(player)
 
 
+func _get_reroll_choices() -> Array[Dictionary]:
+	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
+	if bs_node == null:
+		return []
+	if _blessing_stage == 1:
+		return bs_node.generate_theme_choices()
+	if _blessing_stage == 3:
+		if _blessing_pending_theme != "" and bs_node.has_method("generate_sub_choices_for_theme"):
+			return bs_node.generate_sub_choices_for_theme(_blessing_pending_theme)
+		return bs_node.generate_sub_choices()
+	return []
+
+
 func _show_blessing_choices(choices: Array[Dictionary]) -> void:
 	if _blessing_panel == null:
 		_finish_blessing_flow()
@@ -960,11 +977,18 @@ func _show_blessing_choices(choices: Array[Dictionary]) -> void:
 	# Disconnect any prior connection
 	if _blessing_panel.blessing_chosen.is_connected(_on_blessing_panel_chosen):
 		_blessing_panel.blessing_chosen.disconnect(_on_blessing_panel_chosen)
+	# Enable reroll only for theme/sub-blessing stages, not slot assignment
+	if _blessing_stage == 1 or _blessing_stage == 3:
+		_blessing_panel.set_reroll_context(player, _get_reroll_choices, _blessing_reroll_count)
+	else:
+		_blessing_panel.set_reroll_context(null, Callable(), 0)
 	_blessing_panel.open_with_choices(choices)
 	_blessing_panel.blessing_chosen.connect(_on_blessing_panel_chosen, CONNECT_ONE_SHOT)
 
 
 func _on_blessing_panel_chosen(chosen_id: String) -> void:
+	if _blessing_panel != null:
+		_blessing_reroll_count = int(_blessing_panel.get("_reroll_count"))
 	if chosen_id == "":
 		_finish_blessing_flow()
 		return
