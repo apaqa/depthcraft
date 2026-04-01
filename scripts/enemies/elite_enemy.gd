@@ -104,12 +104,53 @@ func die() -> void:
 		shard_drop.setup("talent_shard", 3)
 		shard_drop.global_position = global_position
 		loot_parent.add_child(shard_drop)
+		var gem_id: String = _roll_elite_gem_drop()
+		if gem_id != "":
+			var gem_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop
+			gem_drop.setup(gem_id, 1)
+			gem_drop.global_position = global_position + Vector2(-8, -8)
+			loot_parent.add_child(gem_drop)
 		if randf() <= 0.75:
 			var equipment_drop: LootDrop = LOOT_DROP_SCENE.instantiate() as LootDrop
 			equipment_drop.global_position = global_position + Vector2(10, -4)
 			loot_parent.add_child(equipment_drop)
 			equipment_drop.setup_stack(DungeonLoot.generate_dungeon_equipment(floor_value))
+	_maybe_trigger_elite_blessing()
 	super.die()
+
+
+func _roll_elite_gem_drop() -> String:
+	var cycle_manager: Node = get_node_or_null("/root/CycleManager")
+	var cycle: int = 1
+	if cycle_manager != null:
+		cycle = int(cycle_manager.get("current_cycle"))
+	if cycle >= 2 and floor_value >= 20:
+		if randf() < 0.08:
+			return "gem_purple"
+	if cycle >= 2 and floor_value >= 15:
+		if randf() < 0.15:
+			return "gem_blue"
+	return ""
+
+
+func _maybe_trigger_elite_blessing() -> void:
+	var players: Array = get_tree().get_nodes_in_group("player")
+	var blessed_guaranteed: bool = false
+	if not players.is_empty():
+		blessed_guaranteed = bool(players[0].get("elite_blessing_guaranteed"))
+	var blessing_chance: float = 0.5
+	if blessed_guaranteed:
+		blessing_chance = 1.0
+	if randf() >= blessing_chance:
+		return
+	var level: Node = get_parent()
+	while level != null and not level.has_signal("blessing_selection_requested"):
+		level = level.get_parent()
+	if level == null or not level.has_signal("blessing_selection_requested"):
+		return
+	if level.has_method("set_gameplay_paused"):
+		level.set_gameplay_paused(true)
+	level.emit_signal("blessing_selection_requested", [])
 
 
 func _summon_bats() -> void:

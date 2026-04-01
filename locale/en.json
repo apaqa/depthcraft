@@ -835,5 +835,13 @@
   "blessing_skill_sub_h_name": "Skill Invincibility",
   "blessing_skill_sub_h_desc": "2s Invincible After Skill / 10% ATK Self-Stun",
   "status_slot_empty": "Empty",
-  "skill_system_wip": "(Effects WIP)"
+  "skill_system_wip": "(Effects WIP)",
+  "item_gem_green_name": "Green Gem",
+  "item_gem_green_desc": "Basic talent gem — used at the Talent Altar",
+  "item_gem_blue_name": "Blue Gem",
+  "item_gem_blue_desc": "Advanced talent gem — drops from elites/bosses at Floor 15+ (Cycle 2+)",
+  "item_gem_purple_name": "Purple Gem",
+  "item_gem_purple_desc": "High-tier talent gem — drops from elites/bosses at Floor 20+ (Cycle 2+)",
+  "item_gem_red_name": "Red Gem",
+  "item_gem_red_desc": "Ultimate talent gem — extremely rare, drops from F30 Boss only"
 }

@@ -835,5 +835,13 @@
   "blessing_skill_sub_h_name": "技能無敵",
   "blessing_skill_sub_h_desc": "技能後 2 秒無敵 / 攻擊 10% 眩暈",
   "status_slot_empty": "未選擇",
-  "skill_system_wip": "(效果開發中)"
+  "skill_system_wip": "(效果開發中)",
+  "item_gem_green_name": "綠色寶石",
+  "item_gem_green_desc": "基礎天賦寶石 — 在天賦祭壇使用",
+  "item_gem_blue_name": "藍色寶石",
+  "item_gem_blue_desc": "進階天賦寶石 — 15 層以上精英/Boss 掉落（輪迴 2+）",
+  "item_gem_purple_name": "紫色寶石",
+  "item_gem_purple_desc": "高級天賦寶石 — 20 層以上精英/Boss 掉落（輪迴 2+）",
+  "item_gem_red_name": "紅色寶石",
+  "item_gem_red_desc": "終極天賦寶石 — 極稀有，僅 F30 Boss 掉落"
 }

@@ -348,6 +348,7 @@ func _grant_rewards_to_players() -> void:
 	var silver_amount: int = 10 + floor_value * 2
 	var gold_amount: int = 1 if randf() <= minf(0.08 + float(floor_value) * 0.005, 0.22) else 0
 	var shard_amount: int = 4 + int(floor_value / 5)
+	var gem_drops: Array[String] = _roll_boss_gem_drops()
 	for player_ref in get_tree().get_nodes_in_group("player"):
 		if player_ref == null or not is_instance_valid(player_ref):
 			continue
@@ -359,6 +360,10 @@ func _grant_rewards_to_players() -> void:
 		if gold_amount > 0:
 			_grant_item(inventory, "gold", gold_amount)
 		_grant_item(inventory, "talent_shard", shard_amount)
+		for gem_id: String in gem_drops:
+			_grant_item(inventory, gem_id, 1)
+			if player_ref.has_method("record_dungeon_loot"):
+				player_ref.record_dungeon_loot(gem_id, 1)
 		if player_ref.has_method("record_dungeon_loot"):
 			player_ref.record_dungeon_loot(str(equipment_reward.get("id", "")), 1)
 			player_ref.record_dungeon_loot("silver", silver_amount)
@@ -396,6 +401,21 @@ func _grant_stack(inventory, stack: Dictionary) -> void:
 func _force_add_stack(inventory, stack: Dictionary) -> void:
 	inventory.items.append(stack.duplicate(true))
 	inventory.mark_dirty()
+
+
+func _roll_boss_gem_drops() -> Array[String]:
+	var drops: Array[String] = []
+	var cycle_manager: Node = get_node_or_null("/root/CycleManager")
+	var cycle: int = 1
+	if cycle_manager != null:
+		cycle = int(cycle_manager.get("current_cycle"))
+	if floor_value >= 30 and randf() < 0.01:
+		drops.append("gem_red")
+	if cycle >= 2 and floor_value >= 20 and randf() < 0.20:
+		drops.append("gem_purple")
+	if cycle >= 2 and floor_value >= 15 and randf() < 0.30:
+		drops.append("gem_blue")
+	return drops
 
 
 func _generate_boss_equipment() -> Dictionary:

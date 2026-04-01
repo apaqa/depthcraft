@@ -85,6 +85,42 @@ func _is_equipment() -> bool:
 	return str(data.get("type", "")) == "equipment"
 
 
+func _is_gem() -> bool:
+	return item_id in ["gem_green", "gem_blue", "gem_purple", "gem_red"]
+
+
+func _get_gem_color() -> Color:
+	match item_id:
+		"gem_green":
+			return Color(0.3, 0.85, 0.3, 1.0)
+		"gem_blue":
+			return Color(0.3, 0.55, 1.0, 1.0)
+		"gem_purple":
+			return Color(0.65, 0.3, 0.9, 1.0)
+		"gem_red":
+			return Color(0.9, 0.2, 0.2, 1.0)
+		_:
+			return Color(0.7, 0.7, 0.7, 1.0)
+
+
+func _setup_gem_visuals() -> void:
+	if get_node_or_null("GemPillar") != null:
+		return
+	var gem_color: Color = _get_gem_color()
+	var pillar: Polygon2D = Polygon2D.new()
+	pillar.name = "GemPillar"
+	pillar.polygon = PackedVector2Array([
+		Vector2(-2, -28), Vector2(2, -28),
+		Vector2(2, -2), Vector2(-2, -2),
+	])
+	pillar.color = gem_color
+	add_child(pillar)
+	var tween: Tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(pillar, "modulate:a", 0.8, 0.5)
+	tween.tween_property(pillar, "modulate:a", 0.2, 0.5)
+
+
 func _get_rarity() -> String:
 	return str(stack_data.get("rarity", "Common"))
 
@@ -160,6 +196,9 @@ func _update_icon() -> void:
 			sprite.scale = Vector2(16.0 / icon.get_width(), 16.0 / icon.get_height())
 		if item_id == "talent_shard":
 			sprite.scale = sprite.scale * 0.5
+		if _is_gem():
+			sprite.scale = sprite.scale * 0.65
+			_setup_gem_visuals()
 		sprite.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		queue_redraw()
 		return
