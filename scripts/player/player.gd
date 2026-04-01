@@ -138,6 +138,9 @@ func _ready() -> void:
 	_refresh_all_stats()
 	_setup_torch_light()
 	configure_for_network_role(load_persistent_state_on_ready)
+	var _bs: Node = get_node_or_null("/root/BlessingSystem")
+	if _bs != null and _bs.has_signal("blessings_changed") and not _bs.blessings_changed.is_connected(_refresh_all_stats):
+		_bs.blessings_changed.connect(_refresh_all_stats)
 
 
 func refresh_class_visuals() -> void:
@@ -577,7 +580,8 @@ func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 		if legend_block_heal:
 			heal(max(int(round(float(max_hp) * 0.05)), 1))
 		return
-	var defense_value: int = player_stats.get_total_defense()
+	var def_bonus: float = _get_blessing_value("def_percent")
+	var defense_value: int = int(round(float(player_stats.get_total_defense()) * (1.0 + def_bonus)))
 	var reduced_amount: int = max(int(round(float(max(amount - defense_value, 1)) * (1.0 - armor_reduction))), 1)
 	current_hp = max(current_hp - reduced_amount, 0)
 	AudioManager.play_sfx("player_hurt")
@@ -609,6 +613,9 @@ func die() -> void:
 	set_physics_process(false)
 	AudioManager.play_sfx("player_die")
 	_show_floating_text(global_position, "???", Color(1.0, 0.35, 0.35, 1.0))
+	var bs_die: Node = get_node_or_null("/root/BlessingSystem")
+	if bs_die != null and bs_die.has_method("clear_all"):
+		bs_die.call("clear_all")
 	died.emit()
 
 
@@ -665,10 +672,13 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 				attack_damage *= 3
 			execute_skill_armed = false
 		var is_critical: bool = guaranteed_crit_ready
-		if not is_critical and player_stats.get_total_crit_chance() + crit_chance_bonus > 0.0 and randf() < (player_stats.get_total_crit_chance() + crit_chance_bonus):
+		var total_crit_chance: float = player_stats.get_total_crit_chance() + crit_chance_bonus + _get_blessing_value("crit_rate_bonus")
+		if not is_critical and total_crit_chance > 0.0 and randf() < total_crit_chance:
 			is_critical = true
 		if is_critical:
-			attack_damage = attack_damage * (4 if legend_eclipse_crit else 2)
+			var crit_multi: int = 4 if legend_eclipse_crit else 2
+			var crit_dmg_bonus: float = _get_blessing_value("crit_damage_bonus")
+			attack_damage = int(round(float(attack_damage) * (float(crit_multi) + crit_dmg_bonus)))
 			crit_landed = true
 		if player_stats.get_execute_bonus() > 0.0:
 			var enemy_hp: int = int(collider.get("current_hp"))
@@ -680,15 +690,23 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 			collider.apply_knockback(attack_direction, 120.0)
 		attack_connected = true
 		total_damage_dealt += attack_damage
+		_apply_blessing_on_hit(collider, attack_damage)
 		_handle_enemy_kill_trigger(collider)
-	if (lifesteal_ratio + equipment_lifesteal_ratio) > 0.0 and total_damage_dealt > 0:
-		heal(int(max(round(total_damage_dealt * (lifesteal_ratio + equipment_lifesteal_ratio)), 1.0)))
+	var blessing_lifesteal: float = _get_blessing_value("lifesteal")
+	var total_lifesteal: float = lifesteal_ratio + equipment_lifesteal_ratio + blessing_lifesteal
+	var low_hp_threshold: float = _get_blessing_value("lifesteal_low_hp")
+	if low_hp_threshold > 0.0 and max_hp > 0 and float(current_hp) / float(max_hp) < low_hp_threshold:
+		total_lifesteal *= 2.0
+	if total_lifesteal > 0.0 and total_damage_dealt > 0:
+		heal(int(max(round(float(total_damage_dealt) * total_lifesteal), 1.0)))
 	if abyss_crit_heal and crit_landed:
 		var heal_amount: int = max(int(round(float(max_hp) * 0.05)), 1)
 		heal(heal_amount)
 		_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.55, 1.0, 0.7, 1.0))
 	if legend_crit_lifesteal and crit_landed and total_damage_dealt > 0:
 		heal(max(int(round(float(total_damage_dealt) * 0.10)), 1))
+	if crit_landed and _get_blessing_value("crit_shockwave") > 0.0:
+		_trigger_blessing_crit_shockwave(total_damage_dealt)
 	if attack_connected:
 		AudioManager.play_sfx("attack_hit")
 	if legend_chain_lightning and attack_connected and randf() < 0.20:
@@ -716,6 +734,12 @@ func _handle_enemy_kill_trigger(enemy_ref: Variant) -> void:
 		if legend_kill_count % 10 == 0:
 			damage_multiplier = minf(damage_multiplier + 0.02, damage_multiplier + 0.50 - maxf(damage_multiplier - 1.0, 0.0))
 			_show_floating_text(global_position, "ATK+2%", Color(0.9, 0.5, 1.0, 1.0))
+	var heal_kill: float = _get_blessing_value("heal_on_kill")
+	if heal_kill > 0.0:
+		var hk_amount: int = maxi(int(round(float(max_hp) * heal_kill)), 1)
+		heal(hk_amount)
+	if _get_blessing_value("burn_spread") > 0.0 and enemy_ref.get("burn_time_left") != null and float(enemy_ref.get("burn_time_left")) > 0.0:
+		_trigger_burn_spread(enemy_ref)
 
 
 func _spawn_skeleton_servant() -> void:
@@ -785,6 +809,62 @@ func _trigger_chain_lightning() -> void:
 			hit_count += 1
 	if hit_count > 0:
 		_show_floating_text(global_position, "Lightning", Color(0.8, 0.9, 1.0, 1.0))
+
+
+func _apply_blessing_on_hit(collider: Variant, attack_damage: int) -> void:
+	var burn_val: float = _get_blessing_value("burn_on_hit")
+	if burn_val > 0.0 and randf() < burn_val:
+		if collider.has_method("apply_burn"):
+			var burn_dps_val: float = float(attack_damage) * 0.03
+			var burn_duration_bonus: float = _get_blessing_value("freeze_duration_bonus")
+			collider.apply_burn(burn_dps_val, 3.0 + burn_duration_bonus)
+	var chill_val: float = _get_blessing_value("chill_on_hit")
+	if chill_val > 0.0 and collider.has_method("apply_chill"):
+		var freeze_dur: float = 2.0 + _get_blessing_value("freeze_duration_bonus")
+		collider.apply_chill(int(round(chill_val)), freeze_dur)
+	var poison_val: float = _get_blessing_value("poison_on_hit")
+	if poison_val > 0.0 and collider.has_method("apply_poison"):
+		var pdps: float = float(attack_damage) * 0.02
+		collider.apply_poison(pdps, int(round(poison_val)))
+	var frozen_bonus: float = _get_blessing_value("frozen_bonus_damage")
+	if frozen_bonus > 0.0 and collider.get("is_frozen") != null and bool(collider.get("is_frozen")):
+		var bonus_dmg: int = maxi(int(round(float(attack_damage) * frozen_bonus)), 1)
+		collider.take_damage(bonus_dmg, Vector2.ZERO)
+
+
+func _trigger_blessing_crit_shockwave(base_damage: int) -> void:
+	var wave_ratio: float = _get_blessing_value("crit_shockwave")
+	if wave_ratio <= 0.0:
+		return
+	var wave_damage: int = maxi(int(round(float(base_damage) * wave_ratio)), 1)
+	for enemy_variant: Variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy: Node2D = enemy_variant as Node2D
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		if bool(enemy.get("is_dead")):
+			continue
+		if enemy.global_position.distance_to(global_position) > 80.0:
+			continue
+		if enemy.has_method("take_damage"):
+			enemy.take_damage(wave_damage, (enemy.global_position - global_position).normalized())
+	_show_floating_text(global_position, "Shockwave", Color(1.0, 0.75, 0.1, 1.0))
+
+
+func _trigger_burn_spread(source_enemy: Variant) -> void:
+	var spread_damage: int = maxi(int(round(float(get_attack_damage()) * 0.2)), 1)
+	for enemy_variant: Variant in get_tree().get_nodes_in_group("enemies"):
+		var enemy: Node2D = enemy_variant as Node2D
+		if enemy == null or not is_instance_valid(enemy) or enemy == source_enemy:
+			continue
+		if bool(enemy.get("is_dead")):
+			continue
+		if enemy.global_position.distance_to((source_enemy as Node2D).global_position) > 60.0:
+			continue
+		if enemy.has_method("apply_burn"):
+			enemy.apply_burn(float(spread_damage) * 0.03, 3.0)
+		if enemy.has_method("take_damage"):
+			enemy.take_damage(spread_damage, ((source_enemy as Node2D).global_position - enemy.global_position).normalized())
+	_show_floating_text((source_enemy as Node2D).global_position, "Wildfire", Color(1.0, 0.45, 0.05, 1.0))
 
 
 func _try_trigger_dragon_guard() -> bool:
@@ -992,7 +1072,8 @@ func get_buff_stacks() -> Dictionary:
 
 
 func get_attack_damage() -> int:
-	return int(round(float(player_stats.get_total_attack()) * damage_multiplier))
+	var atk_bonus: float = _get_blessing_value("atk_percent")
+	return int(round(float(player_stats.get_total_attack()) * damage_multiplier * (1.0 + atk_bonus)))
 
 
 func get_attack_cooldown_duration() -> float:
@@ -1357,11 +1438,21 @@ func _apply_legendary_passives() -> void:
 
 
 func _refresh_all_stats() -> void:
-	speed = player_stats.get_total_speed()
-	max_hp = maxi(player_stats.get_total_max_hp() + bonus_max_hp - dungeon_max_hp_penalty, 1)
+	var spd_bonus: float = _get_blessing_value("speed_percent")
+	speed = player_stats.get_total_speed() * (1.0 + spd_bonus)
+	var hp_bonus: float = _get_blessing_value("hp_percent")
+	var base_max: int = player_stats.get_total_max_hp() + bonus_max_hp - dungeon_max_hp_penalty
+	max_hp = maxi(int(round(float(base_max) * (1.0 + hp_bonus))), 1)
 	current_hp = clamp(current_hp, 0, max_hp)
 	stats_changed.emit()
 	hp_changed.emit(current_hp, max_hp)
+
+
+func _get_blessing_value(effect_name: String) -> float:
+	var bs: Node = get_node_or_null("/root/BlessingSystem")
+	if bs == null or not bs.has_method("get_total_effect_value"):
+		return 0.0
+	return float(bs.call("get_total_effect_value", effect_name))
 
 
 func set_consumable_slot(slot_index: int, item_id_val: String) -> void:

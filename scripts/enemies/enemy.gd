@@ -54,6 +54,17 @@ var _stealth_interval: float = 8.0
 var _stealth_duration: float = 2.0
 var _prefix_damage_reduction: float = 0.0
 var _prefix_reflect_ratio: float = 0.0
+# Blessing status effects
+var burn_time_left: float = 0.0
+var burn_dps: float = 0.0
+var _burn_tick_timer: float = 0.0
+var poison_stacks: int = 0
+var poison_dps_per_stack: float = 0.0
+var _poison_tick_timer: float = 0.0
+var chill_stacks: int = 0
+var chill_max_stacks: int = 3
+var freeze_time_left: float = 0.0
+var is_frozen: bool = false
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -107,6 +118,12 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 	_tick_prefix_effects(delta)
+	_tick_status_effects(delta)
+	if is_frozen:
+		velocity = Vector2.ZERO
+		_update_animation(Vector2.ZERO)
+		move_and_slide()
+		return
 
 	if target == null or not is_instance_valid(target):
 		var players: Array = get_tree().get_nodes_in_group("player")
@@ -500,3 +517,54 @@ func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
 func apply_slow(multiplier: float, duration: float) -> void:
 	slow_multiplier = clampf(multiplier, 0.1, 1.0)
 	slow_time_left = max(duration, 0.0)
+
+
+func apply_burn(dps: float, duration: float) -> void:
+	burn_dps = maxf(burn_dps, dps)
+	burn_time_left = maxf(burn_time_left, duration)
+	_burn_tick_timer = 0.0
+
+
+func apply_poison(dps_per_stack: float, max_stacks: int) -> void:
+	poison_stacks = mini(poison_stacks + 1, max_stacks)
+	poison_dps_per_stack = dps_per_stack
+	_poison_tick_timer = 0.0
+
+
+func apply_chill(max_stacks_val: int, freeze_duration: float) -> void:
+	if is_frozen:
+		return
+	chill_max_stacks = max_stacks_val
+	chill_stacks += 1
+	if chill_stacks >= chill_max_stacks:
+		is_frozen = true
+		freeze_time_left = freeze_duration
+		chill_stacks = 0
+		apply_slow(0.0, freeze_duration)
+
+
+func is_enemy_frozen() -> bool:
+	return is_frozen
+
+
+func _tick_status_effects(delta: float) -> void:
+	if burn_time_left > 0.0:
+		burn_time_left = maxf(burn_time_left - delta, 0.0)
+		_burn_tick_timer -= delta
+		if _burn_tick_timer <= 0.0:
+			_burn_tick_timer = 1.0
+			var bdmg: int = maxi(int(round(burn_dps)), 1)
+			take_damage(bdmg, Vector2.ZERO)
+		if burn_time_left <= 0.0:
+			burn_dps = 0.0
+	if poison_stacks > 0:
+		_poison_tick_timer -= delta
+		if _poison_tick_timer <= 0.0:
+			_poison_tick_timer = 1.0
+			var pdmg: int = maxi(int(round(poison_dps_per_stack * float(poison_stacks))), 1)
+			take_damage(pdmg, Vector2.ZERO)
+	if is_frozen:
+		freeze_time_left = maxf(freeze_time_left - delta, 0.0)
+		if freeze_time_left <= 0.0:
+			is_frozen = false
+			slow_multiplier = 1.0
