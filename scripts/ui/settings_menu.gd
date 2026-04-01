@@ -321,6 +321,62 @@ func _on_save_pressed() -> void:
 
 
 func _go_to_main_menu() -> void:
+	_show_confirm_dialog()
+
+
+func _show_confirm_dialog() -> void:
+	var overlay: ColorRect = ColorRect.new()
+	overlay.name = "ConfirmOverlay"
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0.0, 0.0, 0.0, 0.5)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+
+	var dialog: VBoxContainer = VBoxContainer.new()
+	dialog.set_anchors_preset(Control.PRESET_CENTER)
+	dialog.offset_left = -160.0
+	dialog.offset_right = 160.0
+	dialog.offset_top = -60.0
+	dialog.offset_bottom = 60.0
+	dialog.add_theme_constant_override("separation", 14)
+	dialog.alignment = BoxContainer.ALIGNMENT_CENTER
+	dialog.process_mode = Node.PROCESS_MODE_ALWAYS
+	overlay.add_child(dialog)
+
+	var msg: Label = Label.new()
+	msg.text = LocaleManager.L("confirm_return_main_menu")
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	msg.add_theme_font_size_override("font_size", 16)
+	dialog.add_child(msg)
+
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 20)
+	btn_row.process_mode = Node.PROCESS_MODE_ALWAYS
+	dialog.add_child(btn_row)
+
+	var yes_btn: Button = Button.new()
+	yes_btn.text = LocaleManager.L("confirm_yes")
+	yes_btn.custom_minimum_size = Vector2(80, 32)
+	yes_btn.process_mode = Node.PROCESS_MODE_ALWAYS
+	yes_btn.pressed.connect(func() -> void:
+		overlay.queue_free()
+		_confirm_go_to_main_menu()
+	)
+	btn_row.add_child(yes_btn)
+
+	var no_btn: Button = Button.new()
+	no_btn.text = LocaleManager.L("confirm_no")
+	no_btn.custom_minimum_size = Vector2(80, 32)
+	no_btn.process_mode = Node.PROCESS_MODE_ALWAYS
+	no_btn.pressed.connect(func() -> void: overlay.queue_free())
+	btn_row.add_child(no_btn)
+
+
+func _confirm_go_to_main_menu() -> void:
+	SaveManager.save_game(1)
 	_save_settings()
 	if _paused_game:
 		get_tree().paused = false

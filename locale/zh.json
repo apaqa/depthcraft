@@ -769,5 +769,8 @@
   "biome_intro_dungeon": "深淵的呼喚從未停止...",
   "biome_intro_dark": "光線開始消退，空氣中瀰漫著腐敗的氣息。",
   "biome_intro_lava": "地底的溫度急劇上升，岩漿在牆壁裂縫中流動。",
-  "biome_intro_abyss": "你已經超越了所有已知的探索記錄。這裡的一切都是未知的。"
+  "biome_intro_abyss": "你已經超越了所有已知的探索記錄。這裡的一切都是未知的。",
+  "confirm_return_main_menu": "確定返回主選單？未保存的進度將丟失。",
+  "confirm_yes": "確定",
+  "confirm_no": "取消"
 }

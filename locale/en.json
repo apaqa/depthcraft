@@ -769,5 +769,8 @@
   "biome_intro_dungeon": "The call of the abyss never ceases...",
   "biome_intro_dark": "The light fades. The air carries the scent of decay.",
   "biome_intro_lava": "The temperature rises sharply. Magma flows through cracks in the walls.",
-  "biome_intro_abyss": "You have surpassed all known exploration records. Everything here is unknown."
+  "biome_intro_abyss": "You have surpassed all known exploration records. Everything here is unknown.",
+  "confirm_return_main_menu": "Return to main menu? Unsaved progress will be lost.",
+  "confirm_yes": "Confirm",
+  "confirm_no": "Cancel"
 }
