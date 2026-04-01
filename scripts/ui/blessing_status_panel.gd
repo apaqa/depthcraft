@@ -166,40 +166,84 @@ func _build_blessing_list(parent: VBoxContainer) -> void:
 		parent.add_child(_make_dim_label(LocaleManager.L("status_no_blessings")))
 		return
 
-	var has_any: bool = false
+	# 3-column slot layout
+	var slot_row: HBoxContainer = HBoxContainer.new()
+	slot_row.add_theme_constant_override("separation", 12)
+	slot_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(slot_row)
 
-	# Main blessing slots
-	var slots: Dictionary = bs_node.main_blessing_slots
+	var has_any: bool = false
 	for slot_id: String in ["primary", "secondary", "skill"]:
-		var theme: String = str(slots.get(slot_id, ""))
+		var col: VBoxContainer = VBoxContainer.new()
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		col.add_theme_constant_override("separation", 3)
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot_row.add_child(col)
+
+		var slot_label: String = LocaleManager.L(str(bs_node.SLOT_NAME_KEYS.get(slot_id, slot_id)))
+		var theme: String = bs_node.get_slot_theme(slot_id)
+
+		var header: Label = Label.new()
+		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		header.add_theme_font_size_override("font_size", 14)
+		header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		if theme == "":
+			header.text = slot_label
+			header.modulate = Color(0.5, 0.5, 0.55, 1.0)
+			col.add_child(header)
+			col.add_child(_make_dim_label(LocaleManager.L("status_slot_empty")))
 			continue
 		has_any = true
-		var slot_label: String = LocaleManager.L(str(bs_node.SLOT_NAME_KEYS.get(slot_id, slot_id)))
 		var theme_name: String = LocaleManager.L(str(bs_node.THEME_NAME_KEYS.get(theme, theme)))
 		var theme_color: Color = bs_node.THEME_COLORS.get(theme, Color.WHITE) as Color
-		var main_bid: String = str(bs_node.THEME_MAIN_BLESSING.get(theme, ""))
-		var desc: String = ""
-		if main_bid != "" and bs_node.BLESSING_DEFS.has(main_bid):
-			desc = LocaleManager.L(str((bs_node.BLESSING_DEFS[main_bid] as Dictionary).get("description", "")))
-		parent.add_child(_make_blessing_row(theme_color, "%s: %s" % [slot_label, theme_name], LocaleManager.L("blessing_cat_main"), desc, theme))
+		header.text = "%s\n%s" % [slot_label, theme_name]
+		header.modulate = theme_color
+		col.add_child(header)
 
-	# Sub blessings
-	for entry: Dictionary in bs_node.active_sub_blessings:
-		var bid: String = str(entry.get("id", ""))
-		var stacks: int = int(entry.get("stacks", 1))
-		if not bs_node.BLESSING_DEFS.has(bid):
-			continue
-		has_any = true
-		var def: Dictionary = bs_node.BLESSING_DEFS[bid] as Dictionary
-		var b_name: String = LocaleManager.L(str(def.get("name", bid)))
-		var b_desc: String = LocaleManager.L(str(def.get("description", "")))
-		var b_color: Color = Color(0.7, 0.7, 0.7, 1.0)
-		var color_val: Variant = def.get("color", null)
-		if color_val is Color:
-			b_color = color_val
-		var b_theme: String = str(def.get("theme", "generic"))
-		parent.add_child(_make_blessing_row(b_color, b_name, "Lv.%d" % stacks, b_desc, b_theme))
+		# Theme icon
+		var icon_texture: Texture2D = BlessingChoicePanel.THEME_ICONS.get(theme, BlessingChoicePanel.THEME_ICONS.get("generic", null)) as Texture2D
+		if icon_texture != null:
+			var icon_center: CenterContainer = CenterContainer.new()
+			icon_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var icon: TextureRect = TextureRect.new()
+			icon.texture = icon_texture
+			icon.custom_minimum_size = Vector2(24, 24)
+			icon.size = Vector2(24, 24)
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon_center.add_child(icon)
+			col.add_child(icon_center)
+
+		# Sub blessings for this slot
+		var subs: Array = bs_node.get_slot_sub_blessings(slot_id)
+		if subs.is_empty():
+			col.add_child(_make_dim_label("---"))
+		for entry: Dictionary in subs:
+			var bid: String = str(entry.get("id", ""))
+			var stacks: int = int(entry.get("stacks", 1))
+			var eff: float = float(entry.get("effectiveness", 1.0))
+			if not bs_node.BLESSING_DEFS.has(bid):
+				continue
+			var def: Dictionary = bs_node.BLESSING_DEFS[bid] as Dictionary
+			var b_name: String = LocaleManager.L(str(def.get("name", bid)))
+			var eff_text: String = "x%.1f" % eff if eff < 1.0 else ""
+			var sub_lbl: Label = Label.new()
+			sub_lbl.text = "  %s Lv.%d %s" % [b_name, stacks, eff_text]
+			sub_lbl.add_theme_font_size_override("font_size", 11)
+			sub_lbl.modulate = Color(0.75, 0.78, 0.85, 1.0)
+			sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			col.add_child(sub_lbl)
+
+		# Skill slot notice
+		if slot_id == "skill" and theme == "skill_boost":
+			var notice: Label = Label.new()
+			notice.text = LocaleManager.L("skill_system_wip")
+			notice.add_theme_font_size_override("font_size", 10)
+			notice.modulate = Color(0.5, 0.5, 0.5, 1.0)
+			notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			col.add_child(notice)
 
 	if not has_any:
 		parent.add_child(_make_dim_label(LocaleManager.L("status_no_blessings")))

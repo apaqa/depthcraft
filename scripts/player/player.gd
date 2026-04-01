@@ -122,6 +122,7 @@ var _charge_time: float = 0.0
 const _MAX_CHARGE: float = 2.0
 var _charge_bar_root: Node2D = null
 var _charge_bar_fill: Polygon2D = null
+var _current_hit_slot: String = "primary"
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
@@ -714,6 +715,7 @@ func heal(amount: int) -> void:
 func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 	if attack_cooldown_left > 0.0:
 		return
+	_current_hit_slot = "primary"
 	var attack_direction: Vector2 = _get_attack_direction(override_direction)
 	last_attack_direction = attack_direction
 	attack_cooldown_left = get_attack_cooldown_duration()
@@ -783,7 +785,7 @@ func _apply_single_hit(collider: Variant, attack_direction: Vector2, guaranteed_
 	collider.take_damage(attack_damage, attack_direction)
 	if collider.has_method("apply_knockback"):
 		collider.apply_knockback(attack_direction, 120.0)
-	_apply_blessing_on_hit(collider, attack_damage)
+	_apply_blessing_on_hit(collider, attack_damage, _current_hit_slot)
 	_handle_enemy_kill_trigger(collider)
 	return {"damage": attack_damage, "crit": is_critical}
 
@@ -866,6 +868,7 @@ func _start_charge() -> void:
 
 func _release_charge() -> void:
 	_is_charging = false
+	_current_hit_slot = "secondary"
 	if _charge_bar_root != null:
 		_charge_bar_root.visible = false
 	var saved_charge_time: float = _charge_time
@@ -1094,25 +1097,38 @@ func _trigger_chain_lightning() -> void:
 		_show_floating_text(global_position, "Lightning", Color(0.8, 0.9, 1.0, 1.0))
 
 
-func _apply_blessing_on_hit(collider: Variant, attack_damage: int) -> void:
-	var burn_val: float = _get_blessing_value("burn_on_hit")
+func _apply_blessing_on_hit(collider: Variant, attack_damage: int, slot_name: String = "primary") -> void:
+	var bs: Node = get_node_or_null("/root/BlessingSystem")
+	if bs == null:
+		return
+	# Slot-specific effects
+	var burn_val: float = float(bs.get_slot_effect_value(slot_name, "burn_on_hit"))
 	if burn_val > 0.0 and randf() < burn_val:
 		if collider.has_method("apply_burn"):
 			var burn_dps_val: float = float(attack_damage) * 0.03
-			var burn_duration_bonus: float = _get_blessing_value("freeze_duration_bonus")
+			var burn_duration_bonus: float = float(bs.get_slot_effect_value(slot_name, "freeze_duration_bonus"))
 			collider.apply_burn(burn_dps_val, 3.0 + burn_duration_bonus)
-	var chill_val: float = _get_blessing_value("chill_on_hit")
+	var chill_val: float = float(bs.get_slot_effect_value(slot_name, "chill_on_hit"))
 	if chill_val > 0.0 and collider.has_method("apply_chill"):
-		var freeze_dur: float = 2.0 + _get_blessing_value("freeze_duration_bonus")
+		var freeze_dur: float = 2.0 + float(bs.get_slot_effect_value(slot_name, "freeze_duration_bonus"))
 		collider.apply_chill(int(round(chill_val)), freeze_dur)
-	var poison_val: float = _get_blessing_value("poison_on_hit")
+	var poison_val: float = float(bs.get_slot_effect_value(slot_name, "poison_on_hit"))
 	if poison_val > 0.0 and collider.has_method("apply_poison"):
 		var pdps: float = float(attack_damage) * 0.02
 		collider.apply_poison(pdps, int(round(poison_val)))
-	var frozen_bonus: float = _get_blessing_value("frozen_bonus_damage")
+	var frozen_bonus: float = float(bs.get_slot_effect_value(slot_name, "frozen_bonus_damage"))
 	if frozen_bonus > 0.0 and collider.get("is_frozen") != null and bool(collider.get("is_frozen")):
 		var bonus_dmg: int = maxi(int(round(float(attack_damage) * frozen_bonus)), 1)
 		collider.take_damage(bonus_dmg, Vector2.ZERO)
+	# Wealth bonus (extra gold drop)
+	var wealth_val: float = float(bs.get_slot_effect_value(slot_name, "gold_bonus"))
+	if wealth_val > 0.0 and randf() < wealth_val * 0.1:
+		if collider.has_method("_drop_gold"):
+			collider._drop_gold()
+	# Summon on kill (TODO: proper summon — for now just bonus damage)
+	var summon_val: float = float(bs.get_slot_effect_value(slot_name, "summon_on_kill"))
+	if summon_val > 0.0 and collider.get("is_dead") != null and bool(collider.get("is_dead")):
+		_show_floating_text(global_position, "Summon!", Color(0.5, 0.2, 0.8, 1.0))
 
 
 func _trigger_blessing_crit_shockwave(base_damage: int) -> void:

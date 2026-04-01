@@ -67,6 +67,7 @@ var current_level: Node = null
 var _blessing_panel: BlessingChoicePanel = null
 var _blessing_stage: int = 0
 var _blessing_pending_theme: String = ""
+var _blessing_pending_slot: String = ""
 var _blessing_reroll_count: int = 0
 var _status_panel: BlessingStatusPanel = null
 var _help_panel: KeybindHelpPanel = null
@@ -974,8 +975,8 @@ func _get_reroll_choices() -> Array[Dictionary]:
 	if _blessing_stage == 1:
 		return bs_node.generate_theme_choices()
 	if _blessing_stage == 3:
-		if _blessing_pending_theme != "" and bs_node.has_method("generate_sub_choices_for_theme"):
-			return bs_node.generate_sub_choices_for_theme(_blessing_pending_theme)
+		if _blessing_pending_slot != "" and bs_node.has_method("generate_sub_choices_for_slot"):
+			return bs_node.generate_sub_choices_for_slot(_blessing_pending_slot)
 		return bs_node.generate_sub_choices()
 	return []
 
@@ -1012,24 +1013,38 @@ func _on_blessing_panel_chosen(chosen_id: String) -> void:
 	if _blessing_stage == 1:
 		_blessing_pending_theme = chosen_id
 		if bs_node.is_theme_assigned(chosen_id):
+			# Theme already bound to a slot — go to sub blessings for that slot
+			_blessing_pending_slot = bs_node.get_slot_for_theme(chosen_id)
 			_blessing_stage = 3
-			_show_blessing_choices(bs_node.generate_sub_choices_for_theme(chosen_id))
+			_show_blessing_choices(bs_node.generate_sub_choices_for_slot(_blessing_pending_slot))
 			return
 		var empty_slots: Array[String] = bs_node.get_empty_slots()
 		if empty_slots.size() <= 1:
+			# Only 1 empty slot — auto-assign, then sub blessings
 			if not empty_slots.is_empty():
 				bs_node.assign_main_slot(empty_slots[0], chosen_id)
+				_blessing_pending_slot = empty_slots[0]
+				_blessing_stage = 3
+				_show_blessing_choices(bs_node.generate_sub_choices_for_slot(_blessing_pending_slot))
+				return
 			_finish_blessing_flow()
 			return
 		_blessing_stage = 2
 		_show_blessing_choices(bs_node.generate_slot_choices(chosen_id))
 		return
 	if _blessing_stage == 2:
+		# Chose a slot for the new theme
 		bs_node.assign_main_slot(chosen_id, _blessing_pending_theme)
-		_finish_blessing_flow()
+		_blessing_pending_slot = chosen_id
+		_blessing_stage = 3
+		_show_blessing_choices(bs_node.generate_sub_choices_for_slot(_blessing_pending_slot))
 		return
 	if _blessing_stage == 3:
-		bs_node.add_sub_blessing(chosen_id)
+		# Sub blessing chosen — add to the tracked slot
+		if _blessing_pending_slot != "":
+			bs_node.add_sub_blessing_to_slot(_blessing_pending_slot, chosen_id)
+		else:
+			bs_node.add_sub_blessing(chosen_id)
 		_finish_blessing_flow()
 		return
 	_finish_blessing_flow()
@@ -1038,6 +1053,7 @@ func _on_blessing_panel_chosen(chosen_id: String) -> void:
 func _finish_blessing_flow() -> void:
 	_blessing_stage = 0
 	_blessing_pending_theme = ""
+	_blessing_pending_slot = ""
 	if _blessing_panel != null:
 		_blessing_panel.close_panel()
 	if player != null and is_instance_valid(player):
