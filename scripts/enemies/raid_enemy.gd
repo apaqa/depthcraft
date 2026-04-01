@@ -44,6 +44,7 @@ func setup_raid(target_player, target_core, target_building_system, strength_val
 		damage = int(round(float(damage) * 1.25))
 		speed *= 0.9
 	current_hp = max_hp
+	detection_range = 9999.0
 	modulate = Color(1.0, 0.38, 0.38, 1.0)
 	_apply_variant_visuals()
 	_apply_variant_collision()
