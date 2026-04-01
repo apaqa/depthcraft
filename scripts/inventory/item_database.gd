@@ -22,6 +22,21 @@ const ITEM_NAME_KEYS = {
 	"torch": "item_torch_name",
 	"bread": "item_bread_name",
 	"stew": "item_stew_name",
+	"necromancer_crown": "item_necromancer_crown_name",
+	"necromancer_robe": "item_necromancer_robe_name",
+	"necromancer_ring": "item_necromancer_ring_name",
+	"lava_helm": "item_lava_helm_name",
+	"lava_armor": "item_lava_armor_name",
+	"lava_boots": "item_lava_boots_name",
+	"abyss_veil": "item_abyss_veil_name",
+	"abyss_cloak": "item_abyss_cloak_name",
+	"abyss_amulet": "item_abyss_amulet_name",
+	"shadow_blade": "item_shadow_blade_name",
+	"shadow_armor": "item_shadow_armor_name",
+	"shadow_boots": "item_shadow_boots_name",
+	"dragon_crown": "item_dragon_crown_name",
+	"dragon_armor": "item_dragon_armor_name",
+	"dragon_shield": "item_dragon_shield_name",
 }
 
 const ITEM_DESC_KEYS = {
