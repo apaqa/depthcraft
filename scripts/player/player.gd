@@ -1444,6 +1444,10 @@ func _refresh_all_stats() -> void:
 	var base_max: int = player_stats.get_total_max_hp() + bonus_max_hp - dungeon_max_hp_penalty
 	max_hp = maxi(int(round(float(base_max) * (1.0 + hp_bonus))), 1)
 	current_hp = clamp(current_hp, 0, max_hp)
+	if inventory != null:
+		var base_inv_slots: int = 12
+		var inv_bonus: int = player_stats.get_inventory_slots_bonus()
+		inventory.max_slots = maxi(base_inv_slots + inv_bonus, base_inv_slots)
 	stats_changed.emit()
 	hp_changed.emit(current_hp, max_hp)
 

@@ -142,7 +142,7 @@ const BRANCH_DATA := {
 			"explore": {
 				"nodes": [
 					{"name": "拾荒直覺", "description": "拾取範圍 +40", "effects": {"loot_pickup_range": 40}},
-					{"name": "遠征背包", "description": "掉落率 +10%", "effects": {"loot_bonus": 0.10}},
+					{"name": "擴充背包", "description": "背包 +4 格，掉落率 +5%", "effects": {"inventory_slots": 4, "loot_bonus": 0.05}},
 					{"name": "資源辨識", "description": "採集額外掉落 +1", "effects": {"gather_bonus": 1}},
 					{"name": "路徑標記", "description": "拾取範圍 +50", "effects": {"loot_pickup_range": 50}},
 					{"name": "勘探手冊", "description": "掉落率 +12%", "effects": {"loot_bonus": 0.12}},

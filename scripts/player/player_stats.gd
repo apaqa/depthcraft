@@ -128,6 +128,10 @@ func get_loot_pickup_range() -> float:
 	return 30.0 + _get_combined_effect("loot_pickup_range", _equipment_effects)
 
 
+func get_inventory_slots_bonus() -> int:
+	return int(round(_get_effect("inventory_slots")))
+
+
 func _get_effect(effect_id: String) -> float:
 	return float(_talent_effects.get(effect_id, 0.0)) + float(_equipment_effects.get(effect_id, 0.0)) + float(_runtime_effects.get(effect_id, 0.0))
 

@@ -10,7 +10,7 @@ const WOODEN_PER_GOLD: int = WOODEN_PER_SILVER * SILVER_PER_GOLD
 
 signal inventory_changed
 
-@export var max_slots: int = 20
+@export var max_slots: int = 12
 var items: Array[Dictionary] = []
 
 var _dirty: bool = false
