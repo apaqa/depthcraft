@@ -243,10 +243,18 @@ func _on_drink_purchased(drink_id: String) -> void:
 	var buff_type: String = str(drink.get("buff_type", ""))
 	var buff_value: float = float(drink.get("buff_value", 0.0))
 	if buff_type == "free_blessing":
+		if _current_player != null and _current_player.has_method("show_status_message"):
+			_current_player.show_status_message(
+				str(drink.get("name", "")) + " 已購買！",
+				Color(0.6, 1.0, 0.7, 1.0), 2.0
+			)
+		AudioManager.play_sfx("equip")
+		_close_ui()
 		_trigger_blessing_selection()
+		return
 	elif _current_player.has_method("add_tavern_buff"):
 		_current_player.add_tavern_buff(buff_type, buff_value)
-	if _current_player.has_method("show_status_message"):
+	if _current_player != null and _current_player.has_method("show_status_message"):
 		_current_player.show_status_message(
 			str(drink.get("name", "")) + " 已購買！",
 			Color(0.6, 1.0, 0.7, 1.0), 2.0
