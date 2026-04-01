@@ -7,8 +7,9 @@ class_name TavernPachinko
 
 const BALL_TEXTURE: Texture2D = preload("res://assets/icons/kyrise/gem_01a.png")
 
-const BET_OPTIONS: Array[int] = [10, 50, 100]
-const BET_LABELS: Array[String] = ["10 銅", "50 銅", "1 銀"]
+const BET_MIN: int = 1
+const BET_MAX: int = 1000
+const BET_DEFAULT: int = 10
 # Base payouts at 10c bet — multiply by bet/10 for larger bets
 const BIN_BASE_PAYOUTS: Array = [0, 4, 10, 20, 60]
 const BIN_WEIGHTS: Array = [0.30, 0.30, 0.20, 0.15, 0.05]
@@ -33,7 +34,8 @@ var _balance_label: Label = null
 var _board_area: Control = null
 var _active_tween: Tween = null
 var _current_bet: int = 10
-var _bet_btns: Array[Button] = []
+var _bet_slider: HSlider = null
+var _bet_label: Label = null
 
 
 func _ready() -> void:
@@ -62,21 +64,22 @@ func _build_ui() -> void:
 	var bet_row: HBoxContainer = HBoxContainer.new()
 	bet_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	bet_row.add_theme_constant_override("separation", 8)
-	var bet_lbl: Label = Label.new()
-	bet_lbl.text = "賭注:"
-	bet_lbl.add_theme_font_size_override("font_size", 13)
-	bet_lbl.modulate = Color(0.8, 0.8, 0.8, 1.0)
-	bet_row.add_child(bet_lbl)
-	_bet_btns.clear()
-	for bi: int in range(BET_OPTIONS.size()):
-		var bb: Button = Button.new()
-		bb.text = BET_LABELS[bi]
-		bb.custom_minimum_size = Vector2(60.0, 26.0)
-		bb.pressed.connect(_on_bet_selected.bind(bi))
-		bet_row.add_child(bb)
-		_bet_btns.append(bb)
+	_bet_label = Label.new()
+	_bet_label.text = "賭注: %d 銅幣" % _current_bet
+	_bet_label.add_theme_font_size_override("font_size", 13)
+	_bet_label.modulate = Color(0.8, 0.8, 0.8, 1.0)
+	_bet_label.custom_minimum_size = Vector2(120, 0)
+	bet_row.add_child(_bet_label)
+	_bet_slider = HSlider.new()
+	_bet_slider.min_value = float(BET_MIN)
+	_bet_slider.max_value = float(BET_MAX)
+	_bet_slider.step = 1.0
+	_bet_slider.value = float(BET_DEFAULT)
+	_bet_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_bet_slider.custom_minimum_size = Vector2(150, 0)
+	_bet_slider.value_changed.connect(_on_bet_slider_changed)
+	bet_row.add_child(_bet_slider)
 	vbox.add_child(bet_row)
-	_update_bet_buttons()
 
 	_balance_label = Label.new()
 	_balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -165,22 +168,12 @@ func _refresh_balance() -> void:
 	_balance_label.text = "餘額: %d 銅幣" % total
 
 
-func _on_bet_selected(bet_index: int) -> void:
-	if _animating:
-		return
-	if bet_index >= 0 and bet_index < BET_OPTIONS.size():
-		_current_bet = BET_OPTIONS[bet_index]
+func _on_bet_slider_changed(value: float) -> void:
+	_current_bet = maxi(int(value), 1)
+	if _bet_label != null:
+		_bet_label.text = "賭注: %d 銅幣" % _current_bet
 	if _drop_btn != null:
 		_drop_btn.text = "投球 (-%d 銅幣)" % _current_bet
-	_update_bet_buttons()
-
-
-func _update_bet_buttons() -> void:
-	for bi: int in range(_bet_btns.size()):
-		if bi >= BET_OPTIONS.size():
-			break
-		var is_active: bool = BET_OPTIONS[bi] == _current_bet
-		_bet_btns[bi].modulate = Color(1.0, 1.0, 1.0, 1.0) if is_active else Color(0.6, 0.6, 0.6, 1.0)
 
 
 func _on_drop_pressed() -> void:
@@ -250,8 +243,7 @@ func _on_ball_landed() -> void:
 		_drop_btn.disabled = false
 	if _result_bin < 0 or _result_bin >= BIN_BASE_PAYOUTS.size():
 		return
-	var bet_mult: int = _current_bet / 10
-	var payout: int = int(BIN_BASE_PAYOUTS[_result_bin]) * bet_mult
+	var payout: int = int(round(float(BIN_BASE_PAYOUTS[_result_bin]) * float(_current_bet) / 10.0))
 	if payout > 0 and _player != null:
 		_player.inventory.add_item("copper", payout)
 		_refresh_balance()

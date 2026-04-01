@@ -10,7 +10,8 @@ const ICON_POTION: Texture2D = preload("res://assets/icons/kyrise/potion_01a.png
 const ICON_COIN: Texture2D = preload("res://assets/icons/kyrise/coin_01c.png")
 const ICON_SKULL: Texture2D = preload("res://assets/icons/kyrise/skull_01a.png")
 
-const BET_AMOUNTS: Array = [1, 5, 10]
+const BET_MIN: int = 1
+const BET_MAX: int = 1000
 const MULT_3_SAME: int = 5
 const MULT_2_SAME: int = 2
 const SPIN_DURATION: float = 2.0
@@ -34,8 +35,9 @@ var _reel_frames: Array = []
 var _result_label: Label = null
 var _spin_btn: Button = null
 var _balance_label: Label = null
-var _bet_buttons: Array = []
-var _current_bet: int = 5
+var _bet_slider: HSlider = null
+var _bet_value_label: Label = null
+var _current_bet: int = 10
 var _history: Array = []
 var _history_labels: Array = []
 
@@ -93,22 +95,25 @@ func _build_ui() -> void:
 
 	# Bet selector
 	var bet_hbox: HBoxContainer = HBoxContainer.new()
-	bet_hbox.add_theme_constant_override("separation", 6)
+	bet_hbox.add_theme_constant_override("separation", 8)
 	bet_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(bet_hbox)
 
-	var bet_lbl: Label = Label.new()
-	bet_lbl.text = "下注:"
-	bet_lbl.add_theme_font_size_override("font_size", 13)
-	bet_hbox.add_child(bet_lbl)
+	_bet_value_label = Label.new()
+	_bet_value_label.text = "下注: %d 銅幣" % _current_bet
+	_bet_value_label.add_theme_font_size_override("font_size", 13)
+	_bet_value_label.custom_minimum_size = Vector2(120, 0)
+	bet_hbox.add_child(_bet_value_label)
 
-	for bet_val: int in BET_AMOUNTS:
-		var btn: Button = Button.new()
-		btn.text = "%d 銅" % bet_val
-		btn.custom_minimum_size = Vector2(56.0, 28.0)
-		btn.pressed.connect(_on_bet_pressed.bind(bet_val))
-		bet_hbox.add_child(btn)
-		_bet_buttons.append(btn)
+	_bet_slider = HSlider.new()
+	_bet_slider.min_value = float(BET_MIN)
+	_bet_slider.max_value = float(BET_MAX)
+	_bet_slider.step = 1.0
+	_bet_slider.value = float(_current_bet)
+	_bet_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_bet_slider.custom_minimum_size = Vector2(150, 0)
+	_bet_slider.value_changed.connect(_on_bet_slider_changed)
+	bet_hbox.add_child(_bet_slider)
 
 	# Reel row
 	var reels_hbox: HBoxContainer = HBoxContainer.new()
@@ -173,7 +178,6 @@ func _build_ui() -> void:
 		_history_labels.append(hl)
 
 	_update_reel_display()
-	_refresh_bet_buttons()
 
 
 func _get_symbol_texture(idx: int) -> Texture2D:
@@ -203,23 +207,11 @@ func _refresh_balance() -> void:
 	_balance_label.text = "餘額: %d 銅幣" % total
 
 
-func _on_bet_pressed(bet_val: int) -> void:
-	if _spinning:
-		return
-	_current_bet = bet_val
-	_refresh_bet_buttons()
+func _on_bet_slider_changed(value: float) -> void:
+	_current_bet = maxi(int(value), 1)
+	if _bet_value_label != null:
+		_bet_value_label.text = "下注: %d 銅幣" % _current_bet
 	_refresh_spin_btn_text()
-
-
-func _refresh_bet_buttons() -> void:
-	for i in range(_bet_buttons.size()):
-		var btn: Button = _bet_buttons[i] as Button
-		if btn == null:
-			continue
-		if BET_AMOUNTS[i] == _current_bet:
-			btn.modulate = Color(1.0, 0.9, 0.3, 1.0)
-		else:
-			btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
 
 
 func _refresh_spin_btn_text() -> void:
