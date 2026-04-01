@@ -252,6 +252,13 @@ func all_slots_filled() -> bool:
 func assign_main_slot(slot_id: String, theme: String) -> void:
 	if main_blessing_slots.has(slot_id):
 		main_blessing_slots[slot_id] = theme
+	var filled: int = 0
+	for s: String in main_blessing_slots.values():
+		if s != "":
+			filled += 1
+	var am: Node = get_node_or_null("/root/AchievementManager")
+	if am != null and am.has_method("record_blessing_state"):
+		am.record_blessing_state(filled)
 	blessings_changed.emit()
 
 

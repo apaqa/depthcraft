@@ -395,6 +395,15 @@ func _on_return_to_surface_requested() -> void:
 	await hud.fade_to_black(LocaleManager.L("returning_tavern"), Color(0, 0, 0, 1), 0.5)
 	if player != null:
 		player.finish_dungeon_run(true)
+		var am: Node = get_node_or_null("/root/AchievementManager")
+		if am != null and am.has_method("record_class_dungeon_complete"):
+			var cs: Node = get_node_or_null("/root/ClassSystem")
+			var cid: String = "warrior"
+			if cs != null:
+				var cv: Variant = cs.get("current_class_id")
+				if cv != null and str(cv) != "":
+					cid = str(cv)
+			am.record_class_dungeon_complete(cid)
 	total_dungeon_runs_completed += 1
 	dungeon_returns_since_raid += 1
 	current_day += 1

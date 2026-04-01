@@ -110,8 +110,11 @@ func record_floor_reached(floor_number: int) -> void:
 		return
 	set_stat("deepest_floor_reached", floor_number)
 	set_stat("survival_floors_without_death", floor_number)
+	check_achievement("reach_floor_5")
 	check_achievement("reach_floor_10")
+	check_achievement("reach_floor_15")
 	check_achievement("reach_floor_20")
+	check_achievement("reach_floor_25")
 	check_achievement("reach_floor_30")
 	check_achievement("survive_10_floors")
 	check_achievement("survive_30_floors")
@@ -192,7 +195,45 @@ func record_talent_unlocked(current_total: int) -> void:
 	set_stat("talents_unlocked", current_total)
 	check_achievement("talent_10")
 	check_achievement("talent_25")
+	check_achievement("talent_30")
 	check_achievement("talent_45")
+
+
+func record_forge_level(forge_level: int) -> void:
+	set_stat("highest_forge_level", forge_level)
+	check_achievement("forge_max_10")
+
+
+func record_gambling_win(copper_amount: int) -> void:
+	if copper_amount <= 0:
+		return
+	increment_stat("gambling_winnings", copper_amount)
+	check_achievement("gamble_win_500")
+
+
+func record_class_dungeon_complete(class_id: String) -> void:
+	var played: Dictionary = {}
+	for key: String in ["warrior", "mage", "ranger"]:
+		played[key] = bool(stats.get("played_" + key, false))
+	played[class_id] = true
+	stats["played_" + class_id] = 1
+	var count: int = 0
+	for key: String in played.keys():
+		if bool(played[key]):
+			count += 1
+	set_stat("classes_played", count)
+	check_achievement("all_classes_played")
+	_save_data()
+
+
+func record_blessing_state(main_count: int) -> void:
+	set_stat("main_blessings_filled", main_count)
+	check_achievement("blessing_3_main")
+
+
+func record_merchant_purchase() -> void:
+	increment_stat("merchant_purchases")
+	check_achievement("merchant_purchases_20")
 
 
 func _refresh_all() -> void:
@@ -263,4 +304,14 @@ func _build_achievements() -> void:
 		"survive_30_floors": {"order": 28, "name": "不死傳說", "description": "不死亡通關 30 層。", "reward": "不死稱號 + 特殊祝福", "condition_type": "stat_at_least", "stat": "survival_floors_without_death", "target": 30},
 		"forge_10": {"order": 29, "name": "鍛造狂人", "description": "成功鍛造 10 次裝備。", "reward": "鍛造大師稱號", "condition_type": "stat_at_least", "stat": "forge_count", "target": 10},
 		"cook_50": {"order": 30, "name": "料理傳說", "description": "烹飪 50 次。", "reward": "美食達人稱號", "condition_type": "stat_at_least", "stat": "cooking_count", "target": 50},
+		"reach_floor_5": {"order": 31, "name": "初次冒險", "description": "到達地牢第 5 層。", "reward": "冒險者名聲 +5", "condition_type": "stat_at_least", "stat": "deepest_floor_reached", "target": 5},
+		"reach_floor_15": {"order": 32, "name": "半途英雄", "description": "到達地牢第 15 層。", "reward": "英雄名聲 +15", "condition_type": "stat_at_least", "stat": "deepest_floor_reached", "target": 15},
+		"reach_floor_25": {"order": 33, "name": "深淵挑戰者", "description": "到達地牢第 25 層。", "reward": "深淵徽章", "condition_type": "stat_at_least", "stat": "deepest_floor_reached", "target": 25},
+		"collect_50_equipment": {"order": 34, "name": "收藏家", "description": "累計擁有 50 件裝備。", "reward": "收藏家徽章", "condition_type": "stat_at_least", "stat": "equipment_owned", "target": 50},
+		"forge_max_10": {"order": 35, "name": "鍛造大師", "description": "將一件裝備精煉到 +10。", "reward": "鍛造大師徽章", "condition_type": "stat_at_least", "stat": "highest_forge_level", "target": 10},
+		"gamble_win_500": {"order": 36, "name": "賭神", "description": "在賭場累計贏得 500 銅幣。", "reward": "賭神稱號", "condition_type": "stat_at_least", "stat": "gambling_winnings", "target": 500},
+		"talent_30": {"order": 37, "name": "天賦滿點", "description": "解鎖 30 個天賦。", "reward": "天賦大師徽章", "condition_type": "stat_at_least", "stat": "talents_unlocked", "target": 30},
+		"all_classes_played": {"order": 38, "name": "全職業", "description": "使用三種職業各完成一次地牢。", "reward": "全能戰士稱號", "condition_type": "stat_at_least", "stat": "classes_played", "target": 3},
+		"blessing_3_main": {"order": 39, "name": "祝福收集者", "description": "同時擁有 3 個主祝福。", "reward": "神恩者稱號", "condition_type": "stat_at_least", "stat": "main_blessings_filled", "target": 3},
+		"merchant_purchases_20": {"order": 40, "name": "商人之友", "description": "從商人購買 20 次。", "reward": "商人勳章", "condition_type": "stat_at_least", "stat": "merchant_purchases", "target": 20},
 	}

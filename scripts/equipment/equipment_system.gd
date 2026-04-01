@@ -185,6 +185,8 @@ func forge_item(slot_name: String, player_inventory) -> Dictionary:
 	var achievement_manager: Node = get_node_or_null("/root/AchievementManager")
 	if achievement_manager != null and achievement_manager.has_method("record_forge"):
 		achievement_manager.record_forge()
+	if achievement_manager != null and achievement_manager.has_method("record_forge_level"):
+		achievement_manager.record_forge_level(int(item.get("forge_level", 0)))
 	return {"success": true, "boosted_sub": boosted_sub}
 
 

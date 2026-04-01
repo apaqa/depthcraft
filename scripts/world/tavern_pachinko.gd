@@ -247,6 +247,9 @@ func _on_ball_landed() -> void:
 	if payout > 0 and _player != null:
 		_player.inventory.add_item("copper", payout)
 		_refresh_balance()
+		var am: Node = get_node_or_null("/root/AchievementManager")
+		if am != null and am.has_method("record_gambling_win"):
+			am.record_gambling_win(payout)
 		if _result_label != null:
 			_result_label.text = "第 %d 格！+%d 銅幣" % [_result_bin + 1, payout]
 			_result_label.modulate = BIN_COLORS[_result_bin]

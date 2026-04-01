@@ -499,6 +499,9 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 		if inventory.add_item(item_id, quantity):
 			_set_message("")
 			_update_gold_label()
+			var am: Node = get_node_or_null("/root/AchievementManager")
+			if am != null and am.has_method("record_merchant_purchase"):
+				am.record_merchant_purchase()
 		else:
 			inventory.refund_currency(payment)
 			_set_message(LocaleManager.L("bag_full"))

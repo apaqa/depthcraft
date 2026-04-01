@@ -273,6 +273,9 @@ func _finish_spin() -> void:
 	if payout > 0 and _player != null:
 		_player.inventory.add_item("copper", payout)
 		_refresh_balance()
+		var am: Node = get_node_or_null("/root/AchievementManager")
+		if am != null and am.has_method("record_gambling_win"):
+			am.record_gambling_win(payout)
 
 	_add_history(result_text)
 
