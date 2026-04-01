@@ -576,5 +576,8 @@
   "tutorial_tavern_hint": "The underground tavern — talk to NPCs to gamble, teleport, or trade.",
   "raid_warning": "The air grows heavy with the undead...",
   "raid_reward": "Raid defeated! Rewards granted.",
-  "building_destroyed": "A building was destroyed!"
+  "building_destroyed": "A building was destroyed!",
+  "challenge_nohit_started": "No-Hit Challenge! Kill all enemies without taking damage.",
+  "challenge_nohit_cleared": "Flawless! No-hit challenge complete!",
+  "challenge_nohit_failed": "You took damage — no-hit challenge failed."
 }

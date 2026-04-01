@@ -147,6 +147,9 @@ func _on_switch_body_entered(body: Node, switch_index: int) -> void:
 		if _next_switch_index >= _switch_count:
 			_complete_puzzle()
 		return
+	# Wrong order: deal 5 damage and reset
+	if body.has_method("take_damage"):
+		body.take_damage(5, Vector2.ZERO)
 	_reset_switches()
 
 

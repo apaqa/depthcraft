@@ -13,6 +13,9 @@ var active_player = null
 var is_active: bool = false
 var is_resolved: bool = false
 var time_left: float = COUNTDOWN_DURATION
+var challenge_type: int = 0  # 0 = timed_clear, 1 = no_hit
+var _player_took_damage: bool = false
+var _player_hp_at_start: int = -1
 
 var trigger_shape: CollisionShape2D = null
 var door_root: Node2D = null
@@ -36,6 +39,8 @@ func setup(target_level, target_room_index: int, target_room: Rect2i, target_doo
 	door_tiles.clear()
 	for tile in target_door_tiles:
 		door_tiles.append(tile)
+	# Randomly pick challenge type: 50% timed clear, 50% no-hit
+	challenge_type = randi() % 2
 	if is_node_ready():
 		_sync_trigger_shape()
 
@@ -88,13 +93,21 @@ func _start_challenge() -> void:
 		return
 	is_active = true
 	time_left = COUNTDOWN_DURATION
+	_player_took_damage = false
+	_player_hp_at_start = int(active_player.get("current_hp")) if active_player != null else -1
 	_close_doors()
 	_create_countdown_ui()
 	_update_countdown_label()
 	set_process(true)
 
 	if active_player != null and active_player.has_method("show_status_message"):
-		active_player.show_status_message(LocaleManager.L("challenge_started"), Color(1.0, 0.62, 0.62, 1.0), 2.0)
+		if challenge_type == 1:
+			active_player.show_status_message(LocaleManager.L("challenge_nohit_started"), Color(0.85, 0.92, 1.0, 1.0), 2.5)
+			# Connect to player damage signal to track hits
+			if active_player.has_signal("hp_changed") and not active_player.hp_changed.is_connected(_on_challenge_hp_changed):
+				active_player.hp_changed.connect(_on_challenge_hp_changed)
+		else:
+			active_player.show_status_message(LocaleManager.L("challenge_started"), Color(1.0, 0.62, 0.62, 1.0), 2.0)
 
 	tracked_enemies.clear()
 	if level_ref.has_method("spawn_challenge_room_wave"):
@@ -129,23 +142,47 @@ func _get_alive_enemy_count() -> int:
 	return alive_count
 
 
+func _on_challenge_hp_changed(current_hp: int, _max_hp: int) -> void:
+	# Track damage taken during no-hit challenge
+	if not is_active or is_resolved:
+		return
+	if _player_hp_at_start > 0 and current_hp < _player_hp_at_start:
+		_player_took_damage = true
+	_player_hp_at_start = current_hp
+
+
 func _resolve_room(succeeded: bool) -> void:
 	if is_resolved:
 		return
+	# Disconnect no-hit tracker
+	if active_player != null and active_player.has_signal("hp_changed"):
+		if active_player.hp_changed.is_connected(_on_challenge_hp_changed):
+			active_player.hp_changed.disconnect(_on_challenge_hp_changed)
 	is_resolved = true
 	is_active = false
 	set_process(false)
 	_open_doors()
 	_destroy_countdown_ui()
 
-	if succeeded:
+	var actual_success: bool = succeeded
+	if challenge_type == 1 and succeeded and _player_took_damage:
+		actual_success = false
+
+	if actual_success:
 		if level_ref != null and level_ref.has_method("spawn_challenge_room_reward"):
 			level_ref.spawn_challenge_room_reward(room_index)
-		if active_player != null and active_player.has_method("show_status_message"):
-			active_player.show_status_message(LocaleManager.L("challenge_cleared"), Color(0.72, 1.0, 0.76, 1.0), 2.4)
+		if challenge_type == 1:
+			if active_player != null and active_player.has_method("show_status_message"):
+				active_player.show_status_message(LocaleManager.L("challenge_nohit_cleared"), Color(0.72, 1.0, 0.92, 1.0), 2.4)
+		else:
+			if active_player != null and active_player.has_method("show_status_message"):
+				active_player.show_status_message(LocaleManager.L("challenge_cleared"), Color(0.72, 1.0, 0.76, 1.0), 2.4)
 	else:
 		if active_player != null and active_player.has_method("show_status_message"):
-			active_player.show_status_message(LocaleManager.L("challenge_failed"), Color(1.0, 0.72, 0.52, 1.0), 2.2)
+			if challenge_type == 1 and _player_took_damage:
+				active_player.show_status_message(LocaleManager.L("challenge_nohit_failed"), Color(1.0, 0.72, 0.52, 1.0), 2.2)
+			else:
+				active_player.show_status_message(LocaleManager.L("challenge_failed"), Color(1.0, 0.72, 0.52, 1.0), 2.2)
 
 
 func _close_doors() -> void:

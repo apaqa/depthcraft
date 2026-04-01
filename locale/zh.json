@@ -576,5 +576,8 @@
   "tutorial_tavern_hint": "地下酒館——與 NPC 互動進行賭博、傳送或交易。",
   "raid_warning": "殭屍氣息越來越濃...",
   "raid_reward": "殭屍退散！獎勵已發放",
-  "building_destroyed": "建築被摧毀了！"
+  "building_destroyed": "建築被摧毀了！",
+  "challenge_nohit_started": "無傷挑戰！在不受傷的情況下消滅所有敵人。",
+  "challenge_nohit_cleared": "完美！無傷挑戰完成！",
+  "challenge_nohit_failed": "你受到了傷害——無傷挑戰失敗。"
 }
