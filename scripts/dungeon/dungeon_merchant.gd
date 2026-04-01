@@ -365,7 +365,14 @@ func _add_item_row(parent: Control, item_offer: Dictionary) -> void:
 		display_name = "%s x%d" % [display_name, quantity]
 	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item_data)
 	if offer_id == "mystery_blessing" and icon == null:
-		icon = preload("res://assets/icons/kyrise/crystal_01c.png")
+		var theme_icons: Array[Texture2D] = [
+			preload("res://assets/icons/kyrise/crystal_01b.png"),
+			preload("res://assets/icons/kyrise/crystal_01a.png"),
+			preload("res://assets/icons/kyrise/crystal_01d.png"),
+			preload("res://assets/icons/kyrise/crystal_01e.png"),
+			preload("res://assets/icons/kyrise/crystal_01c.png"),
+		]
+		icon = theme_icons[randi() % theme_icons.size()]
 	elif GIFT_ICONS.has(offer_id):
 		icon = GIFT_ICONS[offer_id]
 	var price: int = int(item_offer.get("price", 0))
