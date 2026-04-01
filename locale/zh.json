@@ -686,5 +686,22 @@
   "status_lifesteal": "吸血",
   "status_crit_bonus": "暴擊率加成",
   "status_blessings_title": "已獲得祝福",
-  "status_no_blessings": "尚無祝福"
+  "status_no_blessings": "尚無祝福",
+  "gift_copper_name": "銅禮物盒",
+  "gift_silver_name": "銀禮物盒",
+  "gift_gold_name": "金禮物盒",
+  "gift_obtained": "獲得: %s",
+  "rarity_common": "普通",
+  "rarity_uncommon": "精良",
+  "rarity_rare": "稀有",
+  "rarity_epic": "史詩",
+  "rarity_legendary": "傳奇",
+  "equip_weapon": "武器",
+  "equip_helmet": "頭盔",
+  "equip_chest": "胸甲",
+  "equip_boots": "靴子",
+  "equip_gloves": "手套",
+  "equip_ring": "飾品",
+  "equip_shield": "盾牌",
+  "equip_accessory": "飾品"
 }

@@ -686,5 +686,22 @@
   "status_lifesteal": "Lifesteal",
   "status_crit_bonus": "Crit Bonus",
   "status_blessings_title": "Active Blessings",
-  "status_no_blessings": "No blessings yet"
+  "status_no_blessings": "No blessings yet",
+  "gift_copper_name": "Copper Gift Box",
+  "gift_silver_name": "Silver Gift Box",
+  "gift_gold_name": "Gold Gift Box",
+  "gift_obtained": "Obtained: %s",
+  "rarity_common": "Common",
+  "rarity_uncommon": "Uncommon",
+  "rarity_rare": "Rare",
+  "rarity_epic": "Epic",
+  "rarity_legendary": "Legendary",
+  "equip_weapon": "Weapon",
+  "equip_helmet": "Helmet",
+  "equip_chest": "Chest Armor",
+  "equip_boots": "Boots",
+  "equip_gloves": "Gloves",
+  "equip_ring": "Ring",
+  "equip_shield": "Shield",
+  "equip_accessory": "Accessory"
 }

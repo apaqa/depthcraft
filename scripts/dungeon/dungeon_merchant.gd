@@ -10,10 +10,30 @@ const SHOP_ITEMS = [
 	{"id": "bread", "quantity": 1, "price": 5},
 	{"id": "torch", "quantity": 3, "price": 6},
 	{"id": "mystery_blessing", "quantity": 1, "price": 100},
+	{"id": "gift_copper", "quantity": 1, "price": 50},
+	{"id": "gift_silver", "quantity": 1, "price": 500},
+	{"id": "gift_gold", "quantity": 1, "price": 20000},
 ]
+
+const GIFT_ICONS: Dictionary = {
+	"gift_copper": preload("res://assets/icons/kyrise/gift_01a.png"),
+	"gift_silver": preload("res://assets/icons/kyrise/gift_01b.png"),
+	"gift_gold": preload("res://assets/icons/kyrise/gift_01e.png"),
+}
+const GIFT_NAMES: Dictionary = {
+	"gift_copper": "gift_copper_name",
+	"gift_silver": "gift_silver_name",
+	"gift_gold": "gift_gold_name",
+}
+const GIFT_RARITY_WEIGHTS: Dictionary = {
+	"gift_copper": [["Common", 60], ["Uncommon", 30], ["Rare", 10]],
+	"gift_silver": [["Common", 60], ["Uncommon", 30], ["Rare", 7], ["Epic", 3]],
+	"gift_gold": [["Common", 60], ["Uncommon", 30], ["Rare", 6], ["Epic", 3], ["Legendary", 1]],
+}
 
 var _shop_canvas: CanvasLayer = null
 var _shop_root: Control = null
+var _purchased_gifts: Dictionary = {}
 var _current_player: Variant = null
 var _gold_label: Label = null
 var _message_label: Label = null
@@ -106,15 +126,11 @@ func _open_shop() -> void:
 	_shop_canvas.add_child(_shop_root)
 
 	var panel: Panel = Panel.new()
-	panel.anchor_left = 0.5
-	panel.anchor_top = 0.5
-	panel.anchor_right = 0.5
-	panel.anchor_bottom = 0.5
+	panel.anchor_left = 0.1
+	panel.anchor_top = 0.1
+	panel.anchor_right = 0.9
+	panel.anchor_bottom = 0.9
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.offset_left = -220.0
-	panel.offset_top = -190.0
-	panel.offset_right = 220.0
-	panel.offset_bottom = 190.0
 	_shop_root.add_child(panel)
 
 	var close_button: Button = Button.new()
@@ -185,16 +201,22 @@ func _open_shop() -> void:
 
 func _add_item_row(parent: Control, item_offer: Dictionary) -> void:
 	var offer_id: String = str(item_offer.get("id", ""))
+	if _purchased_gifts.has(offer_id):
+		return
 	var item_data: Dictionary = ITEM_DATABASE.get_item(offer_id)
 	var quantity: int = int(item_offer.get("quantity", 1))
 	var display_name: String = str(item_data.get("name", ITEM_DATABASE.get_display_name(offer_id)))
 	if offer_id == "mystery_blessing":
 		display_name = LocaleManager.L("mystery_blessing_name")
+	elif GIFT_NAMES.has(offer_id):
+		display_name = LocaleManager.L(str(GIFT_NAMES[offer_id]))
 	if quantity > 1:
 		display_name = "%s x%d" % [display_name, quantity]
 	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item_data)
 	if offer_id == "mystery_blessing" and icon == null:
 		icon = preload("res://assets/icons/kyrise/crystal_01c.png")
+	elif GIFT_ICONS.has(offer_id):
+		icon = GIFT_ICONS[offer_id]
 	_add_shop_row(parent, display_name, int(item_offer.get("price", 0)), _on_buy_item.bind(offer_id, quantity, int(item_offer.get("price", 0))), icon)
 
 
@@ -247,6 +269,21 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 		else:
 			_set_message(LocaleManager.L("insufficient_gold"))
 		return
+	if GIFT_RARITY_WEIGHTS.has(item_id):
+		if inventory.pay_copper(price):
+			var equip: Dictionary = _open_gift_box(item_id)
+			if not equip.is_empty():
+				if inventory.add_stack(equip):
+					var equip_name: String = ITEM_DATABASE.get_stack_display_name(equip)
+					_set_message(LocaleManager.L("gift_obtained") % equip_name)
+					_purchased_gifts[item_id] = true
+				else:
+					inventory.refund_currency(payment)
+					_set_message(LocaleManager.L("bag_full"))
+			_update_gold_label()
+		else:
+			_set_message(LocaleManager.L("insufficient_gold"))
+		return
 	if inventory.pay_copper(price):
 		if inventory.add_item(item_id, quantity):
 			_set_message("")
@@ -256,6 +293,27 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 			_set_message(LocaleManager.L("bag_full"))
 	else:
 		_set_message(LocaleManager.L("insufficient_gold"))
+
+
+func _open_gift_box(gift_id: String) -> Dictionary:
+	var weights: Array = GIFT_RARITY_WEIGHTS.get(gift_id, []) as Array
+	if weights.is_empty():
+		return {}
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.randomize()
+	var total_weight: int = 0
+	for entry: Variant in weights:
+		total_weight += int((entry as Array)[1])
+	var roll: int = rng.randi() % maxi(total_weight, 1)
+	var chosen_rarity: String = "Common"
+	var running: int = 0
+	for entry: Variant in weights:
+		var pair: Array = entry as Array
+		running += int(pair[1])
+		if roll < running:
+			chosen_rarity = str(pair[0])
+			break
+	return DUNGEON_LOOT.generate_dungeon_equipment_min_rarity(_floor_number, chosen_rarity, rng)
 
 
 func _trigger_blessing_selection() -> void:

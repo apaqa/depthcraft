@@ -910,7 +910,25 @@ static func get_stack_display_name(stack: Dictionary) -> String:
 	var item_id: String = str(stack.get("id", ""))
 	if item_id == "":
 		return str(stack.get("name", ""))
-	return get_display_name(item_id)
+	var db_name: String = str(get_item(item_id).get("name", ""))
+	if db_name != "":
+		return db_name
+	# Generated equipment: build name from rarity + slot
+	if str(stack.get("type", "")) == "equipment":
+		return _build_equipment_display_name(stack)
+	return str(stack.get("name", item_id))
+
+
+static func _build_equipment_display_name(stack: Dictionary) -> String:
+	var rarity: String = str(stack.get("rarity", "Common"))
+	var slot: String = str(stack.get("slot", ""))
+	var rarity_prefix: String = LocaleManager.L("rarity_" + rarity.to_lower())
+	var slot_name: String = LocaleManager.L("equip_" + slot)
+	if rarity_prefix == "rarity_" + rarity.to_lower():
+		rarity_prefix = rarity
+	if slot_name == "equip_" + slot:
+		slot_name = slot.replace("_", " ").capitalize()
+	return "%s %s" % [rarity_prefix, slot_name]
 
 
 static func get_item_icon(item_id: String) -> Texture2D:
@@ -1072,9 +1090,9 @@ static func get_item_color(item_id: String, item_type: String = "") -> Color:
 
 
 static func format_currency(copper_total: int) -> String:
-	var g: int = copper_total / 1000
-	var s: int = (copper_total % 1000) / 10
-	var c: int = copper_total % 10
+	var g: int = copper_total / 10000
+	var s: int = (copper_total % 10000) / 100
+	var c: int = copper_total % 100
 	var parts: Array[String] = []
 	if g > 0:
 		parts.append("%d%s" % [g, LocaleManager.L("currency_gold")])
