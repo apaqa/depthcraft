@@ -243,6 +243,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		spawned_player.set_process_input(true)
 		spawned_player.set_physics_process(true)
 		spawned_player.set_process_unhandled_input(true)
+		if spawned_player.has_method("set_ui_blocked"):
+			spawned_player.set_ui_blocked(false)
 		spawned_player.heal_to_full()
 	_on_connection_status_changed(_get_connection_status())
 	# Hint 1: first overworld visit
