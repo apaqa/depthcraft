@@ -105,8 +105,14 @@ func _build_sound_dictionary() -> void:
 	_sfx_dict["enemy_hit"]        = null  # e.g. preload("res://audio/sfx/impact_flesh.ogg")
 	_sfx_dict["enemy_death"]      = null
 	_sfx_dict["player_hurt"]      = null
+	_sfx_dict["player_die"]       = null
 	_sfx_dict["attack_swing"]     = null
+	_sfx_dict["attack_hit"]       = null
 	_sfx_dict["boss_death"]       = null
+	_sfx_dict["boss_appear"]      = null
+	_sfx_dict["heal"]             = null
+	_sfx_dict["altar_use"]        = null
+	_sfx_dict["upgrade"]          = null
 
 	# --- World sounds ---
 	_sfx_dict["footstep"]         = null

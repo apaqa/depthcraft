@@ -82,6 +82,7 @@ func interact(player: Variant) -> void:
 	if not _pay_cost(player):
 		return
 	_used = true
+	AudioManager.play_sfx("altar_use")
 	_apply_effect(player)
 	queue_free()
 

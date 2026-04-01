@@ -74,6 +74,7 @@ func try_upgrade(player) -> bool:
 	upgrade_level += 1
 	_update_star_label()
 	_on_upgrade_applied()
+	AudioManager.play_sfx("upgrade")
 	hp_bar_time_left = DAMAGE_BAR_DURATION
 	building_state_changed.emit()
 	return true

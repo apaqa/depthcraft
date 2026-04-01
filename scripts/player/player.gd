@@ -580,6 +580,7 @@ func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	var defense_value: int = player_stats.get_total_defense()
 	var reduced_amount: int = max(int(round(float(max(amount - defense_value, 1)) * (1.0 - armor_reduction))), 1)
 	current_hp = max(current_hp - reduced_amount, 0)
+	AudioManager.play_sfx("player_hurt")
 	equipment_system.consume_damage_durability()
 	var dragon_triggered: bool = _try_trigger_dragon_guard()
 	if lava_burst_on_hit and randf() < 0.2:
@@ -606,6 +607,7 @@ func die() -> void:
 		return
 	is_dead = true
 	set_physics_process(false)
+	AudioManager.play_sfx("player_die")
 	_show_floating_text(global_position, "???", Color(1.0, 0.35, 0.35, 1.0))
 	died.emit()
 
@@ -625,6 +627,8 @@ func heal(amount: int) -> void:
 		return
 	current_hp = min(current_hp + amount, max_hp)
 	hp_changed.emit(current_hp, max_hp)
+	if amount > 5:
+		AudioManager.play_sfx("heal")
 
 
 func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
@@ -685,6 +689,8 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 		_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.55, 1.0, 0.7, 1.0))
 	if legend_crit_lifesteal and crit_landed and total_damage_dealt > 0:
 		heal(max(int(round(float(total_damage_dealt) * 0.10)), 1))
+	if attack_connected:
+		AudioManager.play_sfx("attack_hit")
 	if legend_chain_lightning and attack_connected and randf() < 0.20:
 		_trigger_chain_lightning()
 	_update_shadow_combo_state(attack_connected, guaranteed_crit_ready)

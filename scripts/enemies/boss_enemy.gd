@@ -20,6 +20,7 @@ func _ready() -> void:
 	scale = Vector2.ONE * 1.72
 	if animated_sprite != null:
 		animated_sprite.modulate = Color(1.0, 0.55, 0.55, 1.0)
+	AudioManager.play_sfx("boss_appear")
 
 
 func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot_root: Node) -> void:
