@@ -373,6 +373,10 @@ func is_elite_enemy() -> bool:
 	return false
 
 
+func is_boss_enemy() -> bool:
+	return false
+
+
 func _setup_hp_bar() -> void:
 	hp_bar_root = Node2D.new()
 	hp_bar_root.position = Vector2(-12, -20)
@@ -428,7 +432,7 @@ func _apply_single_prefix_stats(prefix_id: String) -> void:
 
 
 func _update_prefix_label() -> void:
-	var is_boss: bool = has_method("is_boss_enemy") and is_boss_enemy()
+	var is_boss: bool = is_boss_enemy()
 	var is_elite: bool = is_elite_enemy()
 
 	# Determine label color
