@@ -416,6 +416,7 @@ func _on_return_surface_requested() -> void:
 
 func _show_biome_intro() -> void:
 	var biome_key: String = ""
+	var intro_color: Color = Color(0.85, 0.75, 1.0, 1.0)
 	if current_floor == 1:
 		biome_key = "biome_intro_dungeon"
 	elif current_floor == 11:
@@ -424,12 +425,17 @@ func _show_biome_intro() -> void:
 		biome_key = "biome_intro_lava"
 	elif current_floor == 31:
 		biome_key = "biome_intro_abyss"
+	# Boss floor intros
+	var boss_key: String = "boss_%d_intro" % current_floor
+	if current_floor % 5 == 0 and current_floor <= 30 and biome_key == "":
+		biome_key = boss_key
+		intro_color = Color(1.0, 0.4, 0.3, 1.0)
 	if biome_key == "":
 		return
 	# Wait a frame for player to be placed
 	await get_tree().process_frame
 	if player != null and player.has_method("show_status_message"):
-		player.show_status_message(LocaleManager.L(biome_key), Color(0.85, 0.75, 1.0, 1.0), 3.5)
+		player.show_status_message(LocaleManager.L(biome_key), intro_color, 3.5)
 
 
 func _get_floor_source(coords: Vector2i) -> int:
@@ -734,19 +740,30 @@ func _spawn_trap_room(room: Rect2i) -> void:
 func _spawn_special_room_visuals(room: Rect2i, room_feature: Dictionary) -> void:
 	var has_event: bool = bool(room_feature.get("event", false))
 	var has_challenge: bool = bool(room_feature.get("challenge", false))
-	if not has_event and not has_challenge:
-		return
+	var has_safe: bool = bool(room_feature.get("safe", false))
+	var has_puzzle: bool = bool(room_feature.get("puzzle", false))
 
-	var fill_color: Color = Color(0.36, 0.14, 0.44, 0.30)
-	var border_color: Color = Color(0.78, 0.42, 0.96, 0.90)
+	var fill_color: Color = Color.TRANSPARENT
+	var border_color: Color = Color.TRANSPARENT
+
 	if has_challenge and has_event:
 		fill_color = Color(0.50, 0.12, 0.22, 0.34)
 		border_color = Color(0.96, 0.48, 0.74, 0.94)
 	elif has_challenge:
 		fill_color = Color(0.58, 0.14, 0.14, 0.32)
 		border_color = Color(1.0, 0.42, 0.32, 0.95)
+	elif has_event:
+		fill_color = Color(0.36, 0.14, 0.44, 0.30)
+		border_color = Color(0.78, 0.42, 0.96, 0.90)
+	elif has_safe:
+		fill_color = Color(0.10, 0.35, 0.15, 0.25)
+		border_color = Color(0.35, 0.90, 0.45, 0.85)
+	elif has_puzzle:
+		fill_color = Color(0.12, 0.18, 0.38, 0.28)
+		border_color = Color(0.45, 0.55, 0.95, 0.85)
 
-	_spawn_room_tint(room, fill_color, border_color)
+	if fill_color.a > 0.0:
+		_spawn_room_tint(room, fill_color, border_color)
 
 
 func _spawn_room_tint(room: Rect2i, fill_color: Color, border_color: Color) -> void:
