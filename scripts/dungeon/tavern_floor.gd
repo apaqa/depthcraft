@@ -26,6 +26,7 @@ const ROOM_H: int = 15
 const STAIRWAY_SCENE: PackedScene = preload("res://scenes/dungeon/stairway.tscn")
 const DUNGEON_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/dungeon_merchant.gd")
 const BARTENDER_SCRIPT: Script = preload("res://scripts/dungeon/bartender_npc.gd")
+const GEM_GAMBLER_SCRIPT: Script = preload("res://scripts/dungeon/gem_gambler_npc.gd")
 const FLOOR_TELEPORTER_SCRIPT: Script = preload("res://scripts/dungeon/floor_teleporter_npc.gd")
 const CLASS_MASTER_SCRIPT: Script = preload("res://scripts/dungeon/class_master_npc.gd")
 
@@ -204,6 +205,23 @@ func _build_npcs() -> void:
 	add_child(teleporter)
 	if teleporter.has_signal("floor_selected"):
 		teleporter.floor_selected.connect(_on_teleporter_floor_selected)
+
+	# Lower area — gem gambler NPC
+	var gem_gambler: Area2D = Area2D.new()
+	gem_gambler.set_script(GEM_GAMBLER_SCRIPT)
+	gem_gambler.position = Vector2(float(6 * TILE), float(9 * TILE))
+	var gg_sprite: Sprite2D = Sprite2D.new()
+	gg_sprite.texture = TEX_LIZARD
+	gg_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	gg_sprite.position = Vector2(0.0, -16.0)
+	gem_gambler.add_child(gg_sprite)
+	var gg_lbl: Label = Label.new()
+	gg_lbl.text = "寶石賭徒"
+	gg_lbl.add_theme_font_size_override("font_size", 11)
+	gg_lbl.modulate = Color(0.75, 0.5, 1.0, 1.0)
+	gg_lbl.position = Vector2(-22.0, -44.0)
+	gem_gambler.add_child(gg_lbl)
+	add_child(gem_gambler)
 
 	# Lower corridor — class master NPC
 	var class_master: Area2D = Area2D.new()
