@@ -38,6 +38,7 @@ func save_game(slot: int) -> void:
 		"skills": _serialize_skills(player),
 		"npcs": _serialize_npcs(),
 		"progress": _serialize_progress(main_node),
+		"tutorial_flags": _serialize_tutorial_flags(main_node),
 	}
 	_write_json(SAVE_SLOT_TEMPLATE % slot, payload)
 	print("SaveManager: saved slot %d" % slot)
@@ -102,6 +103,8 @@ func load_game(slot: int) -> void:
 	_restore_buildings(building_data, player)
 	_restore_skills(skill_data, player)
 	_restore_progress(progress_data, main_node)
+	var tutorial_flags_data: Dictionary = data.get("tutorial_flags", {}) as Dictionary
+	_restore_tutorial_flags(tutorial_flags_data, main_node)
 	_finalize_player_restore(player_data, player)
 	_refresh_loaded_scene(main_node)
 	print("SaveManager: loaded slot %d" % slot)
@@ -821,6 +824,27 @@ func _synchronize_legacy_player_state(data: Dictionary) -> void:
 	var class_system: Node = get_node_or_null("/root/ClassSystem")
 	if class_system != null and class_system.has_method("save_class"):
 		class_system.call("save_class", class_id)
+
+
+func _serialize_tutorial_flags(main_node: Node) -> Dictionary:
+	if main_node == null:
+		return {}
+	var raw: Variant = main_node.get("tutorial_flags")
+	if typeof(raw) == TYPE_DICTIONARY:
+		return (raw as Dictionary).duplicate(true)
+	return {}
+
+
+func _restore_tutorial_flags(data: Dictionary, main_node: Node) -> void:
+	if main_node == null:
+		return
+	var existing: Variant = main_node.get("tutorial_flags")
+	var flags: Dictionary = {}
+	if typeof(existing) == TYPE_DICTIONARY:
+		flags = (existing as Dictionary).duplicate(true)
+	for key: Variant in data.keys():
+		flags[str(key)] = bool(data[key])
+	main_node.set("tutorial_flags", flags)
 
 
 func _write_json(path: String, data: Dictionary) -> void:

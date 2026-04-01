@@ -24,6 +24,7 @@ var dungeon_returns_since_raid: int = 0
 var overworld_return_position: Variant = null
 var current_day: int = 1
 var deepest_dungeon_floor_reached: int = 1
+var tutorial_flags: Dictionary = {}
 
 
 func _ready() -> void:
@@ -230,6 +231,11 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		spawned_player.set_process_unhandled_input(true)
 		spawned_player.heal_to_full()
 	_on_connection_status_changed(_get_connection_status())
+	# Hint 1: first overworld visit
+	if level_id == "overworld" and not bool(tutorial_flags.get("first_overworld", false)):
+		tutorial_flags["first_overworld"] = true
+		if player != null and player.has_method("show_status_message"):
+			player.show_status_message(LocaleManager.L("tutorial_build_hint"), Color(0.85, 1.0, 0.85, 1.0), 5.0)
 
 
 func _get_level_scene(level_id: String) -> PackedScene:
@@ -303,6 +309,11 @@ func _on_floor_changed(current_floor: int) -> void:
 		player.on_dungeon_floor_changed(current_floor)
 	if current_floor > 0:
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, current_floor)
+	# Hint 2: first dungeon floor 1
+	if current_floor == 1 and not bool(tutorial_flags.get("first_dungeon", false)):
+		tutorial_flags["first_dungeon"] = true
+		if player != null and player.has_method("show_status_message"):
+			player.show_status_message(LocaleManager.L("tutorial_dungeon_hint"), Color(0.85, 0.95, 1.0, 1.0), 5.0)
 	if hud.has_method("update_floor_label"):
 		hud.update_floor_label(current_floor)
 	_sync_bgm_for_current_level()

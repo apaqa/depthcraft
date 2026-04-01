@@ -570,5 +570,11 @@
   "death_time": "Time: %s",
   "death_coins_lost": "Coins Lost: %s",
   "death_durability_loss": "Equipment Durability: -20%",
-  "death_return_home": "Return Home"
+  "death_return_home": "Return Home",
+  "tutorial_build_hint": "Press B to build. Place a Home Core to unlock buildings!",
+  "tutorial_dungeon_hint": "Defeat monsters, collect loot, find the stairs to descend.",
+  "tutorial_tavern_hint": "The underground tavern — talk to NPCs to gamble, teleport, or trade.",
+  "raid_warning": "The air grows heavy with the undead...",
+  "raid_reward": "Raid defeated! Rewards granted.",
+  "building_destroyed": "A building was destroyed!"
 }

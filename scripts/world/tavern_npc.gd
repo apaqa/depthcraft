@@ -20,6 +20,17 @@ func get_tavern_tab() -> String:
 
 
 func interact(player: Node) -> void:
+	# Hint 3: first tavern interaction
+	if player != null and player.has_method("show_status_message"):
+		var main_node: Node = get_tree().current_scene
+		if main_node != null:
+			var flags: Variant = main_node.get("tutorial_flags")
+			if typeof(flags) == TYPE_DICTIONARY:
+				var flags_dict: Dictionary = flags as Dictionary
+				if not bool(flags_dict.get("first_tavern", false)):
+					flags_dict["first_tavern"] = true
+					main_node.set("tutorial_flags", flags_dict)
+					player.show_status_message(LocaleManager.L("tutorial_tavern_hint"), Color(0.85, 0.65, 1.0, 1.0), 5.0)
 	if npc_type == "exit":
 		var parent_node: Node = get_parent()
 		if parent_node != null and parent_node.has_signal("exit_tavern_requested"):

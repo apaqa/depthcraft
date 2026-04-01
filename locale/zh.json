@@ -570,5 +570,11 @@
   "death_time": "遊玩時間：%s",
   "death_coins_lost": "失去金幣：%s",
   "death_durability_loss": "裝備耐久損失：20%",
-  "death_return_home": "返回家園"
+  "death_return_home": "返回家園",
+  "tutorial_build_hint": "按 B 開啟建造模式，放置家園核心解鎖建築！",
+  "tutorial_dungeon_hint": "消滅怪物，收集裝備，找到樓梯前往下一層。",
+  "tutorial_tavern_hint": "地下酒館——與 NPC 互動進行賭博、傳送或交易。",
+  "raid_warning": "殭屍氣息越來越濃...",
+  "raid_reward": "殭屍退散！獎勵已發放",
+  "building_destroyed": "建築被摧毀了！"
 }
