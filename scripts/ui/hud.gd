@@ -942,36 +942,53 @@ func open_blessing_selection(options: Array, level: Variant) -> void:
 
 func _open_blessing_panel(options: Array, title_text: String) -> void:
 	_blessing_input_lock_msec = Time.get_ticks_msec() + 500
+	if buff_select == null:
+		return
+	# Disconnect before reconnecting to avoid double-fire
+	if buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
+		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
 	buff_select.process_mode = Node.PROCESS_MODE_ALWAYS
-	buff_select.open_with_options(options, {})
+	var typed_options: Array[Dictionary] = []
+	for opt: Variant in options:
+		if opt is Dictionary:
+			typed_options.append(opt as Dictionary)
+	buff_select.open_with_options(typed_options, {})
 	buff_select.title_label.text = title_text
-	if player != null:
+	if player != null and is_instance_valid(player):
 		player.set_ui_blocked(true)
-	if current_level != null and current_level.has_method("set_gameplay_paused"):
+		if "_is_charging" in player:
+			player._is_charging = false
+		if "_charge_bar_root" in player and player._charge_bar_root != null:
+			player._charge_bar_root.visible = false
+	if current_level != null and is_instance_valid(current_level) and current_level.has_method("set_gameplay_paused"):
 		current_level.set_gameplay_paused(true)
 	get_tree().paused = true
-	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_blessing_chosen):
+	if buff_select.has_signal("buff_chosen"):
 		buff_select.buff_chosen.connect(_on_blessing_chosen)
 
 
 func _close_blessing_panel() -> void:
-	if buff_select.buff_chosen.is_connected(_on_blessing_chosen):
+	if buff_select != null and buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
 		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
-	buff_select.process_mode = Node.PROCESS_MODE_INHERIT
+	if buff_select != null:
+		buff_select.process_mode = Node.PROCESS_MODE_INHERIT
 	get_tree().paused = false
 	_blessing_stage = 0
 	_blessing_pending_theme = ""
-	if player != null:
+	if player != null and is_instance_valid(player):
 		player.set_ui_blocked(false)
-	if current_level != null and current_level.has_method("set_gameplay_paused"):
+	if current_level != null and is_instance_valid(current_level) and current_level.has_method("set_gameplay_paused"):
 		current_level.set_gameplay_paused(false)
 
 
 func _on_blessing_chosen(chosen_id: String) -> void:
 	if Time.get_ticks_msec() < _blessing_input_lock_msec:
 		return
+	if chosen_id == "":
+		_close_blessing_panel()
+		return
 	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
-	if bs_node == null:
+	if bs_node == null or not is_instance_valid(bs_node):
 		_close_blessing_panel()
 		return
 	if _blessing_stage == 1:
