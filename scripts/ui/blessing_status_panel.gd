@@ -86,6 +86,8 @@ func _rebuild_ui() -> void:
 	right_vbox.add_theme_constant_override("separation", 6)
 	main_hbox.add_child(right_vbox)
 	_build_blessing_list(right_vbox)
+	right_vbox.add_child(HSeparator.new())
+	_build_skill_list(right_vbox)
 
 	# Separator
 	var sep2: VSeparator = VSeparator.new()
@@ -247,6 +249,80 @@ func _build_blessing_list(parent: VBoxContainer) -> void:
 
 	if not has_any:
 		parent.add_child(_make_dim_label(LocaleManager.L("status_no_blessings")))
+
+
+func _build_skill_list(parent: VBoxContainer) -> void:
+	var title: Label = _make_header(LocaleManager.L("status_skills_title"))
+	parent.add_child(title)
+
+	var skill_system: Node = get_node_or_null("/root/SkillSystem")
+	if skill_system == null:
+		parent.add_child(_make_dim_label("—"))
+		return
+
+	var snapshots: Array = skill_system.get_equipped_skill_snapshots()
+	var slot_keys: Array[String] = ["Z", "X", "V"]
+	for i: int in range(snapshots.size()):
+		var slot: Dictionary = snapshots[i] as Dictionary
+		if slot.is_empty():
+			continue
+		var key: String = slot_keys[i]
+		var name_key: String = str(slot.get("name", ""))
+		var desc_key: String = str(slot.get("desc", ""))
+		var skill_name: String = LocaleManager.L(name_key) if name_key != "" else key
+		var skill_desc: String = LocaleManager.L(desc_key) if desc_key != "" else ""
+		var cd: float = float(slot.get("current_cooldown", 0.0))
+		var max_cd: float = float(slot.get("cooldown", 0.0))
+
+		var row: HBoxContainer = HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_theme_constant_override("separation", 6)
+		parent.add_child(row)
+
+		var key_lbl: Label = Label.new()
+		key_lbl.text = "[%s]" % key
+		key_lbl.add_theme_font_size_override("font_size", 12)
+		key_lbl.modulate = Color(0.9, 0.8, 0.4, 1.0)
+		key_lbl.custom_minimum_size = Vector2(28, 0)
+		key_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(key_lbl)
+
+		var info_vbox: VBoxContainer = VBoxContainer.new()
+		info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info_vbox.add_theme_constant_override("separation", 1)
+		info_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(info_vbox)
+
+		var name_row: HBoxContainer = HBoxContainer.new()
+		name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		info_vbox.add_child(name_row)
+
+		var name_lbl: Label = Label.new()
+		name_lbl.text = skill_name
+		name_lbl.add_theme_font_size_override("font_size", 13)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		name_row.add_child(name_lbl)
+
+		var cd_lbl: Label = Label.new()
+		if cd > 0.0:
+			cd_lbl.text = "%.1fs / %.0fs" % [cd, max_cd]
+			cd_lbl.modulate = Color(0.7, 0.7, 0.7, 1.0)
+		else:
+			cd_lbl.text = LocaleManager.L("skill_ready")
+			cd_lbl.modulate = Color(0.4, 1.0, 0.5, 1.0)
+		cd_lbl.add_theme_font_size_override("font_size", 11)
+		cd_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		name_row.add_child(cd_lbl)
+
+		if skill_desc != "":
+			var desc_lbl: Label = Label.new()
+			desc_lbl.text = skill_desc
+			desc_lbl.add_theme_font_size_override("font_size", 10)
+			desc_lbl.modulate = Color(0.6, 0.6, 0.65, 1.0)
+			desc_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			info_vbox.add_child(desc_lbl)
 
 
 func _make_header(text: String) -> Label:

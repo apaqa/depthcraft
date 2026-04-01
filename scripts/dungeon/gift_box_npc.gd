@@ -226,7 +226,7 @@ func _on_buy_pressed(box_id: String, price: int) -> void:
 		return
 	if not inv.pay_copper(price):
 		if _current_player.has_method("show_status_message"):
-			_current_player.show_status_message("金幣不足！", Color(1.0, 0.4, 0.4, 1.0), 1.5)
+			_current_player.show_status_message(LocaleManager.L("insufficient_gold"), Color(1.0, 0.4, 0.4, 1.0), 1.5)
 		return
 	_refresh_balance()
 	var loot: Dictionary = GIFT_BOX_SYSTEM.roll_loot(box_id)

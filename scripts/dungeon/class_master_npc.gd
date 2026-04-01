@@ -143,7 +143,7 @@ func _on_class_chosen(class_id: String) -> void:
 		return
 	if not inv.pay_copper(CHANGE_COST_COPPER):
 		if _current_player.has_method("show_status_message"):
-			_current_player.show_status_message("銀幣不足！", Color(1.0, 0.4, 0.4, 1.0), 2.5)
+			_current_player.show_status_message(LocaleManager.L("insufficient_silver"), Color(1.0, 0.4, 0.4, 1.0), 2.5)
 		return
 	var class_system: Node = get_node_or_null("/root/ClassSystem")
 	if class_system != null and class_system.has_method("save_class"):
