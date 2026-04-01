@@ -57,6 +57,49 @@ const QUALITY_AFFIX_COUNT = {
 	"Epic": 3,
 	"Legendary": 4,
 }
+const QUALITY_SUB_STAT_COUNT: Dictionary = {
+	"Common": 0,
+	"Uncommon": 1,
+	"Rare": 2,
+	"Epic": 3,
+	"Legendary": 3,
+}
+const QUALITY_MAX_FORGE: Dictionary = {
+	"Common": 3,
+	"Uncommon": 5,
+	"Rare": 8,
+	"Epic": 12,
+	"Legendary": 15,
+}
+const MAIN_STAT_POOLS: Dictionary = {
+	"weapon": ["attack", "crit_chance", "crit_damage_multiplier"],
+	"helmet": ["defense", "max_hp"],
+	"chest_armor": ["defense", "max_hp"],
+	"boots": ["speed_multiplier", "dodge_chance", "defense"],
+	"gloves": ["attack", "crit_chance"],
+	"accessory": ["attack", "defense", "max_hp", "crit_chance", "crit_damage_multiplier", "speed_multiplier", "dodge_chance", "lifesteal_ratio"],
+	"offhand": ["defense", "max_hp", "attack"],
+}
+const MAIN_STAT_RANGES: Dictionary = {
+	"attack": {"Common": [5, 8], "Uncommon": [7, 12], "Rare": [10, 18], "Epic": [15, 25], "Legendary": [22, 35]},
+	"defense": {"Common": [3, 6], "Uncommon": [5, 10], "Rare": [8, 15], "Epic": [12, 22], "Legendary": [18, 30]},
+	"max_hp": {"Common": [10, 20], "Uncommon": [15, 35], "Rare": [25, 50], "Epic": [40, 75], "Legendary": [60, 100]},
+	"crit_chance": {"Common": [1, 3], "Uncommon": [2, 5], "Rare": [4, 8], "Epic": [6, 12], "Legendary": [10, 18]},
+	"crit_damage_multiplier": {"Common": [5, 10], "Uncommon": [8, 15], "Rare": [12, 25], "Epic": [20, 35], "Legendary": [30, 50]},
+	"speed_multiplier": {"Common": [3, 6], "Uncommon": [5, 10], "Rare": [8, 15], "Epic": [12, 20], "Legendary": [18, 30]},
+	"dodge_chance": {"Common": [1, 3], "Uncommon": [2, 5], "Rare": [3, 8], "Epic": [5, 12], "Legendary": [8, 18]},
+	"lifesteal_ratio": {"Common": [1, 2], "Uncommon": [1, 3], "Rare": [2, 5], "Epic": [3, 7], "Legendary": [5, 10]},
+}
+const SUB_STAT_POOL: Array[String] = [
+	"attack", "defense", "max_hp",
+	"crit_chance", "crit_damage_multiplier",
+	"speed_multiplier", "dodge_chance", "lifesteal_ratio",
+]
+# Stats that use percentage scale (0.01 multiplier)
+const PERCENT_STATS: Array[String] = [
+	"crit_chance", "crit_damage_multiplier", "speed_multiplier",
+	"dodge_chance", "lifesteal_ratio",
+]
 
 
 static func generate_dungeon_equipment(floor_number: int, rng: RandomNumberGenerator = null) -> Dictionary:
@@ -96,6 +139,10 @@ static func _build_equipment(slot: String, quality: String, floor_number: int, r
 	var base_power: int = int(round((3 + resolved_floor * 2) * quality_mult))
 	var num_affixes: int = int(QUALITY_AFFIX_COUNT.get(normalized_quality, 0))
 	var durability: int = 50 + resolved_floor * 5
+	# Generate main stat
+	var main_stat_result: Dictionary = _generate_main_stat(slot, normalized_quality, rng)
+	# Generate sub stats
+	var sub_stats_result: Array[Dictionary] = _generate_sub_stats(normalized_quality, str(main_stat_result.get("type", "")), rng)
 	var item: Dictionary = {
 		"id": "dungeon_%s_%d" % [slot, _randi(rng)],
 		"name": _generate_name(slot, normalized_quality, rng),
@@ -105,6 +152,11 @@ static func _build_equipment(slot: String, quality: String, floor_number: int, r
 		"icon": ITEM_DATABASE.get_equipment_icon(slot, normalized_quality),
 		"stats": _generate_base_stats(slot, base_power),
 		"affixes": _generate_affixes(num_affixes, resolved_floor, rng),
+		"main_stat_type": str(main_stat_result.get("type", "")),
+		"main_stat_value": int(main_stat_result.get("value", 0)),
+		"sub_stats": sub_stats_result,
+		"forge_level": 0,
+		"max_forge": int(QUALITY_MAX_FORGE.get(normalized_quality, 3)),
 		"durability": durability,
 		"max_durability": durability,
 		"durability_current": durability,
@@ -115,6 +167,7 @@ static func _build_equipment(slot: String, quality: String, floor_number: int, r
 		"quantity": 1,
 	}
 	_apply_affixes_to_stats(item)
+	_apply_main_and_sub_to_stats(item)
 	item["color"] = get_rarity_color(str(item.get("rarity", "Common")))
 	return item
 
@@ -213,6 +266,64 @@ static func _apply_affixes_to_stats(item: Dictionary) -> void:
 		var stat_name: String = str((affix as Dictionary).get("stat", ""))
 		stats[stat_name] = float(stats.get(stat_name, 0.0)) + float((affix as Dictionary).get("value", 0.0))
 	item["stats"] = stats
+
+
+static func _apply_main_and_sub_to_stats(item: Dictionary) -> void:
+	var stats: Dictionary = (item.get("stats", {}) as Dictionary).duplicate(true)
+	var main_type: String = str(item.get("main_stat_type", ""))
+	var main_value: int = int(item.get("main_stat_value", 0))
+	if main_type != "" and main_value > 0:
+		if PERCENT_STATS.has(main_type):
+			stats[main_type] = float(stats.get(main_type, 0.0)) + float(main_value) * 0.01
+		else:
+			stats[main_type] = float(stats.get(main_type, 0.0)) + float(main_value)
+	for sub_entry: Variant in item.get("sub_stats", []):
+		var sub: Dictionary = sub_entry as Dictionary
+		var sub_type: String = str(sub.get("type", ""))
+		var sub_value: float = float(sub.get("value", 0.0))
+		if sub_type == "":
+			continue
+		# Sub stats are always percentage: value is raw %, apply as 0.01 scale
+		if PERCENT_STATS.has(sub_type):
+			stats[sub_type] = float(stats.get(sub_type, 0.0)) + sub_value * 0.01
+		else:
+			# For flat stats like attack/defense/max_hp, apply as percentage of base
+			var base_val: float = float(stats.get(sub_type, 0.0))
+			stats[sub_type] = base_val + base_val * sub_value * 0.01
+	item["stats"] = stats
+
+
+static func _generate_main_stat(slot: String, quality: String, rng: RandomNumberGenerator = null) -> Dictionary:
+	var pool: Array = (MAIN_STAT_POOLS.get(slot, MAIN_STAT_POOLS.get("accessory", [])) as Array).duplicate()
+	if pool.is_empty():
+		return {"type": "attack", "value": 5}
+	var stat_type: String = str(_pick(pool, rng))
+	var ranges: Dictionary = MAIN_STAT_RANGES.get(stat_type, {}) as Dictionary
+	var quality_range: Array = (ranges.get(quality, ranges.get("Common", [5, 10])) as Array)
+	var min_val: int = int(quality_range[0]) if quality_range.size() > 0 else 5
+	var max_val: int = int(quality_range[1]) if quality_range.size() > 1 else 10
+	var value: int = _randi_range(rng, min_val, max_val)
+	return {"type": stat_type, "value": value}
+
+
+static func _generate_sub_stats(quality: String, main_stat_type: String, rng: RandomNumberGenerator = null) -> Array[Dictionary]:
+	var count: int = int(QUALITY_SUB_STAT_COUNT.get(quality, 0))
+	if count <= 0:
+		return []
+	var pool: Array[String] = []
+	for s: String in SUB_STAT_POOL:
+		if s != main_stat_type:
+			pool.append(s)
+	var pool_variant: Array = []
+	for s: String in pool:
+		pool_variant.append(s)
+	_shuffle(pool_variant, rng)
+	var result: Array[Dictionary] = []
+	for i: int in range(mini(count, pool_variant.size())):
+		var sub_type: String = str(pool_variant[i])
+		var sub_value: float = float(_randi_range(rng, 1, 5))
+		result.append({"type": sub_type, "value": sub_value})
+	return result
 
 
 static func _determine_rarity(num_affixes: int) -> String:
