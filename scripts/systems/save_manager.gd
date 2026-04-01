@@ -59,6 +59,26 @@ func load_game(slot: int) -> void:
 	if data.is_empty():
 		push_warning("SaveManager: slot %d not found or empty" % slot)
 		return
+	# Version migration: fill missing top-level keys with safe defaults
+	var saved_version: int = int(data.get("version", 0))
+	if saved_version < FORMAT_VERSION:
+		push_warning("SaveManager: save version %d < current %d, filling missing keys with defaults" % [saved_version, FORMAT_VERSION])
+		if not data.has("player"):
+			data["player"] = {}
+		if not data.has("inventory"):
+			data["inventory"] = []
+		if not data.has("equipment"):
+			data["equipment"] = {}
+		if not data.has("currency"):
+			data["currency"] = {"gold": 0, "silver": 0, "copper": 0, "wooden_coin": 0}
+		if not data.has("buildings"):
+			data["buildings"] = {}
+		if not data.has("skills"):
+			data["skills"] = {}
+		if not data.has("npcs"):
+			data["npcs"] = {}
+		if not data.has("progress"):
+			data["progress"] = {}
 	var player: Node = _get_player()
 	if player == null:
 		_synchronize_legacy_player_state(data)
