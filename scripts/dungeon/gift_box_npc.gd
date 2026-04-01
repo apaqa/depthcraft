@@ -217,6 +217,8 @@ func _build_box_row(box_id: String, parent: VBoxContainer) -> void:
 
 
 func _on_buy_pressed(box_id: String, price: int) -> void:
+	if _anim_overlay != null:
+		return
 	if _current_player == null:
 		return
 	var inv: Variant = _current_player.get("inventory")
@@ -399,6 +401,13 @@ func _deliver_loot_buff(buff: Dictionary, is_curse: bool) -> void:
 	_current_player.add_tavern_buff(buff_type, buff_value)
 	if is_curse:
 		AudioManager.play_sfx("hit_enemy")
+		var curse_player: Variant = _current_player
+		var curse_type: String = buff_type
+		var curse_value: float = buff_value
+		get_tree().create_timer(60.0).timeout.connect(func() -> void:
+			if is_instance_valid(curse_player) and curse_player.has_method("remove_tavern_buff"):
+				curse_player.remove_tavern_buff(curse_type, curse_value)
+		)
 	else:
 		AudioManager.play_sfx("equip")
 

@@ -1598,6 +1598,15 @@ func add_tavern_buff(buff_type: String, buff_value: float) -> void:
 	_tavern_buffs.append({"type": buff_type, "value": buff_value})
 
 
+func remove_tavern_buff(buff_type: String, buff_value: float) -> void:
+	for i: int in range(_tavern_buffs.size() - 1, -1, -1):
+		var b: Dictionary = _tavern_buffs[i] as Dictionary
+		if str(b.get("type", "")) == buff_type and absf(float(b.get("value", 0.0)) - buff_value) < 0.0001:
+			_tavern_buffs.remove_at(i)
+			_recalculate_stats()
+			return
+
+
 func _apply_tavern_buffs() -> void:
 	for buff: Dictionary in _tavern_buffs:
 		var btype: String = str(buff.get("type", ""))
