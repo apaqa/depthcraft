@@ -121,7 +121,7 @@ func _carve_corridor_brush(center_tile: Vector2i, floor_tiles: Dictionary) -> vo
 func _build_walls(floor_tiles: Dictionary) -> Dictionary:
 	var walls: Dictionary = {}
 	for floor_tile: Vector2i in floor_tiles.keys():
-		for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+		for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN, Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]:
 			var wall_tile: Vector2i = floor_tile + offset
 			if floor_tiles.has(wall_tile):
 				continue
