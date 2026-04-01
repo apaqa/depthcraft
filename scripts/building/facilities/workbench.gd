@@ -36,5 +36,14 @@ func get_upgrade_summary() -> String:
 			return "Unlocks basic crafting recipes."
 		2:
 			return "Unlocks advanced leather and tool recipes."
-		_:
+		3:
 			return "Unlocks top-tier workbench recipes."
+		4:
+			return "Workbench mastery: all recipes available."
+		_:
+			return "Legendary craftsmanship unlocked."
+
+
+func _on_upgrade_applied() -> void:
+	super._on_upgrade_applied()
+	print("Workbench upgraded to level %d" % get_upgrade_level())

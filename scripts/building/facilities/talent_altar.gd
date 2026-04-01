@@ -24,6 +24,19 @@ func get_upgrade_summary() -> String:
 		1:
 			return "A simple altar for awakening talents."
 		2:
-			return "The altar shines brighter with each ritual."
+			return "Ritual discount: -5% talent shard cost."
+		3:
+			return "Ritual discount: -10% talent shard cost."
+		4:
+			return "Ritual discount: -15% talent shard cost."
 		_:
-			return "The altar is fully awakened."
+			return "Ritual discount: -20% talent shard cost. The altar is fully awakened."
+
+
+func get_talent_cost_discount() -> float:
+	return float(get_upgrade_level() - 1) * 0.05
+
+
+func _on_upgrade_applied() -> void:
+	super._on_upgrade_applied()
+	print("Talent Altar upgraded to level %d — discount: %.0f%%" % [get_upgrade_level(), get_talent_cost_discount() * 100.0])

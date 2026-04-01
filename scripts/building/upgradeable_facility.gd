@@ -1,13 +1,39 @@
 extends "res://scripts/building/building_base.gd"
 class_name UpgradeableFacility
 
-const MAX_UPGRADE_LEVEL := 3
+const MAX_UPGRADE_LEVEL := 5
 const UPGRADE_COSTS := {
 	2: {"wood": 10, "stone": 5},
 	3: {"wood": 20, "stone": 10, "iron_ore": 5},
+	4: {"wood": 30, "stone": 15, "iron_ore": 10},
+	5: {"wood": 45, "stone": 25, "iron_ore": 15},
 }
 
 var upgrade_level: int = 1
+var _star_label: Label = null
+
+
+func _ready() -> void:
+	super._ready()
+	_create_star_label()
+
+
+func _create_star_label() -> void:
+	if _star_label != null:
+		return
+	_star_label = Label.new()
+	_star_label.position = Vector2(-8.0, -40.0)
+	_star_label.add_theme_font_size_override("font_size", 9)
+	_star_label.modulate = Color(1.0, 0.9, 0.2, 1.0)
+	_star_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_star_label)
+	_update_star_label()
+
+
+func _update_star_label() -> void:
+	if _star_label == null:
+		return
+	_star_label.text = "★".repeat(upgrade_level)
 
 
 func get_upgrade_level() -> int:
@@ -46,6 +72,7 @@ func try_upgrade(player) -> bool:
 	for resource_id in cost.keys():
 		player.inventory.remove_item(str(resource_id), int(cost[resource_id]))
 	upgrade_level += 1
+	_update_star_label()
 	_on_upgrade_applied()
 	hp_bar_time_left = DAMAGE_BAR_DURATION
 	building_state_changed.emit()
@@ -56,8 +83,13 @@ func _serialize_extra_state() -> Dictionary:
 	return {"upgrade_level": upgrade_level}
 
 
+func get_upgrade_summary() -> String:
+	return ""
+
+
 func _load_extra_state(data: Dictionary) -> void:
 	upgrade_level = clampi(int(data.get("upgrade_level", 1)), 1, MAX_UPGRADE_LEVEL)
+	_update_star_label()
 
 
 func _apply_upgrade_visuals() -> void:

@@ -9,6 +9,9 @@ signal destroyed
 @onready var hp_bar_root: Node2D = $HPBar
 @onready var hp_fill: Polygon2D = $HPBar/Fill
 
+const MAX_UPGRADE_LEVEL: int = 5
+const HP_PER_LEVEL: int = 50
+
 var is_placed: bool = false
 var core_position: Vector2 = Vector2.ZERO
 var pulse_tween: Tween = null
@@ -16,6 +19,7 @@ var max_hp: int = 500
 var current_hp: int = 500
 var raid_active: bool = false
 var hp_bar_time_left: float = 0.0
+var upgrade_level: int = 1
 
 
 func _ready() -> void:
@@ -60,7 +64,44 @@ func restore_to_full() -> void:
 
 
 func get_upgrade_level() -> int:
-	return 1
+	return upgrade_level
+
+
+func can_upgrade() -> bool:
+	return upgrade_level < MAX_UPGRADE_LEVEL
+
+
+func get_upgrade_cost() -> Dictionary:
+	if not can_upgrade():
+		return {}
+	return {"wood": upgrade_level * 5, "stone": upgrade_level * 3}
+
+
+func can_afford_upgrade(inventory: Node) -> bool:
+	if inventory == null or not can_upgrade():
+		return false
+	var cost: Dictionary = get_upgrade_cost()
+	for resource_id: Variant in cost.keys():
+		if inventory.get_item_count(str(resource_id)) < int(cost[resource_id]):
+			return false
+	return true
+
+
+func try_upgrade(p: Node) -> bool:
+	if p == null or not can_upgrade():
+		return false
+	var inv: Variant = p.get("inventory")
+	if inv == null or not can_afford_upgrade(inv):
+		return false
+	var cost: Dictionary = get_upgrade_cost()
+	for resource_id: Variant in cost.keys():
+		inv.remove_item(str(resource_id), int(cost[resource_id]))
+	upgrade_level += 1
+	max_hp += HP_PER_LEVEL
+	current_hp = min(current_hp + HP_PER_LEVEL, max_hp)
+	_update_hp_bar()
+	print("Home Core upgraded to level %d" % upgrade_level)
+	return true
 
 
 func _process(delta: float) -> void:
