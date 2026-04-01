@@ -135,7 +135,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact"):
-		close_menu()
+		if detail_panel.visible:
+			detail_panel.visible = false
+			selected_talent_id = ""
+			for talent: Dictionary in TALENT_DATA.get_all_talents():
+				_apply_node_visuals(talent)
+			map_canvas.queue_redraw()
+		else:
+			close_menu()
 		get_viewport().set_input_as_handled()
 
 
@@ -500,7 +507,12 @@ func _show_talent_detail(talent_id: String) -> void:
 func _on_detail_unlock_pressed() -> void:
 	if selected_talent_id == "" or player == null:
 		return
-	if player.unlock_talent(selected_talent_id):
+	var unlocked_id: String = selected_talent_id
+	if player.unlock_talent(unlocked_id):
+		if player.has_method("show_status_message"):
+			var talent: Dictionary = TALENT_DATA.get_talent(unlocked_id)
+			var talent_name: String = LocaleManager.L(str(talent.get("name", unlocked_id)))
+			player.show_status_message(LocaleManager.L("talent_unlocked") + ": " + talent_name, Color(1.0, 0.88, 0.3, 1.0), 1.5)
 		_refresh()
 
 
