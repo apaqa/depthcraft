@@ -26,6 +26,7 @@ var overworld_return_position: Variant = null
 var current_day: int = 1
 var deepest_dungeon_floor_reached: int = 1
 var tutorial_flags: Dictionary = {}
+var _cycle_modifier_panel: CycleModifierPanel = null
 
 
 func _process(delta: float) -> void:
@@ -337,6 +338,12 @@ func _on_kills_changed(kills: int) -> void:
 func _on_enter_dungeon_from_tavern_floor(floor_number: int) -> void:
 	if _is_multiplayer_enabled() and not _is_host():
 		return
+	var cycle_mgr: Node = get_node_or_null("/root/CycleManager")
+	var current_cycle: int = 1
+	if cycle_mgr != null:
+		current_cycle = int(cycle_mgr.get("current_cycle"))
+	if current_cycle >= 2:
+		await _show_cycle_modifier_panel()
 	await hud.fade_to_black("第 %d 層" % floor_number, Color(0, 0, 0, 1), 0.8)
 	current_level_seed = _create_level_seed()
 	_broadcast_scene_change("dungeon", floor_number, current_level_seed)
@@ -344,6 +351,18 @@ func _on_enter_dungeon_from_tavern_floor(floor_number: int) -> void:
 	_reset_all_cameras()
 	await get_tree().create_timer(0.3).timeout
 	await hud.fade_from_black(Color(0, 0, 0, 1), 0.8)
+
+
+func _show_cycle_modifier_panel() -> void:
+	if _cycle_modifier_panel == null:
+		_cycle_modifier_panel = CycleModifierPanel.new()
+		_cycle_modifier_panel.name = "CycleModifierPanel"
+		_cycle_modifier_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		hud.add_child(_cycle_modifier_panel)
+	get_tree().paused = true
+	_cycle_modifier_panel.open_panel()
+	await _cycle_modifier_panel.confirmed
+	get_tree().paused = false
 
 
 func _on_return_to_surface_requested() -> void:

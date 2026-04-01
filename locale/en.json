@@ -745,5 +745,9 @@
   "stat_defense_percent": "Defense%",
   "stat_max_hp_percent": "HP%",
   "stat_drop_rate": "Drop Rate",
-  "stat_gold_bonus": "Gold Bonus"
+  "stat_gold_bonus": "Gold Bonus",
+  "cycle_modifier_title": "Cycle %d — Challenge Modifiers",
+  "cycle_modifier_subtitle": "Select modifiers to increase difficulty for bonus rewards",
+  "cycle_modifier_skip": "No Modifiers",
+  "cycle_modifier_start": "Begin Adventure"
 }
