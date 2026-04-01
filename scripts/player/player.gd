@@ -836,7 +836,8 @@ func _release_charge() -> void:
 func _perform_charged_warrior(charge_ratio: float) -> void:
 	var attack_direction: Vector2 = _get_attack_direction()
 	last_attack_direction = attack_direction
-	_spawn_attack_effect(attack_direction)
+	var visual_scale: float = 1.0 + charge_ratio * 1.5
+	_spawn_attack_effect(attack_direction, visual_scale)
 	var range_px: float = lerp(48.0, 96.0, charge_ratio)
 	var dmg_scale: float = lerp(1.0, 3.0, charge_ratio)
 	var attack_shape: RectangleShape2D = RectangleShape2D.new()
@@ -890,6 +891,9 @@ func _perform_charged_ranger(charge_time: float) -> void:
 
 func _perform_charged_mage(charge_ratio: float) -> void:
 	var target_pos: Vector2 = get_global_mouse_position()
+	var offset_dir: Vector2 = target_pos - global_position
+	if offset_dir.length() > 120.0:
+		target_pos = global_position + offset_dir.normalized() * 120.0
 	var radius: float = lerp(32.0, 80.0, charge_ratio)
 	var guaranteed_crit: bool = shadow_combo_crit and shadow_guaranteed_crit_ready
 	_spawn_mage_aoe_indicator(target_pos, radius)
@@ -1137,7 +1141,7 @@ func _get_current_floor_context() -> int:
 	return 0
 
 
-func _spawn_attack_effect(attack_direction: Vector2) -> void:
+func _spawn_attack_effect(attack_direction: Vector2, effect_scale: float = 1.0) -> void:
 	var attack_effect = ATTACK_EFFECT_SCENE.instantiate()
 	var attack_effect_parent = get_parent()
 	if attack_effect_parent == null:
@@ -1145,7 +1149,9 @@ func _spawn_attack_effect(attack_direction: Vector2) -> void:
 	if attack_effect_parent == null:
 		attack_effect_parent = get_tree().root
 	attack_effect_parent.add_child(attack_effect)
-	attack_effect.global_position = global_position + _get_attack_offset(attack_direction)
+	attack_effect.global_position = global_position + _get_attack_offset(attack_direction) * effect_scale
+	if effect_scale != 1.0:
+		attack_effect.scale = Vector2(effect_scale, effect_scale)
 	if attack_effect.has_method("play_swing"):
 		attack_effect.play_swing(attack_direction)
 

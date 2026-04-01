@@ -32,6 +32,7 @@ func setup(proj_direction: Vector2, proj_speed: float, proj_max_range: float, pr
 	sprite_node.texture = texture
 	sprite_node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite_node.modulate = modulate_color
+	sprite_node.scale = Vector2(0.25, 0.25)
 	add_child(sprite_node)
 	body_entered.connect(_on_body_entered)
 
