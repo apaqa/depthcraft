@@ -65,6 +65,8 @@ var player: Node = null
 var inventory: Node = null
 var current_level: Node = null
 var _blessing_input_lock_msec: int = 0
+var _blessing_stage: int = 0
+var _blessing_pending_theme: String = ""
 var current_level_id: String = ""
 var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
@@ -520,8 +522,7 @@ func _on_inventory_changed() -> void:
 		var gold_count: int = int(inventory.get_item_count("gold"))
 		var silver_count: int = int(inventory.get_item_count("silver"))
 		var copper_count: int = int(inventory.get_item_count("copper"))
-		var wooden_count: int = int(inventory.get_item_count("wooden_coin"))
-		currency_label.text = "%dG %dS %dC %dW" % [gold_count, silver_count, copper_count, wooden_count]
+		currency_label.text = "%dG %dS %dC" % [gold_count, silver_count, copper_count]
 	if player != null and player.has_method("get_consumable_slots"):
 		update_consumable_bar(player.get_consumable_slots())
 	_sync_achievement_equipment_state()
@@ -927,10 +928,23 @@ func _on_buff_chosen(buff_id: String) -> void:
 
 func open_blessing_selection(options: Array, level: Variant) -> void:
 	current_level = level
+	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
+	if bs_node != null and bs_node.has_method("has_empty_main_slot") and bs_node.has_empty_main_slot():
+		_blessing_stage = 1
+		_open_blessing_panel(bs_node.generate_theme_choices(), LocaleManager.L("blessing_select_theme"))
+	elif bs_node != null:
+		_blessing_stage = 3
+		_open_blessing_panel(bs_node.generate_sub_choices(), LocaleManager.L("blessing_select_sub"))
+	else:
+		_blessing_stage = 3
+		_open_blessing_panel(options, LocaleManager.L("blessing_select_title"))
+
+
+func _open_blessing_panel(options: Array, title_text: String) -> void:
 	_blessing_input_lock_msec = Time.get_ticks_msec() + 500
 	buff_select.process_mode = Node.PROCESS_MODE_ALWAYS
 	buff_select.open_with_options(options, {})
-	buff_select.title_label.text = LocaleManager.L("blessing_select_title")
+	buff_select.title_label.text = title_text
 	if player != null:
 		player.set_ui_blocked(true)
 	if current_level != null and current_level.has_method("set_gameplay_paused"):
@@ -940,20 +954,56 @@ func open_blessing_selection(options: Array, level: Variant) -> void:
 		buff_select.buff_chosen.connect(_on_blessing_chosen)
 
 
-func _on_blessing_chosen(blessing_id: String) -> void:
-	if Time.get_ticks_msec() < _blessing_input_lock_msec:
-		return
+func _close_blessing_panel() -> void:
 	if buff_select.buff_chosen.is_connected(_on_blessing_chosen):
 		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
 	buff_select.process_mode = Node.PROCESS_MODE_INHERIT
 	get_tree().paused = false
-	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
-	if bs_node != null:
-		bs_node.add_blessing(blessing_id)
+	_blessing_stage = 0
+	_blessing_pending_theme = ""
 	if player != null:
 		player.set_ui_blocked(false)
 	if current_level != null and current_level.has_method("set_gameplay_paused"):
 		current_level.set_gameplay_paused(false)
+
+
+func _on_blessing_chosen(chosen_id: String) -> void:
+	if Time.get_ticks_msec() < _blessing_input_lock_msec:
+		return
+	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
+	if bs_node == null:
+		_close_blessing_panel()
+		return
+	if _blessing_stage == 1:
+		# Stage 1: theme chosen
+		_blessing_pending_theme = chosen_id
+		if bs_node.is_theme_assigned(chosen_id):
+			# Theme already assigned to a slot — skip to sub-blessings for this theme
+			_blessing_stage = 3
+			_open_blessing_panel(bs_node.generate_sub_choices_for_theme(chosen_id), LocaleManager.L("blessing_select_sub"))
+			return
+		var empty_slots: Array = bs_node.get_empty_slots()
+		if empty_slots.size() == 1:
+			# Only 1 empty slot — auto-assign
+			bs_node.assign_main_slot(str(empty_slots[0]), chosen_id)
+			_close_blessing_panel()
+			return
+		# Multiple empty slots — show slot choices
+		_blessing_stage = 2
+		_open_blessing_panel(bs_node.generate_slot_choices(chosen_id), LocaleManager.L("blessing_select_slot"))
+		return
+	if _blessing_stage == 2:
+		# Stage 2: slot chosen
+		bs_node.assign_main_slot(chosen_id, _blessing_pending_theme)
+		_close_blessing_panel()
+		return
+	if _blessing_stage == 3:
+		# Stage 3: sub-blessing chosen
+		bs_node.add_sub_blessing(chosen_id)
+		_close_blessing_panel()
+		return
+	# Fallback
+	_close_blessing_panel()
 
 
 func _refresh_buff_icons(active_buffs: Array) -> void:

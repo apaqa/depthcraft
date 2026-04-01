@@ -400,7 +400,8 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 		set_gameplay_paused(true)
 		var bs_node: Node = get_node_or_null("/root/BlessingSystem")
 		if bs_node != null and randf() < 0.5:
-			blessing_selection_requested.emit(bs_node.generate_three_choices())
+			# Blessing selection — the HUD handles the multi-stage flow
+			blessing_selection_requested.emit([])
 		else:
 			buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())
 
