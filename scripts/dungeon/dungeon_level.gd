@@ -397,7 +397,11 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 		elites_killed_this_floor += 1
 		_apply_elite_chain_enhancement()
 		set_gameplay_paused(true)
-		if randf() < 0.5:
+		var blessing_chance: float = 0.5
+		var cm_bless: Node = get_node_or_null("/root/CycleModifier")
+		if cm_bless != null and cm_bless.has_method("get_extra_blessing_choices") and cm_bless.get_extra_blessing_choices() > 0:
+			blessing_chance = 1.0
+		if randf() < blessing_chance:
 			blessing_selection_requested.emit([])
 
 
@@ -526,6 +530,10 @@ func _roll_elite_count(rng: RandomNumberGenerator, guaranteed: int) -> int:
 		count += 1
 	if count >= 3 and _rng_randf(rng) < 0.05:
 		count += 1
+	# Elite swarm modifier doubles elite count
+	var cm: Node = get_node_or_null("/root/CycleModifier")
+	if cm != null and cm.has_method("get_elite_spawn_multiplier"):
+		count = int(round(float(count) * float(cm.get_elite_spawn_multiplier())))
 	return count
 
 
@@ -853,6 +861,9 @@ func _spawn_safe_room(room: Rect2i) -> void:
 
 
 func _spawn_boss_merchant(room: Rect2i, room_index: int) -> void:
+	var cm: Node = get_node_or_null("/root/CycleModifier")
+	if cm != null and cm.has_method("is_merchant_disabled") and cm.is_merchant_disabled():
+		return
 	var merchant = DUNGEON_MERCHANT_SCRIPT.new()
 	if merchant.has_method("setup"):
 		merchant.setup(current_floor, _create_room_rng(211, room_index))

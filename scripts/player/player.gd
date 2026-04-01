@@ -1732,6 +1732,11 @@ func _refresh_all_stats() -> void:
 	speed = player_stats.get_total_speed() * (1.0 + spd_bonus)
 	var hp_bonus: float = _get_blessing_value("hp_percent")
 	var base_max: int = player_stats.get_total_max_hp() + bonus_max_hp - dungeon_max_hp_penalty
+	var cm_node: Node = get_node_or_null("/root/CycleModifier")
+	if cm_node != null and cm_node.has_method("get_total_hp_modifier"):
+		var hp_mod: float = float(cm_node.get_total_hp_modifier())
+		if hp_mod < 0.0:
+			base_max = maxi(int(round(float(base_max) * (1.0 + hp_mod))), 1)
 	max_hp = maxi(int(round(float(base_max) * (1.0 + hp_bonus))), 1)
 	current_hp = clamp(current_hp, 0, max_hp)
 	if inventory != null:
@@ -1854,13 +1859,16 @@ func _use_consumable_at_slot(slot_index: int) -> bool:
 		show_status_message("Torch lit", Color(1.0, 0.85, 0.45, 1.0))
 	var meal_buff_data: Variant = effects.get("meal_buff", null)
 	if meal_buff_data != null and typeof(meal_buff_data) == TYPE_DICTIONARY:
-		var new_buff: Dictionary = meal_buff_data as Dictionary
-		# Merge: accumulate additive bonuses
-		for key: Variant in new_buff.keys():
-			var k: String = str(key)
-			active_meal_buff[k] = float(active_meal_buff.get(k, 0.0)) + float(new_buff[k])
-		_recalculate_buff_state()
-		show_status_message(LocaleManager.L("meal_buff_active"), Color(1.0, 0.85, 0.45, 1.0))
+		var cm_famine: Node = get_node_or_null("/root/CycleModifier")
+		if cm_famine != null and cm_famine.has_method("is_cooking_disabled") and cm_famine.is_cooking_disabled():
+			show_status_message(LocaleManager.L("famine_cooking_blocked"), Color(1.0, 0.5, 0.3, 1.0), 2.5)
+		else:
+			var new_buff: Dictionary = meal_buff_data as Dictionary
+			for key: Variant in new_buff.keys():
+				var k: String = str(key)
+				active_meal_buff[k] = float(active_meal_buff.get(k, 0.0)) + float(new_buff[k])
+			_recalculate_buff_state()
+			show_status_message(LocaleManager.L("meal_buff_active"), Color(1.0, 0.85, 0.45, 1.0))
 	consumable_cooldown_left = BANDAGE_COOLDOWN
 	if inventory != null:
 		inventory.mark_dirty()

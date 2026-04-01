@@ -749,5 +749,6 @@
   "cycle_modifier_title": "Cycle %d — Challenge Modifiers",
   "cycle_modifier_subtitle": "Select modifiers to increase difficulty for bonus rewards",
   "cycle_modifier_skip": "No Modifiers",
-  "cycle_modifier_start": "Begin Adventure"
+  "cycle_modifier_start": "Begin Adventure",
+  "famine_cooking_blocked": "Famine modifier: cooking buffs disabled"
 }

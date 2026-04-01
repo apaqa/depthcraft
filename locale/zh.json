@@ -749,5 +749,6 @@
   "cycle_modifier_title": "輪迴 %d — 挑戰修飾器",
   "cycle_modifier_subtitle": "選擇修飾器增加難度，獲得額外獎勵",
   "cycle_modifier_skip": "不選修飾器",
-  "cycle_modifier_start": "開始冒險"
+  "cycle_modifier_start": "開始冒險",
+  "famine_cooking_blocked": "飢荒修飾器：烹飪 buff 無效"
 }

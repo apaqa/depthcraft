@@ -355,8 +355,12 @@ func _drop_gold_loot() -> void:
 func _drop_gold(coin_type: String, amount: int) -> void:
 	if loot_parent == null or amount <= 0:
 		return
+	var final_amount: int = amount
+	var cm: Node = get_node_or_null("/root/CycleModifier")
+	if cm != null and cm.has_method("is_modifier_active") and cm.is_modifier_active("no_merchant"):
+		final_amount = final_amount * 2
 	var drop = LOOT_DROP_SCENE.instantiate()
-	drop.setup(coin_type, amount)
+	drop.setup(coin_type, final_amount)
 	drop.global_position = global_position + Vector2(randf_range(-6.0, 6.0), randf_range(-6.0, 6.0))
 	loot_parent.add_child(drop)
 
@@ -364,11 +368,9 @@ func _drop_gold(coin_type: String, amount: int) -> void:
 func _build_currency_rewards(target_floor: int) -> Array[Dictionary]:
 	var rewards: Array[Dictionary] = []
 	if target_floor <= 5:
-		rewards.append({"id": "wooden_coin", "amount": randi_range(1, 3)})
+		rewards.append({"id": "copper", "amount": randi_range(1, 2)})
 	elif target_floor <= 10:
-		rewards.append({"id": "wooden_coin", "amount": randi_range(2, 5)})
-		if randf() <= 0.35:
-			rewards.append({"id": "copper", "amount": 1})
+		rewards.append({"id": "copper", "amount": randi_range(1, 3)})
 	elif target_floor <= 15:
 		rewards.append({"id": "copper", "amount": randi_range(1, 2)})
 	elif target_floor <= 20:
