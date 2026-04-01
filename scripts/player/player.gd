@@ -62,6 +62,7 @@ var consumable_cooldown_left: float = 0.0
 var consumable_q_id: String = ""
 var consumable_r_id: String = ""
 var is_dead: bool = false
+var _god_mode: bool = false
 var active_buff_ids: Array[String] = []
 var unlocked_talents: Array[String] = []
 var dungeon_run_loot: Array[Dictionary] = []
@@ -311,7 +312,15 @@ func _input(event: InputEvent) -> void:
 	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
 		return
 
-	if event.is_action_pressed("dev_reset") or event.is_action_pressed("dev_reset_save") or event.is_action_pressed("dev_class_reset"):
+	if event.is_action_pressed("dev_reset"):
+		return
+	if event.is_action_pressed("dev_reset_save"):
+		_toggle_god_mode()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("dev_class_reset"):
+		_grant_debug_resources()
+		get_viewport().set_input_as_handled()
 		return
 
 	if event.is_action_pressed("toggle_build"):
@@ -419,6 +428,32 @@ func _toggle_debug_mode_and_grant_resources() -> void:
 		if item_id != "" and amount > 0:
 			inventory.add_item(item_id, amount)
 	print("DEBUG: Added currency and test resources")
+
+
+func _toggle_god_mode() -> void:
+	_god_mode = not _god_mode
+	if _god_mode:
+		damage_multiplier = 10.0
+		move_speed_multiplier = 2.0
+		max_hp = max_hp * 5
+		current_hp = max_hp
+		hp_changed.emit(current_hp, max_hp)
+		show_status_message("GOD MODE ON", Color(1.0, 0.85, 0.2, 1.0), 2.0)
+	else:
+		damage_multiplier = 1.0
+		move_speed_multiplier = 1.0
+		_refresh_all_stats()
+		current_hp = max_hp
+		hp_changed.emit(current_hp, max_hp)
+		show_status_message("GOD MODE OFF", Color(0.7, 0.7, 0.7, 1.0), 2.0)
+
+
+func _grant_debug_resources() -> void:
+	inventory.add_item("gold", 100)
+	inventory.add_item("silver", 100)
+	inventory.add_item("copper", 1000)
+	inventory.add_item("talent_shard", 50)
+	show_status_message("DEBUG: +100G +100S +1000C +50 shards", Color(0.5, 1.0, 0.5, 1.0), 2.0)
 
 
 func _try_interact() -> void:
@@ -588,7 +623,7 @@ func request_tavern_menu(facility) -> void:
 
 
 func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
-	if is_dead or invincible_time_left > 0.0:
+	if is_dead or invincible_time_left > 0.0 or _god_mode:
 		return
 	var effective_dodge: float = dodge_chance
 	if legend_dodge_on_sprint and sprint_skill_time_left > 0.0:
