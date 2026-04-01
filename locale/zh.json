@@ -561,5 +561,14 @@
   "enemy_shadow": "暗影",
   "enemy_shield_orc": "盾牌獸人",
   "enemy_zombie": "殭屍",
-  "enemy_spider": "蜘蛛"
+  "enemy_spider": "蜘蛛",
+  "death_title": "你已陣亡",
+  "death_floor": "到達層數：%d",
+  "death_kills": "擊殺數：%d",
+  "death_coins_gained": "獲得金幣：%s",
+  "death_equips": "獲得裝備：%d 件",
+  "death_time": "遊玩時間：%s",
+  "death_coins_lost": "失去金幣：%s",
+  "death_durability_loss": "裝備耐久損失：20%",
+  "death_return_home": "返回家園"
 }

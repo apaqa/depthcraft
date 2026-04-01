@@ -111,6 +111,7 @@ var legend_eclipse_crit: bool = false
 var legend_chain_lightning: bool = false
 var legend_kill_count_bonus: bool = false
 var legend_kill_count: int = 0
+var _dungeon_run_time: float = 0.0
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
@@ -239,6 +240,8 @@ func _physics_process(delta: float) -> void:
 		attack_cooldown_left = max(attack_cooldown_left - delta, 0.0)
 	if consumable_cooldown_left > 0.0:
 		consumable_cooldown_left = max(consumable_cooldown_left - delta, 0.0)
+	if current_dungeon_floor > 0 and not is_dead:
+		_dungeon_run_time += delta
 	if torch_light_time_left > 0.0:
 		torch_light_time_left = max(torch_light_time_left - delta, 0.0)
 		torch_light.visible = true
@@ -1070,6 +1073,7 @@ func reset_all_talents() -> void:
 
 func start_dungeon_run() -> void:
 	dungeon_run_loot.clear()
+	_dungeon_run_time = 0.0
 	dungeon_max_hp_penalty = 0
 	dungeon_max_hp_penalty_percent = 0
 	dungeon_max_hp_reference = 0
@@ -1152,6 +1156,7 @@ func get_dungeon_run_summary() -> Dictionary:
 		"coins_lost": coins_lost,
 		"equips_gained": equips_gained,
 		"loot_items": dungeon_run_loot.duplicate(true),
+		"play_time": _dungeon_run_time,
 	}
 
 

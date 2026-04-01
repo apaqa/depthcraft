@@ -971,7 +971,7 @@ func show_death_screen(summary: Dictionary) -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	_death_dynamic_nodes.clear()
-	death_title_label.text = "你已陣亡"
+	death_title_label.text = LocaleManager.L("death_title")
 	death_title_label.add_theme_font_size_override("font_size", 36)
 	death_title_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2, 1.0))
 	death_summary_label.visible = false
@@ -981,6 +981,10 @@ func show_death_screen(summary: Dictionary) -> void:
 	var coins_gained: int = int(summary.get("coins_gained", 0))
 	var coins_lost: int = int(summary.get("coins_lost", 0))
 	var equips_gained: int = int(summary.get("equips_gained", 0))
+	var play_time_secs: int = int(summary.get("play_time", 0.0))
+	var time_minutes: int = play_time_secs / 60
+	var time_seconds: int = play_time_secs % 60
+	var time_str: String = "%02d:%02d" % [time_minutes, time_seconds]
 
 	var top_separator: HSeparator = HSeparator.new()
 	death_vbox.add_child(top_separator)
@@ -991,10 +995,11 @@ func show_death_screen(summary: Dictionary) -> void:
 	exploration_stats.alignment = BoxContainer.ALIGNMENT_CENTER
 	death_vbox.add_child(exploration_stats)
 	_death_dynamic_nodes.append(exploration_stats)
-	exploration_stats.add_child(_make_death_stat_label("到達層數：%d" % floor_num, Color(1.0, 1.0, 1.0, 1.0), 16))
-	exploration_stats.add_child(_make_death_stat_label("擊殺數：%d" % kills_num, Color(1.0, 1.0, 1.0, 1.0), 16))
-	exploration_stats.add_child(_make_death_stat_label("獲得金幣：%s" % _format_currency_text(coins_gained), Color(1.0, 1.0, 1.0, 1.0), 16))
-	exploration_stats.add_child(_make_death_stat_label("獲得裝備：%d 件" % equips_gained, Color(1.0, 1.0, 1.0, 1.0), 16))
+	exploration_stats.add_child(_make_death_stat_label(LocaleManager.L("death_floor") % floor_num, Color(1.0, 1.0, 1.0, 1.0), 16))
+	exploration_stats.add_child(_make_death_stat_label(LocaleManager.L("death_kills") % kills_num, Color(1.0, 1.0, 1.0, 1.0), 16))
+	exploration_stats.add_child(_make_death_stat_label(LocaleManager.L("death_coins_gained") % _format_currency_text(coins_gained), Color(1.0, 1.0, 1.0, 1.0), 16))
+	exploration_stats.add_child(_make_death_stat_label(LocaleManager.L("death_equips") % equips_gained, Color(1.0, 1.0, 1.0, 1.0), 16))
+	exploration_stats.add_child(_make_death_stat_label(LocaleManager.L("death_time") % time_str, Color(1.0, 1.0, 1.0, 1.0), 16))
 
 	var middle_separator: HSeparator = HSeparator.new()
 	death_vbox.add_child(middle_separator)
@@ -1005,8 +1010,8 @@ func show_death_screen(summary: Dictionary) -> void:
 	loss_stats.alignment = BoxContainer.ALIGNMENT_CENTER
 	death_vbox.add_child(loss_stats)
 	_death_dynamic_nodes.append(loss_stats)
-	loss_stats.add_child(_make_death_stat_label("失去金幣：%s" % _format_currency_text(coins_lost), Color(1.0, 0.35, 0.35, 1.0), 16))
-	loss_stats.add_child(_make_death_stat_label("裝備耐久損失：20%", Color(1.0, 0.35, 0.35, 1.0), 16))
+	loss_stats.add_child(_make_death_stat_label(LocaleManager.L("death_coins_lost") % _format_currency_text(coins_lost), Color(1.0, 0.35, 0.35, 1.0), 16))
+	loss_stats.add_child(_make_death_stat_label(LocaleManager.L("death_durability_loss"), Color(1.0, 0.35, 0.35, 1.0), 16))
 
 	var spacer: Control = Control.new()
 	spacer.custom_minimum_size = Vector2(0.0, 20.0)
@@ -1019,7 +1024,7 @@ func show_death_screen(summary: Dictionary) -> void:
 	_death_dynamic_nodes.append(button_center)
 
 	var return_btn: Button = Button.new()
-	return_btn.text = "返回家園"
+	return_btn.text = LocaleManager.L("death_return_home")
 	return_btn.custom_minimum_size = Vector2(200.0, 50.0)
 	return_btn.add_theme_font_size_override("font_size", 15)
 	var btn_style: StyleBoxFlat = StyleBoxFlat.new()

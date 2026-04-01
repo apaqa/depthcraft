@@ -561,5 +561,14 @@
   "enemy_shadow": "Shadow",
   "enemy_shield_orc": "Shield Orc",
   "enemy_zombie": "Zombie",
-  "enemy_spider": "Spider"
+  "enemy_spider": "Spider",
+  "death_title": "You Have Fallen",
+  "death_floor": "Floor Reached: %d",
+  "death_kills": "Kills: %d",
+  "death_coins_gained": "Coins Gained: %s",
+  "death_equips": "Equipment Found: %d",
+  "death_time": "Time: %s",
+  "death_coins_lost": "Coins Lost: %s",
+  "death_durability_loss": "Equipment Durability: -20%",
+  "death_return_home": "Return Home"
 }
