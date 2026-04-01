@@ -778,5 +778,21 @@
   "boss_15_intro": "暗影在角落凝聚成形...",
   "boss_20_intro": "地面開始龜裂，岩漿從裂縫中湧出...",
   "boss_25_intro": "深淵的守護者注視著你...",
-  "boss_30_intro": "你感受到了前所未有的壓迫感..."
+  "boss_30_intro": "你感受到了前所未有的壓迫感...",
+  "keybind_title": "快捷鍵",
+  "keybind_move": "移動",
+  "keybind_attack": "主要攻擊",
+  "keybind_charge": "蓄力攻擊",
+  "keybind_skills": "技能 1 / 2 / 3",
+  "keybind_interact": "互動 / 撿取",
+  "keybind_consumables": "消耗品 1 / 2",
+  "keybind_inventory": "背包",
+  "keybind_equipment": "裝備面板",
+  "keybind_skill_panel": "技能面板",
+  "keybind_build": "建造模式",
+  "keybind_status": "狀態面板",
+  "keybind_sprint": "衝刺",
+  "keybind_help": "快捷鍵說明",
+  "keybind_pause": "暫停 / 設定",
+  "keybind_close_hint": "按 F1 或 ESC 關閉"
 }

@@ -1248,6 +1248,7 @@ func _configure_input_actions() -> void:
 	_set_key_action("skill_slot_3", KEY_V)
 	_set_key_action("toggle_map", KEY_M)
 	_set_key_action("toggle_status", KEY_TAB)
+	_set_key_action("help", KEY_F1)
 	_set_mouse_action("attack_secondary", MOUSE_BUTTON_RIGHT)
 
 

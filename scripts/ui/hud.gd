@@ -69,6 +69,7 @@ var _blessing_stage: int = 0
 var _blessing_pending_theme: String = ""
 var _blessing_reroll_count: int = 0
 var _status_panel: BlessingStatusPanel = null
+var _help_panel: KeybindHelpPanel = null
 var current_level_id: String = ""
 var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
@@ -477,6 +478,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("toggle_codex") and (player == null or not player.building_system.is_build_mode_active()):
 		_toggle_codex_panel()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("help"):
+		_toggle_help_panel()
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel") and inventory_panel.visible:
 		inventory_panel.visible = false
 		_on_menu_closed()
@@ -693,6 +697,15 @@ func _toggle_achievement_panel() -> void:
 	_close_all_menus()
 	achievement_panel.open_panel()
 	player.set_ui_blocked(true)
+
+
+func _toggle_help_panel() -> void:
+	if _help_panel == null:
+		_help_panel = KeybindHelpPanel.new()
+		_help_panel.name = "KeybindHelpPanel"
+		_help_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(_help_panel)
+	_help_panel.toggle()
 
 
 func _toggle_codex_panel() -> void:

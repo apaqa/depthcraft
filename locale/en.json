@@ -778,5 +778,21 @@
   "boss_15_intro": "Shadows coalesce in the corner...",
   "boss_20_intro": "The ground cracks, lava seeps through...",
   "boss_25_intro": "The Abyss Warden gazes upon you...",
-  "boss_30_intro": "An overwhelming pressure fills the air..."
+  "boss_30_intro": "An overwhelming pressure fills the air...",
+  "keybind_title": "Keybinds",
+  "keybind_move": "Move",
+  "keybind_attack": "Primary Attack",
+  "keybind_charge": "Charge Attack",
+  "keybind_skills": "Skill 1 / 2 / 3",
+  "keybind_interact": "Interact / Pick up",
+  "keybind_consumables": "Consumable 1 / 2",
+  "keybind_inventory": "Inventory",
+  "keybind_equipment": "Equipment Panel",
+  "keybind_skill_panel": "Skill Panel",
+  "keybind_build": "Build Mode",
+  "keybind_status": "Status Panel",
+  "keybind_sprint": "Sprint",
+  "keybind_help": "Keybind Help",
+  "keybind_pause": "Pause / Settings",
+  "keybind_close_hint": "Press F1 or ESC to close"
 }
