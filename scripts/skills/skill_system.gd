@@ -348,11 +348,22 @@ func _get_player_mouse_pos() -> Vector2:
 	return player.get_global_mouse_position()
 
 
+# --- Audio ---
+
+func _play_skill_sound(skill_id: String) -> void:
+	var audio_manager: Node = get_node_or_null("/root/AudioManager")
+	if audio_manager == null:
+		return
+	if audio_manager.has_method("play_sfx"):
+		audio_manager.play_sfx("skill_" + skill_id)
+
+
 # --- Skill effects ---
 
 func _cast_shield_bash(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("shield_bash")
 	var range_px: float = float(def.get("range", 60.0))
 	var angle_deg: float = float(def.get("angle", 90.0))
 	var stun_dur: float = float(def.get("stun_duration", 1.0))
@@ -377,6 +388,7 @@ func _cast_shield_bash(def: Dictionary) -> bool:
 func _cast_war_cry(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("war_cry")
 	var slow_range: float = float(def.get("slow_range", 60.0))
 	var slow_pct: float = float(def.get("slow_pct", 0.5))
 	var slow_dur: float = float(def.get("slow_duration", 3.0))
@@ -394,6 +406,7 @@ func _cast_war_cry(def: Dictionary) -> bool:
 func _cast_leap_slam(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("leap_slam")
 	var leap_range: float = float(def.get("range", 150.0))
 	var aoe_radius: float = float(def.get("aoe_radius", 80.0))
 	var dmg_mult: float = float(def.get("damage_mult", 2.0))
@@ -427,6 +440,7 @@ func _cast_leap_slam(def: Dictionary) -> bool:
 func _cast_dodge_roll(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("dodge_roll")
 	var distance: float = float(def.get("dash_distance", 100.0))
 	var invuln: float = float(def.get("invuln_duration", 0.3))
 	var direction: Vector2 = (_get_player_mouse_pos() - player.global_position).normalized()
@@ -459,6 +473,7 @@ func _cast_dodge_roll(def: Dictionary) -> bool:
 func _cast_rain_of_arrows(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("rain_of_arrows")
 	var max_range: float = float(def.get("range", 200.0))
 	var aoe_radius: float = float(def.get("aoe_radius", 70.0))
 	var duration: float = float(def.get("duration", 3.0))
@@ -523,6 +538,7 @@ func _spawn_ground_aoe_zone(pos: Vector2, radius: float, duration: float, interv
 func _cast_trap(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("trap")
 	var dmg_mult: float = float(def.get("damage_mult", 1.5))
 	var slow_pct: float = float(def.get("slow_pct", 0.5))
 	var slow_dur: float = float(def.get("slow_duration", 3.0))
@@ -582,6 +598,7 @@ func _cast_trap(def: Dictionary) -> bool:
 func _cast_blink(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("blink")
 	var max_range: float = float(def.get("range", 150.0))
 	var target_pos: Vector2 = _get_player_mouse_pos()
 	var dist: float = player.global_position.distance_to(target_pos)
@@ -601,6 +618,7 @@ func _cast_blink(def: Dictionary) -> bool:
 func _cast_frost_nova(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("frost_nova")
 	var dmg_mult: float = float(def.get("damage_mult", 1.2))
 	var aoe_radius: float = float(def.get("aoe_radius", 90.0))
 	var freeze_dur: float = float(def.get("freeze_duration", 2.0))
@@ -622,6 +640,7 @@ func _cast_frost_nova(def: Dictionary) -> bool:
 func _cast_meteor(def: Dictionary) -> bool:
 	if player == null:
 		return false
+	_play_skill_sound("meteor")
 	var max_range: float = float(def.get("range", 200.0))
 	var delay: float = float(def.get("delay", 1.0))
 	var dmg_mult: float = float(def.get("damage_mult", 3.0))
