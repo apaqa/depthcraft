@@ -750,5 +750,11 @@
   "cycle_modifier_subtitle": "選擇修飾器增加難度，獲得額外獎勵",
   "cycle_modifier_skip": "不選修飾器",
   "cycle_modifier_start": "開始冒險",
-  "famine_cooking_blocked": "飢荒修飾器：烹飪 buff 無效"
+  "famine_cooking_blocked": "飢荒修飾器：烹飪 buff 無效",
+  "boss_skeleton_king": "骷髏王",
+  "boss_slime_mother": "史萊姆母體",
+  "boss_shadow_mage": "暗影巫師",
+  "boss_lava_golem": "熔岩巨獸",
+  "boss_abyss_warden": "深淵看守者",
+  "boss_lord_of_abyss": "深淵之主"
 }

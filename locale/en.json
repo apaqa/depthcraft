@@ -750,5 +750,11 @@
   "cycle_modifier_subtitle": "Select modifiers to increase difficulty for bonus rewards",
   "cycle_modifier_skip": "No Modifiers",
   "cycle_modifier_start": "Begin Adventure",
-  "famine_cooking_blocked": "Famine modifier: cooking buffs disabled"
+  "famine_cooking_blocked": "Famine modifier: cooking buffs disabled",
+  "boss_skeleton_king": "Skeleton King",
+  "boss_slime_mother": "Slime Mother",
+  "boss_shadow_mage": "Shadow Mage",
+  "boss_lava_golem": "Lava Golem",
+  "boss_abyss_warden": "Abyss Warden",
+  "boss_lord_of_abyss": "Lord of the Abyss"
 }

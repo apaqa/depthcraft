@@ -5,13 +5,15 @@ const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
 const LEGENDARY_ITEMS: Script = preload("res://scripts/dungeon/legendary_items.gd")
 const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
 
-const AOE_COOLDOWN: float = 5.0
-const AOE_RADIUS: float = 56.0
-
 var floor_value: int = 1
-var aoe_cooldown_left: float = AOE_COOLDOWN
+var _aoe_cooldown: float = 5.0
+var _aoe_radius: float = 56.0
+var _aoe_cooldown_left: float = 5.0
 var rewards_granted: bool = false
 var buff_selection_requested: bool = false
+var _boss_abilities: Array[String] = ["melee_slam"]
+var _ability_cooldowns: Dictionary = {}
+var _split_triggered: bool = false
 
 
 func _ready() -> void:
@@ -27,22 +29,48 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	loot_parent = loot_root
 	floor_value = floor_number
 	var normal_stats: Dictionary = _get_normal_enemy_stats(floor_number)
-	max_hp = int(normal_stats["hp"]) * 10
+	var boss_info: Dictionary = BossData.get_boss_data(floor_number)
+	var hp_mult: float = float(boss_info.get("hp_mult", 1.0))
+	var atk_mult: float = float(boss_info.get("atk_mult", 1.0))
+	max_hp = int(round(float(int(normal_stats["hp"])) * 10.0 * hp_mult))
 	current_hp = max_hp
-	damage = int(round(float(int(normal_stats["damage"])) * 1.8))
-	speed = 32.0
+	damage = int(round(float(int(normal_stats["damage"])) * 1.8 * atk_mult))
+	speed = float(boss_info.get("speed", 32.0))
 	detection_range = 190.0
 	attack_range = 32.0
 	attack_cooldown = 1.1
+	_aoe_cooldown = float(boss_info.get("aoe_cooldown", 5.0))
+	_aoe_radius = float(boss_info.get("aoe_radius", 56.0))
+	_aoe_cooldown_left = _aoe_cooldown
 	drop_table.clear()
+	# Apply boss color
+	var boss_color: Variant = boss_info.get("color", null)
+	if boss_color is Color and animated_sprite != null:
+		animated_sprite.modulate = boss_color
+	# Set abilities
+	var abilities_raw: Variant = boss_info.get("abilities", [])
+	_boss_abilities.clear()
+	for ab: Variant in (abilities_raw as Array):
+		_boss_abilities.append(str(ab))
+	_ability_cooldowns = {
+		"teleport": 0.0,
+		"dash_attack": 0.0,
+		"ground_slam": 0.0,
+		"summon_minions": 0.0,
+		"projectile_burst": 0.0,
+	}
 	_update_hp_bar()
 
 
 func _physics_process(delta: float) -> void:
-	aoe_cooldown_left = max(aoe_cooldown_left - delta, 0.0)
-	if not ai_paused and not is_dead and aoe_cooldown_left <= 0.0:
-		_perform_aoe()
-		aoe_cooldown_left = AOE_COOLDOWN
+	_aoe_cooldown_left = max(_aoe_cooldown_left - delta, 0.0)
+	for key: String in _ability_cooldowns.keys():
+		_ability_cooldowns[key] = maxf(float(_ability_cooldowns[key]) - delta, 0.0)
+	if not ai_paused and not is_dead:
+		if _aoe_cooldown_left <= 0.0:
+			_perform_boss_ability()
+			_aoe_cooldown_left = _aoe_cooldown
+		_check_split()
 	super._physics_process(delta)
 
 
@@ -82,22 +110,206 @@ func _drop_gold_loot() -> void:
 	loot_parent.add_child(drop)
 
 
+func _perform_boss_ability() -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if global_position.distance_to(target.global_position) > detection_range * 1.2:
+		return
+	# Pick an available ability
+	for ab: String in _boss_abilities:
+		if ab == "melee_slam":
+			_perform_aoe()
+			return
+		if ab == "teleport" and float(_ability_cooldowns.get("teleport", 0.0)) <= 0.0:
+			_perform_teleport()
+			return
+		if ab == "dash_attack" and float(_ability_cooldowns.get("dash_attack", 0.0)) <= 0.0:
+			_perform_dash()
+			return
+		if ab == "ground_slam" and float(_ability_cooldowns.get("ground_slam", 0.0)) <= 0.0:
+			_perform_ground_slam()
+			return
+		if ab == "summon_minions" and float(_ability_cooldowns.get("summon_minions", 0.0)) <= 0.0:
+			_perform_summon()
+			return
+		if ab == "projectile_burst" and float(_ability_cooldowns.get("projectile_burst", 0.0)) <= 0.0:
+			_perform_projectile_burst()
+			return
+	# Fallback to basic AOE
+	_perform_aoe()
+
+
+func _check_split() -> void:
+	if _split_triggered:
+		return
+	if not _boss_abilities.has("split_on_half"):
+		return
+	if current_hp <= max_hp / 2:
+		_split_triggered = true
+		_perform_split()
+
+
 func _perform_aoe() -> void:
 	if target == null or not is_instance_valid(target):
 		return
 	if global_position.distance_to(target.global_position) > detection_range * 1.1:
 		return
-	_spawn_aoe_indicator()
+	_spawn_aoe_indicator(_aoe_radius)
 	for player_ref in get_tree().get_nodes_in_group("player"):
 		if player_ref == null or not is_instance_valid(player_ref):
 			continue
-		if player_ref.global_position.distance_to(global_position) > AOE_RADIUS:
+		if player_ref.global_position.distance_to(global_position) > _aoe_radius:
 			continue
 		if player_ref.has_method("take_damage"):
 			player_ref.take_damage(int(round(damage * 0.9)), (player_ref.global_position - global_position).normalized())
 
 
-func _spawn_aoe_indicator() -> void:
+func _perform_teleport() -> void:
+	_ability_cooldowns["teleport"] = 5.0
+	var offset: Vector2 = Vector2(randf_range(-80, 80), randf_range(-80, 80))
+	global_position += offset
+	# Visual flash
+	if animated_sprite != null:
+		var tween: Tween = create_tween()
+		tween.tween_property(animated_sprite, "modulate:a", 0.2, 0.1)
+		tween.tween_property(animated_sprite, "modulate:a", 1.0, 0.15)
+	# Fire projectile burst after teleport
+	if _boss_abilities.has("projectile_burst"):
+		_perform_projectile_burst()
+
+
+func _perform_dash() -> void:
+	_ability_cooldowns["dash_attack"] = 6.0
+	if target == null or not is_instance_valid(target):
+		return
+	var dash_dir: Vector2 = (target.global_position - global_position).normalized()
+	var dash_dist: float = 200.0
+	# Damage players in path
+	for player_ref in get_tree().get_nodes_in_group("player"):
+		if player_ref == null or not is_instance_valid(player_ref):
+			continue
+		var to_player: Vector2 = player_ref.global_position - global_position
+		var proj: float = to_player.dot(dash_dir)
+		if proj < 0.0 or proj > dash_dist:
+			continue
+		var perp_dist: float = absf(to_player.cross(dash_dir))
+		if perp_dist < 24.0 and player_ref.has_method("take_damage"):
+			player_ref.take_damage(int(round(damage * 1.2)), dash_dir)
+	global_position += dash_dir * dash_dist
+	_spawn_aoe_indicator(32.0)
+
+
+func _perform_ground_slam() -> void:
+	_ability_cooldowns["ground_slam"] = 8.0
+	_spawn_aoe_indicator(_aoe_radius * 1.5)
+	for player_ref in get_tree().get_nodes_in_group("player"):
+		if player_ref == null or not is_instance_valid(player_ref):
+			continue
+		if player_ref.global_position.distance_to(global_position) > _aoe_radius * 1.5:
+			continue
+		if player_ref.has_method("take_damage"):
+			player_ref.take_damage(int(round(damage * 1.5)), (player_ref.global_position - global_position).normalized())
+	# Spawn fire patches
+	for i: int in range(3):
+		_spawn_fire_patch(global_position + Vector2(randf_range(-48, 48), randf_range(-48, 48)))
+
+
+func _perform_summon() -> void:
+	_ability_cooldowns["summon_minions"] = 15.0
+	var parent_node: Node = get_parent()
+	if parent_node == null:
+		return
+	for i: int in range(2):
+		var minion: Node = preload("res://scenes/enemies/melee_enemy.tscn").instantiate()
+		minion.global_position = global_position + Vector2(randf_range(-32, 32), randf_range(-32, 32))
+		if minion.has_method("configure_for_floor") and target != null:
+			minion.configure_for_floor(target, floor_value, loot_parent)
+		minion.modulate = Color(0.6, 0.6, 0.8, 1.0)
+		parent_node.add_child(minion)
+
+
+func _perform_projectile_burst() -> void:
+	_ability_cooldowns["projectile_burst"] = 4.0
+	if target == null or not is_instance_valid(target):
+		return
+	var base_dir: Vector2 = (target.global_position - global_position).normalized()
+	var parent_node: Node = get_parent()
+	if parent_node == null:
+		return
+	for i: int in range(3):
+		var angle_offset: float = deg_to_rad(float(i - 1) * 20.0)
+		var proj_dir: Vector2 = base_dir.rotated(angle_offset)
+		if has_method("_fire_projectile"):
+			_fire_projectile(proj_dir, float(damage) * 0.5)
+		else:
+			# Fallback: simple damage at distance
+			for player_ref in get_tree().get_nodes_in_group("player"):
+				if player_ref == null or not is_instance_valid(player_ref):
+					continue
+				var to_player: Vector2 = player_ref.global_position - global_position
+				if to_player.dot(proj_dir) > 0 and to_player.length() < 150.0:
+					var perp: float = absf(to_player.cross(proj_dir))
+					if perp < 16.0 and player_ref.has_method("take_damage"):
+						player_ref.take_damage(int(round(damage * 0.5)), proj_dir)
+
+
+func _perform_split() -> void:
+	var parent_node: Node = get_parent()
+	if parent_node == null:
+		return
+	for i: int in range(2):
+		var mini_boss: Node = preload("res://scenes/enemies/boss_enemy.tscn").instantiate()
+		mini_boss.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
+		if mini_boss.has_method("configure_for_floor") and target != null:
+			mini_boss.configure_for_floor(target, floor_value, loot_parent)
+		# Half-size, quarter HP, no further splitting
+		mini_boss.scale = Vector2.ONE * 1.1
+		mini_boss.set("max_hp", int(max_hp / 4))
+		mini_boss.set("current_hp", int(max_hp / 4))
+		mini_boss.set("damage", int(damage / 2))
+		mini_boss.set("_split_triggered", true)
+		mini_boss.modulate = Color(0.5, 0.9, 0.5, 1.0)
+		if mini_boss.has_signal("died"):
+			var level: Variant = get_parent()
+			while level != null and not level.has_method("_on_enemy_died"):
+				level = level.get_parent()
+			if level != null:
+				mini_boss.died.connect(level._on_enemy_died.bind(mini_boss))
+		parent_node.add_child(mini_boss)
+
+
+func _spawn_fire_patch(pos: Vector2) -> void:
+	var patch: Polygon2D = Polygon2D.new()
+	patch.color = Color(1.0, 0.3, 0.1, 0.6)
+	var fire_radius: float = 20.0
+	var fire_points: PackedVector2Array = PackedVector2Array()
+	for i: int in range(12):
+		fire_points.append(Vector2.RIGHT.rotated(TAU * float(i) / 12.0) * fire_radius)
+	patch.polygon = fire_points
+	patch.global_position = pos
+	var parent_node: Node = get_parent()
+	if parent_node != null:
+		parent_node.add_child(patch)
+	# Fire damage tick
+	var timer_count: int = 0
+	var fire_timer: Timer = Timer.new()
+	fire_timer.wait_time = 0.5
+	fire_timer.autostart = true
+	fire_timer.timeout.connect(func() -> void:
+		timer_count += 1
+		if timer_count >= 6:
+			patch.queue_free()
+			return
+		for player_ref in get_tree().get_nodes_in_group("player"):
+			if player_ref == null or not is_instance_valid(player_ref):
+				continue
+			if player_ref.global_position.distance_to(pos) <= fire_radius and player_ref.has_method("take_damage"):
+				player_ref.take_damage(int(round(damage * 0.3)), Vector2.ZERO)
+	)
+	patch.add_child(fire_timer)
+
+
+func _spawn_aoe_indicator(radius: float) -> void:
 	var ring: Line2D = Line2D.new()
 	ring.width = 3.0
 	ring.default_color = Color(1.0, 0.78, 0.2, 0.95)
@@ -105,7 +317,7 @@ func _spawn_aoe_indicator() -> void:
 	var points: PackedVector2Array = PackedVector2Array()
 	for index in range(24):
 		var angle: float = TAU * float(index) / 24.0
-		points.append(Vector2.RIGHT.rotated(angle) * AOE_RADIUS)
+		points.append(Vector2.RIGHT.rotated(angle) * radius)
 	ring.points = points
 	ring.global_position = global_position
 	get_parent().add_child(ring)
