@@ -64,6 +64,7 @@ const BOTTOM_UI_GAP = 10.0
 var player: Node = null
 var inventory: Node = null
 var current_level: Node = null
+var _blessing_input_lock_msec: int = 0
 var current_level_id: String = ""
 var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
@@ -926,19 +927,26 @@ func _on_buff_chosen(buff_id: String) -> void:
 
 func open_blessing_selection(options: Array, level: Variant) -> void:
 	current_level = level
+	_blessing_input_lock_msec = Time.get_ticks_msec() + 500
+	buff_select.process_mode = Node.PROCESS_MODE_ALWAYS
 	buff_select.open_with_options(options, {})
 	buff_select.title_label.text = LocaleManager.L("blessing_select_title")
 	if player != null:
 		player.set_ui_blocked(true)
 	if current_level != null and current_level.has_method("set_gameplay_paused"):
 		current_level.set_gameplay_paused(true)
+	get_tree().paused = true
 	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_blessing_chosen):
 		buff_select.buff_chosen.connect(_on_blessing_chosen)
 
 
 func _on_blessing_chosen(blessing_id: String) -> void:
+	if Time.get_ticks_msec() < _blessing_input_lock_msec:
+		return
 	if buff_select.buff_chosen.is_connected(_on_blessing_chosen):
 		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
+	buff_select.process_mode = Node.PROCESS_MODE_INHERIT
+	get_tree().paused = false
 	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
 	if bs_node != null:
 		bs_node.add_blessing(blessing_id)
