@@ -14,6 +14,10 @@ func get_enemy_scale() -> float:
 	return 1.0 + float(current_cycle - 1) * 0.5
 
 
+func get_resource_scale() -> float:
+	return 1.0 + float(current_cycle - 1) * 0.05
+
+
 func is_prefix_enabled() -> bool:
 	return current_cycle >= 2
 

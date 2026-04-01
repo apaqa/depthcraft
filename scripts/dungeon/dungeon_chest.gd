@@ -85,12 +85,17 @@ func _apply_visuals() -> void:
 func _drop_loot() -> void:
 	if loot_root == null:
 		loot_root = get_parent()
+	var cycle_scale: float = 1.0
+	var cycle_mgr: Node = get_node_or_null("/root/CycleManager")
+	if cycle_mgr != null and cycle_mgr.has_method("get_resource_scale"):
+		cycle_scale = float(cycle_mgr.get_resource_scale())
 	var resources: Array[String] = ["wood", "stone", "iron_ore", "fiber", "talent_shard"]
 	var roll_count: int = randi_range(resource_rolls_min, resource_rolls_max)
 	for _idx in range(roll_count):
 		var drop: Node2D = LOOT_DROP_SCENE.instantiate() as Node2D
 		drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
-		drop.setup(resources.pick_random(), randi_range(1, 2))
+		var qty: int = maxi(int(round(float(randi_range(1, 2)) * cycle_scale)), 1)
+		drop.setup(resources.pick_random(), qty)
 		loot_root.add_child(drop)
 	if randf() <= equipment_drop_chance:
 		var equip_drop: Node2D = LOOT_DROP_SCENE.instantiate() as Node2D
@@ -99,7 +104,8 @@ func _drop_loot() -> void:
 		loot_root.add_child(equip_drop)
 	var gold_drop: Node2D = LOOT_DROP_SCENE.instantiate() as Node2D
 	gold_drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
-	gold_drop.setup("copper", randi_range(2, 5))
+	var copper_qty: int = maxi(int(round(float(randi_range(2, 5)) * cycle_scale)), 1)
+	gold_drop.setup("copper", copper_qty)
 	loot_root.add_child(gold_drop)
 
 

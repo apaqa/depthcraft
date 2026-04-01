@@ -356,6 +356,11 @@ func _drop_gold(coin_type: String, amount: int) -> void:
 	if loot_parent == null or amount <= 0:
 		return
 	var final_amount: int = amount
+	# Cycle resource scaling (+5% per cycle)
+	var cycle_mgr: Node = get_node_or_null("/root/CycleManager")
+	if cycle_mgr != null and cycle_mgr.has_method("get_resource_scale"):
+		final_amount = int(round(float(final_amount) * float(cycle_mgr.get_resource_scale())))
+	# No merchant modifier doubles gold
 	var cm: Node = get_node_or_null("/root/CycleModifier")
 	if cm != null and cm.has_method("is_modifier_active") and cm.is_modifier_active("no_merchant"):
 		final_amount = final_amount * 2
