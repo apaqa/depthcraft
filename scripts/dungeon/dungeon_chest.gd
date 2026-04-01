@@ -89,5 +89,5 @@ func _drop_loot() -> void:
 		loot_root.add_child(equip_drop)
 	var gold_drop: Node2D = LOOT_DROP_SCENE.instantiate() as Node2D
 	gold_drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
-	gold_drop.setup("copper", randi_range(5, 15))
+	gold_drop.setup("copper", randi_range(2, 5))
 	loot_root.add_child(gold_drop)

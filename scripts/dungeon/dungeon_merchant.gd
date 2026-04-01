@@ -7,7 +7,7 @@ const MERCHANT_TEXTURE = preload("res://assets/npc_merchant_2.png")
 const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 const SHOP_ITEMS = [
 	{"id": "bandage", "quantity": 1, "price": 5},
-	{"id": "bread", "quantity": 1, "price": 8},
+	{"id": "bread", "quantity": 1, "price": 5},
 	{"id": "torch", "quantity": 3, "price": 6},
 ]
 
@@ -331,6 +331,12 @@ func _close_shop() -> void:
 	_equipment_button = null
 
 
-func _calculate_equipment_price(floor_number: int, equipment_offer: Dictionary) -> int:
-	var affix_count: int = (equipment_offer.get("affixes", []) as Array).size()
-	return clampi(30 + floor_number * 4 + affix_count * 12, 42, 180)
+func _calculate_equipment_price(_floor_number: int, equipment_offer: Dictionary) -> int:
+	var rarity: String = str(equipment_offer.get("rarity", "Common"))
+	match rarity:
+		"Legendary":
+			return 10000
+		"Epic", "Rare":
+			return 300
+		_:
+			return 50

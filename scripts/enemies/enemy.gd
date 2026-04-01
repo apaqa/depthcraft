@@ -341,6 +341,8 @@ func _drop_loot() -> void:
 
 
 func _drop_gold_loot() -> void:
+	if not is_elite_enemy() and not is_boss_enemy() and randf() >= 0.25:
+		return
 	var currency_rewards: Array[Dictionary] = _build_currency_rewards(_currency_floor_value)
 	for reward: Dictionary in currency_rewards:
 		_drop_gold(str(reward.get("id", "")), int(reward.get("amount", 0)))
@@ -368,7 +370,7 @@ func _build_currency_rewards(target_floor: int) -> Array[Dictionary]:
 		if randf() <= 0.35:
 			rewards.append({"id": "copper", "amount": 1})
 	elif target_floor <= 15:
-		rewards.append({"id": "copper", "amount": randi_range(1, 3)})
+		rewards.append({"id": "copper", "amount": randi_range(1, 2)})
 	elif target_floor <= 20:
 		rewards.append({"id": "copper", "amount": randi_range(2, 5)})
 		if randf() <= 0.35:
@@ -380,9 +382,9 @@ func _build_currency_rewards(target_floor: int) -> Array[Dictionary]:
 
 func _build_elite_currency_bonus(target_floor: int) -> Dictionary:
 	if target_floor <= 10:
-		return {"id": "copper", "amount": 1}
+		return {"id": "copper", "amount": randi_range(3, 8)}
 	if target_floor <= 20:
-		return {"id": "silver", "amount": 1}
+		return {"id": "silver", "amount": randi_range(1, 2)}
 	return {"id": "gold", "amount": 1}
 
 

@@ -70,7 +70,17 @@ func _drop_loot() -> void:
 
 
 func _drop_gold_loot() -> void:
-	pass
+	if loot_parent == null:
+		return
+	var amount: int = randi_range(15, 30)
+	var coin_type: String = "copper"
+	if floor_value > 20:
+		coin_type = "silver"
+		amount = randi_range(1, 3)
+	var drop = LOOT_DROP_SCENE.instantiate()
+	drop.setup(coin_type, amount)
+	drop.global_position = global_position + Vector2(randf_range(-8.0, 8.0), randf_range(-8.0, 8.0))
+	loot_parent.add_child(drop)
 
 
 func _perform_aoe() -> void:

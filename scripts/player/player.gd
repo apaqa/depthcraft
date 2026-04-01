@@ -10,6 +10,9 @@ const TALENT_DATA: Script = preload("res://scripts/talent/talent_data.gd")
 const PLAYER_SAVE: Script = preload("res://scripts/player/player_save.gd")
 const LEGENDARY_ITEMS: Script = preload("res://scripts/dungeon/legendary_items.gd")
 const SKELETON_SERVANT_SCRIPT: Script = preload("res://scripts/player/skeleton_servant.gd")
+const PLAYER_PROJECTILE_SCRIPT: Script = preload("res://scripts/combat/player_projectile.gd")
+const PROJECTILE_ARROW_TEXTURE: Texture2D = preload("res://assets/icons/kyrise/arrow_01a.png")
+const PROJECTILE_ORB_TEXTURE: Texture2D = preload("res://assets/icons/kyrise/crystal_01a.png")
 
 signal interaction_prompt_changed(prompt_text: String)
 signal interaction_prompt_cleared
@@ -112,6 +115,11 @@ var legend_chain_lightning: bool = false
 var legend_kill_count_bonus: bool = false
 var legend_kill_count: int = 0
 var _dungeon_run_time: float = 0.0
+var _is_charging: bool = false
+var _charge_time: float = 0.0
+const _MAX_CHARGE: float = 2.0
+var _charge_bar_root: Node2D = null
+var _charge_bar_fill: Polygon2D = null
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
@@ -137,6 +145,7 @@ func _ready() -> void:
 	_recalculate_buff_state()
 	_refresh_all_stats()
 	_setup_torch_light()
+	_setup_charge_bar()
 	configure_for_network_role(load_persistent_state_on_ready)
 	var _bs: Node = get_node_or_null("/root/BlessingSystem")
 	if _bs != null and _bs.has_signal("blessings_changed") and not _bs.blessings_changed.is_connected(_refresh_all_stats):
@@ -259,6 +268,9 @@ func _physics_process(delta: float) -> void:
 	else:
 		sprint_skill_multiplier = 1.0
 		sprint_afterimage_timer = 0.0
+	if _is_charging and not is_dead and not in_menu:
+		_charge_time = minf(_charge_time + delta, _MAX_CHARGE)
+		_update_charge_bar()
 	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
 		return
 
@@ -314,6 +326,15 @@ func _input(event: InputEvent) -> void:
 
 	if event.is_action_pressed("attack") and not build_mode and not ui_blocked and not is_dead:
 		perform_attack()
+		get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("attack_secondary") and not build_mode and not ui_blocked and not is_dead:
+		_start_charge()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_released("attack_secondary") and _is_charging:
+		_release_charge()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -645,79 +666,284 @@ func perform_attack(override_direction: Vector2 = Vector2.ZERO) -> void:
 	last_attack_direction = attack_direction
 	attack_cooldown_left = get_attack_cooldown_duration()
 	AudioManager.play_sfx("attack_swing")
-	_spawn_attack_effect(attack_direction)
 	equipment_system.consume_attack_durability()
+	var guaranteed_crit_ready: bool = shadow_combo_crit and shadow_guaranteed_crit_ready
+	var class_id: String = _get_current_class_id()
+	if class_id == "ranger" or class_id == "mage":
+		_spawn_class_projectile(attack_direction, class_id, guaranteed_crit_ready)
+		_update_shadow_combo_state(false, guaranteed_crit_ready)
+		_save_persistent_state()
+		return
+	# Warrior fan/arc melee
+	_spawn_attack_effect(attack_direction)
 	var attack_shape: RectangleShape2D = RectangleShape2D.new()
-	attack_shape.size = Vector2(28, 20) * aoe_attack_multiplier
+	attack_shape.size = Vector2(48, 36) * aoe_attack_multiplier
 	var query: PhysicsShapeQueryParameters2D = PhysicsShapeQueryParameters2D.new()
 	query.shape = attack_shape
-	query.transform = Transform2D(attack_direction.angle(), global_position + _get_attack_offset(attack_direction))
+	query.transform = Transform2D(attack_direction.angle(), global_position + attack_direction.normalized() * 24.0 + Vector2(0, 2))
 	query.collision_mask = 4
 	var results: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(query)
 	var total_damage_dealt: int = 0
 	var attack_connected: bool = false
 	var crit_landed: bool = false
-	var guaranteed_crit_ready: bool = shadow_combo_crit and shadow_guaranteed_crit_ready
 	for result: Dictionary in results:
-		var collider: Variant = result.get("collider", null)
-		if collider == null or not collider.has_method("take_damage") or collider == self:
-			continue
-		if collider.has_method("is_player_owned_building") and collider.is_player_owned_building():
-			continue
-		var attack_damage: int = get_attack_damage()
-		if execute_skill_armed:
-			var execute_enemy_hp: int = int(collider.get("current_hp"))
-			var execute_enemy_max_hp: int = int(collider.get("max_hp"))
-			if execute_enemy_max_hp > 0 and float(execute_enemy_hp) / float(execute_enemy_max_hp) <= 0.3:
-				attack_damage *= 3
-			execute_skill_armed = false
-		var is_critical: bool = guaranteed_crit_ready
-		var total_crit_chance: float = player_stats.get_total_crit_chance() + crit_chance_bonus + _get_blessing_value("crit_rate_bonus")
-		if not is_critical and total_crit_chance > 0.0 and randf() < total_crit_chance:
-			is_critical = true
-		if is_critical:
-			var crit_multi: int = 4 if legend_eclipse_crit else 2
-			var crit_dmg_bonus: float = _get_blessing_value("crit_damage_bonus")
-			attack_damage = int(round(float(attack_damage) * (float(crit_multi) + crit_dmg_bonus)))
-			crit_landed = true
-		if player_stats.get_execute_bonus() > 0.0:
-			var enemy_hp: int = int(collider.get("current_hp"))
-			var enemy_max_hp: int = int(collider.get("max_hp"))
-			if enemy_max_hp > 0 and float(enemy_hp) / float(enemy_max_hp) <= 0.3:
-				attack_damage = int(round(float(attack_damage) * (1.0 + player_stats.get_execute_bonus())))
-		collider.take_damage(attack_damage, attack_direction)
-		if collider.has_method("apply_knockback"):
-			collider.apply_knockback(attack_direction, 120.0)
-		attack_connected = true
-		total_damage_dealt += attack_damage
-		_apply_blessing_on_hit(collider, attack_damage)
-		_handle_enemy_kill_trigger(collider)
-	var blessing_lifesteal: float = _get_blessing_value("lifesteal")
-	var total_lifesteal: float = lifesteal_ratio + equipment_lifesteal_ratio + blessing_lifesteal
-	var low_hp_threshold: float = _get_blessing_value("lifesteal_low_hp")
-	if low_hp_threshold > 0.0 and max_hp > 0 and float(current_hp) / float(max_hp) < low_hp_threshold:
-		total_lifesteal *= 2.0
-	if total_lifesteal > 0.0 and total_damage_dealt > 0:
-		heal(int(max(round(float(total_damage_dealt) * total_lifesteal), 1.0)))
-	if abyss_crit_heal and crit_landed:
-		var heal_amount: int = max(int(round(float(max_hp) * 0.05)), 1)
-		heal(heal_amount)
-		_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.55, 1.0, 0.7, 1.0))
-	if legend_crit_lifesteal and crit_landed and total_damage_dealt > 0:
-		heal(max(int(round(float(total_damage_dealt) * 0.10)), 1))
-	if crit_landed and _get_blessing_value("crit_shockwave") > 0.0:
-		_trigger_blessing_crit_shockwave(total_damage_dealt)
-	if attack_connected:
-		AudioManager.play_sfx("attack_hit")
-	if legend_chain_lightning and attack_connected and randf() < 0.20:
-		_trigger_chain_lightning()
-	_update_shadow_combo_state(attack_connected, guaranteed_crit_ready)
+		var hit_result: Dictionary = _apply_single_hit(result.get("collider", null), attack_direction, guaranteed_crit_ready)
+		if hit_result["damage"] > 0:
+			total_damage_dealt += hit_result["damage"]
+			if hit_result["crit"]:
+				crit_landed = true
+			attack_connected = true
+	_apply_post_attack_effects(total_damage_dealt, crit_landed, attack_connected, guaranteed_crit_ready)
 	# Also hit the closest nearby resource node (trees, rocks, ore)
 	var closest_resource: Variant = _get_closest_interactable()
 	if closest_resource != null and closest_resource.has_method("hit"):
 		last_interacted_resource = closest_resource
 		closest_resource.hit()
 	_save_persistent_state()
+
+
+func _apply_single_hit(collider: Variant, attack_direction: Vector2, guaranteed_crit: bool, damage_scale: float = 1.0) -> Dictionary:
+	if collider == null or not collider.has_method("take_damage") or collider == self:
+		return {"damage": 0, "crit": false}
+	if collider.has_method("is_player_owned_building") and collider.is_player_owned_building():
+		return {"damage": 0, "crit": false}
+	var attack_damage: int = int(round(float(get_attack_damage()) * damage_scale))
+	if execute_skill_armed:
+		var execute_enemy_hp: int = int(collider.get("current_hp"))
+		var execute_enemy_max_hp: int = int(collider.get("max_hp"))
+		if execute_enemy_max_hp > 0 and float(execute_enemy_hp) / float(execute_enemy_max_hp) <= 0.3:
+			attack_damage *= 3
+		execute_skill_armed = false
+	var is_critical: bool = guaranteed_crit
+	var total_crit_chance: float = player_stats.get_total_crit_chance() + crit_chance_bonus + _get_blessing_value("crit_rate_bonus")
+	if not is_critical and total_crit_chance > 0.0 and randf() < total_crit_chance:
+		is_critical = true
+	if is_critical:
+		var crit_multi: int = 4 if legend_eclipse_crit else 2
+		var crit_dmg_bonus: float = _get_blessing_value("crit_damage_bonus")
+		attack_damage = int(round(float(attack_damage) * (float(crit_multi) + crit_dmg_bonus)))
+	if player_stats.get_execute_bonus() > 0.0:
+		var enemy_hp: int = int(collider.get("current_hp"))
+		var enemy_max_hp: int = int(collider.get("max_hp"))
+		if enemy_max_hp > 0 and float(enemy_hp) / float(enemy_max_hp) <= 0.3:
+			attack_damage = int(round(float(attack_damage) * (1.0 + player_stats.get_execute_bonus())))
+	collider.take_damage(attack_damage, attack_direction)
+	if collider.has_method("apply_knockback"):
+		collider.apply_knockback(attack_direction, 120.0)
+	_apply_blessing_on_hit(collider, attack_damage)
+	_handle_enemy_kill_trigger(collider)
+	return {"damage": attack_damage, "crit": is_critical}
+
+
+func _apply_post_attack_effects(total_damage: int, crit_landed: bool, attack_connected: bool, guaranteed_crit_was_ready: bool) -> void:
+	var blessing_lifesteal: float = _get_blessing_value("lifesteal")
+	var total_lifesteal: float = lifesteal_ratio + equipment_lifesteal_ratio + blessing_lifesteal
+	var low_hp_threshold: float = _get_blessing_value("lifesteal_low_hp")
+	if low_hp_threshold > 0.0 and max_hp > 0 and float(current_hp) / float(max_hp) < low_hp_threshold:
+		total_lifesteal *= 2.0
+	if total_lifesteal > 0.0 and total_damage > 0:
+		heal(int(max(round(float(total_damage) * total_lifesteal), 1.0)))
+	if abyss_crit_heal and crit_landed:
+		var heal_amount: int = max(int(round(float(max_hp) * 0.05)), 1)
+		heal(heal_amount)
+		_show_floating_text(global_position, "+%d HP" % heal_amount, Color(0.55, 1.0, 0.7, 1.0))
+	if legend_crit_lifesteal and crit_landed and total_damage > 0:
+		heal(max(int(round(float(total_damage) * 0.10)), 1))
+	if crit_landed and _get_blessing_value("crit_shockwave") > 0.0:
+		_trigger_blessing_crit_shockwave(total_damage)
+	if attack_connected:
+		AudioManager.play_sfx("attack_hit")
+	if legend_chain_lightning and attack_connected and randf() < 0.20:
+		_trigger_chain_lightning()
+	_update_shadow_combo_state(attack_connected, guaranteed_crit_was_ready)
+
+
+func _spawn_class_projectile(attack_direction: Vector2, class_id: String, guaranteed_crit: bool) -> void:
+	var proj = PLAYER_PROJECTILE_SCRIPT.new()
+	var parent: Node = get_parent()
+	if parent == null:
+		parent = get_tree().current_scene
+	parent.add_child(proj)
+	proj.global_position = global_position
+	match class_id:
+		"ranger":
+			proj.setup(attack_direction, 300.0, 200.0, 0, PROJECTILE_ARROW_TEXTURE, self, guaranteed_crit)
+		"mage":
+			proj.setup(attack_direction, 200.0, 160.0, -1, PROJECTILE_ORB_TEXTURE, self, guaranteed_crit, Color(0.5, 0.7, 1.0, 1.0))
+
+
+func on_projectile_hit(collider: Variant, proj_direction: Vector2, guaranteed_crit: bool) -> void:
+	var hit_result: Dictionary = _apply_single_hit(collider, proj_direction, guaranteed_crit)
+	if hit_result["damage"] <= 0:
+		return
+	_apply_post_attack_effects(hit_result["damage"], hit_result["crit"], true, guaranteed_crit)
+
+
+func _setup_charge_bar() -> void:
+	_charge_bar_root = Node2D.new()
+	_charge_bar_root.position = Vector2(-12, -30)
+	_charge_bar_root.visible = false
+	add_child(_charge_bar_root)
+	var bar_bg: Polygon2D = Polygon2D.new()
+	bar_bg.color = Color(0.12, 0.12, 0.16, 0.9)
+	bar_bg.polygon = PackedVector2Array([Vector2.ZERO, Vector2(24, 0), Vector2(24, 4), Vector2(0, 4)])
+	_charge_bar_root.add_child(bar_bg)
+	_charge_bar_fill = Polygon2D.new()
+	_charge_bar_fill.color = Color(0.9, 0.55, 0.1, 1.0)
+	_charge_bar_fill.polygon = PackedVector2Array([Vector2.ZERO, Vector2(0, 0), Vector2(0, 4), Vector2(0, 4)])
+	_charge_bar_root.add_child(_charge_bar_fill)
+
+
+func _update_charge_bar() -> void:
+	if _charge_bar_fill == null:
+		return
+	var fill_ratio: float = _charge_time / _MAX_CHARGE
+	var fill_width: float = 24.0 * fill_ratio
+	_charge_bar_fill.polygon = PackedVector2Array([Vector2.ZERO, Vector2(fill_width, 0), Vector2(fill_width, 4), Vector2(0, 4)])
+	_charge_bar_fill.color = Color(0.9, lerp(0.55, 0.9, fill_ratio), lerp(0.1, 0.0, fill_ratio), 1.0)
+
+
+func _start_charge() -> void:
+	_is_charging = true
+	_charge_time = 0.0
+	if _charge_bar_root != null:
+		_charge_bar_root.visible = true
+	_update_charge_bar()
+
+
+func _release_charge() -> void:
+	_is_charging = false
+	if _charge_bar_root != null:
+		_charge_bar_root.visible = false
+	var saved_charge_time: float = _charge_time
+	var charge_ratio: float = saved_charge_time / _MAX_CHARGE
+	_charge_time = 0.0
+	if attack_cooldown_left > 0.0:
+		return
+	var class_id: String = _get_current_class_id()
+	attack_cooldown_left = get_attack_cooldown_duration() * 1.5
+	AudioManager.play_sfx("attack_swing")
+	equipment_system.consume_attack_durability()
+	match class_id:
+		"warrior":
+			_perform_charged_warrior(charge_ratio)
+		"ranger":
+			_perform_charged_ranger(saved_charge_time)
+		"mage":
+			_perform_charged_mage(charge_ratio)
+
+
+func _perform_charged_warrior(charge_ratio: float) -> void:
+	var attack_direction: Vector2 = _get_attack_direction()
+	last_attack_direction = attack_direction
+	_spawn_attack_effect(attack_direction)
+	var range_px: float = lerp(48.0, 96.0, charge_ratio)
+	var dmg_scale: float = lerp(1.0, 3.0, charge_ratio)
+	var attack_shape: RectangleShape2D = RectangleShape2D.new()
+	attack_shape.size = Vector2(range_px, range_px * 0.75) * aoe_attack_multiplier
+	var query: PhysicsShapeQueryParameters2D = PhysicsShapeQueryParameters2D.new()
+	query.shape = attack_shape
+	query.transform = Transform2D(attack_direction.angle(), global_position + attack_direction.normalized() * range_px * 0.5 + Vector2(0, 2))
+	query.collision_mask = 4
+	var results: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(query)
+	var guaranteed_crit: bool = shadow_combo_crit and shadow_guaranteed_crit_ready
+	var total_damage: int = 0
+	var crit_landed: bool = false
+	var connected: bool = false
+	for result: Dictionary in results:
+		var hit_result: Dictionary = _apply_single_hit(result.get("collider", null), attack_direction, guaranteed_crit, dmg_scale)
+		if hit_result["damage"] > 0:
+			total_damage += hit_result["damage"]
+			if hit_result["crit"]:
+				crit_landed = true
+			connected = true
+	_apply_post_attack_effects(total_damage, crit_landed, connected, guaranteed_crit)
+
+
+func _perform_charged_ranger(charge_time: float) -> void:
+	var arrow_count: int = 2
+	if charge_time >= 2.0:
+		arrow_count = 7
+	elif charge_time >= 1.5:
+		arrow_count = 5
+	elif charge_time >= 1.0:
+		arrow_count = 3
+	var attack_direction: Vector2 = _get_attack_direction()
+	last_attack_direction = attack_direction
+	var guaranteed_crit: bool = shadow_combo_crit and shadow_guaranteed_crit_ready
+	var spread_rad: float = deg_to_rad(12.0)
+	var base_angle: float = attack_direction.angle()
+	var parent: Node = get_parent()
+	if parent == null:
+		parent = get_tree().current_scene
+	for i: int in range(arrow_count):
+		var angle_offset: float = 0.0
+		if arrow_count > 1:
+			angle_offset = lerp(-spread_rad, spread_rad, float(i) / float(arrow_count - 1))
+		var dir: Vector2 = Vector2.from_angle(base_angle + angle_offset)
+		var proj = PLAYER_PROJECTILE_SCRIPT.new()
+		parent.add_child(proj)
+		proj.global_position = global_position
+		proj.setup(dir, 300.0, 200.0, 0, PROJECTILE_ARROW_TEXTURE, self, guaranteed_crit)
+	_update_shadow_combo_state(false, guaranteed_crit)
+
+
+func _perform_charged_mage(charge_ratio: float) -> void:
+	var target_pos: Vector2 = get_global_mouse_position()
+	var radius: float = lerp(32.0, 80.0, charge_ratio)
+	var guaranteed_crit: bool = shadow_combo_crit and shadow_guaranteed_crit_ready
+	_spawn_mage_aoe_indicator(target_pos, radius)
+	var tween: Tween = create_tween()
+	tween.tween_interval(0.3)
+	tween.tween_callback(_trigger_mage_aoe.bind(target_pos, radius, guaranteed_crit))
+	_update_shadow_combo_state(false, guaranteed_crit)
+
+
+func _spawn_mage_aoe_indicator(center: Vector2, radius: float) -> void:
+	var ring: Line2D = Line2D.new()
+	ring.width = 2.0
+	ring.default_color = Color(0.5, 0.7, 1.0, 0.8)
+	ring.closed = true
+	var points: PackedVector2Array = PackedVector2Array()
+	for i: int in range(20):
+		var angle: float = TAU * float(i) / 20.0
+		points.append(Vector2.RIGHT.rotated(angle) * radius)
+	ring.points = points
+	ring.global_position = center
+	var parent: Node = get_parent()
+	if parent == null:
+		parent = get_tree().current_scene
+	parent.add_child(ring)
+	var tween: Tween = ring.create_tween()
+	tween.tween_property(ring, "modulate:a", 0.0, 0.35)
+	tween.tween_callback(ring.queue_free)
+
+
+func _trigger_mage_aoe(target_pos: Vector2, radius: float, guaranteed_crit: bool) -> void:
+	if not is_instance_valid(self):
+		return
+	var attack_shape: CircleShape2D = CircleShape2D.new()
+	attack_shape.radius = radius
+	var query: PhysicsShapeQueryParameters2D = PhysicsShapeQueryParameters2D.new()
+	query.shape = attack_shape
+	query.transform = Transform2D(0.0, target_pos)
+	query.collision_mask = 4
+	var results: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(query)
+	var total_damage: int = 0
+	var crit_landed: bool = false
+	var connected: bool = false
+	for result: Dictionary in results:
+		var collider: Variant = result.get("collider", null)
+		var dir_to_collider: Vector2 = Vector2.ZERO
+		if collider != null and "global_position" in collider:
+			dir_to_collider = (Vector2(collider.global_position) - target_pos).normalized()
+		var hit_result: Dictionary = _apply_single_hit(collider, dir_to_collider, guaranteed_crit)
+		if hit_result["damage"] > 0:
+			total_damage += hit_result["damage"]
+			if hit_result["crit"]:
+				crit_landed = true
+			connected = true
+	_apply_post_attack_effects(total_damage, crit_landed, connected, guaranteed_crit)
 
 
 func _handle_enemy_kill_trigger(enemy_ref: Variant) -> void:
@@ -962,6 +1188,17 @@ func _configure_input_actions() -> void:
 	_set_key_action("skill_slot_2", KEY_X)
 	_set_key_action("skill_slot_3", KEY_V)
 	_set_key_action("toggle_map", KEY_M)
+	_set_mouse_action("attack_secondary", MOUSE_BUTTON_RIGHT)
+
+
+func _set_mouse_action(action_name: String, button: MouseButton) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name)
+	for event in InputMap.action_get_events(action_name):
+		InputMap.action_erase_event(action_name, event)
+	var mouse_event: InputEventMouseButton = InputEventMouseButton.new()
+	mouse_event.button_index = button
+	InputMap.action_add_event(action_name, mouse_event)
 
 
 func _set_key_action(action_name: String, keycode: int) -> void:

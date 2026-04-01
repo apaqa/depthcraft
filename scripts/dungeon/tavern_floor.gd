@@ -26,6 +26,7 @@ const ROOM_H: int = 15
 const STAIRWAY_SCENE: PackedScene = preload("res://scenes/dungeon/stairway.tscn")
 const DUNGEON_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/dungeon_merchant.gd")
 const FLOOR_TELEPORTER_SCRIPT: Script = preload("res://scripts/dungeon/floor_teleporter_npc.gd")
+const CLASS_MASTER_SCRIPT: Script = preload("res://scripts/dungeon/class_master_npc.gd")
 
 const TEX_FLOOR: Texture2D = preload("res://assets/floor_5.png")
 const TEX_WALL_MID: Texture2D = preload("res://assets/wall_mid.png")
@@ -197,6 +198,23 @@ func _build_npcs() -> void:
 	add_child(teleporter)
 	if teleporter.has_signal("floor_selected"):
 		teleporter.floor_selected.connect(_on_teleporter_floor_selected)
+
+	# Lower corridor — class master NPC
+	var class_master: Area2D = Area2D.new()
+	class_master.set_script(CLASS_MASTER_SCRIPT)
+	class_master.position = Vector2(float(10 * TILE), float(10 * TILE))
+	var cm_sprite: Sprite2D = Sprite2D.new()
+	cm_sprite.texture = TEX_DOC
+	cm_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	cm_sprite.position = Vector2(0.0, -24.0)
+	class_master.add_child(cm_sprite)
+	var cm_lbl: Label = Label.new()
+	cm_lbl.text = "職業大師"
+	cm_lbl.add_theme_font_size_override("font_size", 11)
+	cm_lbl.modulate = Color(0.9, 0.85, 0.5, 1.0)
+	cm_lbl.position = Vector2(-22.0, -55.0)
+	class_master.add_child(cm_lbl)
+	add_child(class_master)
 
 
 func _add_tavern_npc(

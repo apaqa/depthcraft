@@ -61,7 +61,7 @@ func _drop_loot() -> void:
 	equip_drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
 	equip_drop.setup_stack(equip)
 	loot_root.add_child(equip_drop)
-	var gold_amount: int = randi_range(20, 50) + floor_number * 3
+	var gold_amount: int = randi_range(10, 20)
 	var gold_drop: Node2D = LOOT_DROP_SCENE.instantiate() as Node2D
 	gold_drop.global_position = global_position + Vector2(randf_range(-24, 24), randf_range(-24, 24))
 	gold_drop.setup("copper", gold_amount)
