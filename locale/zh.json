@@ -669,5 +669,6 @@
   "blessing_poison_sub_stacks_name": "蓄毒",
   "blessing_poison_sub_stacks_desc": "毒素最大層數 +1",
   "blessing_poison_sub_slow_name": "毒霧",
-  "blessing_poison_sub_slow_desc": "中毒敵人減速 15%"
+  "blessing_poison_sub_slow_desc": "中毒敵人減速 15%",
+  "mystery_blessing_name": "神秘祝福"
 }

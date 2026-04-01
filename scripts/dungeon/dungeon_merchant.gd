@@ -9,6 +9,7 @@ const SHOP_ITEMS = [
 	{"id": "bandage", "quantity": 1, "price": 5},
 	{"id": "bread", "quantity": 1, "price": 5},
 	{"id": "torch", "quantity": 3, "price": 6},
+	{"id": "mystery_blessing", "quantity": 1, "price": 100},
 ]
 
 var _shop_canvas: CanvasLayer = null
@@ -183,12 +184,18 @@ func _open_shop() -> void:
 
 
 func _add_item_row(parent: Control, item_offer: Dictionary) -> void:
-	var item_data: Dictionary = ITEM_DATABASE.get_item(str(item_offer.get("id", "")))
+	var offer_id: String = str(item_offer.get("id", ""))
+	var item_data: Dictionary = ITEM_DATABASE.get_item(offer_id)
 	var quantity: int = int(item_offer.get("quantity", 1))
-	var name: String = str(item_data.get("name", ITEM_DATABASE.get_display_name(str(item_offer.get("id", "")))))
+	var display_name: String = str(item_data.get("name", ITEM_DATABASE.get_display_name(offer_id)))
+	if offer_id == "mystery_blessing":
+		display_name = LocaleManager.L("mystery_blessing_name")
 	if quantity > 1:
-		name = "%s x%d" % [name, quantity]
-	_add_shop_row(parent, name, int(item_offer.get("price", 0)), _on_buy_item.bind(str(item_offer.get("id", "")), quantity, int(item_offer.get("price", 0))), ITEM_DATABASE.get_stack_icon(item_data))
+		display_name = "%s x%d" % [display_name, quantity]
+	var icon: Texture2D = ITEM_DATABASE.get_stack_icon(item_data)
+	if offer_id == "mystery_blessing" and icon == null:
+		icon = preload("res://assets/icons/kyrise/crystal_01c.png")
+	_add_shop_row(parent, display_name, int(item_offer.get("price", 0)), _on_buy_item.bind(offer_id, quantity, int(item_offer.get("price", 0))), icon)
 
 
 func _add_equipment_row(parent: Control) -> void:
@@ -231,6 +238,15 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 	if payment.is_empty():
 		_set_message(LocaleManager.L("insufficient_gold"))
 		return
+	if item_id == "mystery_blessing":
+		if inventory.pay_copper(price):
+			_set_message("")
+			_update_gold_label()
+			_close_shop()
+			_trigger_blessing_selection()
+		else:
+			_set_message(LocaleManager.L("insufficient_gold"))
+		return
 	if inventory.pay_copper(price):
 		if inventory.add_item(item_id, quantity):
 			_set_message("")
@@ -240,6 +256,17 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 			_set_message(LocaleManager.L("bag_full"))
 	else:
 		_set_message(LocaleManager.L("insufficient_gold"))
+
+
+func _trigger_blessing_selection() -> void:
+	var main_scene: Node = get_tree().current_scene
+	if main_scene == null:
+		return
+	var hud_node: Node = main_scene.get_node_or_null("HUDCanvas/HUD")
+	if hud_node == null:
+		hud_node = main_scene.get_node_or_null("HUD")
+	if hud_node != null and hud_node.has_method("open_blessing_selection"):
+		hud_node.open_blessing_selection([], null)
 
 
 func _on_buy_equipment() -> void:

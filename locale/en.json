@@ -669,5 +669,6 @@
   "blessing_poison_sub_stacks_name": "Toxin Buildup",
   "blessing_poison_sub_stacks_desc": "Poison max stacks +1",
   "blessing_poison_sub_slow_name": "Toxic Fog",
-  "blessing_poison_sub_slow_desc": "Poisoned enemies slowed by 15%"
+  "blessing_poison_sub_slow_desc": "Poisoned enemies slowed by 15%",
+  "mystery_blessing_name": "Mystery Blessing"
 }
