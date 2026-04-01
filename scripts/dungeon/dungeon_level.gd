@@ -531,7 +531,7 @@ func _roll_elite_count(rng: RandomNumberGenerator, guaranteed: int) -> int:
 func _apply_elite_chain_enhancement() -> void:
 	if elites_killed_this_floor <= 0:
 		return
-	var boost_mult: float = 1.0 + float(elites_killed_this_floor) * 0.1
+	var boost_mult: float = minf(1.0 + float(elites_killed_this_floor) * 0.1, 1.5)
 	var remaining_count: int = 0
 	for child: Node in enemy_root.get_children():
 		if child.has_method("is_elite_enemy") and child.is_elite_enemy() and child.has_method("apply_chain_enhancement"):

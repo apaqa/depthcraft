@@ -162,7 +162,7 @@ func _force_add_stack(inventory, stack: Dictionary) -> void:
 func _generate_boss_equipment() -> Dictionary:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash("%s:%s:%s" % [name, floor_value, Time.get_ticks_usec()])
-	if floor_value >= 29:
+	if floor_value >= 30:
 		var legendary: Dictionary = LEGENDARY_ITEMS.get_random_legendary(rng)
 		if not legendary.is_empty():
 			return legendary
