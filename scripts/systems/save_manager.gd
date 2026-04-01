@@ -715,6 +715,8 @@ func _restore_progress(data: Dictionary, main_node: Node) -> void:
 func _finalize_player_restore(player_data: Dictionary, player: Node) -> void:
 	if player == null:
 		return
+	if player.has_method("_sync_ultimate_talent_flags"):
+		player.call("_sync_ultimate_talent_flags")
 	if player.has_method("_refresh_all_stats"):
 		player.call("_refresh_all_stats")
 	var restored_max_hp: int = int(player.get("max_hp"))
