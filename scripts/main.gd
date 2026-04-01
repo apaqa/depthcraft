@@ -21,10 +21,15 @@ var overworld_seed: int = 0
 var dungeon_run_snapshot: Array = []
 var total_dungeon_runs_completed: int = 0
 var dungeon_returns_since_raid: int = 0
+var _total_play_time: float = 0.0
 var overworld_return_position: Variant = null
 var current_day: int = 1
 var deepest_dungeon_floor_reached: int = 1
 var tutorial_flags: Dictionary = {}
+
+
+func _process(delta: float) -> void:
+	_total_play_time += delta
 
 
 func _ready() -> void:
@@ -369,7 +374,7 @@ func _on_return_to_surface_requested() -> void:
 	if dungeon_returns_since_raid == 2 and player != null and player.has_method("show_status_message"):
 		player.show_status_message(LocaleManager.L("raid_warning"), Color(1.0, 0.4, 0.4, 1.0), 4.0)
 	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
-	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
+	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3 and _total_play_time >= 300.0:
 		current_level.trigger_progress_raid()
 	await get_tree().process_frame
 	await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
@@ -462,7 +467,7 @@ func _on_player_died() -> void:
 			if not npc_day_messages.is_empty():
 				defeated_message += " | " + " / ".join(npc_day_messages)
 			player.show_status_message(defeated_message, Color(1.0, 0.75, 0.45, 1.0), 3.0)
-		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
+		if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3 and _total_play_time >= 300.0:
 			current_level.trigger_progress_raid()
 		return
 
