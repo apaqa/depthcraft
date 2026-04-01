@@ -159,6 +159,9 @@ func _on_class_chosen(class_id: String) -> void:
 		_current_player.refresh_class_visuals()
 	if _current_player.has_method("_refresh_all_stats"):
 		_current_player._refresh_all_stats()
+	var skill_system: Node = get_node_or_null("/root/SkillSystem")
+	if skill_system != null and skill_system.has_method("_equip_class_skills"):
+		skill_system._equip_class_skills(class_id)
 	if _current_player.has_method("show_status_message"):
 		var class_names: Dictionary = {"warrior": "戰士", "mage": "法師", "ranger": "弓手"}
 		_current_player.show_status_message("職業已更改為 " + str(class_names.get(class_id, class_id)), Color(0.6, 1.0, 0.8, 1.0), 3.0)

@@ -533,6 +533,10 @@ func apply_knockback(direction: Vector2, force: float = 120.0) -> void:
 	knockback_velocity += direction.normalized() * force
 
 
+func apply_stun(duration: float) -> void:
+	apply_slow(0.0, duration)
+
+
 func apply_slow(multiplier: float, duration: float) -> void:
 	slow_multiplier = clampf(multiplier, 0.1, 1.0)
 	slow_time_left = max(duration, 0.0)
