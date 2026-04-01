@@ -762,6 +762,20 @@ func _apply_single_hit(collider: Variant, attack_direction: Vector2, guaranteed_
 	if collider.has_method("is_player_owned_building") and collider.is_player_owned_building():
 		return {"damage": 0, "crit": false}
 	var attack_damage: int = int(round(float(get_attack_damage()) * damage_scale))
+	# Apply skill blessing penalties for the current attack slot
+	var _bs_pen: Node = get_node_or_null("/root/BlessingSystem")
+	if _bs_pen != null and _bs_pen.has_method("get_skill_sub_penalties"):
+		var penalties: Dictionary = _bs_pen.get_skill_sub_penalties(_current_hit_slot)
+		attack_damage = int(round(float(attack_damage) * float(penalties.get("atk_mult", 1.0))))
+		var miss_chance: float = float(penalties.get("miss_chance", 0.0))
+		if miss_chance > 0.0 and randf() < miss_chance:
+			_show_floating_text(global_position, "Miss", Color(0.6, 0.6, 0.6, 1.0))
+			return {"damage": 0, "crit": false}
+		var self_dmg_pct: float = float(penalties.get("self_damage_pct", 0.0))
+		if self_dmg_pct > 0.0:
+			var self_dmg: int = maxi(int(round(float(max_hp) * self_dmg_pct)), 1)
+			current_hp = maxi(current_hp - self_dmg, 1)
+			hp_changed.emit(current_hp, max_hp)
 	if execute_skill_armed:
 		var execute_enemy_hp: int = int(collider.get("current_hp"))
 		var execute_enemy_max_hp: int = int(collider.get("max_hp"))

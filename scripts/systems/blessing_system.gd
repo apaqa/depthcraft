@@ -475,10 +475,23 @@ func get_slot_effect_value(slot_name: String, effect_name: String) -> float:
 	return total
 
 
-func get_skill_sub_penalties() -> Dictionary:
+func get_skill_sub_penalties(slot_name: String = "") -> Dictionary:
 	var penalties: Dictionary = {}
-	var skill_slot: Dictionary = blessing_slots.get("skill", {}) as Dictionary
-	var subs: Array = skill_slot.get("sub_blessings", []) as Array
+	# If slot_name given, only check that slot; otherwise check all slots with skill_boost
+	var slots_to_check: Array[String] = []
+	if slot_name != "":
+		if get_slot_theme(slot_name) == "skill_boost":
+			slots_to_check.append(slot_name)
+	else:
+		for sn: String in blessing_slots.keys():
+			if get_slot_theme(sn) == "skill_boost":
+				slots_to_check.append(sn)
+	if slots_to_check.is_empty():
+		return penalties
+	var subs: Array = []
+	for sn: String in slots_to_check:
+		for entry: Dictionary in get_slot_sub_blessings(sn):
+			subs.append(entry)
 	for sub: Dictionary in subs:
 		var eff: float = float(sub.get("effectiveness", 1.0))
 		var bid: String = str(sub.get("id", ""))
