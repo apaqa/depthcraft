@@ -703,5 +703,7 @@
   "equip_gloves": "Gloves",
   "equip_ring": "Ring",
   "equip_shield": "Shield",
-  "equip_accessory": "Accessory"
+  "equip_accessory": "Accessory",
+  "equip_chest_armor": "Chest Armor",
+  "equip_offhand": "Offhand"
 }

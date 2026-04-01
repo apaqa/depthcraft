@@ -703,5 +703,7 @@
   "equip_gloves": "手套",
   "equip_ring": "飾品",
   "equip_shield": "盾牌",
-  "equip_accessory": "飾品"
+  "equip_accessory": "飾品",
+  "equip_chest_armor": "胸甲",
+  "equip_offhand": "副手"
 }
