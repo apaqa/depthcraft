@@ -794,5 +794,8 @@
   "keybind_sprint": "衝刺",
   "keybind_help": "快捷鍵說明",
   "keybind_pause": "暫停 / 設定",
-  "keybind_close_hint": "按 F1 或 ESC 關閉"
+  "keybind_close_hint": "按 F1 或 ESC 關閉",
+  "kill_stats_title": "擊殺統計",
+  "kill_stats_none": "尚未遭遇任何敵人",
+  "world_seed": "世界種子"
 }

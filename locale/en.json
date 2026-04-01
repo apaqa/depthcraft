@@ -794,5 +794,8 @@
   "keybind_sprint": "Sprint",
   "keybind_help": "Keybind Help",
   "keybind_pause": "Pause / Settings",
-  "keybind_close_hint": "Press F1 or ESC to close"
+  "keybind_close_hint": "Press F1 or ESC to close",
+  "kill_stats_title": "Kill Statistics",
+  "kill_stats_none": "No enemies encountered yet",
+  "world_seed": "World Seed"
 }

@@ -80,12 +80,23 @@ func _rebuild_ui() -> void:
 	var sep: VSeparator = VSeparator.new()
 	main_hbox.add_child(sep)
 
-	# Right side: blessings
+	# Middle: blessings
 	var right_vbox: VBoxContainer = VBoxContainer.new()
 	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_vbox.add_theme_constant_override("separation", 6)
 	main_hbox.add_child(right_vbox)
 	_build_blessing_list(right_vbox)
+
+	# Separator
+	var sep2: VSeparator = VSeparator.new()
+	main_hbox.add_child(sep2)
+
+	# Right side: kill stats
+	var kill_vbox: VBoxContainer = VBoxContainer.new()
+	kill_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	kill_vbox.add_theme_constant_override("separation", 4)
+	main_hbox.add_child(kill_vbox)
+	_build_kill_stats(kill_vbox)
 
 
 func _build_player_stats(parent: VBoxContainer) -> void:
@@ -135,6 +146,14 @@ func _build_player_stats(parent: VBoxContainer) -> void:
 		var val: float = float(bs_node.get_total_effect_value(str(pair[0])))
 		if val > 0.0:
 			parent.add_child(_make_stat_row(str(pair[1]), "+%.0f%%" % (val * 100.0), Color(0.6, 1.0, 0.7, 1.0)))
+
+	# World seed display
+	var main_node: Node = get_tree().current_scene
+	if main_node != null:
+		var seed_val: Variant = main_node.get("overworld_seed")
+		if seed_val != null:
+			parent.add_child(HSeparator.new())
+			parent.add_child(_make_stat_row(LocaleManager.L("world_seed"), str(seed_val), Color(0.6, 0.6, 0.7, 1.0)))
 
 
 func _build_blessing_list(parent: VBoxContainer) -> void:
@@ -266,6 +285,66 @@ func _make_blessing_row(dot_color: Color, title_text: String, tag_text: String, 
 	info_vbox.add_child(desc_lbl)
 	row.add_child(info_vbox)
 	return row
+
+
+func _build_kill_stats(parent: VBoxContainer) -> void:
+	var title: Label = Label.new()
+	title.text = LocaleManager.L("kill_stats_title")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.modulate = Color(1.0, 0.5, 0.4, 1.0)
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(title)
+	parent.add_child(HSeparator.new())
+
+	var codex: Node = get_node_or_null("/root/CodexManager")
+	if codex == null:
+		parent.add_child(_make_dim_label(LocaleManager.L("kill_stats_none")))
+		return
+
+	var kinds: Array[String] = codex.get_all_monster_kinds()
+	if kinds.is_empty():
+		parent.add_child(_make_dim_label(LocaleManager.L("kill_stats_none")))
+		return
+
+	# Sort by kill count descending
+	var entries: Array[Dictionary] = []
+	for kind: String in kinds:
+		var entry: Dictionary = codex.get_monster_entry(kind)
+		entries.append({"kind": kind, "killed": int(entry.get("killed", 0)), "seen": int(entry.get("seen", 0))})
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.get("killed", 0)) > int(b.get("killed", 0)))
+
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(scroll)
+	var list: VBoxContainer = VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 2)
+	scroll.add_child(list)
+
+	for entry: Dictionary in entries:
+		var kind: String = str(entry.get("kind", ""))
+		var killed: int = int(entry.get("killed", 0))
+		var display_name: String = LocaleManager.L("enemy_" + kind)
+		if display_name == "enemy_" + kind:
+			display_name = kind.capitalize()
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var name_lbl: Label = Label.new()
+		name_lbl.text = display_name
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.add_theme_font_size_override("font_size", 13)
+		name_lbl.modulate = Color(0.85, 0.85, 0.9, 1.0)
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(name_lbl)
+		var count_lbl: Label = Label.new()
+		count_lbl.text = "x%d" % killed
+		count_lbl.add_theme_font_size_override("font_size", 13)
+		count_lbl.modulate = Color(1.0, 0.7, 0.5, 1.0) if killed >= 10 else Color(0.7, 0.7, 0.7, 1.0)
+		count_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(count_lbl)
+		list.add_child(row)
 
 
 func _make_dim_label(text: String) -> Label:
