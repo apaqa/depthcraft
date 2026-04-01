@@ -634,7 +634,8 @@ func request_tavern_menu(facility) -> void:
 func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	if is_dead or invincible_time_left > 0.0 or _god_mode:
 		return
-	var effective_dodge: float = dodge_chance
+	var equip_dodge: float = float(equipment_system.get_total_equipment_bonus("dodge_chance"))
+	var effective_dodge: float = dodge_chance + equip_dodge
 	if legend_dodge_on_sprint and sprint_skill_time_left > 0.0:
 		effective_dodge += 0.30
 	if effective_dodge > 0.0 and randf() < effective_dodge:
@@ -763,9 +764,10 @@ func _apply_single_hit(collider: Variant, attack_direction: Vector2, guaranteed_
 	if not is_critical and total_crit_chance > 0.0 and randf() < total_crit_chance:
 		is_critical = true
 	if is_critical:
-		var crit_multi: int = 4 if legend_eclipse_crit else 2
+		var crit_multi: float = 4.0 if legend_eclipse_crit else 2.0
+		var equip_crit_dmg: float = float(equipment_system.get_total_equipment_bonus("crit_damage_multiplier"))
 		var crit_dmg_bonus: float = _get_blessing_value("crit_damage_bonus")
-		attack_damage = int(round(float(attack_damage) * (float(crit_multi) + crit_dmg_bonus)))
+		attack_damage = int(round(float(attack_damage) * (crit_multi + equip_crit_dmg + crit_dmg_bonus)))
 	if player_stats.get_execute_bonus() > 0.0:
 		var enemy_hp: int = int(collider.get("current_hp"))
 		var enemy_max_hp: int = int(collider.get("max_hp"))
