@@ -67,6 +67,7 @@ var current_level: Node = null
 var _blessing_panel: BlessingChoicePanel = null
 var _blessing_stage: int = 0
 var _blessing_pending_theme: String = ""
+var _status_panel: BlessingStatusPanel = null
 var current_level_id: String = ""
 var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
@@ -938,6 +939,15 @@ func _setup_blessing_panel() -> void:
 	_blessing_panel.name = "BlessingChoicePanel"
 	_blessing_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_blessing_panel)
+	_status_panel = BlessingStatusPanel.new()
+	_status_panel.name = "BlessingStatusPanel"
+	add_child(_status_panel)
+
+
+func toggle_status_panel() -> void:
+	if _status_panel == null:
+		return
+	_status_panel.toggle(player)
 
 
 func _show_blessing_choices(choices: Array[Dictionary]) -> void:

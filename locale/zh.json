@@ -670,5 +670,21 @@
   "blessing_poison_sub_stacks_desc": "毒素最大層數 +1",
   "blessing_poison_sub_slow_name": "毒霧",
   "blessing_poison_sub_slow_desc": "中毒敵人減速 15%",
-  "mystery_blessing_name": "神秘祝福"
+  "mystery_blessing_name": "神秘祝福",
+  "status_panel_stats": "角色狀態",
+  "status_class": "職業",
+  "status_attack": "攻擊力",
+  "status_defense": "防禦力",
+  "status_max_hp": "最大血量",
+  "status_speed": "移動速度",
+  "status_crit": "暴擊率",
+  "status_blessing_bonus": "祝福加成",
+  "status_atk_bonus": "攻擊力加成",
+  "status_def_bonus": "防禦力加成",
+  "status_hp_bonus": "血量加成",
+  "status_speed_bonus": "移速加成",
+  "status_lifesteal": "吸血",
+  "status_crit_bonus": "暴擊率加成",
+  "status_blessings_title": "已獲得祝福",
+  "status_no_blessings": "尚無祝福"
 }

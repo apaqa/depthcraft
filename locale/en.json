@@ -670,5 +670,21 @@
   "blessing_poison_sub_stacks_desc": "Poison max stacks +1",
   "blessing_poison_sub_slow_name": "Toxic Fog",
   "blessing_poison_sub_slow_desc": "Poisoned enemies slowed by 15%",
-  "mystery_blessing_name": "Mystery Blessing"
+  "mystery_blessing_name": "Mystery Blessing",
+  "status_panel_stats": "Character Stats",
+  "status_class": "Class",
+  "status_attack": "Attack",
+  "status_defense": "Defense",
+  "status_max_hp": "Max HP",
+  "status_speed": "Speed",
+  "status_crit": "Crit Rate",
+  "status_blessing_bonus": "Blessing Bonuses",
+  "status_atk_bonus": "Attack Bonus",
+  "status_def_bonus": "Defense Bonus",
+  "status_hp_bonus": "HP Bonus",
+  "status_speed_bonus": "Speed Bonus",
+  "status_lifesteal": "Lifesteal",
+  "status_crit_bonus": "Crit Bonus",
+  "status_blessings_title": "Active Blessings",
+  "status_no_blessings": "No blessings yet"
 }
