@@ -772,5 +772,11 @@
   "biome_intro_abyss": "你已經超越了所有已知的探索記錄。這裡的一切都是未知的。",
   "confirm_return_main_menu": "確定返回主選單？未保存的進度將丟失。",
   "confirm_yes": "確定",
-  "confirm_no": "取消"
+  "confirm_no": "取消",
+  "boss_5_intro": "骷髏王從王座上緩緩站起...",
+  "boss_10_intro": "一團巨大的綠色黏液在蠕動...",
+  "boss_15_intro": "暗影在角落凝聚成形...",
+  "boss_20_intro": "地面開始龜裂，岩漿從裂縫中湧出...",
+  "boss_25_intro": "深淵的守護者注視著你...",
+  "boss_30_intro": "你感受到了前所未有的壓迫感..."
 }

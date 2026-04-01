@@ -772,5 +772,11 @@
   "biome_intro_abyss": "You have surpassed all known exploration records. Everything here is unknown.",
   "confirm_return_main_menu": "Return to main menu? Unsaved progress will be lost.",
   "confirm_yes": "Confirm",
-  "confirm_no": "Cancel"
+  "confirm_no": "Cancel",
+  "boss_5_intro": "The Skeleton King rises from his throne...",
+  "boss_10_intro": "A massive green slime pulsates before you...",
+  "boss_15_intro": "Shadows coalesce in the corner...",
+  "boss_20_intro": "The ground cracks, lava seeps through...",
+  "boss_25_intro": "The Abyss Warden gazes upon you...",
+  "boss_30_intro": "An overwhelming pressure fills the air..."
 }
