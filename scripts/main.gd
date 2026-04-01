@@ -364,6 +364,8 @@ func _on_return_to_surface_requested() -> void:
 	_sync_quest_day()
 	var npc_day_messages: Array[String] = NpcManager.process_new_day(current_day, player) if NpcManager != null else []
 	deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, floor_reached)
+	if dungeon_returns_since_raid == 2 and player != null and player.has_method("show_status_message"):
+		player.show_status_message(LocaleManager.L("raid_warning"), Color(1.0, 0.4, 0.4, 1.0), 4.0)
 	_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 	if current_level != null and current_level.has_method("trigger_progress_raid") and dungeon_returns_since_raid >= 3:
 		current_level.trigger_progress_raid()
@@ -445,6 +447,8 @@ func _on_player_died() -> void:
 		_sync_quest_day()
 		npc_day_messages = NpcManager.process_new_day(current_day, player) if NpcManager != null else []
 		deepest_dungeon_floor_reached = max(deepest_dungeon_floor_reached, death_floor_value)
+		if dungeon_returns_since_raid == 2 and player != null and player.has_method("show_status_message"):
+			player.show_status_message(LocaleManager.L("raid_warning"), Color(1.0, 0.4, 0.4, 1.0), 4.0)
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		if hud.has_method("hide_death_screen"):
 			hud.hide_death_screen()
@@ -560,6 +564,10 @@ func _bind_local_player() -> void:
 		player.portal_requested.connect(_on_player_portal_requested)
 	if not player.died.is_connected(_on_player_died):
 		player.died.connect(_on_player_died)
+	var building_sys: Node = player.get_node_or_null("BuildingSystem")
+	if building_sys != null and building_sys.has_signal("building_was_destroyed"):
+		if not building_sys.building_was_destroyed.is_connected(_on_building_was_destroyed):
+			building_sys.building_was_destroyed.connect(_on_building_was_destroyed)
 	if hud.has_method("bind_player"):
 		hud.bind_player(player)
 	var skill_system = get_node_or_null("/root/SkillSystem")
@@ -655,6 +663,11 @@ func _get_connection_status() -> String:
 func _get_connected_player_ids() -> Array[int]:
 	var network_manager = _network_manager()
 	return network_manager.get_connected_player_ids() if network_manager != null else []
+
+
+func _on_building_was_destroyed() -> void:
+	if player != null and player.has_method("show_status_message"):
+		player.show_status_message(LocaleManager.L("building_destroyed"), Color(1.0, 0.45, 0.3, 1.0), 3.0)
 
 
 func _start_tutorial() -> void:

@@ -140,6 +140,11 @@ func _on_raid_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 	banner_requested.emit(LocaleManager.L("raid_victory"), Color(0.45, 1.0, 0.45, 1.0), 3.0)
 	if player != null and player.inventory != null:
 		player.inventory.add_item("talent_shard", 5)
+		var world_level_value: int = maxi(int(deepest_floor_reached / 5) + 1, 1)
+		player.inventory.add_item("copper", 10 + world_level_value * 5)
+		player.inventory.add_item("wood", world_level_value * 2)
+		if player.has_method("show_status_message"):
+			player.show_status_message(LocaleManager.L("raid_reward"), Color(0.45, 1.0, 0.45, 1.0), 3.0)
 	_clear_enemy_root()
 
 

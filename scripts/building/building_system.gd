@@ -2,6 +2,7 @@ extends Node
 class_name BuildingSystem
 
 signal build_state_changed
+signal building_was_destroyed
 
 enum BuildState {
 	NONE,
@@ -667,6 +668,7 @@ func _on_registered_building_destroyed(tile_pos: Vector2i, refund_cost: Dictiona
 	_rebuild_occupied_positions()
 	_auto_save()
 	build_state_changed.emit()
+	building_was_destroyed.emit()
 
 
 func _on_home_core_destroyed() -> void:
