@@ -21,6 +21,12 @@ func is_prefix_enabled() -> bool:
 func advance_cycle() -> void:
 	current_cycle += 1
 	total_victories += 1
+	var bs: Node = get_node_or_null("/root/BlessingSystem")
+	if bs != null and bs.has_method("clear_all"):
+		bs.call("clear_all")
+	var cm: Node = get_node_or_null("/root/CycleModifier")
+	if cm != null and cm.has_method("advance_cycle"):
+		cm.call("advance_cycle")
 	_save()
 
 

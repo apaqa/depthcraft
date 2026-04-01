@@ -27,6 +27,10 @@ func _process(_delta: float) -> void:
 func save_game(slot: int) -> void:
 	var player: Node = _get_player()
 	var main_node: Node = get_tree().current_scene
+	var cycle_mod_node: Node = get_node_or_null("/root/CycleModifier")
+	var cycle_mod_state: Dictionary = {}
+	if cycle_mod_node != null and cycle_mod_node.has_method("serialize_state"):
+		cycle_mod_state = cycle_mod_node.call("serialize_state") as Dictionary
 	var payload: Dictionary = {
 		"version": FORMAT_VERSION,
 		"timestamp": int(Time.get_unix_time_from_system()),
@@ -39,6 +43,7 @@ func save_game(slot: int) -> void:
 		"npcs": _serialize_npcs(),
 		"progress": _serialize_progress(main_node),
 		"tutorial_flags": _serialize_tutorial_flags(main_node),
+		"cycle_modifier": cycle_mod_state,
 	}
 	_write_json(SAVE_SLOT_TEMPLATE % slot, payload)
 	print("SaveManager: saved slot %d" % slot)
@@ -80,6 +85,8 @@ func load_game(slot: int) -> void:
 			data["npcs"] = {}
 		if not data.has("progress"):
 			data["progress"] = {}
+		if not data.has("cycle_modifier"):
+			data["cycle_modifier"] = {}
 	var player: Node = _get_player()
 	if player == null:
 		_synchronize_legacy_player_state(data)
@@ -105,6 +112,11 @@ func load_game(slot: int) -> void:
 	_restore_progress(progress_data, main_node)
 	var tutorial_flags_data: Dictionary = data.get("tutorial_flags", {}) as Dictionary
 	_restore_tutorial_flags(tutorial_flags_data, main_node)
+	var cycle_mod_data: Dictionary = data.get("cycle_modifier", {}) as Dictionary
+	if not cycle_mod_data.is_empty():
+		var cycle_mod_node: Node = get_node_or_null("/root/CycleModifier")
+		if cycle_mod_node != null and cycle_mod_node.has_method("load_state"):
+			cycle_mod_node.call("load_state", cycle_mod_data)
 	_finalize_player_restore(player_data, player)
 	_refresh_loaded_scene(main_node)
 	print("SaveManager: loaded slot %d" % slot)
