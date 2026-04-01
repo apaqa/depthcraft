@@ -22,6 +22,8 @@ var dungeon_run_snapshot: Array = []
 var total_dungeon_runs_completed: int = 0
 var dungeon_returns_since_raid: int = 0
 var _total_play_time: float = 0.0
+var _auto_save_timer: float = 0.0
+const AUTO_SAVE_INTERVAL: float = 300.0
 var overworld_return_position: Variant = null
 var current_day: int = 1
 var deepest_dungeon_floor_reached: int = 1
@@ -31,6 +33,10 @@ var _cycle_modifier_panel: CycleModifierPanel = null
 
 func _process(delta: float) -> void:
 	_total_play_time += delta
+	_auto_save_timer += delta
+	if _auto_save_timer >= AUTO_SAVE_INTERVAL:
+		_auto_save_timer = 0.0
+		_auto_save()
 
 
 func _ready() -> void:
@@ -375,6 +381,7 @@ func _on_return_to_surface_requested() -> void:
 		_broadcast_scene_change("overworld", 1, 0, overworld_return_position if overworld_return_position is Vector2 else Vector2.ZERO, overworld_return_position is Vector2)
 		await get_tree().process_frame
 		await hud.fade_from_black(Color(0, 0, 0, 1), 0.5)
+		_auto_save()
 		return
 	# Dungeon → tavern
 	var floor_reached: int = int(current_level.get("current_floor")) if current_level != null else 0
@@ -402,6 +409,7 @@ func _on_return_to_surface_requested() -> void:
 		if not npc_day_messages.is_empty():
 			surface_message += " | " + " / ".join(npc_day_messages)
 		player.show_status_message(surface_message, Color(0.85, 1.0, 0.85, 1.0), 4.0)
+	_auto_save()
 
 
 func _on_victory_requested() -> void:
@@ -711,3 +719,9 @@ func _show_class_select() -> void:
 	get_tree().root.add_child(screen)
 	await screen.class_chosen
 	screen.queue_free()
+
+
+func _auto_save() -> void:
+	SaveManager.save_game(1)
+	if player != null and player.has_method("_save_persistent_state"):
+		player._save_persistent_state()
