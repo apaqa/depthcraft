@@ -924,6 +924,30 @@ func _on_buff_chosen(buff_id: String) -> void:
 		current_level.set_gameplay_paused(false)
 
 
+func open_blessing_selection(options: Array, level: Variant) -> void:
+	current_level = level
+	buff_select.open_with_options(options, {})
+	buff_select.title_label.text = LocaleManager.L("blessing_select_title")
+	if player != null:
+		player.set_ui_blocked(true)
+	if current_level != null and current_level.has_method("set_gameplay_paused"):
+		current_level.set_gameplay_paused(true)
+	if buff_select.has_signal("buff_chosen") and not buff_select.buff_chosen.is_connected(_on_blessing_chosen):
+		buff_select.buff_chosen.connect(_on_blessing_chosen)
+
+
+func _on_blessing_chosen(blessing_id: String) -> void:
+	if buff_select.buff_chosen.is_connected(_on_blessing_chosen):
+		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
+	var bs_node: Node = get_node_or_null("/root/BlessingSystem")
+	if bs_node != null:
+		bs_node.add_blessing(blessing_id)
+	if player != null:
+		player.set_ui_blocked(false)
+	if current_level != null and current_level.has_method("set_gameplay_paused"):
+		current_level.set_gameplay_paused(false)
+
+
 func _refresh_buff_icons(active_buffs: Array) -> void:
 	for child in buff_row.get_children():
 		child.queue_free()

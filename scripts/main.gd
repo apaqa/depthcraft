@@ -180,6 +180,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		current_level.return_to_surface_requested.connect(_on_return_to_surface_requested)
 	if current_level.has_signal("buff_selection_requested") and not current_level.buff_selection_requested.is_connected(_on_buff_selection_requested):
 		current_level.buff_selection_requested.connect(_on_buff_selection_requested)
+	if current_level.has_signal("blessing_selection_requested") and not current_level.blessing_selection_requested.is_connected(_on_blessing_selection_requested):
+		current_level.blessing_selection_requested.connect(_on_blessing_selection_requested)
 	if current_level.has_signal("floor_transition_requested") and not current_level.floor_transition_requested.is_connected(_on_floor_transition_requested):
 		current_level.floor_transition_requested.connect(_on_floor_transition_requested)
 	if current_level.has_signal("victory_requested") and not current_level.victory_requested.is_connected(_on_victory_requested):
@@ -468,6 +470,11 @@ func _on_player_died() -> void:
 func _on_buff_selection_requested(options: Array) -> void:
 	if hud.has_method("open_buff_selection"):
 		hud.open_buff_selection(options, current_level)
+
+
+func _on_blessing_selection_requested(options: Array) -> void:
+	if hud.has_method("open_blessing_selection"):
+		hud.open_blessing_selection(options, current_level)
 
 
 func _on_level_banner_requested(message: String, color: Color, duration: float) -> void:

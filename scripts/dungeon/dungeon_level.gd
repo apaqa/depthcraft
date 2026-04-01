@@ -4,6 +4,7 @@ signal floor_changed(current_floor: int)
 signal kills_changed(total_kills: int)
 signal return_to_surface_requested
 signal buff_selection_requested(options: Array)
+signal blessing_selection_requested(options: Array)
 signal floor_transition_requested(next_floor: int)
 signal victory_requested
 
@@ -397,7 +398,11 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 		elites_killed_this_floor += 1
 		_apply_elite_chain_enhancement()
 		set_gameplay_paused(true)
-		buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())
+		var bs_node: Node = get_node_or_null("/root/BlessingSystem")
+		if bs_node != null and randf() < 0.5:
+			blessing_selection_requested.emit(bs_node.generate_three_choices())
+		else:
+			buff_selection_requested.emit(BUFF_SYSTEM.generate_random_buffs())
 
 
 func _on_descend_requested() -> void:
