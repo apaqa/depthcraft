@@ -163,7 +163,7 @@ func _build_blessing_list(parent: VBoxContainer) -> void:
 		var desc: String = ""
 		if main_bid != "" and bs_node.BLESSING_DEFS.has(main_bid):
 			desc = LocaleManager.L(str((bs_node.BLESSING_DEFS[main_bid] as Dictionary).get("description", "")))
-		parent.add_child(_make_blessing_row(theme_color, "%s: %s" % [slot_label, theme_name], LocaleManager.L("blessing_cat_main"), desc))
+		parent.add_child(_make_blessing_row(theme_color, "%s: %s" % [slot_label, theme_name], LocaleManager.L("blessing_cat_main"), desc, theme))
 
 	# Sub blessings
 	for entry: Dictionary in bs_node.active_sub_blessings:
@@ -179,7 +179,8 @@ func _build_blessing_list(parent: VBoxContainer) -> void:
 		var color_val: Variant = def.get("color", null)
 		if color_val is Color:
 			b_color = color_val
-		parent.add_child(_make_blessing_row(b_color, b_name, "Lv.%d" % stacks, b_desc))
+		var b_theme: String = str(def.get("theme", "generic"))
+		parent.add_child(_make_blessing_row(b_color, b_name, "Lv.%d" % stacks, b_desc, b_theme))
 
 	if not has_any:
 		parent.add_child(_make_dim_label(LocaleManager.L("status_no_blessings")))
@@ -213,17 +214,27 @@ func _make_stat_row(label_text: String, value_text: String, value_color: Color) 
 	return row
 
 
-func _make_blessing_row(dot_color: Color, title_text: String, tag_text: String, desc_text: String) -> HBoxContainer:
+func _make_blessing_row(dot_color: Color, title_text: String, tag_text: String, desc_text: String, theme_id: String = "generic") -> HBoxContainer:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Color dot
-	var dot: ColorRect = ColorRect.new()
-	dot.custom_minimum_size = Vector2(10, 10)
-	dot.size = Vector2(10, 10)
-	dot.color = dot_color
-	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(dot)
+	# Theme icon (24x24)
+	var icon_texture: Texture2D = BlessingChoicePanel.THEME_ICONS.get(theme_id, BlessingChoicePanel.THEME_ICONS.get("generic", null)) as Texture2D
+	if icon_texture != null:
+		var icon: TextureRect = TextureRect.new()
+		icon.texture = icon_texture
+		icon.custom_minimum_size = Vector2(24, 24)
+		icon.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(icon)
+	else:
+		var dot: ColorRect = ColorRect.new()
+		dot.custom_minimum_size = Vector2(10, 10)
+		dot.color = dot_color
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(dot)
 	# Name + tag
 	var info_vbox: VBoxContainer = VBoxContainer.new()
 	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
