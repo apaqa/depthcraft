@@ -96,7 +96,9 @@ func _add_switch(switch_position: Vector2, switch_index: int) -> void:
 	var switch_area := Area2D.new()
 	switch_area.position = switch_position
 	switch_area.monitoring = true
-	switch_area.monitorable = true
+	switch_area.monitorable = false
+	switch_area.collision_layer = 0
+	switch_area.collision_mask = 2
 	switch_area.body_entered.connect(_on_switch_body_entered.bind(switch_index))
 	add_child(switch_area)
 
