@@ -1,5 +1,8 @@
 extends Area2D
 class_name GemGamblerNpc
+# EV per gem bet (2d6): lose(2-5)=10/36×0 + tie(6-8)=16/36×1 + win(9-11)=9/36×2 + jackpot(12)=1/36×5
+# EV = 39/36 ≈ 1.083 → +8.3% player-favorable EV (intentional design choice)
+# TODO: if a house-edge model is desired in future, adjust thresholds so EV ≈ 0.95 (house 5%)
 
 const GEM_ICON_GREEN: Texture2D = preload("res://assets/icons/gem_01a.png")
 const GEM_ICON_BLUE: Texture2D = preload("res://assets/icons/gem_01c.png")

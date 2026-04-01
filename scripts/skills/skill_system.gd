@@ -1,5 +1,21 @@
 extends Node
 
+# ─── Balance Audit (Part 6.3) ──────────────────────────────────────────────────
+# Skill DPS contributions (damage per cooldown cycle, expressed as x atk/s):
+# warrior_z: 0.5x atk / 5s  = 0.10x atk/s
+# warrior_x: 0 direct DPS (slow utility: 50% slow for 3s / 8s)
+# warrior_v: 2.0x atk / 12s = 0.17x atk/s
+# ranger_z:  0 direct DPS (dash+invuln defensive skill)
+# ranger_x:  0.3x atk × 6 ticks / 10s = 0.18x atk/s
+# ranger_v:  1.5x atk / 15s = 0.10x atk/s  (+ slow utility)
+# mage_z:    0 direct DPS (teleport mobility skill)
+# mage_x:    1.2x atk / 8s  = 0.15x atk/s  (+ freeze utility)
+# mage_v:    3.0x atk / 15s = 0.20x atk/s
+# Note: skill damage uses get_attack_damage() directly; crit multiplier is NOT
+# applied to skill hits (they call enemy.take_damage() directly, not via
+# _apply_single_hit). Max theoretical single hit: mage_v 3.0x base atk.
+# ─────────────────────────────────────────────────────────────────────────────
+
 # Class-based skill definitions — 3 skills per class (z/x/v slot)
 const SKILL_DEFS: Dictionary = {
 	# === Warrior ===
