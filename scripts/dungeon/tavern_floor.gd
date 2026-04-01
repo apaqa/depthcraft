@@ -27,6 +27,7 @@ const STAIRWAY_SCENE: PackedScene = preload("res://scenes/dungeon/stairway.tscn"
 const DUNGEON_MERCHANT_SCRIPT: Script = preload("res://scripts/dungeon/dungeon_merchant.gd")
 const BARTENDER_SCRIPT: Script = preload("res://scripts/dungeon/bartender_npc.gd")
 const GEM_GAMBLER_SCRIPT: Script = preload("res://scripts/dungeon/gem_gambler_npc.gd")
+const GIFT_BOX_NPC_SCRIPT: Script = preload("res://scripts/dungeon/gift_box_npc.gd")
 const FLOOR_TELEPORTER_SCRIPT: Script = preload("res://scripts/dungeon/floor_teleporter_npc.gd")
 const CLASS_MASTER_SCRIPT: Script = preload("res://scripts/dungeon/class_master_npc.gd")
 
@@ -222,6 +223,23 @@ func _build_npcs() -> void:
 	gg_lbl.position = Vector2(-22.0, -44.0)
 	gem_gambler.add_child(gg_lbl)
 	add_child(gem_gambler)
+
+	# Lower area — gift box NPC
+	var gift_box: Area2D = Area2D.new()
+	gift_box.set_script(GIFT_BOX_NPC_SCRIPT)
+	gift_box.position = Vector2(float(13 * TILE), float(12 * TILE))
+	var gb_sprite: Sprite2D = Sprite2D.new()
+	gb_sprite.texture = TEX_WIZARD
+	gb_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	gb_sprite.position = Vector2(0.0, -16.0)
+	gift_box.add_child(gb_sprite)
+	var gb_lbl: Label = Label.new()
+	gb_lbl.text = "神秘商人"
+	gb_lbl.add_theme_font_size_override("font_size", 11)
+	gb_lbl.modulate = Color(0.85, 0.65, 1.0, 1.0)
+	gb_lbl.position = Vector2(-22.0, -44.0)
+	gift_box.add_child(gb_lbl)
+	add_child(gift_box)
 
 	# Lower corridor — class master NPC
 	var class_master: Area2D = Area2D.new()

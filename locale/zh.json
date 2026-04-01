@@ -857,5 +857,17 @@
   "gem_purple_short": "紫",
   "gem_red_short": "紅",
   "talent_gem_cost": "需要 %d 個%s寶石",
-  "ultimate_talent_header": "終極天賦"
+  "ultimate_talent_header": "終極天賦",
+  "giftbox_bronze_name": "銅製禮盒",
+  "giftbox_bronze_desc": "普通驚喜，小有收穫",
+  "giftbox_silver_name": "銀製禮盒",
+  "giftbox_silver_desc": "還不錯的驚喜，有機會獲得增益",
+  "giftbox_gold_name": "金製禮盒",
+  "giftbox_gold_desc": "豐厚回報，可能觸發祝福選擇",
+  "giftbox_mystic_name": "神秘禮盒",
+  "giftbox_mystic_desc": "蘊含神秘力量，祝福機率大幅提升",
+  "giftbox_cursed_name": "詛咒禮盒",
+  "giftbox_cursed_desc": "高風險高回報，可能帶來詛咒或大獎",
+  "giftbox_celestial_name": "天界禮盒",
+  "giftbox_celestial_desc": "最頂級的禮盒，蘊含神聖能量"
 }

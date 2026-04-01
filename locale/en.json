@@ -857,5 +857,17 @@
   "gem_purple_short": "Purple",
   "gem_red_short": "Red",
   "talent_gem_cost": "Need %d %s gem",
-  "ultimate_talent_header": "Ultimate Talents"
+  "ultimate_talent_header": "Ultimate Talents",
+  "giftbox_bronze_name": "Bronze Gift Box",
+  "giftbox_bronze_desc": "Common surprises, small gains",
+  "giftbox_silver_name": "Silver Gift Box",
+  "giftbox_silver_desc": "Decent surprises, may grant a buff",
+  "giftbox_gold_name": "Gold Gift Box",
+  "giftbox_gold_desc": "Rich rewards, may trigger a blessing choice",
+  "giftbox_mystic_name": "Mystic Gift Box",
+  "giftbox_mystic_desc": "Filled with arcane power, high blessing chance",
+  "giftbox_cursed_name": "Cursed Gift Box",
+  "giftbox_cursed_desc": "High risk, high reward — may bring curse or jackpot",
+  "giftbox_celestial_name": "Celestial Gift Box",
+  "giftbox_celestial_desc": "The finest box, infused with divine energy"
 }

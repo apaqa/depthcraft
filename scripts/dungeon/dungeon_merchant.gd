@@ -3,6 +3,7 @@ class_name DungeonMerchant
 
 const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
 const ITEM_DATABASE = preload("res://scripts/inventory/item_database.gd")
+const GIFT_BOX_SYSTEM = preload("res://scripts/dungeon/gift_box_system.gd")
 const MERCHANT_TEXTURE = preload("res://assets/npc_merchant_2.png")
 const UI_AUDIO_CLICK_HOOK = preload("res://scripts/ui/ui_audio_click_hook.gd")
 const SHOP_CONSUMABLES: Array[Dictionary] = [
@@ -14,6 +15,8 @@ const SHOP_EQUIPMENT: Array[Dictionary] = [
 	{"id": "gift_copper", "quantity": 1, "price": 50, "desc_key": "gift_copper_desc"},
 	{"id": "gift_silver", "quantity": 1, "price": 500, "desc_key": "gift_silver_desc"},
 	{"id": "gift_gold", "quantity": 1, "price": 20000, "desc_key": "gift_gold_desc"},
+	{"id": "giftbox_bronze", "quantity": 1, "price": 80, "desc_key": "giftbox_bronze_desc"},
+	{"id": "giftbox_silver", "quantity": 1, "price": 500, "desc_key": "giftbox_silver_desc"},
 ]
 const SHOP_SPECIAL: Array[Dictionary] = [
 	{"id": "mystery_blessing", "quantity": 1, "price": 100, "desc_key": "mystery_blessing_desc"},
@@ -33,11 +36,15 @@ const GIFT_ICONS: Dictionary = {
 	"gift_copper": preload("res://assets/icons/kyrise/gift_01a.png"),
 	"gift_silver": preload("res://assets/icons/kyrise/gift_01b.png"),
 	"gift_gold": preload("res://assets/icons/kyrise/gift_01e.png"),
+	"giftbox_bronze": preload("res://assets/icons/kyrise/gift_01a.png"),
+	"giftbox_silver": preload("res://assets/icons/kyrise/gift_01b.png"),
 }
 const GIFT_NAMES: Dictionary = {
 	"gift_copper": "gift_copper_name",
 	"gift_silver": "gift_silver_name",
 	"gift_gold": "gift_gold_name",
+	"giftbox_bronze": "giftbox_bronze_name",
+	"giftbox_silver": "giftbox_silver_name",
 }
 const GIFT_RARITY_WEIGHTS: Dictionary = {
 	"gift_copper": [["Common", 60], ["Uncommon", 30], ["Rare", 10]],
@@ -495,6 +502,14 @@ func _on_buy_item(item_id: String, quantity: int, price: int) -> void:
 		else:
 			_set_message(LocaleManager.L("insufficient_gold"))
 		return
+	if item_id.begins_with("giftbox_"):
+		if inventory.pay_copper(price):
+			_update_gold_label()
+			var loot: Dictionary = GIFT_BOX_SYSTEM.roll_loot(item_id)
+			_deliver_giftbox_loot(loot)
+		else:
+			_set_message(LocaleManager.L("insufficient_gold"))
+		return
 	if inventory.pay_copper(price):
 		if inventory.add_item(item_id, quantity):
 			_set_message("")
@@ -528,6 +543,48 @@ func _open_gift_box(gift_id: String) -> Dictionary:
 			chosen_rarity = str(pair[0])
 			break
 	return DUNGEON_LOOT.generate_dungeon_equipment_min_rarity(_floor_number, chosen_rarity, rng)
+
+
+func _deliver_giftbox_loot(loot: Dictionary) -> void:
+	var loot_type: String = str(loot.get("type", "nothing"))
+	if _current_player == null:
+		return
+	var inventory: Variant = _current_player.get("inventory")
+	match loot_type:
+		"item":
+			var item_id: String = str(loot.get("id", ""))
+			var qty: int = int(loot.get("qty", 1))
+			if not item_id.is_empty() and qty > 0:
+				if inventory != null:
+					inventory.add_item(item_id, qty)
+				_set_message("獲得: %s ×%d" % [item_id, qty])
+		"blessing_choice", "blessing_scroll":
+			_set_message("觸發祝福選擇！")
+			_close_shop()
+			_trigger_blessing_selection()
+		"random_buff":
+			var pool: Array = [
+				{"type": "damage_multiplier", "value": 0.10, "name": "ATK +10%"},
+				{"type": "armor_reduction", "value": 0.15, "name": "防禦 +15%"},
+				{"type": "loot_drop_multiplier", "value": 0.20, "name": "掉落 +20%"},
+				{"type": "move_speed_multiplier", "value": 0.10, "name": "移速 +10%"},
+			]
+			var buff: Dictionary = pool[randi() % pool.size()] as Dictionary
+			if _current_player.has_method("add_tavern_buff"):
+				_current_player.add_tavern_buff(str(buff.get("type", "")), float(buff.get("value", 0.0)))
+			_set_message("酒館增益：%s" % str(buff.get("name", "")))
+		"curse_debuff":
+			var curse_pool: Array = [
+				{"type": "damage_multiplier", "value": -0.10, "name": "ATK -10%"},
+				{"type": "armor_reduction", "value": -0.15, "name": "防禦 -15%"},
+				{"type": "move_speed_multiplier", "value": -0.10, "name": "移速 -10%"},
+			]
+			var curse: Dictionary = curse_pool[randi() % curse_pool.size()] as Dictionary
+			if _current_player.has_method("add_tavern_buff"):
+				_current_player.add_tavern_buff(str(curse.get("type", "")), float(curse.get("value", 0.0)))
+			_set_message("詛咒！%s" % str(curse.get("name", "")))
+		_:
+			_set_message("禮盒裡什麼都沒有…")
 
 
 func _trigger_blessing_selection() -> void:
