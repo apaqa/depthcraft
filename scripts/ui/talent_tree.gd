@@ -31,22 +31,39 @@ const LINE_LOCKED = Color(0.28, 0.31, 0.36, 0.95)
 const LINE_AVAILABLE = Color(0.76, 0.86, 0.95, 0.95)
 const LINE_UNLOCKED = Color(1.0, 0.82, 0.34, 1.0)
 
-const BRANCH_MAIN_DIRECTIONS = {
+const BRANCH_MAIN_DIRECTIONS: Dictionary = {
 	"offense": Vector2(-0.88, -0.62),
 	"defense": Vector2(0.88, -0.62),
 	"support": Vector2(0.0, 1.0),
+	"advanced": Vector2(-0.55, 0.82),
+	"high": Vector2(0.55, 0.82),
+	"ultimate": Vector2(0.0, -1.0),
 }
 
-const BRANCH_SPLIT_ANGLES = {
+const BRANCH_SPLIT_ANGLES: Dictionary = {
 	"offense": [-0.55, 0.38],
 	"defense": [0.55, -0.38],
 	"support": [0.55, -0.55],
+	"advanced": [],
+	"high": [],
+	"ultimate": [],
 }
 
-const BRANCH_COLORS = {
+const BRANCH_COLORS: Dictionary = {
 	"offense": Color(0.94, 0.42, 0.34, 1.0),
 	"defense": Color(0.34, 0.66, 0.98, 1.0),
 	"support": Color(0.42, 0.88, 0.56, 1.0),
+	"advanced": Color(0.3, 0.55, 1.0, 1.0),
+	"high": Color(0.65, 0.3, 0.9, 1.0),
+	"ultimate": Color(0.9, 0.2, 0.2, 1.0),
+}
+
+const GEM_COLORS: Dictionary = {
+	"talent_shard": Color(0.6, 0.3, 0.9, 1.0),
+	"gem_green": Color(0.3, 0.85, 0.3, 1.0),
+	"gem_blue": Color(0.3, 0.55, 1.0, 1.0),
+	"gem_purple": Color(0.65, 0.3, 0.9, 1.0),
+	"gem_red": Color(0.9, 0.2, 0.2, 1.0),
 }
 
 signal close_requested
@@ -166,6 +183,22 @@ func _setup_top_controls() -> void:
 	offense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("offense"))
 	defense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("defense"))
 	support_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("support"))
+	var branch_btn_container: Node = offense_jump_button.get_parent()
+	for extra_branch: String in ["advanced", "high", "ultimate"]:
+		var extra_btn: Button = Button.new()
+		extra_btn.text = LocaleManager.L(TALENT_DATA.get_branch_label(extra_branch))
+		extra_btn.custom_minimum_size = Vector2(80, 30)
+		extra_btn.pressed.connect(_jump_to_branch.bind(extra_branch))
+		var btn_color: Color = BRANCH_COLORS.get(extra_branch, Color.WHITE) as Color
+		var btn_style: StyleBoxFlat = StyleBoxFlat.new()
+		btn_style.bg_color = btn_color.darkened(0.55)
+		btn_style.border_color = btn_color
+		btn_style.border_width_left = 1
+		btn_style.border_width_top = 1
+		btn_style.border_width_right = 1
+		btn_style.border_width_bottom = 1
+		extra_btn.add_theme_stylebox_override("normal", btn_style)
+		branch_btn_container.add_child(extra_btn)
 	map_scroll.gui_input.connect(_on_map_gui_input)
 
 
@@ -193,7 +226,19 @@ func _setup_detail_panel() -> void:
 func _refresh() -> void:
 	if player == null:
 		return
-	shard_label.text = LocaleManager.L("talent_shards") % player.inventory.get_item_count("talent_shard")
+	var green_count: int = player.inventory.get_item_count("talent_shard")
+	var blue_count: int = player.inventory.get_item_count("gem_blue")
+	var purple_count: int = player.inventory.get_item_count("gem_purple")
+	var red_count: int = player.inventory.get_item_count("gem_red")
+	shard_label.text = "%s  %s %d  %s %d  %s %d" % [
+		LocaleManager.L("talent_shards") % green_count,
+		LocaleManager.L("gem_blue_short"),
+		blue_count,
+		LocaleManager.L("gem_purple_short"),
+		purple_count,
+		LocaleManager.L("gem_red_short"),
+		red_count,
+	]
 	_refresh_upgrade_controls()
 	_rebuild_map()
 	if selected_talent_id != "":
@@ -334,9 +379,11 @@ func _apply_node_visuals(talent: Dictionary) -> void:
 	var name_label: Label = wrapper.get_node("NameLabel") as Label
 	var state: String = _get_talent_state(talent_id)
 	var branch_id: String = str(talent.get("branch", ""))
+	var gem_type: String = str(talent.get("gem_type", "talent_shard"))
 	var branch_color: Color = Color(0.75, 0.75, 0.75, 1.0)
 	if BRANCH_COLORS.has(branch_id):
 		branch_color = BRANCH_COLORS[branch_id]
+	var gem_color: Color = GEM_COLORS.get(gem_type, branch_color) as Color
 
 	var fill_color: Color = Color(0.26, 0.28, 0.32, 1.0)
 	var border_color: Color = Color(0.42, 0.46, 0.52, 1.0)
@@ -344,13 +391,18 @@ func _apply_node_visuals(talent: Dictionary) -> void:
 	glow.visible = false
 
 	if state == "available":
-		fill_color = branch_color.lerp(Color.WHITE, 0.18)
-		border_color = branch_color.lightened(0.28)
+		fill_color = gem_color.lerp(Color.WHITE, 0.18)
+		border_color = gem_color.lightened(0.28)
 		label_color = Color.WHITE
 	elif state == "unlocked":
-		fill_color = Color(0.94, 0.76, 0.26, 1.0)
-		border_color = Color(1.0, 0.93, 0.66, 1.0)
-		label_color = Color(1.0, 0.88, 0.46, 1.0)
+		if gem_type == "gem_red":
+			fill_color = Color(0.6, 0.12, 0.12, 1.0)
+			border_color = Color(1.0, 0.55, 0.2, 1.0)
+			label_color = Color(1.0, 0.75, 0.35, 1.0)
+		else:
+			fill_color = Color(0.94, 0.76, 0.26, 1.0)
+			border_color = Color(1.0, 0.93, 0.66, 1.0)
+			label_color = Color(1.0, 0.88, 0.46, 1.0)
 		glow.visible = true
 
 	if selected_talent_id == talent_id:
@@ -452,8 +504,14 @@ func _get_talent_state(talent_id: String) -> String:
 	if player.has_talent(talent_id):
 		return "unlocked"
 	var unlocked: Array[String] = player.get_unlocked_talents()
-	var shards: int = player.inventory.get_item_count("talent_shard")
-	if TALENT_DATA.can_unlock(unlocked, shards, talent_id):
+	var gem_counts: Dictionary = {
+		"talent_shard": player.inventory.get_item_count("talent_shard"),
+		"gem_green": player.inventory.get_item_count("gem_green"),
+		"gem_blue": player.inventory.get_item_count("gem_blue"),
+		"gem_purple": player.inventory.get_item_count("gem_purple"),
+		"gem_red": player.inventory.get_item_count("gem_red"),
+	}
+	if TALENT_DATA.can_unlock(unlocked, gem_counts, talent_id):
 		return "available"
 	return "locked"
 
@@ -481,10 +539,15 @@ func _show_talent_detail(talent_id: String) -> void:
 	detail_desc.text = "[p]%s[/p]" % description
 
 	# Cost — colour-coded by affordability
-	var cost_shards: int = int(talent.get("cost", 0))
-	var current_shards: int = player.inventory.get_item_count("talent_shard") if player != null else 0
-	detail_cost.text = "%s  (%d / %d)" % [LocaleManager.L("talent_cost") % cost_shards, current_shards, cost_shards]
-	detail_cost.modulate = Color(0.45, 1.0, 0.45, 1.0) if current_shards >= cost_shards else Color(1.0, 0.45, 0.45, 1.0)
+	var cost_amount: int = int(talent.get("cost", 0))
+	var gem_type: String = str(talent.get("gem_type", "talent_shard"))
+	var gem_name_key: String = "gem_%s_short" % gem_type
+	var gem_display: String = LocaleManager.L(gem_name_key) if gem_name_key != "gem_talent_shard_short" else LocaleManager.L("talent_shards_short")
+	var current_gems: int = player.inventory.get_item_count(gem_type) if player != null else 0
+	detail_cost.text = "%s %d  (%d / %d)" % [gem_display, cost_amount, current_gems, cost_amount]
+	detail_cost.modulate = Color(0.45, 1.0, 0.45, 1.0) if current_gems >= cost_amount else Color(1.0, 0.45, 0.45, 1.0)
+	var gem_node_color: Color = GEM_COLORS.get(gem_type, Color.WHITE) as Color
+	detail_cost.add_theme_color_override("font_color", gem_node_color if current_gems >= cost_amount else Color(1.0, 0.45, 0.45, 1.0))
 
 	# Unlock button — state-driven styling
 	var state: String = _get_talent_state(talent_id)
@@ -659,7 +722,7 @@ func _setup_reset_button() -> void:
 
 	_reset_confirm_dialog = ConfirmationDialog.new()
 	_reset_confirm_dialog.title = "確認重置"
-	_reset_confirm_dialog.dialog_text = "重置所有天賦？將返還 90% 的天賦碎片。"
+	_reset_confirm_dialog.dialog_text = "重置所有天賦？將返還 90% 的各色寶石（含天賦碎片）。"
 	_reset_confirm_dialog.confirmed.connect(_on_reset_confirmed)
 	add_child(_reset_confirm_dialog)
 

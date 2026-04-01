@@ -1,20 +1,26 @@
 extends Node
 
-const BRANCH_ORDER := ["offense", "defense", "support"]
+const BRANCH_ORDER: Array[String] = ["offense", "defense", "support", "advanced", "high", "ultimate"]
 
-const BRANCH_LABELS := {
+const BRANCH_LABELS: Dictionary = {
 	"offense": "branch_offense",
 	"defense": "branch_defense",
 	"support": "branch_support",
+	"advanced": "branch_advanced",
+	"high": "branch_high",
+	"ultimate": "branch_ultimate",
 }
 
-const SUB_BRANCH_ORDER := {
+const SUB_BRANCH_ORDER: Dictionary = {
 	"offense": ["crit", "dot"],
 	"defense": ["block", "regen"],
 	"support": ["speed", "explore"],
+	"advanced": [],
+	"high": [],
+	"ultimate": [],
 }
 
-const SUB_BRANCH_LABELS := {
+const SUB_BRANCH_LABELS: Dictionary = {
 	"offense": {
 		"crit": "sub_branch_offense_crit",
 		"dot": "sub_branch_offense_dot",
@@ -27,6 +33,9 @@ const SUB_BRANCH_LABELS := {
 		"speed": "sub_branch_support_speed",
 		"explore": "sub_branch_support_explore",
 	},
+	"advanced": {},
+	"high": {},
+	"ultimate": {},
 }
 
 const BRANCH_DATA := {
@@ -153,6 +162,38 @@ const BRANCH_DATA := {
 			},
 		},
 	},
+	"advanced": {
+		"prefix": "A",
+		"main": [
+			{"name": "鋒芒強化", "description": "攻擊力 +5%", "effects": {"attack_pct": 0.05}, "gem_type": "gem_blue", "cost": 1},
+			{"name": "鐵壁強化", "description": "防禦力 +5%", "effects": {"defense_pct": 0.05}, "gem_type": "gem_blue", "cost": 1},
+			{"name": "生命強化", "description": "血量上限 +8%", "effects": {"max_hp_pct": 0.08}, "gem_type": "gem_blue", "cost": 2},
+			{"name": "致命強化", "description": "暴擊率 +3%", "effects": {"crit_chance": 0.03}, "gem_type": "gem_blue", "cost": 2},
+			{"name": "疾風強化", "description": "移動速度 +5%", "effects": {"speed_multiplier": 0.05}, "gem_type": "gem_blue", "cost": 2},
+			{"name": "空間強化", "description": "背包 +2 格", "effects": {"inventory_slots": 2}, "gem_type": "gem_blue", "cost": 3},
+		],
+		"sub_branches": {},
+	},
+	"high": {
+		"prefix": "H",
+		"main": [
+			{"name": "破甲精通", "description": "攻擊力 +8%", "effects": {"attack_pct": 0.08}, "gem_type": "gem_purple", "cost": 1},
+			{"name": "暴斬精通", "description": "暴擊傷害 +10%", "effects": {"crit_damage_bonus": 0.10}, "gem_type": "gem_purple", "cost": 1},
+			{"name": "精英剋星", "description": "精英怪經驗與掉落 +15%", "effects": {"elite_bonus": 0.15}, "gem_type": "gem_purple", "cost": 2},
+			{"name": "磐石護身", "description": "受傷減免 +5%", "effects": {"damage_reduction_pct": 0.05}, "gem_type": "gem_purple", "cost": 2},
+			{"name": "祝福共鳴", "description": "祝福效果 +10%", "effects": {"blessing_effectiveness": 0.10}, "gem_type": "gem_purple", "cost": 2},
+		],
+		"sub_branches": {},
+	},
+	"ultimate": {
+		"prefix": "U",
+		"main": [
+			{"name": "技能存量+1", "description": "所有技能基礎多存一次施放（TODO：技能系統完成後生效）", "effects": {"skill_extra_charge": 1}, "gem_type": "gem_red", "cost": 1, "no_prerequisite": true},
+			{"name": "精英必觸祝福", "description": "精英怪死亡時必定觸發祝福選擇（原本 50% 機率）", "effects": {"elite_blessing_guaranteed": 1}, "gem_type": "gem_red", "cost": 1, "no_prerequisite": true},
+			{"name": "死亡保護", "description": "死亡時：非鎖定裝備各有 50% 機率保留，銅幣保留 50%", "effects": {"death_protection": 1}, "gem_type": "gem_red", "cost": 1, "no_prerequisite": true},
+		],
+		"sub_branches": {},
+	},
 }
 
 
@@ -209,13 +250,15 @@ static func get_sub_branch_talents(branch_id: String, sub_branch_id: String) -> 
 	return talents
 
 
-static func can_unlock(unlocked_talents: Array[String], talent_shards: int, talent_id: String) -> bool:
+static func can_unlock(unlocked_talents: Array[String], gem_counts: Dictionary, talent_id: String) -> bool:
 	var talent: Dictionary = get_talent(talent_id)
 	if talent.is_empty():
 		return false
 	if unlocked_talents.has(talent_id):
 		return false
-	if talent_shards < int(talent.get("cost", 0)):
+	var gem_type: String = str(talent.get("gem_type", "talent_shard"))
+	var available: int = int(gem_counts.get(gem_type, 0))
+	if available < int(talent.get("cost", 0)):
 		return false
 	var prerequisite: String = str(talent.get("prerequisite", ""))
 	return prerequisite == "" or unlocked_talents.has(prerequisite)
@@ -230,8 +273,10 @@ static func _build_talents() -> Dictionary:
 		for index in range(main_nodes.size()):
 			var sequence: int = index + 1
 			var id: String = "%s%d" % [prefix, sequence]
-			var prerequisite: String = "" if sequence == 1 else "%s%d" % [prefix, sequence - 1]
-			talents[id] = _create_talent_entry(id, branch_id, "main", sequence, _main_cost(sequence), prerequisite, main_nodes[index] as Dictionary)
+			var node_entry: Dictionary = main_nodes[index] as Dictionary
+			var auto_prereq: String = "" if sequence == 1 else "%s%d" % [prefix, sequence - 1]
+			var prerequisite: String = "" if bool(node_entry.get("no_prerequisite", false)) else auto_prereq
+			talents[id] = _create_talent_entry(id, branch_id, "main", sequence, _main_cost(sequence), prerequisite, node_entry)
 
 		var sub_branch_index: int = 0
 		var sub_branch_order: Array = SUB_BRANCH_ORDER.get(branch_id, [])
@@ -255,19 +300,22 @@ static func _create_talent_entry(
 		branch_id: String,
 		sub_branch_id: String,
 		sequence: int,
-		cost: int,
+		auto_cost: int,
 		prerequisite: String,
 		node_data: Dictionary
 	) -> Dictionary:
 	var fallback_name: String = "未命名天賦 %s" % talent_id
 	var fallback_description: String = "尚無描述"
+	var final_cost: int = int(node_data.get("cost", auto_cost))
+	var gem_type: String = str(node_data.get("gem_type", "talent_shard"))
 	var talent: Dictionary = {
 		"id": talent_id,
 		"name": str(node_data.get("name", fallback_name)),
 		"branch": branch_id,
 		"sub_branch": sub_branch_id,
 		"sequence": sequence,
-		"cost": cost,
+		"cost": final_cost,
+		"gem_type": gem_type,
 		"prerequisite": prerequisite,
 		"description": str(node_data.get("description", fallback_description)),
 		"effects": (node_data.get("effects", {}) as Dictionary).duplicate(true),

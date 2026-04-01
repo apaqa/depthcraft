@@ -301,6 +301,18 @@ func strip_dungeon_equipment() -> void:
 	_notify_equipment_changed()
 
 
+func strip_dungeon_equipment_protected(keep_chance: float) -> void:
+	for slot_name: String in SLOT_ORDER:
+		var item: Dictionary = _equipped.get(slot_name, {})
+		if item.is_empty():
+			continue
+		if bool(item.get("entry_locked", false)):
+			continue
+		if randf() >= keep_chance:
+			_equipped[slot_name] = {}
+	_notify_equipment_changed()
+
+
 func apply_death_penalty() -> void:
 	for slot_name: String in SLOT_ORDER:
 		var item: Dictionary = _equipped.get(slot_name, {})

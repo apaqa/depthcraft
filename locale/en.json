@@ -843,5 +843,19 @@
   "item_gem_purple_name": "Purple Gem",
   "item_gem_purple_desc": "High-tier talent gem — drops from elites/bosses at Floor 20+ (Cycle 2+)",
   "item_gem_red_name": "Red Gem",
-  "item_gem_red_desc": "Ultimate talent gem — extremely rare, drops from F30 Boss only"
+  "item_gem_red_desc": "Ultimate talent gem — extremely rare, drops from F30 Boss only",
+  "branch_advanced": "Advanced",
+  "branch_high": "High",
+  "branch_ultimate": "Ultimate",
+  "talent_shards_short": "Shards",
+  "gem_talent_shard_short": "Shards",
+  "gem_gem_green_short": "Green",
+  "gem_gem_blue_short": "Blue",
+  "gem_gem_purple_short": "Purple",
+  "gem_gem_red_short": "Red",
+  "gem_blue_short": "Blue",
+  "gem_purple_short": "Purple",
+  "gem_red_short": "Red",
+  "talent_gem_cost": "Need %d %s gem",
+  "ultimate_talent_header": "Ultimate Talents"
 }

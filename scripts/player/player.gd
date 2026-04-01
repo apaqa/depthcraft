@@ -116,6 +116,9 @@ var legend_eclipse_crit: bool = false
 var legend_chain_lightning: bool = false
 var legend_kill_count_bonus: bool = false
 var legend_kill_count: int = 0
+var has_skill_extra_charge: bool = false  # TODO: apply when skill system is complete
+var elite_blessing_guaranteed: bool = false
+var has_death_protection: bool = false
 var _dungeon_run_time: float = 0.0
 var _is_charging: bool = false
 var _charge_time: float = 0.0
@@ -1444,15 +1447,34 @@ func get_unlocked_talents() -> Array[String]:
 	return unlocked_talents.duplicate()
 
 
+func _build_gem_counts() -> Dictionary:
+	return {
+		"talent_shard": inventory.get_item_count("talent_shard"),
+		"gem_green": inventory.get_item_count("gem_green"),
+		"gem_blue": inventory.get_item_count("gem_blue"),
+		"gem_purple": inventory.get_item_count("gem_purple"),
+		"gem_red": inventory.get_item_count("gem_red"),
+	}
+
+
+func _sync_ultimate_talent_flags() -> void:
+	has_skill_extra_charge = unlocked_talents.has("U1")
+	elite_blessing_guaranteed = unlocked_talents.has("U2")
+	has_death_protection = unlocked_talents.has("U3")
+
+
 func unlock_talent(talent_id: String) -> bool:
-	if not TALENT_DATA.can_unlock(unlocked_talents, inventory.get_item_count("talent_shard"), talent_id):
+	var gem_counts: Dictionary = _build_gem_counts()
+	if not TALENT_DATA.can_unlock(unlocked_talents, gem_counts, talent_id):
 		return false
 	var talent: Dictionary = TALENT_DATA.get_talent(talent_id)
-	if not inventory.remove_item("talent_shard", int(talent.get("cost", 0))):
+	var gem_type: String = str(talent.get("gem_type", "talent_shard"))
+	if not inventory.remove_item(gem_type, int(talent.get("cost", 0))):
 		return false
 	unlocked_talents.append(talent_id)
 	unlocked_talents.sort()
 	player_stats.rebuild_talent_bonuses(unlocked_talents)
+	_sync_ultimate_talent_flags()
 	if str(talent.get("skill_unlock", "")) != "":
 		print("SKILL UNLOCKED: %s" % str(talent.get("skill_unlock", "")))
 		var skill_system = _skill_system()
@@ -1473,15 +1495,18 @@ func has_talent(talent_id: String) -> bool:
 func reset_all_talents() -> void:
 	if unlocked_talents.is_empty():
 		return
-	var total_cost: int = 0
+	var refund_by_gem: Dictionary = {}
 	for talent_id: String in unlocked_talents:
 		var talent: Dictionary = TALENT_DATA.get_talent(talent_id)
-		total_cost += int(talent.get("cost", 0))
-	var refund: int = int(floor(float(total_cost) * 0.9))
+		var gem_type: String = str(talent.get("gem_type", "talent_shard"))
+		refund_by_gem[gem_type] = int(refund_by_gem.get(gem_type, 0)) + int(talent.get("cost", 0))
 	unlocked_talents.clear()
 	player_stats.rebuild_talent_bonuses(unlocked_talents)
-	if refund > 0:
-		inventory.add_item("talent_shard", refund)
+	_sync_ultimate_talent_flags()
+	for gem_type: String in refund_by_gem.keys():
+		var refund: int = int(floor(float(int(refund_by_gem[gem_type])) * 0.9))
+		if refund > 0:
+			inventory.add_item(gem_type, refund)
 	_refresh_all_stats()
 	_save_persistent_state()
 
@@ -1519,10 +1544,21 @@ func start_dungeon_run() -> void:
 func finish_dungeon_run(safe_return: bool) -> void:
 	if not safe_return:
 		lose_dungeon_run_loot()
-		equipment_system.strip_dungeon_equipment()
-		inventory.remove_item("copper", inventory.get_item_count("copper"))
-		inventory.remove_item("silver", inventory.get_item_count("silver"))
-		inventory.remove_item("gold", inventory.get_item_count("gold"))
+		if has_death_protection:
+			_apply_death_protection_strip()
+			var copper_total: int = inventory.get_total_copper()
+			var lose_copper: int = copper_total / 2
+			inventory.remove_item("gold", inventory.get_item_count("gold"))
+			inventory.remove_item("silver", inventory.get_item_count("silver"))
+			inventory.remove_item("copper", inventory.get_item_count("copper"))
+			var keep_copper: int = copper_total - lose_copper
+			if keep_copper > 0:
+				inventory.add_item("copper", keep_copper)
+		else:
+			equipment_system.strip_dungeon_equipment()
+			inventory.remove_item("copper", inventory.get_item_count("copper"))
+			inventory.remove_item("silver", inventory.get_item_count("silver"))
+			inventory.remove_item("gold", inventory.get_item_count("gold"))
 		equipment_system.apply_death_penalty()
 	equipment_system.clear_entry_locks()
 	_tavern_buffs.clear()
@@ -1544,6 +1580,10 @@ func finish_dungeon_run(safe_return: bool) -> void:
 	_refresh_all_stats()
 	run_max_hp_penalty_changed.emit(dungeon_max_hp_penalty_percent)
 	_save_persistent_state()
+
+
+func _apply_death_protection_strip() -> void:
+	equipment_system.strip_dungeon_equipment_protected(0.5)
 
 
 func record_dungeon_loot(item_id: String, quantity: int) -> void:
@@ -1889,6 +1929,7 @@ func _load_persistent_state() -> void:
 	player_stats.rebuild_talent_bonuses(unlocked_talents)
 	player_stats.set_equipment_bonuses(equipment_system.get_total_bonus_map())
 	undying_will_available = player_stats.has_undying_will()
+	_sync_ultimate_talent_flags()
 
 
 func _save_persistent_state() -> void:

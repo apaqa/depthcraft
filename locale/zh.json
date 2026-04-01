@@ -843,5 +843,19 @@
   "item_gem_purple_name": "紫色寶石",
   "item_gem_purple_desc": "高級天賦寶石 — 20 層以上精英/Boss 掉落（輪迴 2+）",
   "item_gem_red_name": "紅色寶石",
-  "item_gem_red_desc": "終極天賦寶石 — 極稀有，僅 F30 Boss 掉落"
+  "item_gem_red_desc": "終極天賦寶石 — 極稀有，僅 F30 Boss 掉落",
+  "branch_advanced": "進階",
+  "branch_high": "高級",
+  "branch_ultimate": "終極",
+  "talent_shards_short": "碎片",
+  "gem_talent_shard_short": "碎片",
+  "gem_gem_green_short": "綠",
+  "gem_gem_blue_short": "藍",
+  "gem_gem_purple_short": "紫",
+  "gem_gem_red_short": "紅",
+  "gem_blue_short": "藍",
+  "gem_purple_short": "紫",
+  "gem_red_short": "紅",
+  "talent_gem_cost": "需要 %d 個%s寶石",
+  "ultimate_talent_header": "終極天賦"
 }
