@@ -367,7 +367,7 @@ func _input(event: InputEvent) -> void:
 
 	if event.is_action_pressed("pickup_loot") and not build_mode and not is_dead:
 		var found_loot: bool = _pickup_nearby_loot()
-		if not found_loot:
+		if not found_loot and current_dungeon_floor <= 0:
 			safe_return_requested.emit()
 		get_viewport().set_input_as_handled()
 		return
