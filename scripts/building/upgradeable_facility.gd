@@ -19,21 +19,11 @@ func _ready() -> void:
 
 
 func _create_star_label() -> void:
-	if _star_label != null:
-		return
-	_star_label = Label.new()
-	_star_label.position = Vector2(-8.0, -40.0)
-	_star_label.add_theme_font_size_override("font_size", 9)
-	_star_label.modulate = Color(1.0, 0.9, 0.2, 1.0)
-	_star_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_star_label)
-	_update_star_label()
+	pass
 
 
 func _update_star_label() -> void:
-	if _star_label == null:
-		return
-	_star_label.text = "★".repeat(upgrade_level)
+	pass
 
 
 func get_upgrade_level() -> int:

@@ -3,7 +3,9 @@ class_name TalentAltarFacility
 
 
 func get_interaction_prompt() -> String:
-	return LocaleManager.L("prompt_talent")
+	var lv_str: String = " Lv.%d" % get_upgrade_level()
+	var upgrade_part: String = " / [U] " + LocaleManager.L("upgrade") if can_upgrade() else ""
+	return LocaleManager.L("prompt_talent") + lv_str + upgrade_part
 
 
 func interact(player) -> void:

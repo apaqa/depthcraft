@@ -10,7 +10,9 @@ const RECIPE_LEVELS: Dictionary = {
 
 
 func get_interaction_prompt() -> String:
-	return LocaleManager.L("prompt_cooking")
+	var lv_str: String = " Lv.%d" % get_upgrade_level()
+	var upgrade_part: String = " / [U] " + LocaleManager.L("upgrade") if can_upgrade() else ""
+	return LocaleManager.L("prompt_cooking") + lv_str + upgrade_part
 
 
 func interact(player) -> void:

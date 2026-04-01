@@ -10,7 +10,9 @@ const RECIPE_LEVELS = {
 
 
 func get_interaction_prompt() -> String:
-	return "[E] " + LocaleManager.L("craft")
+	var lv_str: String = " Lv.%d" % get_upgrade_level()
+	var upgrade_part: String = " / [U] " + LocaleManager.L("upgrade") if can_upgrade() else ""
+	return "[E] " + LocaleManager.L("craft") + lv_str + upgrade_part
 
 
 func interact(player) -> void:

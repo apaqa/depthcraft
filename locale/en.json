@@ -483,6 +483,7 @@
   "skill_time_warp_name": "Time Warp",
   "skill_time_warp_short": "Warp",
   "skill_time_warp_desc": "(Coming soon) Briefly distort time",
+  "upgrade": "Upgrade",
   "upgrade_to_lv": "Upgrade to Lv%d",
   "upgrade_cost": "Upgrade Cost",
   "cooking_upgrade_1": "Unlocks simple campfire food.",
