@@ -239,18 +239,35 @@ func _perform_projectile_burst() -> void:
 	for i: int in range(3):
 		var angle_offset: float = deg_to_rad(float(i - 1) * 20.0)
 		var proj_dir: Vector2 = base_dir.rotated(angle_offset)
-		if has_method("_fire_projectile"):
-			_fire_projectile(proj_dir, float(damage) * 0.5)
-		else:
-			# Fallback: simple damage at distance
-			for player_ref in get_tree().get_nodes_in_group("player"):
-				if player_ref == null or not is_instance_valid(player_ref):
-					continue
-				var to_player: Vector2 = player_ref.global_position - global_position
-				if to_player.dot(proj_dir) > 0 and to_player.length() < 150.0:
-					var perp: float = absf(to_player.cross(proj_dir))
-					if perp < 16.0 and player_ref.has_method("take_damage"):
-						player_ref.take_damage(int(round(damage * 0.5)), proj_dir)
+		_fire_boss_projectile(proj_dir, float(damage) * 0.5)
+
+
+func _fire_boss_projectile(dir: Vector2, dmg: float) -> void:
+	var parent_node: Node = get_parent()
+	if parent_node == null:
+		return
+	# Use enemy projectile scene if available
+	if PROJECTILE_SCENE != null:
+		var proj: Node2D = PROJECTILE_SCENE.instantiate() as Node2D
+		if proj != null:
+			proj.global_position = global_position
+			if proj.has_method("setup"):
+				proj.setup(dir, 180.0, 160.0, int(round(dmg)), self)
+			elif "direction" in proj:
+				proj.set("direction", dir)
+				proj.set("speed", 180.0)
+				proj.set("damage", int(round(dmg)))
+			parent_node.add_child(proj)
+			return
+	# Fallback: instant line damage
+	for player_ref in get_tree().get_nodes_in_group("player"):
+		if player_ref == null or not is_instance_valid(player_ref):
+			continue
+		var to_player: Vector2 = player_ref.global_position - global_position
+		if to_player.dot(dir) > 0 and to_player.length() < 150.0:
+			var perp: float = absf(to_player.cross(dir))
+			if perp < 16.0 and player_ref.has_method("take_damage"):
+				player_ref.take_damage(int(round(dmg)), dir)
 
 
 func _perform_split() -> void:
