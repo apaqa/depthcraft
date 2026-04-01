@@ -67,6 +67,8 @@ var current_level: Node = null
 var _blessing_input_lock_msec: int = 0
 var _blessing_stage: int = 0
 var _blessing_pending_theme: String = ""
+var _blessing_pending_choice: String = ""
+var _blessing_needs_processing: bool = false
 var current_level_id: String = ""
 var fullscreen_map: Control = null
 var settings_menu: SettingsMenu = null
@@ -762,6 +764,10 @@ func _toggle_settings_menu() -> void:
 
 
 func _process(delta: float) -> void:
+	if _blessing_needs_processing:
+		_blessing_needs_processing = false
+		_process_blessing_choice(_blessing_pending_choice)
+		_blessing_pending_choice = ""
 	_update_minimap(delta)
 	_update_skill_cooldowns()
 
@@ -944,6 +950,7 @@ func _open_blessing_panel(options: Array, title_text: String) -> void:
 	_blessing_input_lock_msec = Time.get_ticks_msec() + 500
 	if buff_select == null:
 		return
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	# Disconnect before reconnecting to avoid double-fire
 	if buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
 		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
@@ -968,22 +975,36 @@ func _open_blessing_panel(options: Array, title_text: String) -> void:
 
 
 func _close_blessing_panel() -> void:
-	if buff_select != null and buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
-		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
 	if buff_select != null:
+		if buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
+			buff_select.buff_chosen.disconnect(_on_blessing_chosen)
+		buff_select.close_menu()
 		buff_select.process_mode = Node.PROCESS_MODE_INHERIT
-	get_tree().paused = false
 	_blessing_stage = 0
 	_blessing_pending_theme = ""
+	_blessing_pending_choice = ""
+	_blessing_needs_processing = false
+	process_mode = Node.PROCESS_MODE_INHERIT
 	if player != null and is_instance_valid(player):
 		player.set_ui_blocked(false)
 	if current_level != null and is_instance_valid(current_level) and current_level.has_method("set_gameplay_paused"):
 		current_level.set_gameplay_paused(false)
+	get_tree().paused = false
 
 
 func _on_blessing_chosen(chosen_id: String) -> void:
 	if Time.get_ticks_msec() < _blessing_input_lock_msec:
 		return
+	# Disconnect immediately to prevent double-fire
+	if buff_select != null and buff_select.has_signal("buff_chosen") and buff_select.buff_chosen.is_connected(_on_blessing_chosen):
+		buff_select.buff_chosen.disconnect(_on_blessing_chosen)
+	# Store chosen_id and process next frame via _pending flag
+	# This avoids re-entrancy: modifying buff_select inside its own signal emission
+	_blessing_pending_choice = chosen_id
+	_blessing_needs_processing = true
+
+
+func _process_blessing_choice(chosen_id: String) -> void:
 	if chosen_id == "":
 		_close_blessing_panel()
 		return
@@ -995,31 +1016,26 @@ func _on_blessing_chosen(chosen_id: String) -> void:
 		# Stage 1: theme chosen
 		_blessing_pending_theme = chosen_id
 		if bs_node.is_theme_assigned(chosen_id):
-			# Theme already assigned to a slot — skip to sub-blessings for this theme
 			_blessing_stage = 3
 			_open_blessing_panel(bs_node.generate_sub_choices_for_theme(chosen_id), LocaleManager.L("blessing_select_sub"))
 			return
-		var empty_slots: Array = bs_node.get_empty_slots()
-		if empty_slots.size() == 1:
-			# Only 1 empty slot — auto-assign
-			bs_node.assign_main_slot(str(empty_slots[0]), chosen_id)
+		var empty_slots: Array[String] = bs_node.get_empty_slots()
+		if empty_slots.size() <= 1:
+			if not empty_slots.is_empty():
+				bs_node.assign_main_slot(empty_slots[0], chosen_id)
 			_close_blessing_panel()
 			return
-		# Multiple empty slots — show slot choices
 		_blessing_stage = 2
 		_open_blessing_panel(bs_node.generate_slot_choices(chosen_id), LocaleManager.L("blessing_select_slot"))
 		return
 	if _blessing_stage == 2:
-		# Stage 2: slot chosen
 		bs_node.assign_main_slot(chosen_id, _blessing_pending_theme)
 		_close_blessing_panel()
 		return
 	if _blessing_stage == 3:
-		# Stage 3: sub-blessing chosen
 		bs_node.add_sub_blessing(chosen_id)
 		_close_blessing_panel()
 		return
-	# Fallback
 	_close_blessing_panel()
 
 
