@@ -5,6 +5,87 @@ const DUNGEON_LOOT = preload("res://scripts/dungeon/dungeon_loot.gd")
 const LEGENDARY_ITEMS: Script = preload("res://scripts/dungeon/legendary_items.gd")
 const ITEM_DATABASE: Script = preload("res://scripts/inventory/item_database.gd")
 
+const BOSS_IDLE_FRAMES: Dictionary = {
+	"boss_skeleton_king": [
+		"res://assets/big_zombie_idle_anim_f0.png",
+		"res://assets/big_zombie_idle_anim_f1.png",
+		"res://assets/big_zombie_idle_anim_f2.png",
+		"res://assets/big_zombie_idle_anim_f3.png",
+	],
+	"boss_slime_mother": [
+		"res://assets/big_demon_idle_anim_f0.png",
+		"res://assets/big_demon_idle_anim_f1.png",
+		"res://assets/big_demon_idle_anim_f2.png",
+		"res://assets/big_demon_idle_anim_f3.png",
+	],
+	"boss_shadow_mage": [
+		"res://assets/necromancer_anim_f0.png",
+		"res://assets/necromancer_anim_f1.png",
+		"res://assets/necromancer_anim_f2.png",
+		"res://assets/necromancer_anim_f3.png",
+	],
+	"boss_lava_golem": [
+		"res://assets/big_demon_idle_anim_f0.png",
+		"res://assets/big_demon_idle_anim_f1.png",
+		"res://assets/big_demon_idle_anim_f2.png",
+		"res://assets/big_demon_idle_anim_f3.png",
+	],
+	"boss_abyss_warden": [
+		"res://assets/big_zombie_idle_anim_f0.png",
+		"res://assets/big_zombie_idle_anim_f1.png",
+		"res://assets/big_zombie_idle_anim_f2.png",
+		"res://assets/big_zombie_idle_anim_f3.png",
+	],
+	"boss_lord_of_abyss": [
+		"res://assets/big_demon_idle_anim_f0.png",
+		"res://assets/big_demon_idle_anim_f1.png",
+		"res://assets/big_demon_idle_anim_f2.png",
+		"res://assets/big_demon_idle_anim_f3.png",
+	],
+}
+
+const BOSS_RUN_FRAMES: Dictionary = {
+	"boss_skeleton_king": [
+		"res://assets/big_zombie_run_anim_f0.png",
+		"res://assets/big_zombie_run_anim_f1.png",
+		"res://assets/big_zombie_run_anim_f2.png",
+		"res://assets/big_zombie_run_anim_f3.png",
+	],
+	"boss_slime_mother": [
+		"res://assets/big_demon_run_anim_f0.png",
+		"res://assets/big_demon_run_anim_f1.png",
+		"res://assets/big_demon_run_anim_f2.png",
+		"res://assets/big_demon_run_anim_f3.png",
+	],
+	"boss_lava_golem": [
+		"res://assets/big_demon_run_anim_f0.png",
+		"res://assets/big_demon_run_anim_f1.png",
+		"res://assets/big_demon_run_anim_f2.png",
+		"res://assets/big_demon_run_anim_f3.png",
+	],
+	"boss_abyss_warden": [
+		"res://assets/big_zombie_run_anim_f0.png",
+		"res://assets/big_zombie_run_anim_f1.png",
+		"res://assets/big_zombie_run_anim_f2.png",
+		"res://assets/big_zombie_run_anim_f3.png",
+	],
+	"boss_lord_of_abyss": [
+		"res://assets/big_demon_run_anim_f0.png",
+		"res://assets/big_demon_run_anim_f1.png",
+		"res://assets/big_demon_run_anim_f2.png",
+		"res://assets/big_demon_run_anim_f3.png",
+	],
+}
+
+const BOSS_SCALE: Dictionary = {
+	"boss_skeleton_king": 2.0,
+	"boss_slime_mother": 2.5,
+	"boss_shadow_mage": 1.8,
+	"boss_lava_golem": 2.8,
+	"boss_abyss_warden": 2.5,
+	"boss_lord_of_abyss": 3.0,
+}
+
 var floor_value: int = 1
 var _aoe_cooldown: float = 5.0
 var _aoe_radius: float = 56.0
@@ -14,6 +95,7 @@ var buff_selection_requested: bool = false
 var _boss_abilities: Array[String] = ["melee_slam"]
 var _ability_cooldowns: Dictionary = {}
 var _split_triggered: bool = false
+var boss_name_key: String = ""
 
 
 func _ready() -> void:
@@ -43,7 +125,9 @@ func configure_for_floor(player_target: CharacterBody2D, floor_number: int, loot
 	_aoe_radius = float(boss_info.get("aoe_radius", 56.0))
 	_aoe_cooldown_left = _aoe_cooldown
 	drop_table.clear()
-	# Apply boss color
+	boss_name_key = str(boss_info.get("name_key", ""))
+	_setup_boss_visual(boss_name_key)
+	# Apply boss color (after visual setup so modulate applies correctly)
 	var boss_color: Variant = boss_info.get("color", null)
 	if boss_color is Color and animated_sprite != null:
 		animated_sprite.modulate = boss_color
@@ -437,6 +521,35 @@ func _generate_boss_equipment() -> Dictionary:
 	fallback["rarity"] = "Epic"
 	fallback["color"] = DUNGEON_LOOT.get_rarity_color("Epic")
 	return fallback
+
+
+func _setup_boss_visual(name_key: String) -> void:
+	if animated_sprite == null:
+		return
+	var idle_list: Array = BOSS_IDLE_FRAMES.get(name_key, []) as Array
+	if idle_list.is_empty():
+		return
+	var frames: SpriteFrames = SpriteFrames.new()
+	frames.add_animation("idle")
+	frames.set_animation_loop("idle", true)
+	frames.set_animation_speed("idle", 5.0)
+	for raw_path: Variant in idle_list:
+		var tex_path: String = str(raw_path)
+		if ResourceLoader.exists(tex_path):
+			frames.add_frame("idle", load(tex_path) as Texture2D)
+	var run_list: Array = BOSS_RUN_FRAMES.get(name_key, idle_list) as Array
+	frames.add_animation("run")
+	frames.set_animation_loop("run", true)
+	frames.set_animation_speed("run", 8.0)
+	for raw_path: Variant in run_list:
+		var tex_path: String = str(raw_path)
+		if ResourceLoader.exists(tex_path):
+			frames.add_frame("run", load(tex_path) as Texture2D)
+	if frames.get_frame_count("idle") > 0:
+		animated_sprite.sprite_frames = frames
+		animated_sprite.play("idle")
+	var boss_s: float = float(BOSS_SCALE.get(name_key, 1.72))
+	scale = Vector2.ONE * boss_s
 
 
 func _request_buff_selection() -> void:

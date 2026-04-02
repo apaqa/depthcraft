@@ -198,6 +198,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		current_level.floor_transition_requested.connect(_on_floor_transition_requested)
 	if current_level.has_signal("victory_requested") and not current_level.victory_requested.is_connected(_on_victory_requested):
 		current_level.victory_requested.connect(_on_victory_requested)
+	if current_level.has_signal("boss_hp_changed") and not current_level.boss_hp_changed.is_connected(_on_boss_hp_changed):
+		current_level.boss_hp_changed.connect(_on_boss_hp_changed)
 	if current_level.has_signal("banner_requested") and not current_level.banner_requested.is_connected(_on_level_banner_requested):
 		current_level.banner_requested.connect(_on_level_banner_requested)
 	if current_level.has_signal("border_flash_requested") and not current_level.border_flash_requested.is_connected(_on_level_border_flash_requested):
@@ -341,6 +343,18 @@ func _on_floor_changed(current_floor: int) -> void:
 func _on_kills_changed(kills: int) -> void:
 	if hud.has_method("update_kills_label"):
 		hud.update_kills_label(kills)
+
+
+func _on_boss_hp_changed(current_hp: int, max_hp: int, name_key: String) -> void:
+	if name_key != "":
+		if hud.has_method("show_boss_bar"):
+			hud.show_boss_bar(LocaleManager.L(name_key), max_hp)
+	elif current_hp <= 0:
+		if hud.has_method("hide_boss_bar"):
+			hud.hide_boss_bar()
+	else:
+		if hud.has_method("update_boss_bar"):
+			hud.update_boss_bar(current_hp)
 
 
 func _on_enter_dungeon_from_tavern_floor(floor_number: int) -> void:

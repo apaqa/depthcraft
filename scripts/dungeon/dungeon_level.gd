@@ -7,6 +7,7 @@ signal buff_selection_requested(options: Array)
 signal blessing_selection_requested(options: Array)
 signal floor_transition_requested(next_floor: int)
 signal victory_requested
+signal boss_hp_changed(current_hp: int, max_hp: int, name_key: String)
 
 const SOURCE_FLOOR_1: int = 0
 const SOURCE_FLOOR_2: int = 1
@@ -385,6 +386,7 @@ func _on_enemy_died(_enemy_position: Vector2, enemy_ref) -> void:
 		achievement_manager.record_enemy_kill(kill_kind)
 	if enemy_ref != null and enemy_ref.has_method("is_boss_enemy") and enemy_ref.is_boss_enemy():
 		boss_enemy_ref = null
+		boss_hp_changed.emit(0, 1, "")
 		_unlock_boss_door()
 		if current_floor >= 30:
 			victory_requested.emit()
@@ -1232,6 +1234,12 @@ func _spawn_boss_enemy(room: Rect2i, rng: RandomNumberGenerator) -> void:
 	if boss.has_method("setup_boss_arena"):
 		boss.setup_boss_arena(self, room)
 	boss_enemy_ref = boss
+	var _bn: String = str(boss.get("boss_name_key")) if "boss_name_key" in boss else ""
+	boss_hp_changed.emit(int(boss.current_hp), int(boss.max_hp), _bn)
+	boss.damaged.connect(func(_dmg: int) -> void:
+		if is_instance_valid(boss):
+			boss_hp_changed.emit(int(boss.current_hp), int(boss.max_hp), "")
+	)
 
 
 func _spawn_boss_locked_chest(room: Rect2i, rng: RandomNumberGenerator) -> void:

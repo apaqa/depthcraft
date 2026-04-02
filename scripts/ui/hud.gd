@@ -96,6 +96,11 @@ var _codex_panel: Control = null
 var _set_bonus_panel: PanelContainer = null
 var _set_bonus_label: Label = null
 var _combo_label: Label = null
+var _boss_bar_root: Control = null
+var _boss_name_label: Label = null
+var _boss_hp_bg: ColorRect = null
+var _boss_hp_fill: ColorRect = null
+var _boss_max_hp: float = 1.0
 
 
 func _ready() -> void:
@@ -171,6 +176,33 @@ func _ready() -> void:
 	_combo_label.size = Vector2(120.0, HUD_LINE_HEIGHT * 2.0)
 	_combo_label.visible = false
 	add_child(_combo_label)
+
+	_boss_bar_root = Control.new()
+	_boss_bar_root.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_boss_bar_root.size = Vector2(320.0, 46.0)
+	_boss_bar_root.position = Vector2(-160.0, -70.0)
+	_boss_bar_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_bar_root.visible = false
+	add_child(_boss_bar_root)
+	_boss_name_label = Label.new()
+	_boss_name_label.add_theme_font_size_override("font_size", 13)
+	_boss_name_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.25, 1.0))
+	_boss_name_label.add_theme_constant_override("outline_size", 2)
+	_boss_name_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	_boss_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_name_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_boss_name_label.size = Vector2(320.0, 18.0)
+	_boss_bar_root.add_child(_boss_name_label)
+	_boss_hp_bg = ColorRect.new()
+	_boss_hp_bg.color = Color(0.1, 0.0, 0.0, 0.85)
+	_boss_hp_bg.size = Vector2(320.0, 14.0)
+	_boss_hp_bg.position = Vector2(0.0, 22.0)
+	_boss_bar_root.add_child(_boss_hp_bg)
+	_boss_hp_fill = ColorRect.new()
+	_boss_hp_fill.color = Color(0.85, 0.15, 0.1, 1.0)
+	_boss_hp_fill.size = Vector2(320.0, 14.0)
+	_boss_hp_fill.position = Vector2(0.0, 0.0)
+	_boss_hp_bg.add_child(_boss_hp_fill)
 
 	update_hp(100, 100)
 	update_bag_label(0, 20)
@@ -631,6 +663,36 @@ func _get_world_level_text() -> String:
 
 func update_kills_label(kills: int) -> void:
 	kills_label.text = LocaleManager.L("kills") + ": %d" % kills if kills > 0 else ""
+
+
+func show_boss_bar(boss_name: String, max_hp: int) -> void:
+	if _boss_bar_root == null:
+		return
+	_boss_max_hp = maxf(float(max_hp), 1.0)
+	_boss_name_label.text = boss_name
+	if _boss_hp_fill != null and _boss_hp_bg != null:
+		_boss_hp_fill.size.x = _boss_hp_bg.size.x
+	_boss_bar_root.visible = true
+	_boss_bar_root.modulate.a = 0.0
+	var tween: Tween = _boss_bar_root.create_tween()
+	tween.tween_property(_boss_bar_root, "modulate:a", 1.0, 0.4)
+
+
+func update_boss_bar(current_hp: int) -> void:
+	if _boss_bar_root == null or _boss_hp_fill == null or _boss_hp_bg == null:
+		return
+	var ratio: float = clampf(float(current_hp) / _boss_max_hp, 0.0, 1.0)
+	_boss_hp_fill.size.x = _boss_hp_bg.size.x * ratio
+
+
+func hide_boss_bar() -> void:
+	if _boss_bar_root == null or not _boss_bar_root.visible:
+		return
+	var tween: Tween = _boss_bar_root.create_tween()
+	tween.tween_property(_boss_bar_root, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(func() -> void:
+		_boss_bar_root.visible = false
+	)
 
 
 func update_combo(count: int) -> void:
