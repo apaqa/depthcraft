@@ -1,13 +1,11 @@
 extends Node
 
-const BRANCH_ORDER: Array[String] = ["offense", "defense", "support", "advanced", "high", "ultimate"]
+const BRANCH_ORDER: Array[String] = ["offense", "defense", "support", "ultimate"]
 
 const BRANCH_LABELS: Dictionary = {
 	"offense": "branch_offense",
 	"defense": "branch_defense",
 	"support": "branch_support",
-	"advanced": "branch_advanced",
-	"high": "branch_high",
 	"ultimate": "branch_ultimate",
 }
 
@@ -15,8 +13,6 @@ const SUB_BRANCH_ORDER: Dictionary = {
 	"offense": ["crit", "dot"],
 	"defense": ["block", "regen"],
 	"support": ["speed", "explore"],
-	"advanced": [],
-	"high": [],
 	"ultimate": [],
 }
 
@@ -33,12 +29,10 @@ const SUB_BRANCH_LABELS: Dictionary = {
 		"speed": "sub_branch_support_speed",
 		"explore": "sub_branch_support_explore",
 	},
-	"advanced": {},
-	"high": {},
 	"ultimate": {},
 }
 
-const BRANCH_DATA := {
+const BRANCH_DATA: Dictionary = {
 	"offense": {
 		"prefix": "O",
 		"main": [
@@ -64,6 +58,8 @@ const BRANCH_DATA := {
 					{"name": "處決步伐", "description": "速度 +6", "effects": {"speed": 6}},
 					{"name": "死線預判", "description": "處決傷害 +35%", "effects": {"execute_bonus": 0.35}},
 					{"name": "行刑宣判", "description": "暴擊率 +8%，處決傷害 +25%，解鎖處決", "effects": {"crit_chance": 0.08, "execute_bonus": 0.25}, "is_milestone": true, "skill_unlock": "Execute"},
+					{"name": "致命強化", "description": "暴擊率 +3%", "effects": {"crit_chance": 0.03}, "gem_type": "gem_blue", "cost": 2},
+					{"name": "暴斬精通", "description": "暴擊傷害 +10%", "effects": {"crit_damage_bonus": 0.10}, "gem_type": "gem_purple", "cost": 1},
 				],
 			},
 			"dot": {
@@ -76,6 +72,8 @@ const BRANCH_DATA := {
 					{"name": "血潮追砍", "description": "攻擊 +6", "effects": {"attack": 6}},
 					{"name": "無盡追獵", "description": "速度倍率 +8%", "effects": {"speed_multiplier": 0.08}},
 					{"name": "刀輪風暴", "description": "攻擊 +8，速度倍率 +8%，解鎖刀輪風暴", "effects": {"attack": 8, "speed_multiplier": 0.08}, "is_milestone": true, "skill_unlock": "Blade Storm"},
+					{"name": "鋒芒強化", "description": "攻擊力 +5%", "effects": {"attack_pct": 0.05}, "gem_type": "gem_blue", "cost": 1},
+					{"name": "破甲精通", "description": "攻擊力 +8%", "effects": {"attack_pct": 0.08}, "gem_type": "gem_purple", "cost": 1},
 				],
 			},
 		},
@@ -105,6 +103,8 @@ const BRANCH_DATA := {
 					{"name": "鎮守反擊", "description": "防禦 +5", "effects": {"defense": 5}},
 					{"name": "無缺防衛", "description": "格擋率 +10%", "effects": {"block_chance": 0.10}},
 					{"name": "不屈壁壘", "description": "防禦 +6，最大生命 +30，解鎖不屈意志", "effects": {"defense": 6, "max_hp": 30}, "is_milestone": true, "skill_unlock": "Undying Will"},
+					{"name": "鐵壁強化", "description": "防禦力 +5%", "effects": {"defense_pct": 0.05}, "gem_type": "gem_blue", "cost": 1},
+					{"name": "磐石護身", "description": "受傷減免 +5%", "effects": {"damage_reduction_pct": 0.05}, "gem_type": "gem_purple", "cost": 2},
 				],
 			},
 			"regen": {
@@ -117,6 +117,7 @@ const BRANCH_DATA := {
 					{"name": "復甦軀殼", "description": "最大生命 +20", "effects": {"max_hp": 20}},
 					{"name": "不斷再生", "description": "每次回復 +2", "effects": {"regen_amount": 2}},
 					{"name": "不滅回流", "description": "每次回復 +2，最大生命 +25，解鎖無敵", "effects": {"regen_amount": 2, "max_hp": 25}, "is_milestone": true, "skill_unlock": "Invincible"},
+					{"name": "生命強化", "description": "血量上限 +8%", "effects": {"max_hp_pct": 0.08}, "gem_type": "gem_blue", "cost": 2},
 				],
 			},
 		},
@@ -146,6 +147,8 @@ const BRANCH_DATA := {
 					{"name": "疾行路線", "description": "速度 +10", "effects": {"speed": 10}},
 					{"name": "閃身本能", "description": "速度倍率 +18%", "effects": {"speed_multiplier": 0.18}},
 					{"name": "音速衝刺", "description": "速度倍率 +20%，速度 +10，解鎖衝刺", "effects": {"speed_multiplier": 0.20, "speed": 10}, "is_milestone": true, "skill_unlock": "Sprint"},
+					{"name": "疾風強化", "description": "移動速度 +5%", "effects": {"speed_multiplier": 0.05}, "gem_type": "gem_blue", "cost": 2},
+					{"name": "祝福共鳴", "description": "祝福效果 +10%", "effects": {"blessing_effectiveness": 0.10}, "gem_type": "gem_purple", "cost": 2},
 				],
 			},
 			"explore": {
@@ -158,32 +161,11 @@ const BRANCH_DATA := {
 					{"name": "野外工法", "description": "製作成本 -10%", "effects": {"craft_cost_multiplier": -0.10}},
 					{"name": "全域視野", "description": "解鎖全圖視野", "effects": {"full_minimap": 1}},
 					{"name": "時間勘探", "description": "掉落率 +15%，拾取範圍 +60，解鎖時間扭曲", "effects": {"loot_bonus": 0.15, "loot_pickup_range": 60}, "is_milestone": true, "skill_unlock": "Time Warp"},
+					{"name": "空間強化", "description": "背包 +2 格", "effects": {"inventory_slots": 2}, "gem_type": "gem_blue", "cost": 3},
+					{"name": "精英剋星", "description": "精英怪經驗與掉落 +15%", "effects": {"elite_bonus": 0.15}, "gem_type": "gem_purple", "cost": 2},
 				],
 			},
 		},
-	},
-	"advanced": {
-		"prefix": "A",
-		"main": [
-			{"name": "鋒芒強化", "description": "攻擊力 +5%", "effects": {"attack_pct": 0.05}, "gem_type": "gem_blue", "cost": 1},
-			{"name": "鐵壁強化", "description": "防禦力 +5%", "effects": {"defense_pct": 0.05}, "gem_type": "gem_blue", "cost": 1},
-			{"name": "生命強化", "description": "血量上限 +8%", "effects": {"max_hp_pct": 0.08}, "gem_type": "gem_blue", "cost": 2},
-			{"name": "致命強化", "description": "暴擊率 +3%", "effects": {"crit_chance": 0.03}, "gem_type": "gem_blue", "cost": 2},
-			{"name": "疾風強化", "description": "移動速度 +5%", "effects": {"speed_multiplier": 0.05}, "gem_type": "gem_blue", "cost": 2},
-			{"name": "空間強化", "description": "背包 +2 格", "effects": {"inventory_slots": 2}, "gem_type": "gem_blue", "cost": 3},
-		],
-		"sub_branches": {},
-	},
-	"high": {
-		"prefix": "H",
-		"main": [
-			{"name": "破甲精通", "description": "攻擊力 +8%", "effects": {"attack_pct": 0.08}, "gem_type": "gem_purple", "cost": 1},
-			{"name": "暴斬精通", "description": "暴擊傷害 +10%", "effects": {"crit_damage_bonus": 0.10}, "gem_type": "gem_purple", "cost": 1},
-			{"name": "精英剋星", "description": "精英怪經驗與掉落 +15%", "effects": {"elite_bonus": 0.15}, "gem_type": "gem_purple", "cost": 2},
-			{"name": "磐石護身", "description": "受傷減免 +5%", "effects": {"damage_reduction_pct": 0.05}, "gem_type": "gem_purple", "cost": 2},
-			{"name": "祝福共鳴", "description": "祝福效果 +10%", "effects": {"blessing_effectiveness": 0.10}, "gem_type": "gem_purple", "cost": 2},
-		],
-		"sub_branches": {},
 	},
 	"ultimate": {
 		"prefix": "U",
@@ -285,7 +267,11 @@ static func _build_talents() -> Dictionary:
 			var sub_branch_id: String = str(sub_branch_id_variant)
 			var sub_branch_data: Dictionary = sub_branch_map.get(sub_branch_id, {})
 			var nodes: Array = sub_branch_data.get("nodes", [])
-			var start_number: int = 11 + sub_branch_index * 8
+			var start_number: int = 11
+			for prev_index: int in range(sub_branch_index):
+				var prev_sub_id: String = str(sub_branch_order[prev_index])
+				var prev_nodes: Array = (sub_branch_map.get(prev_sub_id, {}) as Dictionary).get("nodes", []) as Array
+				start_number += prev_nodes.size()
 			for index in range(nodes.size()):
 				var sequence: int = index + 1
 				var id: String = "%s%d" % [prefix, start_number + index]

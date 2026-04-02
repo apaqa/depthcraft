@@ -24,7 +24,7 @@ const NODE_SIZE = 68.0
 const GLOW_SIZE = 92.0
 const MAIN_STEP = 200.0
 const SUB_STEP = 150.0
-const MIN_ZOOM = 0.5
+const MIN_ZOOM = 0.3
 const MAX_ZOOM = 2.0
 const MAP_BACKGROUND = Color(0.08, 0.09, 0.12, 0.98)
 const LINE_LOCKED = Color(0.28, 0.31, 0.36, 0.95)
@@ -35,8 +35,6 @@ const BRANCH_MAIN_DIRECTIONS: Dictionary = {
 	"offense": Vector2(-0.88, -0.62),
 	"defense": Vector2(0.88, -0.62),
 	"support": Vector2(0.0, 1.0),
-	"advanced": Vector2(-0.55, 0.82),
-	"high": Vector2(0.55, 0.82),
 	"ultimate": Vector2(0.0, -1.0),
 }
 
@@ -44,8 +42,6 @@ const BRANCH_SPLIT_ANGLES: Dictionary = {
 	"offense": [-0.55, 0.38],
 	"defense": [0.55, -0.38],
 	"support": [0.55, -0.55],
-	"advanced": [],
-	"high": [],
 	"ultimate": [],
 }
 
@@ -53,8 +49,6 @@ const BRANCH_COLORS: Dictionary = {
 	"offense": Color(0.94, 0.42, 0.34, 1.0),
 	"defense": Color(0.34, 0.66, 0.98, 1.0),
 	"support": Color(0.42, 0.88, 0.56, 1.0),
-	"advanced": Color(0.3, 0.55, 1.0, 1.0),
-	"high": Color(0.65, 0.3, 0.9, 1.0),
 	"ultimate": Color(0.9, 0.2, 0.2, 1.0),
 }
 
@@ -92,6 +86,7 @@ var node_positions: Dictionary = {}
 var node_widgets: Dictionary = {}
 var branch_focus_points: Dictionary = {}
 var zoom_level: float = 1.0
+var _ultimate_overlay: Control = null
 var dragging_map: bool = false
 var last_drag_position: Vector2 = Vector2.ZERO
 var _reset_confirm_dialog: ConfirmationDialog = null
@@ -133,7 +128,7 @@ func open_for_player(target_player, target_facility = null) -> void:
 	visible = true
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
-	zoom_level = 0.75
+	zoom_level = 0.6
 	_update_zoom()
 	_refresh()
 	_center_on_point.call_deferred(MAP_CENTER)
@@ -156,7 +151,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("interact"):
-		if detail_panel.visible:
+		if _ultimate_overlay != null and _ultimate_overlay.visible:
+			_ultimate_overlay.visible = false
+		elif detail_panel.visible:
 			detail_panel.visible = false
 			selected_talent_id = ""
 			for talent: Dictionary in TALENT_DATA.get_all_talents():
@@ -188,21 +185,20 @@ func _setup_top_controls() -> void:
 	defense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("defense"))
 	support_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("support"))
 	var branch_btn_container: Node = offense_jump_button.get_parent()
-	for extra_branch: String in ["advanced", "high", "ultimate"]:
-		var extra_btn: Button = Button.new()
-		extra_btn.text = LocaleManager.L(TALENT_DATA.get_branch_label(extra_branch))
-		extra_btn.custom_minimum_size = Vector2(80, 30)
-		extra_btn.pressed.connect(_jump_to_branch.bind(extra_branch))
-		var btn_color: Color = BRANCH_COLORS.get(extra_branch, Color.WHITE) as Color
-		var btn_style: StyleBoxFlat = StyleBoxFlat.new()
-		btn_style.bg_color = btn_color.darkened(0.55)
-		btn_style.border_color = btn_color
-		btn_style.border_width_left = 1
-		btn_style.border_width_top = 1
-		btn_style.border_width_right = 1
-		btn_style.border_width_bottom = 1
-		extra_btn.add_theme_stylebox_override("normal", btn_style)
-		branch_btn_container.add_child(extra_btn)
+	var ultimate_btn: Button = Button.new()
+	ultimate_btn.text = LocaleManager.L(TALENT_DATA.get_branch_label("ultimate"))
+	ultimate_btn.custom_minimum_size = Vector2(80, 30)
+	ultimate_btn.pressed.connect(_toggle_ultimate_overlay)
+	var ult_color: Color = BRANCH_COLORS.get("ultimate", Color.WHITE) as Color
+	var ult_style: StyleBoxFlat = StyleBoxFlat.new()
+	ult_style.bg_color = ult_color.darkened(0.55)
+	ult_style.border_color = ult_color
+	ult_style.border_width_left = 1
+	ult_style.border_width_top = 1
+	ult_style.border_width_right = 1
+	ult_style.border_width_bottom = 1
+	ultimate_btn.add_theme_stylebox_override("normal", ult_style)
+	branch_btn_container.add_child(ultimate_btn)
 	map_scroll.gui_input.connect(_on_map_gui_input)
 
 
@@ -211,6 +207,20 @@ func _setup_detail_panel() -> void:
 	detail_desc.fit_content = true
 	detail_unlock_button.pressed.connect(_on_detail_unlock_pressed)
 	detail_unlock_button.custom_minimum_size = Vector2(120, 36)
+	var detail_vbox: VBoxContainer = detail_unlock_button.get_parent() as VBoxContainer
+	if detail_vbox != null and detail_vbox.get_node_or_null("BackButton") == null:
+		var back_btn: Button = Button.new()
+		back_btn.name = "BackButton"
+		back_btn.text = "返回"
+		back_btn.custom_minimum_size = Vector2(80, 28)
+		back_btn.pressed.connect(func() -> void:
+			selected_talent_id = ""
+			detail_panel.visible = false
+			for talent: Dictionary in TALENT_DATA.get_all_talents():
+				_apply_node_visuals(talent)
+			map_canvas.queue_redraw()
+		)
+		detail_vbox.add_child(back_btn)
 	detail_panel.visible = false
 	# Style the detail panel for visual clarity
 	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
@@ -234,17 +244,11 @@ func _refresh() -> void:
 	var blue_count: int = player.inventory.get_item_count("gem_blue")
 	var purple_count: int = player.inventory.get_item_count("gem_purple")
 	var red_count: int = player.inventory.get_item_count("gem_red")
-	shard_label.text = "%s  %s %d  %s %d  %s %d" % [
-		LocaleManager.L("talent_shards") % green_count,
-		LocaleManager.L("gem_blue_short"),
-		blue_count,
-		LocaleManager.L("gem_purple_short"),
-		purple_count,
-		LocaleManager.L("gem_red_short"),
-		red_count,
-	]
+	shard_label.text = "綠:%d 藍:%d 紫:%d 紅:%d" % [green_count, blue_count, purple_count, red_count]
 	_refresh_upgrade_controls()
 	_rebuild_map()
+	if _ultimate_overlay != null and _ultimate_overlay.visible:
+		_refresh_ultimate_overlay()
 	if selected_talent_id != "":
 		_show_talent_detail(selected_talent_id)
 	else:
@@ -266,6 +270,8 @@ func _rebuild_map() -> void:
 
 func _build_branch_positions() -> void:
 	for branch_id in TALENT_DATA.get_branch_ids():
+		if branch_id == "ultimate":
+			continue
 		var main_direction: Vector2 = (BRANCH_MAIN_DIRECTIONS.get(branch_id, Vector2.UP) as Vector2).normalized()
 		var main_talents: Array[Dictionary] = TALENT_DATA.get_sub_branch_talents(branch_id, "main")
 		if main_talents.is_empty():
@@ -292,6 +298,8 @@ func _build_branch_positions() -> void:
 
 func _add_branch_markers() -> void:
 	for branch_id in TALENT_DATA.get_branch_ids():
+		if branch_id == "ultimate":
+			continue
 		var label: Label = Label.new()
 		var branch_color: Color = Color.WHITE
 		if BRANCH_COLORS.has(branch_id):
@@ -460,6 +468,8 @@ func _draw_talent_map(canvas: Control) -> void:
 	canvas.draw_circle(MAP_CENTER, 22.0, Color(0.95, 0.95, 0.98, 0.18))
 
 	for branch_id in TALENT_DATA.get_branch_ids():
+		if branch_id == "ultimate":
+			continue
 		var first_talent: Dictionary = TALENT_DATA.get_talent("%s1" % _branch_prefix(branch_id))
 		if not first_talent.is_empty():
 			_draw_connection(canvas, "", str(first_talent.get("id", "")), branch_id)
@@ -580,6 +590,8 @@ func _on_detail_unlock_pressed() -> void:
 			var talent: Dictionary = TALENT_DATA.get_talent(unlocked_id)
 			var talent_name: String = LocaleManager.L(str(talent.get("name", unlocked_id)))
 			player.show_status_message(LocaleManager.L("talent_unlocked") + ": " + talent_name, Color(1.0, 0.88, 0.3, 1.0), 1.5)
+		selected_talent_id = ""
+		detail_panel.visible = false
 		_refresh()
 
 
@@ -629,10 +641,10 @@ func _on_map_gui_input(event: InputEvent) -> void:
 			dragging_map = mouse_button.pressed
 			last_drag_position = mouse_button.position
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_apply_zoom(zoom_level * 1.1, mouse_button.position)
+			_apply_zoom(zoom_level + 0.05, mouse_button.position)
 			get_viewport().set_input_as_handled()
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_apply_zoom(zoom_level / 1.1, mouse_button.position)
+			_apply_zoom(zoom_level - 0.05, mouse_button.position)
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and dragging_map:
 		var mouse_motion: InputEventMouseMotion = event as InputEventMouseMotion
@@ -775,6 +787,133 @@ func _update_zoom_label() -> void:
 
 
 func _reset_view() -> void:
-	zoom_level = 0.75
+	zoom_level = 0.6
 	_update_zoom()
 	_center_on_point(MAP_CENTER)
+
+
+func _toggle_ultimate_overlay() -> void:
+	if _ultimate_overlay == null:
+		_build_ultimate_overlay()
+	if _ultimate_overlay != null:
+		_ultimate_overlay.visible = not _ultimate_overlay.visible
+		if _ultimate_overlay.visible:
+			_refresh_ultimate_overlay()
+
+
+func _build_ultimate_overlay() -> void:
+	_ultimate_overlay = Control.new()
+	_ultimate_overlay.name = "UltimateOverlay"
+	_ultimate_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_ultimate_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_ultimate_overlay.visible = false
+
+	var backdrop: Panel = Panel.new()
+	backdrop.name = "Backdrop"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	var backdrop_style: StyleBoxFlat = StyleBoxFlat.new()
+	backdrop_style.bg_color = Color(0.0, 0.0, 0.0, 0.72)
+	backdrop.add_theme_stylebox_override("panel", backdrop_style)
+	backdrop.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+			_ultimate_overlay.visible = false
+	)
+	_ultimate_overlay.add_child(backdrop)
+
+	var box: VBoxContainer = VBoxContainer.new()
+	box.name = "OverlayBox"
+	box.set_anchors_preset(Control.PRESET_CENTER)
+	box.offset_left = -320.0
+	box.offset_top = -220.0
+	box.offset_right = 320.0
+	box.offset_bottom = 220.0
+	box.mouse_filter = Control.MOUSE_FILTER_STOP
+	var box_panel: Panel = Panel.new()
+	box_panel.name = "BoxPanel"
+	box_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var box_style: StyleBoxFlat = StyleBoxFlat.new()
+	box_style.bg_color = Color(0.10, 0.12, 0.16, 0.97)
+	box_style.border_color = Color(0.9, 0.2, 0.2, 0.9)
+	box_style.border_width_left = 2
+	box_style.border_width_top = 2
+	box_style.border_width_right = 2
+	box_style.border_width_bottom = 2
+	box_style.corner_radius_top_left = 8
+	box_style.corner_radius_top_right = 8
+	box_style.corner_radius_bottom_left = 8
+	box_style.corner_radius_bottom_right = 8
+	box_panel.add_theme_stylebox_override("panel", box_panel.get_theme_stylebox("panel"))
+	box_panel.add_theme_stylebox_override("panel", box_style)
+	box.add_child(box_panel)
+
+	var title_lbl: Label = Label.new()
+	title_lbl.name = "OverlayTitle"
+	title_lbl.text = LocaleManager.L(TALENT_DATA.get_branch_label("ultimate"))
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_font_size_override("font_size", 22)
+	title_lbl.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2, 1.0))
+	title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(title_lbl)
+
+	var nodes_row: HBoxContainer = HBoxContainer.new()
+	nodes_row.name = "NodesRow"
+	nodes_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	nodes_row.add_theme_constant_override("separation", 32)
+	nodes_row.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(nodes_row)
+
+	_ultimate_overlay.add_child(box)
+	add_child(_ultimate_overlay)
+
+
+func _refresh_ultimate_overlay() -> void:
+	if _ultimate_overlay == null:
+		return
+	var nodes_row: HBoxContainer = _ultimate_overlay.get_node_or_null("OverlayBox/NodesRow") as HBoxContainer
+	if nodes_row == null:
+		return
+	for child in nodes_row.get_children():
+		child.queue_free()
+	var ultimate_talents: Array[Dictionary] = TALENT_DATA.get_branch_talents("ultimate")
+	for talent: Dictionary in ultimate_talents:
+		var talent_id: String = str(talent.get("id", ""))
+		var card: VBoxContainer = VBoxContainer.new()
+		card.custom_minimum_size = Vector2(148, 160)
+		card.mouse_filter = Control.MOUSE_FILTER_PASS
+
+		var btn: Button = Button.new()
+		btn.flat = false
+		btn.text = ""
+		btn.custom_minimum_size = Vector2(NODE_SIZE, NODE_SIZE)
+		btn.size = Vector2(NODE_SIZE, NODE_SIZE)
+		var state: String = _get_talent_state(talent_id)
+		var fill_color: Color = Color(0.26, 0.28, 0.32, 1.0)
+		var border_color: Color = Color(0.42, 0.46, 0.52, 1.0)
+		if state == "available":
+			fill_color = Color(0.6, 0.12, 0.12, 1.0).lerp(Color.WHITE, 0.18)
+			border_color = Color(0.9, 0.2, 0.2, 1.0).lightened(0.28)
+		elif state == "unlocked":
+			fill_color = Color(0.94, 0.76, 0.26, 1.0)
+			border_color = Color(1.0, 0.93, 0.66, 1.0)
+		btn.add_theme_stylebox_override("normal", _make_circle_style(fill_color, border_color, 3))
+		btn.pressed.connect(_on_talent_selected.bind(talent_id))
+		card.add_child(btn)
+
+		var name_lbl: Label = Label.new()
+		name_lbl.text = LocaleManager.L(str(talent.get("name", talent_id)))
+		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_lbl.custom_minimum_size = Vector2(148, 40)
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(name_lbl)
+
+		var cost_lbl: Label = Label.new()
+		var cost_val: int = int(talent.get("cost", 0))
+		cost_lbl.text = "紅:%d" % cost_val
+		cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cost_lbl.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2, 1.0))
+		cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(cost_lbl)
+
+		nodes_row.add_child(card)
