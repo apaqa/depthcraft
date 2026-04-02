@@ -95,6 +95,7 @@ var _skill_system_cache: Node = null
 var _codex_panel: Control = null
 var _set_bonus_panel: PanelContainer = null
 var _set_bonus_label: Label = null
+var _combo_label: Label = null
 
 
 func _ready() -> void:
@@ -158,6 +159,19 @@ func _ready() -> void:
 	_set_bonus_label.add_theme_constant_override("line_spacing", 2)
 	set_margin.add_child(_set_bonus_label)
 	add_child(_set_bonus_panel)
+
+	_combo_label = Label.new()
+	_combo_label.add_theme_font_size_override("font_size", 14)
+	_combo_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	_combo_label.add_theme_constant_override("outline_size", 2)
+	_combo_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	_combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_combo_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_combo_label.position = Vector2(-130.0, HUD_TOP_MARGIN)
+	_combo_label.size = Vector2(120.0, HUD_LINE_HEIGHT * 2.0)
+	_combo_label.visible = false
+	add_child(_combo_label)
+
 	update_hp(100, 100)
 	update_bag_label(0, 20)
 	update_consumable_bar([])
@@ -394,6 +408,8 @@ func bind_player(new_player) -> void:
 		player.hp_changed.connect(update_hp)
 	if player.has_signal("run_max_hp_penalty_changed") and not player.run_max_hp_penalty_changed.is_connected(update_run_max_hp_penalty):
 		player.run_max_hp_penalty_changed.connect(update_run_max_hp_penalty)
+	if player.has_signal("combo_changed") and not player.combo_changed.is_connected(update_combo):
+		player.combo_changed.connect(update_combo)
 	if not inventory.inventory_changed.is_connected(_on_inventory_changed):
 		inventory.inventory_changed.connect(_on_inventory_changed)
 	if not player.equipment_system.equipment_changed.is_connected(_on_equipment_changed):
@@ -615,6 +631,25 @@ func _get_world_level_text() -> String:
 
 func update_kills_label(kills: int) -> void:
 	kills_label.text = LocaleManager.L("kills") + ": %d" % kills if kills > 0 else ""
+
+
+func update_combo(count: int) -> void:
+	if _combo_label == null:
+		return
+	if count <= 0:
+		_combo_label.visible = false
+		return
+	_combo_label.visible = true
+	_combo_label.text = "COMBO x" + str(count)
+	if count >= 10:
+		_combo_label.add_theme_font_size_override("font_size", 20)
+		_combo_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0, 1.0))
+	else:
+		_combo_label.add_theme_font_size_override("font_size", 14)
+		_combo_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	var tween: Tween = _combo_label.create_tween()
+	_combo_label.scale = Vector2(1.3, 1.3)
+	tween.tween_property(_combo_label, "scale", Vector2(1.0, 1.0), 0.15)
 
 
 func _refresh_debug_label() -> void:

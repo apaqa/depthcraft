@@ -31,6 +31,7 @@ signal died
 signal status_message_requested(message: String, color: Color, duration: float)
 signal safe_return_requested
 signal run_max_hp_penalty_changed(lost_percent: int)
+signal combo_changed(count: int)
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var interaction_area: Area2D = $InteractionArea
@@ -117,6 +118,9 @@ var legend_chain_lightning: bool = false
 var legend_kill_count_bonus: bool = false
 var legend_kill_count: int = 0
 var has_skill_extra_charge: bool = false  # TODO: apply when skill system is complete
+var _combo_count: int = 0
+var _combo_timer: float = 0.0
+const COMBO_TIMEOUT: float = 2.0
 var elite_blessing_guaranteed: bool = false
 var has_death_protection: bool = false
 var _dungeon_run_time: float = 0.0
@@ -258,6 +262,11 @@ func _physics_process(delta: float) -> void:
 		attack_cooldown_left = max(attack_cooldown_left - delta, 0.0)
 	if consumable_cooldown_left > 0.0:
 		consumable_cooldown_left = max(consumable_cooldown_left - delta, 0.0)
+	if _combo_timer > 0.0:
+		_combo_timer -= delta
+		if _combo_timer <= 0.0:
+			_combo_count = 0
+			_update_combo_ui()
 	if current_dungeon_floor > 0 and not is_dead:
 		_dungeon_run_time += delta
 	if torch_light_time_left > 0.0:
@@ -698,6 +707,24 @@ func die() -> void:
 	died.emit()
 
 
+func _on_hit_enemy() -> void:
+	_combo_count += 1
+	_combo_timer = COMBO_TIMEOUT
+	_update_combo_ui()
+
+
+func _update_combo_ui() -> void:
+	combo_changed.emit(_combo_count)
+
+
+func get_combo_drop_bonus() -> float:
+	if _combo_count >= 50:
+		return 0.25
+	elif _combo_count >= 20:
+		return 0.10
+	return 0.0
+
+
 func hitfreeze(duration: float) -> void:
 	Engine.time_scale = 0.0
 	await get_tree().create_timer(duration, true, false, true).timeout
@@ -817,6 +844,7 @@ func _apply_single_hit(collider: Variant, attack_direction: Vector2, guaranteed_
 			dmg_color = Color(1.0, 0.85, 0.0, 1.0)
 			dmg_font_size = 18
 		_show_floating_text((collider as Node2D).global_position + Vector2(randf_range(-15.0, 15.0), -20.0), dmg_text, dmg_color, dmg_font_size)
+		_on_hit_enemy()
 	if collider.has_method("apply_knockback"):
 		collider.apply_knockback(attack_direction, 120.0)
 	_apply_blessing_on_hit(collider, attack_damage, _current_hit_slot)
@@ -1430,7 +1458,7 @@ func get_attack_cooldown_duration() -> float:
 
 
 func get_loot_drop_multiplier() -> float:
-	return loot_drop_multiplier * (1.0 + player_stats.get_total_loot_bonus())
+	return loot_drop_multiplier * (1.0 + player_stats.get_total_loot_bonus()) * (1.0 + get_combo_drop_bonus())
 
 
 func get_loot_pickup_range() -> float:
