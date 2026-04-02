@@ -821,6 +821,7 @@
   "keybind_build": "建造模式",
   "keybind_status": "狀態面板",
   "keybind_sprint": "衝刺",
+  "dash": "衝刺",
   "keybind_help": "快捷鍵說明",
   "keybind_pause": "暫停 / 設定",
   "keybind_close_hint": "按 F1 或 ESC 關閉",

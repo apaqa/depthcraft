@@ -130,6 +130,14 @@ const _MAX_CHARGE: float = 2.0
 var _charge_bar_root: Node2D = null
 var _charge_bar_fill: Polygon2D = null
 var _current_hit_slot: String = "primary"
+var dash_cooldown_max: float = 3.0
+var dash_distance: float = 80.0
+var dash_duration: float = 0.12
+var dash_invuln_frames: float = 0.0
+var dash_charges_max: int = 1
+var dash_charges_current: int = 1
+var _dash_cooldown_left: float = 0.0
+var _is_dashing: bool = false
 
 @onready var torch_light: PointLight2D = PointLight2D.new()
 
@@ -283,6 +291,10 @@ func _physics_process(delta: float) -> void:
 	else:
 		sprint_skill_multiplier = 1.0
 		sprint_afterimage_timer = 0.0
+	if _dash_cooldown_left > 0.0:
+		_dash_cooldown_left = max(_dash_cooldown_left - delta, 0.0)
+		if _dash_cooldown_left <= 0.0 and dash_charges_current < dash_charges_max:
+			dash_charges_current = dash_charges_max
 	if _is_charging and not is_dead and not in_menu:
 		_charge_time = minf(_charge_time + delta, _MAX_CHARGE)
 		_update_charge_bar()
@@ -300,6 +312,10 @@ func _physics_process(delta: float) -> void:
 		update_sprite_state(Vector2.ZERO)
 		move_and_slide()
 		return
+	if _is_dashing:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
 
 	var total_regen: int = player_stats.get_regen_amount() + buff_regen_amount
 	var total_regen_interval: float = min(player_stats.get_regen_interval(), buff_regen_interval)
@@ -311,7 +327,7 @@ func _physics_process(delta: float) -> void:
 
 	var input_direction: Vector2 = get_input_vector()
 	var base_speed_value: float = player_stats.get_total_speed()
-	var move_speed_value: float = (sprint_speed if Input.is_action_pressed("sprint") else base_speed_value) * move_speed_multiplier * sprint_skill_multiplier
+	var move_speed_value: float = base_speed_value * move_speed_multiplier * sprint_skill_multiplier
 	velocity = knockback_velocity.move_toward(Vector2.ZERO, 600.0 * delta)
 	apply_input_direction(input_direction, move_speed_value)
 	velocity += knockback_velocity
@@ -394,6 +410,11 @@ func _input(event: InputEvent) -> void:
 		var skill_system = _skill_system()
 		if skill_system != null:
 			skill_system.use_skill_slot(2)
+		get_viewport().set_input_as_handled()
+		return
+
+	if event.is_action_pressed("dash") and not build_mode and not ui_blocked and not is_dead:
+		_handle_dash_input()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -1344,7 +1365,7 @@ func _get_closest_interactable():
 
 
 func _configure_input_actions() -> void:
-	_set_key_action("sprint", KEY_SPACE)
+	_set_key_action("dash", KEY_SPACE)
 	_set_key_action("debug_toggle", KEY_8)
 	_set_key_action("dev_reset", KEY_MINUS)
 	_set_key_action("dev_reset_save", KEY_9)
@@ -2142,3 +2163,36 @@ func _spawn_afterimage() -> void:
 	var tween: Tween = afterimage.create_tween()
 	tween.tween_property(afterimage, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(afterimage.queue_free)
+
+
+func _handle_dash_input() -> void:
+	if _is_dashing:
+		return
+	if dash_charges_current <= 0:
+		return
+	dash_charges_current -= 1
+	if dash_charges_current < dash_charges_max:
+		_dash_cooldown_left = dash_cooldown_max
+	_perform_dash()
+
+
+func _perform_dash() -> void:
+	var dir: Vector2 = get_input_vector()
+	if dir == Vector2.ZERO:
+		dir = last_attack_direction
+	dir = dir.normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.RIGHT
+	var target_pos: Vector2 = global_position + dir * dash_distance
+	if dash_invuln_frames > 0.0:
+		invincible_time_left = max(invincible_time_left, dash_invuln_frames)
+	_is_dashing = true
+	_spawn_afterimage()
+	var dash_tween: Tween = create_tween()
+	dash_tween.tween_property(self, "global_position", target_pos, dash_duration)
+	dash_tween.tween_callback(_on_dash_finished)
+
+
+func _on_dash_finished() -> void:
+	_is_dashing = false
+

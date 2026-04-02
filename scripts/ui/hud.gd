@@ -92,6 +92,9 @@ var _skill_slot_name_labels: Array[Label] = []
 var _skill_hint_label: Label = null
 var _victory_screen: Control = null
 var _skill_system_cache: Node = null
+var _dash_slot_overlay: ColorRect = null
+var _dash_slot_cd_label: Label = null
+var _dash_slot_charge_label: Label = null
 var _codex_panel: Control = null
 var _set_bonus_panel: PanelContainer = null
 var _set_bonus_label: Label = null
@@ -883,6 +886,7 @@ func _toggle_settings_menu() -> void:
 func _process(delta: float) -> void:
 	_update_minimap(delta)
 	_update_skill_cooldowns()
+	_update_dash_slot()
 
 
 func _update_minimap(delta: float) -> void:
@@ -945,6 +949,36 @@ func _update_skill_cooldowns() -> void:
 			overlay.visible = false
 			if cd_label != null and is_instance_valid(cd_label):
 				cd_label.visible = false
+
+
+func _update_dash_slot() -> void:
+	if _dash_slot_overlay == null or not is_instance_valid(_dash_slot_overlay):
+		return
+	if player == null or not is_instance_valid(player):
+		return
+	var cd_left: float = float(player.get("_dash_cooldown_left") if player.get("_dash_cooldown_left") != null else 0.0)
+	var cd_max: float = maxf(float(player.get("dash_cooldown_max") if player.get("dash_cooldown_max") != null else 1.0), 0.001)
+	var charges: int = int(player.get("dash_charges_current") if player.get("dash_charges_current") != null else 1)
+	var charges_max: int = int(player.get("dash_charges_max") if player.get("dash_charges_max") != null else 1)
+	const SLOT_W_D: float = 70.0
+	const SLOT_H_D: float = 36.0
+	if cd_left > 0.0:
+		var ratio: float = clampf(cd_left / cd_max, 0.0, 1.0)
+		_dash_slot_overlay.position = Vector2(0.0, SLOT_H_D * (1.0 - ratio))
+		_dash_slot_overlay.size = Vector2(SLOT_W_D, SLOT_H_D * ratio)
+		_dash_slot_overlay.visible = true
+		if _dash_slot_cd_label != null and is_instance_valid(_dash_slot_cd_label):
+			_dash_slot_cd_label.text = "%.1f" % cd_left
+			_dash_slot_cd_label.visible = true
+	else:
+		_dash_slot_overlay.visible = false
+		if _dash_slot_cd_label != null and is_instance_valid(_dash_slot_cd_label):
+			_dash_slot_cd_label.visible = false
+	if _dash_slot_charge_label != null and is_instance_valid(_dash_slot_charge_label):
+		if charges_max > 1:
+			_dash_slot_charge_label.text = "%d/%d" % [charges, charges_max]
+		else:
+			_dash_slot_charge_label.text = ""
 
 
 func _toggle_fullscreen_map() -> void:
@@ -1497,6 +1531,72 @@ func _refresh_skill_slots() -> void:
 			_skill_slot_cd_labels.append(cd_label)
 
 		skill_slot_row.add_child(container)
+
+	_dash_slot_overlay = null
+	_dash_slot_cd_label = null
+	_dash_slot_charge_label = null
+	const SLOT_W_D: float = 70.0
+	const SLOT_H_D: float = 36.0
+	var dash_sep: Control = Control.new()
+	dash_sep.custom_minimum_size = Vector2(8.0, SLOT_H_D)
+	skill_slot_row.add_child(dash_sep)
+	var dash_container: Control = Control.new()
+	dash_container.custom_minimum_size = Vector2(SLOT_W_D, SLOT_H_D)
+	dash_container.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	var dash_bg: Panel = Panel.new()
+	dash_bg.position = Vector2.ZERO
+	dash_bg.size = Vector2(SLOT_W_D, SLOT_H_D)
+	var dash_bg_style: StyleBoxFlat = StyleBoxFlat.new()
+	dash_bg_style.bg_color = Color(0.08, 0.08, 0.12, 0.88)
+	dash_bg_style.border_color = Color(0.3, 0.3, 0.4, 1.0)
+	dash_bg_style.border_width_left = 1
+	dash_bg_style.border_width_top = 1
+	dash_bg_style.border_width_right = 1
+	dash_bg_style.border_width_bottom = 1
+	dash_bg_style.corner_radius_top_left = 4
+	dash_bg_style.corner_radius_top_right = 4
+	dash_bg_style.corner_radius_bottom_left = 4
+	dash_bg_style.corner_radius_bottom_right = 4
+	dash_bg.add_theme_stylebox_override("panel", dash_bg_style)
+	dash_container.add_child(dash_bg)
+	var dash_name_label: Label = Label.new()
+	dash_name_label.position = Vector2.ZERO
+	dash_name_label.size = Vector2(SLOT_W_D, SLOT_H_D)
+	dash_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dash_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dash_name_label.add_theme_font_size_override("font_size", 11)
+	dash_name_label.add_theme_constant_override("outline_size", 2)
+	dash_name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	dash_name_label.text = "[SPACE]\n%s" % LocaleManager.L("dash")
+	dash_container.add_child(dash_name_label)
+	var dash_overlay: ColorRect = ColorRect.new()
+	dash_overlay.position = Vector2.ZERO
+	dash_overlay.size = Vector2.ZERO
+	dash_overlay.color = Color(0.0, 0.0, 0.0, 0.62)
+	dash_overlay.visible = false
+	dash_container.add_child(dash_overlay)
+	_dash_slot_overlay = dash_overlay
+	var dash_cd_lbl: Label = Label.new()
+	dash_cd_lbl.position = Vector2.ZERO
+	dash_cd_lbl.size = Vector2(SLOT_W_D, SLOT_H_D)
+	dash_cd_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dash_cd_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dash_cd_lbl.add_theme_font_size_override("font_size", 12)
+	dash_cd_lbl.add_theme_constant_override("outline_size", 3)
+	dash_cd_lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	dash_cd_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	dash_cd_lbl.visible = false
+	dash_container.add_child(dash_cd_lbl)
+	_dash_slot_cd_label = dash_cd_lbl
+	var dash_charge_lbl: Label = Label.new()
+	dash_charge_lbl.position = Vector2(0.0, SLOT_H_D - 13.0)
+	dash_charge_lbl.size = Vector2(SLOT_W_D - 3.0, 13.0)
+	dash_charge_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	dash_charge_lbl.add_theme_font_size_override("font_size", 9)
+	dash_charge_lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9, 1.0))
+	dash_container.add_child(dash_charge_lbl)
+	_dash_slot_charge_label = dash_charge_lbl
+	skill_slot_row.add_child(dash_container)
 
 	var has_unequipped: bool = false
 	for skill_id: Variant in skill_system.unlocked_skill_ids:
