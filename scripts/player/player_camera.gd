@@ -11,6 +11,16 @@ func _ready() -> void:
 	_load_zoom_from_settings()
 
 
+func shake(intensity: float, duration: float) -> void:
+	var tween: Tween = create_tween()
+	var steps: int = int(duration / 0.02)
+	for i: int in range(steps):
+		tween.tween_property(self, "offset",
+			Vector2(randf_range(-intensity, intensity),
+				randf_range(-intensity, intensity)), 0.02)
+	tween.tween_property(self, "offset", Vector2.ZERO, 0.02)
+
+
 func _load_zoom_from_settings() -> void:
 	if not FileAccess.file_exists("user://settings.json"):
 		return

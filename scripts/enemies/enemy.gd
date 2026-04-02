@@ -248,6 +248,15 @@ func die() -> void:
 			codex.record_enemy_killed(enemy_type)
 	if hp_bar_root != null:
 		hp_bar_root.visible = false
+	var _die_is_boss: bool = has_method("is_boss_enemy") and bool(call("is_boss_enemy"))
+	var _die_cam: Camera2D = get_viewport().get_camera_2d()
+	if _die_cam != null and _die_cam.has_method("shake"):
+		if _die_is_boss:
+			_die_cam.shake(5.0, 0.15)
+		else:
+			_die_cam.shake(2.0, 0.1)
+	if target != null and is_instance_valid(target) and target.has_method("hitfreeze"):
+		target.hitfreeze(0.08 if _die_is_boss else 0.03)
 	died.emit(global_position)
 	_apply_death_prefix_effects()
 	_drop_loot()

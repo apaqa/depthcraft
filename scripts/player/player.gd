@@ -698,6 +698,12 @@ func die() -> void:
 	died.emit()
 
 
+func hitfreeze(duration: float) -> void:
+	Engine.time_scale = 0.0
+	await get_tree().create_timer(duration, true, false, true).timeout
+	Engine.time_scale = 1.0
+
+
 func heal_to_full() -> void:
 	is_dead = false
 	set_physics_process(true)
