@@ -200,6 +200,8 @@ func _change_level_internal(level_id: String, spawn_override: Variant = null, fl
 		current_level.victory_requested.connect(_on_victory_requested)
 	if current_level.has_signal("boss_hp_changed") and not current_level.boss_hp_changed.is_connected(_on_boss_hp_changed):
 		current_level.boss_hp_changed.connect(_on_boss_hp_changed)
+	if current_level.has_signal("boss_room_entered") and not current_level.boss_room_entered.is_connected(_on_boss_room_entered):
+		current_level.boss_room_entered.connect(_on_boss_room_entered)
 	if current_level.has_signal("banner_requested") and not current_level.banner_requested.is_connected(_on_level_banner_requested):
 		current_level.banner_requested.connect(_on_level_banner_requested)
 	if current_level.has_signal("border_flash_requested") and not current_level.border_flash_requested.is_connected(_on_level_border_flash_requested):
@@ -355,6 +357,11 @@ func _on_boss_hp_changed(current_hp: int, max_hp: int, name_key: String) -> void
 	else:
 		if hud.has_method("update_boss_bar"):
 			hud.update_boss_bar(current_hp)
+
+
+func _on_boss_room_entered(boss_name_key: String) -> void:
+	if hud.has_method("show_boss_intro"):
+		hud.show_boss_intro(boss_name_key)
 
 
 func _on_enter_dungeon_from_tavern_floor(floor_number: int) -> void:

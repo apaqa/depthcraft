@@ -78,6 +78,9 @@ func _ready() -> void:
 	_setup_hp_bar()
 	call_deferred("_find_player")
 	if enemy_kind != "":
+		var bestiary: Node = get_node_or_null("/root/BestiarySystem")
+		if bestiary != null:
+			bestiary.check_first_encounter(enemy_kind)
 		var codex: Node = get_node_or_null("/root/CodexManager")
 		if codex != null:
 			codex.record_enemy_seen(enemy_kind)

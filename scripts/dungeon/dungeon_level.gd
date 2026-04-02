@@ -8,6 +8,7 @@ signal blessing_selection_requested(options: Array)
 signal floor_transition_requested(next_floor: int)
 signal victory_requested
 signal boss_hp_changed(current_hp: int, max_hp: int, name_key: String)
+signal boss_room_entered(boss_name_key: String)
 
 const SOURCE_FLOOR_1: int = 0
 const SOURCE_FLOOR_2: int = 1
@@ -123,6 +124,12 @@ func _on_room_entered(room_index: int) -> void:
 		return
 	if boss_enemy_ref != null and is_instance_valid(boss_enemy_ref) and not _boss_door_locked:
 		call_deferred("_lock_boss_door")
+	var boss_name_key: String = ""
+	if boss_enemy_ref != null and is_instance_valid(boss_enemy_ref):
+		if "boss_name_key" in boss_enemy_ref:
+			boss_name_key = str(boss_enemy_ref.get("boss_name_key"))
+	if boss_name_key != "":
+		boss_room_entered.emit(boss_name_key)
 
 
 func place_player(new_player: Node2D, spawn_override: Variant = null) -> void:

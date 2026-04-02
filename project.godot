@@ -32,6 +32,7 @@ WorldLevel="*res://scripts/systems/world_level.gd"
 NpcManager="*res://scripts/world/npc_manager.gd"
 CycleManager="*res://scripts/systems/cycle_manager.gd"
 CodexManager="*res://scripts/systems/codex_manager.gd"
+BestiarySystem="*res://scripts/systems/bestiary_system.gd"
 BlessingSystem="*res://scripts/systems/blessing_system.gd"
 CycleModifier="*res://scripts/systems/cycle_modifier.gd"
 

@@ -1614,6 +1614,87 @@ func _refresh_skill_slots() -> void:
 	_layout_bottom_hud.call_deferred()
 
 
+func show_encounter_text(monster_name: String, description: String) -> void:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	panel.offset_left = size.x * 0.25
+	panel.offset_right = -size.x * 0.25
+	panel.offset_top = 8.0
+	panel.offset_bottom = 64.0
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.04, 0.04, 0.08, 0.88)
+	panel_style.border_color = Color(0.6, 0.8, 1.0, 0.7)
+	panel_style.border_width_left = 1
+	panel_style.border_width_top = 1
+	panel_style.border_width_right = 1
+	panel_style.border_width_bottom = 1
+	panel_style.corner_radius_top_left = 5
+	panel_style.corner_radius_top_right = 5
+	panel_style.corner_radius_bottom_left = 5
+	panel_style.corner_radius_bottom_right = 5
+	panel.add_theme_stylebox_override("panel", panel_style)
+	var vbox: VBoxContainer = VBoxContainer.new()
+	panel.add_child(vbox)
+	var header: Label = Label.new()
+	header.text = "%s: %s" % [LocaleManager.L("first_encounter_label"), monster_name]
+	header.add_theme_font_size_override("font_size", 12)
+	header.add_theme_color_override("font_color", Color(0.75, 0.9, 1.0, 1.0))
+	header.add_theme_constant_override("outline_size", 2)
+	header.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(header)
+	if description != "" and description != "encounter_" + monster_name.to_lower() + "_desc":
+		var desc_lbl: Label = Label.new()
+		desc_lbl.text = description
+		desc_lbl.add_theme_font_size_override("font_size", 10)
+		desc_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85, 1.0))
+		desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vbox.add_child(desc_lbl)
+	add_child(panel)
+	var fade_tween: Tween = create_tween()
+	fade_tween.tween_interval(4.0)
+	fade_tween.tween_property(panel, "modulate:a", 0.0, 0.6)
+	fade_tween.tween_callback(panel.queue_free)
+
+
+func show_boss_intro(boss_id: String) -> void:
+	var intro_text: String = LocaleManager.L(boss_id + "_intro")
+	if intro_text == boss_id + "_intro":
+		return
+	var overlay: ColorRect = ColorRect.new()
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.color = Color(0.0, 0.0, 0.0, 0.0)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
+	var text_lbl: Label = Label.new()
+	text_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_lbl.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	text_lbl.offset_left = 60.0
+	text_lbl.offset_right = -60.0
+	text_lbl.offset_top = -80.0
+	text_lbl.offset_bottom = -10.0
+	text_lbl.text = intro_text
+	text_lbl.visible_characters = 0
+	text_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	text_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	text_lbl.add_theme_font_size_override("font_size", 16)
+	text_lbl.add_theme_color_override("font_color", Color(1.0, 0.92, 0.7, 1.0))
+	text_lbl.add_theme_constant_override("outline_size", 3)
+	text_lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(text_lbl)
+	var char_count: int = intro_text.length()
+	var intro_tween: Tween = create_tween()
+	intro_tween.tween_property(overlay, "color:a", 0.65, 0.5)
+	intro_tween.tween_property(text_lbl, "visible_characters", char_count, float(char_count) * 0.055)
+	intro_tween.tween_interval(2.5)
+	intro_tween.tween_property(overlay, "color:a", 0.0, 0.6)
+	intro_tween.tween_callback(overlay.queue_free)
+	intro_tween.tween_callback(text_lbl.queue_free)
+
+
 func play_transition(message: String, overlay_color: Color = Color(0, 0, 0, 1), fade_duration: float = 0.25, hold_duration: float = 0.0) -> void:
 	transition_label.text = message
 	transition_label.modulate = Color.WHITE
