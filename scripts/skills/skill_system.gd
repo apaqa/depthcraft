@@ -108,20 +108,37 @@ var skill_slots: Dictionary = {
 var unlocked_skill_ids: Array[String] = []
 var equipped_skill_ids: Array[String] = ["", "", ""]
 var skills: Dictionary = {}
+var _skill_bonuses: Dictionary = {}
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rebuild_skills_dict()
+	# Connect blessing changes so bonuses stay in sync
+	var bs: Node = get_node_or_null("/root/BlessingSystem")
+	if bs != null and bs.has_signal("blessings_changed"):
+		bs.blessings_changed.connect(_refresh_skill_bonuses)
 
 
 func _process(delta: float) -> void:
 	for slot_key: String in SLOT_KEYS:
 		var data: Dictionary = skill_slots[slot_key] as Dictionary
-		var cd: float = float(data.get("cooldown", 0.0)) - delta
-		if cd < 0.0:
-			cd = 0.0
-		data["cooldown"] = cd
+		var cd: float = float(data.get("cooldown", 0.0))
+		if cd > 0.0:
+			cd -= delta
+			if cd <= 0.0:
+				cd = 0.0
+				var current_charges: int = int(data.get("current_charges", 1))
+				var max_charges: int = int(data.get("max_charges", 1))
+				if current_charges < max_charges:
+					current_charges += 1
+					data["current_charges"] = current_charges
+					# If still below max, restart cooldown to charge next
+					if current_charges < max_charges:
+						var sid: String = str(data.get("skill_id", ""))
+						if sid != "" and SKILL_DEFS.has(sid):
+							cd = float((SKILL_DEFS[sid] as Dictionary).get("cooldown", 5.0))
+			data["cooldown"] = cd
 		skill_slots[slot_key] = data
 		# Keep skills dict in sync for HUD
 		var skill_id: String = str(data.get("skill_id", ""))
@@ -166,6 +183,8 @@ func _equip_class_skills(player_class: String) -> void:
 		(skill_slots[slot_key] as Dictionary)["skill_id"] = skill_id
 		(skill_slots[slot_key] as Dictionary)["max_cooldown"] = cd_max
 		(skill_slots[slot_key] as Dictionary)["cooldown"] = 0.0
+		(skill_slots[slot_key] as Dictionary)["max_charges"] = 1
+		(skill_slots[slot_key] as Dictionary)["current_charges"] = 1
 		equipped_skill_ids[i] = skill_id
 	_rebuild_unlocked_ids()
 	_rebuild_skills_dict()
@@ -217,22 +236,27 @@ func try_use_skill(slot_key: String) -> bool:
 		if player != null and player.has_method("show_status_message"):
 			player.show_status_message(LocaleManager.L("skill_slot_empty"), Color(0.7, 0.7, 0.7, 1.0))
 		return false
-	if float(data.get("cooldown", 0.0)) > 0.0:
+	var current_charges: int = int(data.get("current_charges", 1))
+	if current_charges <= 0:
 		return false
 	var def: Dictionary = SKILL_DEFS.get(skill_id, {}) as Dictionary
 	var effect_method: String = str(def.get("effect_method", ""))
 	if effect_method == "" or not has_method(effect_method):
 		return false
-	var did_cast: bool = call(effect_method, def)
+	var modified_def: Dictionary = def.duplicate(true)
+	_apply_bonuses_to_def(modified_def)
+	var did_cast: bool = call(effect_method, modified_def)
 	if did_cast:
 		var class_system: Node = get_node_or_null("/root/ClassSystem")
 		var cd_mult: float = 1.0
 		if class_system != null and class_system.has_method("get_cd_multiplier"):
 			cd_mult = float(class_system.get_cd_multiplier())
-		data["cooldown"] = float(def.get("cooldown", 5.0)) * cd_mult
+		data["cooldown"] = float(modified_def.get("cooldown", 5.0)) * cd_mult
+		data["current_charges"] = maxi(current_charges - 1, 0)
 		skill_slots[slot_key] = data
 		if skill_id != "" and skills.has(skill_id):
 			(skills[skill_id] as Dictionary)["current_cooldown"] = float(data.get("cooldown", 0.0))
+		_apply_post_cast_bonuses()
 		skills_changed.emit()
 	return did_cast
 
@@ -253,9 +277,96 @@ func reset_cooldowns() -> void:
 func clear_dungeon_cooldowns() -> void:
 	for slot_key: String in SLOT_KEYS:
 		(skill_slots[slot_key] as Dictionary)["cooldown"] = 0.0
+		var max_ch: int = int((skill_slots[slot_key] as Dictionary).get("max_charges", 1))
+		(skill_slots[slot_key] as Dictionary)["current_charges"] = max_ch
 	for skill_id: String in skills.keys():
 		(skills[skill_id] as Dictionary)["current_cooldown"] = 0.0
 	skills_changed.emit()
+
+
+# --- Skill blessing bonuses ---
+
+func get_skill_blessing_bonuses() -> Dictionary:
+	var bs: Node = get_node_or_null("/root/BlessingSystem")
+	if bs == null:
+		return {}
+	var bonuses: Dictionary = {}
+	for slot_name: String in ["primary", "secondary", "skill"]:
+		if str(bs.get_slot_theme(slot_name)) != "skill_boost":
+			continue
+		for entry: Dictionary in bs.get_slot_sub_blessings(slot_name):
+			var eff: float = float(entry.get("effectiveness", 1.0))
+			var bid: String = str(entry.get("id", ""))
+			if not BlessingSystem.BLESSING_DEFS.has(bid):
+				continue
+			var def: Dictionary = BlessingSystem.BLESSING_DEFS[bid] as Dictionary
+			match str(def.get("effect", "")):
+				"skill_cd_reduction":
+					bonuses["cd_reduction"] = float(bonuses.get("cd_reduction", 0.0)) + float(def.get("value", 0.0)) * eff
+				"skill_damage_bonus", "skill_damage_transfer":
+					bonuses["damage_bonus"] = float(bonuses.get("damage_bonus", 0.0)) + float(def.get("value", 0.0)) * eff
+				"skill_range_bonus":
+					bonuses["range_bonus"] = float(bonuses.get("range_bonus", 0.0)) + float(def.get("value", 0.0)) * eff
+				"skill_extra_charge":
+					bonuses["extra_charge"] = int(bonuses.get("extra_charge", 0)) + 1
+				"skill_crit_bonus":
+					bonuses["crit_bonus"] = float(bonuses.get("crit_bonus", 0.0)) + float(def.get("value", 0.0)) * eff
+				"skill_heal_on_hit":
+					bonuses["heal_on_hit"] = float(bonuses.get("heal_on_hit", 0.0)) + float(def.get("value", 0.0)) * eff
+				"skill_invincibility":
+					bonuses["invincibility"] = float(bonuses.get("invincibility", 0.0)) + float(def.get("value", 0.0)) * eff
+	return bonuses
+
+
+func _refresh_skill_bonuses() -> void:
+	_skill_bonuses = get_skill_blessing_bonuses()
+	var extra_charges: int = int(_skill_bonuses.get("extra_charge", 0))
+	for slot_key: String in SLOT_KEYS:
+		var data: Dictionary = skill_slots[slot_key] as Dictionary
+		var base_max: int = 1
+		if player != null and "has_skill_extra_charge" in player and bool(player.has_skill_extra_charge):
+			base_max = 2
+		var new_max: int = base_max + extra_charges
+		var old_max: int = int(data.get("max_charges", 1))
+		data["max_charges"] = new_max
+		if new_max > old_max:
+			var current: int = int(data.get("current_charges", 1))
+			data["current_charges"] = mini(current + (new_max - old_max), new_max)
+		skill_slots[slot_key] = data
+
+
+func _apply_bonuses_to_def(modified_def: Dictionary) -> void:
+	if _skill_bonuses.is_empty():
+		return
+	var dmg_bonus: float = float(_skill_bonuses.get("damage_bonus", 0.0))
+	var range_bonus: float = float(_skill_bonuses.get("range_bonus", 0.0))
+	var cd_reduction: float = float(_skill_bonuses.get("cd_reduction", 0.0))
+	var crit_bonus: float = float(_skill_bonuses.get("crit_bonus", 0.0))
+	var total_dmg_mult: float = (1.0 + dmg_bonus) * (1.0 + crit_bonus)
+	if total_dmg_mult != 1.0:
+		if modified_def.has("damage_mult"):
+			modified_def["damage_mult"] = float(modified_def["damage_mult"]) * total_dmg_mult
+		if modified_def.has("damage_per_tick"):
+			modified_def["damage_per_tick"] = float(modified_def["damage_per_tick"]) * total_dmg_mult
+	if range_bonus > 0.0:
+		for key: String in ["range", "aoe_radius", "slow_range", "dash_distance"]:
+			if modified_def.has(key):
+				modified_def[key] = float(modified_def[key]) * (1.0 + range_bonus)
+	if cd_reduction > 0.0:
+		var cd: float = float(modified_def.get("cooldown", 5.0))
+		modified_def["cooldown"] = cd * maxf(0.1, 1.0 - cd_reduction)
+
+
+func _apply_post_cast_bonuses() -> void:
+	if player == null:
+		return
+	var heal_pct: float = float(_skill_bonuses.get("heal_on_hit", 0.0))
+	if heal_pct > 0.0 and player.has_method("heal"):
+		var heal_amount: int = maxi(int(round(float(_get_player_attack_damage()) * heal_pct)), 1)
+		player.heal(heal_amount)
+	var invuln: float = float(_skill_bonuses.get("invincibility", 0.0))
+	if invuln > 0.0 and "invincible_time_left" in player:
+		player.invincible_time_left = maxf(float(player.invincible_time_left), invuln)
 
 
 # --- Legacy UI compatibility ---
