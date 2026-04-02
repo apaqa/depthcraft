@@ -1,11 +1,13 @@
 extends Node
 
-const BRANCH_ORDER: Array[String] = ["offense", "defense", "support", "ultimate"]
+const BRANCH_ORDER: Array[String] = ["offense", "defense", "support", "skill", "mobility", "ultimate"]
 
 const BRANCH_LABELS: Dictionary = {
 	"offense": "branch_offense",
 	"defense": "branch_defense",
 	"support": "branch_support",
+	"skill": "branch_skill",
+	"mobility": "branch_mobility",
 	"ultimate": "branch_ultimate",
 }
 
@@ -13,6 +15,8 @@ const SUB_BRANCH_ORDER: Dictionary = {
 	"offense": ["crit", "dot"],
 	"defense": ["block", "regen"],
 	"support": ["speed", "explore"],
+	"skill": ["skill_crit", "skill_charges"],
+	"mobility": ["dash_mastery", "speed_mastery"],
 	"ultimate": [],
 }
 
@@ -28,6 +32,14 @@ const SUB_BRANCH_LABELS: Dictionary = {
 	"support": {
 		"speed": "sub_branch_support_speed",
 		"explore": "sub_branch_support_explore",
+	},
+	"skill": {
+		"skill_crit": "sub_branch_skill_crit",
+		"skill_charges": "sub_branch_skill_charges",
+	},
+	"mobility": {
+		"dash_mastery": "sub_branch_mobility_dash",
+		"speed_mastery": "sub_branch_mobility_speed",
 	},
 	"ultimate": {},
 }
@@ -163,6 +175,80 @@ const BRANCH_DATA: Dictionary = {
 					{"name": "時間勘探", "description": "掉落率 +15%，拾取範圍 +60，解鎖時間扭曲", "effects": {"loot_bonus": 0.15, "loot_pickup_range": 60}, "is_milestone": true, "skill_unlock": "Time Warp"},
 					{"name": "空間強化", "description": "背包 +2 格", "effects": {"inventory_slots": 2}, "gem_type": "gem_blue", "cost": 3},
 					{"name": "精英剋星", "description": "精英怪經驗與掉落 +15%", "effects": {"elite_bonus": 0.15}, "gem_type": "gem_purple", "cost": 2},
+				],
+			},
+		},
+	},
+	"skill": {
+		"prefix": "SK",
+		"main": [
+			{"name": "術法覺醒", "description": "技能傷害 +8%", "effects": {"skill_damage_pct": 0.08}},
+			{"name": "靈能敏銳", "description": "技能冷卻 -8%", "effects": {"skill_cd_pct": 0.08}},
+			{"name": "魔力湧現", "description": "技能傷害 +10%", "effects": {"skill_damage_pct": 0.10}},
+			{"name": "精準法則", "description": "技能冷卻 -10%", "effects": {"skill_cd_pct": 0.10}},
+			{"name": "法力共鳴", "description": "技能傷害 +10%，解鎖兩條技能分支", "effects": {"skill_damage_pct": 0.10}, "is_milestone": true},
+			{"name": "連環術式", "description": "技能冷卻 -12%", "effects": {"skill_cd_pct": 0.12}},
+		],
+		"sub_branches": {
+			"skill_crit": {
+				"nodes": [
+					{"name": "暴裂術式", "description": "技能暴擊率 +5%", "effects": {"skill_crit_pct": 0.05}},
+					{"name": "催化衝擊", "description": "技能傷害 +8%", "effects": {"skill_damage_pct": 0.08}},
+					{"name": "術式爆燃", "description": "技能暴擊率 +6%", "effects": {"skill_crit_pct": 0.06}},
+					{"name": "強化衝鋒", "description": "技能傷害 +10%", "effects": {"skill_damage_pct": 0.10}},
+					{"name": "死亡之觸", "description": "技能暴擊率 +8%，技能傷害 +10%", "effects": {"skill_crit_pct": 0.08, "skill_damage_pct": 0.10}, "is_milestone": true},
+					{"name": "虛空回饋", "description": "技能暴擊時回血 +5", "effects": {"skill_crit_heal": 5.0}},
+					{"name": "法力精通", "description": "技能暴擊率 +8%", "effects": {"skill_crit_pct": 0.08}, "gem_type": "gem_blue", "cost": 2},
+					{"name": "天命術式", "description": "技能傷害 +15%", "effects": {"skill_damage_pct": 0.15}, "gem_type": "gem_purple", "cost": 1},
+				],
+			},
+			"skill_charges": {
+				"nodes": [
+					{"name": "技能蓄積", "description": "技能冷卻 -8%", "effects": {"skill_cd_pct": 0.08}},
+					{"name": "急速連發", "description": "技能傷害 +6%", "effects": {"skill_damage_pct": 0.06}},
+					{"name": "極限催動", "description": "技能冷卻 -10%", "effects": {"skill_cd_pct": 0.10}},
+					{"name": "雙重充能", "description": "技能額外充能 +1", "effects": {"skill_extra_charge": 1.0}},
+					{"name": "絕招重置", "description": "技能冷卻 -15%", "effects": {"skill_cd_pct": 0.15}, "is_milestone": true},
+					{"name": "秒速歸位", "description": "技能傷害 +8%", "effects": {"skill_damage_pct": 0.08}},
+					{"name": "術式強化", "description": "技能冷卻 -15%", "effects": {"skill_cd_pct": 0.15}, "gem_type": "gem_blue", "cost": 2},
+					{"name": "天命輪轉", "description": "技能冷卻 -20%", "effects": {"skill_cd_pct": 0.20}, "gem_type": "gem_purple", "cost": 1},
+				],
+			},
+		},
+	},
+	"mobility": {
+		"prefix": "MB",
+		"main": [
+			{"name": "輕盈步伐", "description": "移動速度 +5%", "effects": {"move_speed_pct": 0.05}},
+			{"name": "疾風準備", "description": "衝刺冷卻 -10%", "effects": {"dash_cd_mult": 0.10}},
+			{"name": "身法精研", "description": "移動速度 +6%", "effects": {"move_speed_pct": 0.06}},
+			{"name": "瞬移蓄勢", "description": "衝刺距離 +15%", "effects": {"dash_distance_mult": 0.15}},
+			{"name": "疾影分岔", "description": "移動速度 +6%，解鎖兩條移動分支", "effects": {"move_speed_pct": 0.06}, "is_milestone": true},
+			{"name": "流風強化", "description": "衝刺冷卻 -12%", "effects": {"dash_cd_mult": 0.12}},
+		],
+		"sub_branches": {
+			"dash_mastery": {
+				"nodes": [
+					{"name": "急速衝刺", "description": "衝刺冷卻 -12%", "effects": {"dash_cd_mult": 0.12}},
+					{"name": "爆發前衝", "description": "衝刺距離 +15%", "effects": {"dash_distance_mult": 0.15}},
+					{"name": "神速縮退", "description": "衝刺冷卻 -15%", "effects": {"dash_cd_mult": 0.15}},
+					{"name": "瞬息萬里", "description": "衝刺距離 +20%", "effects": {"dash_distance_mult": 0.20}},
+					{"name": "無敵庇護", "description": "衝刺無敵 0.2 秒", "effects": {"dash_invuln_secs": 0.20}, "is_milestone": true},
+					{"name": "流影速決", "description": "衝刺冷卻 -10%", "effects": {"dash_cd_mult": 0.10}},
+					{"name": "疾影精通", "description": "衝刺距離 +20%", "effects": {"dash_distance_mult": 0.20}, "gem_type": "gem_blue", "cost": 2},
+					{"name": "神域奔逸", "description": "衝刺無敵 +0.2 秒，衝刺冷卻 -15%", "effects": {"dash_invuln_secs": 0.20, "dash_cd_mult": 0.15}, "gem_type": "gem_purple", "cost": 1},
+				],
+			},
+			"speed_mastery": {
+				"nodes": [
+					{"name": "戰鬥節奏", "description": "移動速度 +6%", "effects": {"move_speed_pct": 0.06}},
+					{"name": "迅捷身形", "description": "衝刺冷卻 -8%", "effects": {"dash_cd_mult": 0.08}},
+					{"name": "追風步法", "description": "移動速度 +8%", "effects": {"move_speed_pct": 0.08}},
+					{"name": "速度加乘", "description": "速度倍率 +6%", "effects": {"speed_multiplier": 0.06}},
+					{"name": "超速戰法", "description": "移動速度 +10%", "effects": {"move_speed_pct": 0.10}, "is_milestone": true},
+					{"name": "疾光飛影", "description": "移動速度 +8%", "effects": {"move_speed_pct": 0.08}},
+					{"name": "迅影強化", "description": "速度倍率 +8%", "effects": {"speed_multiplier": 0.08}, "gem_type": "gem_blue", "cost": 2},
+					{"name": "最速傳說", "description": "移動速度 +12%，速度倍率 +10%", "effects": {"move_speed_pct": 0.12, "speed_multiplier": 0.10}, "gem_type": "gem_purple", "cost": 1},
 				],
 			},
 		},

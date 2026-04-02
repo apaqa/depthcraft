@@ -36,6 +36,8 @@ const BRANCH_MAIN_DIRECTIONS: Dictionary = {
 	"offense": Vector2(-0.88, -0.62),
 	"defense": Vector2(0.88, -0.62),
 	"support": Vector2(0.0, 1.0),
+	"skill": Vector2(-0.62, 0.78),
+	"mobility": Vector2(0.62, 0.78),
 	"ultimate": Vector2(0.0, -1.0),
 }
 
@@ -43,6 +45,8 @@ const BRANCH_SPLIT_ANGLES: Dictionary = {
 	"offense": [-0.55, 0.38],
 	"defense": [0.55, -0.38],
 	"support": [0.55, -0.55],
+	"skill": [0.5, -0.5],
+	"mobility": [-0.5, 0.5],
 	"ultimate": [],
 }
 
@@ -50,6 +54,8 @@ const BRANCH_COLORS: Dictionary = {
 	"offense": Color(0.94, 0.42, 0.34, 1.0),
 	"defense": Color(0.34, 0.66, 0.98, 1.0),
 	"support": Color(0.42, 0.88, 0.56, 1.0),
+	"skill": Color(0.2, 0.8, 0.8, 1.0),
+	"mobility": Color(0.9, 0.9, 0.9, 1.0),
 	"ultimate": Color(0.9, 0.2, 0.2, 1.0),
 }
 
@@ -215,6 +221,8 @@ func _build_unified_top_bar() -> void:
 		["offense", _jump_to_branch.bind("offense")],
 		["defense", _jump_to_branch.bind("defense")],
 		["support", _jump_to_branch.bind("support")],
+		["skill", _jump_to_branch.bind("skill")],
+		["mobility", _jump_to_branch.bind("mobility")],
 		["ultimate", _toggle_ultimate_overlay],
 	]
 	for branch_def: Array in branch_defs:

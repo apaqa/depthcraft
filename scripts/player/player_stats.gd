@@ -80,7 +80,12 @@ func get_total_speed() -> float:
 
 
 func get_speed_with_effects(equipment_effects: Dictionary) -> float:
-	return base_speed * (1.0 + _get_combined_effect("speed_multiplier", equipment_effects)) + _get_combined_effect("speed", equipment_effects)
+	var multiplier: float = _get_combined_effect("speed_multiplier", equipment_effects) + _get_combined_effect("move_speed_pct", equipment_effects)
+	return base_speed * (1.0 + multiplier) + _get_combined_effect("speed", equipment_effects)
+
+
+func get_talent_effect(key: String) -> float:
+	return float(_talent_effects.get(key, 0.0))
 
 
 func get_total_crit_chance() -> float:

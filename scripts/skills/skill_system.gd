@@ -109,6 +109,24 @@ var unlocked_skill_ids: Array[String] = []
 var equipped_skill_ids: Array[String] = ["", "", ""]
 var skills: Dictionary = {}
 var _skill_bonuses: Dictionary = {}
+var _talent_damage_bonus: float = 0.0
+var _talent_cd_pct: float = 0.0
+var _talent_crit_pct: float = 0.0
+
+
+func apply_talent_bonuses(unlocked: Array) -> void:
+	_talent_damage_bonus = 0.0
+	_talent_cd_pct = 0.0
+	_talent_crit_pct = 0.0
+	if player == null:
+		return
+	var ps: Node = player.get("player_stats")
+	if ps == null or not ps.has_method("get_talent_effect"):
+		return
+	_talent_damage_bonus = ps.get_talent_effect("skill_damage_pct")
+	_talent_cd_pct = ps.get_talent_effect("skill_cd_pct")
+	_talent_crit_pct = ps.get_talent_effect("skill_crit_pct")
+	_refresh_skill_bonuses()
 
 
 func _ready() -> void:
@@ -336,12 +354,12 @@ func _refresh_skill_bonuses() -> void:
 
 
 func _apply_bonuses_to_def(modified_def: Dictionary) -> void:
-	if _skill_bonuses.is_empty():
-		return
-	var dmg_bonus: float = float(_skill_bonuses.get("damage_bonus", 0.0))
+	var dmg_bonus: float = float(_skill_bonuses.get("damage_bonus", 0.0)) + _talent_damage_bonus
 	var range_bonus: float = float(_skill_bonuses.get("range_bonus", 0.0))
-	var cd_reduction: float = float(_skill_bonuses.get("cd_reduction", 0.0))
-	var crit_bonus: float = float(_skill_bonuses.get("crit_bonus", 0.0))
+	var cd_reduction: float = float(_skill_bonuses.get("cd_reduction", 0.0)) + _talent_cd_pct
+	var crit_bonus: float = float(_skill_bonuses.get("crit_bonus", 0.0)) + _talent_crit_pct
+	if _skill_bonuses.is_empty() and dmg_bonus == 0.0 and range_bonus == 0.0 and cd_reduction == 0.0 and crit_bonus == 0.0:
+		return
 	var total_dmg_mult: float = (1.0 + dmg_bonus) * (1.0 + crit_bonus)
 	if total_dmg_mult != 1.0:
 		if modified_def.has("damage_mult"):

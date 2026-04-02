@@ -1906,6 +1906,19 @@ func _recalculate_buff_state() -> void:
 
 func _on_player_stats_changed() -> void:
 	_refresh_all_stats()
+	_sync_talent_bonuses()
+
+
+func _sync_talent_bonuses() -> void:
+	var cd_mult: float = player_stats.get_talent_effect("dash_cd_mult")
+	dash_cooldown_max = maxf(3.0 * (1.0 - cd_mult), 0.5)
+	var dist_mult: float = player_stats.get_talent_effect("dash_distance_mult")
+	dash_distance = 80.0 * (1.0 + dist_mult)
+	var invuln: float = player_stats.get_talent_effect("dash_invuln_secs")
+	dash_invuln_frames = invuln
+	var ss: Node = _skill_system()
+	if ss != null and ss.has_method("apply_talent_bonuses"):
+		ss.apply_talent_bonuses(unlocked_talents)
 
 
 func _on_equipment_changed() -> void:
