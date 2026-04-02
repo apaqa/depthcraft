@@ -126,5 +126,11 @@ func _room_color_for_type(room_types: Array, room_idx: int, boss_room_index: int
 			return Color(0.18, 0.32, 0.52, 1.0)
 		"elite":
 			return Color(0.52, 0.22, 0.1, 1.0)
+		"trap":
+			return Color(0.70, 0.14, 0.14, 1.0)
+		"elite_arena":
+			return Color(0.45, 0.0, 0.0, 1.0)
+		"shrine":
+			return Color(0.22, 0.42, 0.85, 1.0)
 		_:
 			return Color(0.26, 0.28, 0.36, 1.0)

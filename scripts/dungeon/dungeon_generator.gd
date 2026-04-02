@@ -203,12 +203,16 @@ func _assign_room_types(room_count: int, spawn_room_index: int, exit_room_index:
 		if room_index == elite_room_index and floor_number >= 4:
 			room_types.append("elite")
 			continue
-		var roll := _rng_randf(rng)
-		if floor_number >= 3 and roll <= 0.10:
+		var roll: float = _rng_randf(rng)
+		if floor_number >= 10 and roll <= 0.03:
+			room_types.append("elite_arena")
+		elif floor_number >= 5 and roll <= 0.08:
+			room_types.append("shrine")
+		elif floor_number >= 3 and roll <= 0.18:
 			room_types.append("trap")
-		elif roll <= 0.20:
+		elif roll <= 0.28:
 			room_types.append("treasure")
-		elif roll <= 0.35:
+		elif roll <= 0.42:
 			room_types.append("empty")
 		else:
 			room_types.append("normal")

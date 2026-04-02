@@ -297,6 +297,10 @@ func _spawn_features() -> void:
 				_spawn_secret_merchant_room(room, room_index)
 			"boss":
 				_spawn_boss_room_visual(room)
+			"elite_arena":
+				_spawn_elite_arena_room(room, room_index)
+			"shrine":
+				_spawn_shrine_room(room)
 		if _room_has_feature(room_index, "puzzle"):
 			_spawn_puzzle_room(room, room_index)
 		if _room_has_feature(room_index, "safe"):
@@ -333,7 +337,7 @@ func _spawn_enemies() -> void:
 			continue
 		eligible_rooms.append(room_index)
 		var room: Rect2i = rooms[room_index]
-		if room_type == "empty":
+		if room_type == "empty" or room_type == "shrine":
 			continue
 		var enemy_count: int = rng.randi_range(int(config["enemy_min"]), int(config["enemy_max"]))
 		if room_type == "treasure":
@@ -733,10 +737,68 @@ func _spawn_empty_room(room: Rect2i) -> void:
 
 
 func _spawn_trap_room(room: Rect2i) -> void:
+	_spawn_room_tint(room, Color(0.35, 0.0, 0.0, 0.18), Color(0.9, 0.2, 0.2, 0.6))
 	for _trap_index in range(randi_range(2, 4)):
 		var trap = SPIKE_TRAP_SCENE.instantiate()
 		trap.global_position = _random_point_in_room(room)
 		feature_root.add_child(trap)
+
+
+func _spawn_elite_arena_room(room: Rect2i, room_index: int) -> void:
+	_spawn_room_tint(room, Color(0.28, 0.05, 0.05, 0.30), Color(0.8, 0.1, 0.1, 0.85))
+	var arena_rng: RandomNumberGenerator = _create_room_rng(997, room_index)
+	var elite_count: int = arena_rng.randi_range(2, 3)
+	for _i: int in range(elite_count):
+		var elite: Enemy = ELITE_ENEMY_SCENE.instantiate()
+		elite.global_position = _random_point_in_room(room, arena_rng)
+		elite.configure_for_floor(player, current_floor, loot_root)
+		_apply_floor_scaling(elite, 1.5, 1.3, 1.0)
+		elite.died.connect(_on_enemy_died.bind(elite))
+		enemy_root.add_child(elite)
+
+
+func _spawn_shrine_room(room: Rect2i) -> void:
+	_spawn_room_tint(room, Color(0.05, 0.1, 0.30, 0.28), Color(0.3, 0.55, 1.0, 0.80))
+	var shrine_center: Vector2 = _room_center_world(room)
+	# Pillar light visual
+	var pillar: Polygon2D = Polygon2D.new()
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i: int in range(20):
+		pts.append(Vector2(cos(float(i) * TAU / 20.0), sin(float(i) * TAU / 20.0)) * 10.0)
+	pillar.polygon = pts
+	pillar.color = Color(0.3, 0.6, 1.0, 0.7)
+	pillar.global_position = shrine_center
+	pillar.z_index = 2
+	feature_root.add_child(pillar)
+	# Pulsing tween
+	var pulse: Tween = pillar.create_tween()
+	pulse.set_loops()
+	pulse.tween_property(pillar, "modulate:a", 0.4, 0.8)
+	pulse.tween_property(pillar, "modulate:a", 1.0, 0.8)
+	# Interaction area
+	var shrine_area: Area2D = Area2D.new()
+	shrine_area.global_position = shrine_center
+	shrine_area.collision_layer = 0
+	shrine_area.collision_mask = 4
+	var col: CollisionShape2D = CollisionShape2D.new()
+	var shape: CircleShape2D = CircleShape2D.new()
+	shape.radius = 20.0
+	col.shape = shape
+	shrine_area.add_child(col)
+	feature_root.add_child(shrine_area)
+	var shrine_used: bool = false
+	var level_ref: Node = self
+	shrine_area.body_entered.connect(func(body: Node2D) -> void:
+		if shrine_used:
+			return
+		if not body.is_in_group("player"):
+			return
+		shrine_used = true
+		pillar.color = Color(0.6, 0.6, 0.6, 0.4)
+		pulse.stop()
+		level_ref.set_gameplay_paused(true)
+		level_ref.blessing_selection_requested.emit([])
+	)
 
 
 func _spawn_special_room_visuals(room: Rect2i, room_feature: Dictionary) -> void:
