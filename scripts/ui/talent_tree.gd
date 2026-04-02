@@ -24,8 +24,9 @@ const NODE_SIZE = 68.0
 const GLOW_SIZE = 92.0
 const MAIN_STEP = 200.0
 const SUB_STEP = 150.0
-const MIN_ZOOM = 0.3
-const MAX_ZOOM = 2.0
+const MIN_ZOOM: float = 0.15
+const MAX_ZOOM: float = 1.5
+const ZOOM_STEP: float = 0.05
 const MAP_BACKGROUND = Color(0.08, 0.09, 0.12, 0.98)
 const LINE_LOCKED = Color(0.28, 0.31, 0.36, 0.95)
 const LINE_AVAILABLE = Color(0.76, 0.86, 0.95, 0.95)
@@ -128,7 +129,7 @@ func open_for_player(target_player, target_facility = null) -> void:
 	visible = true
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
-	zoom_level = 0.6
+	zoom_level = 0.4
 	_update_zoom()
 	_refresh()
 	_center_on_point.call_deferred(MAP_CENTER)
@@ -351,6 +352,7 @@ func _create_node_widget(talent: Dictionary) -> void:
 	button.size = Vector2(NODE_SIZE, NODE_SIZE)
 	button.position = Vector2((wrapper.size.x - NODE_SIZE) * 0.5, 0.0)
 	button.pressed.connect(_on_talent_selected.bind(talent_id))
+	button.tooltip_text = LocaleManager.L(str(talent.get("name", talent_id)))
 	wrapper.add_child(button)
 
 	var icon_rect: TextureRect = TextureRect.new()
@@ -641,10 +643,10 @@ func _on_map_gui_input(event: InputEvent) -> void:
 			dragging_map = mouse_button.pressed
 			last_drag_position = mouse_button.position
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_apply_zoom(zoom_level + 0.05, mouse_button.position)
+			_apply_zoom(zoom_level + ZOOM_STEP, mouse_button.position)
 			get_viewport().set_input_as_handled()
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_apply_zoom(zoom_level - 0.05, mouse_button.position)
+			_apply_zoom(zoom_level - ZOOM_STEP, mouse_button.position)
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and dragging_map:
 		var mouse_motion: InputEventMouseMotion = event as InputEventMouseMotion
@@ -673,6 +675,14 @@ func _update_zoom() -> void:
 	map_canvas.size = BASE_MAP_SIZE
 	map_canvas.position = Vector2.ZERO
 	map_canvas.queue_redraw()
+	var show_labels: bool = zoom_level >= 0.3
+	for wrapper_variant: Variant in node_widgets.values():
+		var wrapper: Control = wrapper_variant as Control
+		if wrapper == null:
+			continue
+		var name_lbl: Label = wrapper.get_node_or_null("NameLabel") as Label
+		if name_lbl != null:
+			name_lbl.visible = show_labels
 	_update_zoom_label()
 
 
@@ -787,7 +797,7 @@ func _update_zoom_label() -> void:
 
 
 func _reset_view() -> void:
-	zoom_level = 0.6
+	zoom_level = 0.4
 	_update_zoom()
 	_center_on_point(MAP_CENTER)
 
