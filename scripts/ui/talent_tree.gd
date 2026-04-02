@@ -27,9 +27,9 @@ const SUB_STEP = 150.0
 const MIN_ZOOM: float = 0.15
 const MAX_ZOOM: float = 1.5
 const ZOOM_STEP: float = 0.05
-const MAP_BACKGROUND = Color(0.08, 0.09, 0.12, 0.98)
-const LINE_LOCKED = Color(0.28, 0.31, 0.36, 0.95)
-const LINE_AVAILABLE = Color(0.76, 0.86, 0.95, 0.95)
+const MAP_BACKGROUND = Color(0.12, 0.14, 0.18, 0.95)
+const LINE_LOCKED = Color(0.35, 0.38, 0.44, 0.45)
+const LINE_AVAILABLE = Color(0.76, 0.86, 0.95, 1.0)
 const LINE_UNLOCKED = Color(1.0, 0.82, 0.34, 1.0)
 
 const BRANCH_MAIN_DIRECTIONS: Dictionary = {
@@ -106,10 +106,8 @@ func _ready() -> void:
 	map_root.size = BASE_MAP_SIZE
 	_build_map_canvas()
 	_setup_top_controls()
+	_build_unified_top_bar()
 	_setup_detail_panel()
-	_ensure_close_button()
-	_setup_reset_button()
-	_build_gem_overlay()
 	_update_zoom()
 	var tt_style: StyleBoxFlat = StyleBoxFlat.new()
 	tt_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
@@ -177,40 +175,123 @@ func _build_map_canvas() -> void:
 
 
 func _setup_top_controls() -> void:
-	upgrade_button.pressed.connect(_on_upgrade_pressed)
-	# Hide altar upgrade UI from talent tree (upgrade via separate interaction)
+	# Hide all old scene-defined top controls; unified top bar replaces them
 	upgrade_summary_label.visible = false
 	upgrade_button.visible = false
 	upgrade_summary_label.get_parent().visible = false
-	offense_jump_button.pressed.connect(_jump_to_branch.bind("offense"))
-	defense_jump_button.pressed.connect(_jump_to_branch.bind("defense"))
-	support_jump_button.pressed.connect(_jump_to_branch.bind("support"))
-	offense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("offense"))
-	defense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("defense"))
-	support_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("support"))
-	# Compact tab button sizes
-	for btn: Button in [offense_jump_button, defense_jump_button, support_jump_button]:
-		btn.custom_minimum_size = Vector2(0, 28)
-		btn.add_theme_font_size_override("font_size", 14)
-	# Also hide shard_label (replaced by gem overlay)
+	title_label.visible = false
 	shard_label.visible = false
-	var branch_btn_container: Node = offense_jump_button.get_parent()
-	var ultimate_btn: Button = Button.new()
-	ultimate_btn.text = LocaleManager.L(TALENT_DATA.get_branch_label("ultimate"))
-	ultimate_btn.custom_minimum_size = Vector2(0, 28)
-	ultimate_btn.add_theme_font_size_override("font_size", 14)
-	ultimate_btn.pressed.connect(_toggle_ultimate_overlay)
-	var ult_color: Color = BRANCH_COLORS.get("ultimate", Color.WHITE) as Color
-	var ult_style: StyleBoxFlat = StyleBoxFlat.new()
-	ult_style.bg_color = ult_color.darkened(0.55)
-	ult_style.border_color = ult_color
-	ult_style.border_width_left = 1
-	ult_style.border_width_top = 1
-	ult_style.border_width_right = 1
-	ult_style.border_width_bottom = 1
-	ultimate_btn.add_theme_stylebox_override("normal", ult_style)
-	branch_btn_container.add_child(ultimate_btn)
+	offense_jump_button.get_parent().get_parent().visible = false  # TopBar HBoxContainer
 	map_scroll.gui_input.connect(_on_map_gui_input)
+
+
+func _build_unified_top_bar() -> void:
+	var vbox: VBoxContainer = title_label.get_parent() as VBoxContainer
+	if vbox == null or vbox.get_node_or_null("UnifiedTopBar") != null:
+		return
+	var bar: HBoxContainer = HBoxContainer.new()
+	bar.name = "UnifiedTopBar"
+	bar.custom_minimum_size = Vector2(0, 28)
+	bar.add_theme_constant_override("separation", 6)
+	# X close button
+	var close_btn: Button = Button.new()
+	close_btn.name = "UnifiedCloseBtn"
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(28, 28)
+	close_btn.add_theme_font_size_override("font_size", 13)
+	close_btn.pressed.connect(close_menu)
+	bar.add_child(close_btn)
+	# Title
+	var title_lbl: Label = Label.new()
+	title_lbl.name = "UnifiedTitle"
+	title_lbl.text = LocaleManager.L("title_talents")
+	title_lbl.add_theme_font_size_override("font_size", 14)
+	title_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	bar.add_child(title_lbl)
+	# Separator
+	bar.add_child(VSeparator.new())
+	# Branch tab buttons
+	var branch_defs: Array = [
+		["offense", _jump_to_branch.bind("offense")],
+		["defense", _jump_to_branch.bind("defense")],
+		["support", _jump_to_branch.bind("support")],
+		["ultimate", _toggle_ultimate_overlay],
+	]
+	for branch_def: Array in branch_defs:
+		var branch_id: String = str(branch_def[0])
+		var btn: Button = Button.new()
+		btn.text = LocaleManager.L(TALENT_DATA.get_branch_label(branch_id))
+		btn.custom_minimum_size = Vector2(0, 28)
+		btn.add_theme_font_size_override("font_size", 13)
+		btn.pressed.connect(branch_def[1] as Callable)
+		var btn_color: Color = BRANCH_COLORS.get(branch_id, Color.WHITE) as Color
+		var btn_style: StyleBoxFlat = StyleBoxFlat.new()
+		btn_style.bg_color = btn_color.darkened(0.55)
+		btn_style.border_color = btn_color
+		btn_style.border_width_left = 1
+		btn_style.border_width_top = 1
+		btn_style.border_width_right = 1
+		btn_style.border_width_bottom = 1
+		btn.add_theme_stylebox_override("normal", btn_style)
+		bar.add_child(btn)
+	# Separator
+	bar.add_child(VSeparator.new())
+	# Gem count row
+	_gem_labels.clear()
+	var gem_defs: Array = [
+		["talent_shard", "綠"],
+		["gem_blue", "藍"],
+		["gem_purple", "紫"],
+		["gem_red", "紅"],
+	]
+	for gem_def: Array in gem_defs:
+		var gem_key: String = str(gem_def[0])
+		var gem_char: String = str(gem_def[1])
+		var gem_color: Color = GEM_COLORS.get(gem_key, Color.WHITE) as Color
+		var dot: ColorRect = ColorRect.new()
+		dot.color = gem_color
+		dot.custom_minimum_size = Vector2(8, 8)
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.add_child(dot)
+		var count_lbl: Label = Label.new()
+		count_lbl.text = gem_char + "0"
+		count_lbl.add_theme_font_size_override("font_size", 12)
+		count_lbl.add_theme_color_override("font_color", gem_color)
+		count_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		count_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.add_child(count_lbl)
+		_gem_labels.append(count_lbl)
+	# Spacer
+	var spacer: Control = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar.add_child(spacer)
+	# Reset button
+	var reset_btn: Button = Button.new()
+	reset_btn.name = "UnifiedResetBtn"
+	reset_btn.text = "重置天賦"
+	reset_btn.custom_minimum_size = Vector2(0, 28)
+	reset_btn.add_theme_font_size_override("font_size", 12)
+	var reset_style: StyleBoxFlat = StyleBoxFlat.new()
+	reset_style.bg_color = Color(0.42, 0.12, 0.12, 0.95)
+	reset_style.border_color = Color(0.75, 0.28, 0.28, 1.0)
+	reset_style.border_width_left = 1
+	reset_style.border_width_top = 1
+	reset_style.border_width_right = 1
+	reset_style.border_width_bottom = 1
+	reset_btn.add_theme_stylebox_override("normal", reset_style)
+	reset_btn.pressed.connect(_on_reset_button_pressed)
+	bar.add_child(reset_btn)
+	# Insert as first child of VBoxContainer
+	vbox.add_child(bar)
+	vbox.move_child(bar, 0)
+	# Confirm dialog
+	if _reset_confirm_dialog == null:
+		_reset_confirm_dialog = ConfirmationDialog.new()
+		_reset_confirm_dialog.title = "確認重置"
+		_reset_confirm_dialog.dialog_text = "重置所有天賦？將返還 90% 的各色寶石（含天賦碎片）。"
+		_reset_confirm_dialog.confirmed.connect(_on_reset_confirmed)
+		add_child(_reset_confirm_dialog)
 
 
 func _setup_detail_panel() -> void:
@@ -269,8 +350,9 @@ func _refresh() -> void:
 	var purple_count: int = player.inventory.get_item_count("gem_purple")
 	var red_count: int = player.inventory.get_item_count("gem_red")
 	var gem_counts_arr: Array[int] = [green_count, blue_count, purple_count, red_count]
+	var gem_chars: Array[String] = ["綠", "藍", "紫", "紅"]
 	for i: int in range(mini(_gem_labels.size(), gem_counts_arr.size())):
-		_gem_labels[i].text = str(gem_counts_arr[i])
+		_gem_labels[i].text = gem_chars[i] + str(gem_counts_arr[i])
 	_refresh_upgrade_controls()
 	_rebuild_map()
 	if _ultimate_overlay != null and _ultimate_overlay.visible:
@@ -289,6 +371,7 @@ func _rebuild_map() -> void:
 	node_positions.clear()
 	node_widgets.clear()
 	branch_focus_points.clear()
+	# Tweens bound to freed nodes stop automatically; just clear our refs
 
 	_build_branch_positions()
 	_add_branch_markers()
@@ -426,15 +509,27 @@ func _apply_node_visuals(talent: Dictionary) -> void:
 		branch_color = BRANCH_COLORS[branch_id]
 	var gem_color: Color = GEM_COLORS.get(gem_type, branch_color) as Color
 
-	var fill_color: Color = Color(0.26, 0.28, 0.32, 1.0)
-	var border_color: Color = Color(0.42, 0.46, 0.52, 1.0)
-	var label_color: Color = Color(0.58, 0.60, 0.66, 1.0)
+	var fill_color: Color = Color(0.32, 0.34, 0.40, 1.0)
+	var border_color: Color = Color(0.50, 0.54, 0.62, 1.0)
+	var label_color: Color = Color(0.72, 0.74, 0.80, 1.0)
 	glow.visible = false
+	# Kill any existing pulse tween
+	if wrapper.has_meta("_pulse_tween"):
+		var old_tween: Tween = wrapper.get_meta("_pulse_tween") as Tween
+		if old_tween != null and is_instance_valid(old_tween):
+			old_tween.kill()
+		wrapper.remove_meta("_pulse_tween")
+	wrapper.modulate = Color.WHITE
 
 	if state == "available":
-		fill_color = gem_color.lerp(Color.WHITE, 0.18)
-		border_color = gem_color.lightened(0.28)
+		fill_color = gem_color.lerp(Color.WHITE, 0.22)
+		border_color = gem_color.lightened(0.35)
 		label_color = Color.WHITE
+		var pulse_tween: Tween = wrapper.create_tween()
+		pulse_tween.set_loops()
+		pulse_tween.tween_property(wrapper, "modulate:a", 0.65, 0.7)
+		pulse_tween.tween_property(wrapper, "modulate:a", 1.0, 0.7)
+		wrapper.set_meta("_pulse_tween", pulse_tween)
 	elif state == "unlocked":
 		if gem_type == "gem_red":
 			fill_color = Color(0.6, 0.12, 0.12, 1.0)
@@ -456,7 +551,7 @@ func _apply_node_visuals(talent: Dictionary) -> void:
 	if icon_rect != null:
 		icon_rect.texture = _get_branch_icon(branch_id, state)
 		if state == "locked":
-			icon_rect.modulate = Color(0.3, 0.3, 0.3, 0.6)
+			icon_rect.modulate = Color(0.55, 0.55, 0.55, 0.8)
 		else:
 			icon_rect.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	name_label.add_theme_color_override("font_color", label_color)
@@ -518,16 +613,25 @@ func _draw_connection(canvas: Control, from_id: String, to_id: String, branch_id
 	var to_point: Vector2 = MAP_CENTER
 	if node_positions.has(to_id):
 		to_point = node_positions[to_id]
-	var color: Color = LINE_LOCKED
-	if player != null and (from_id == "" or player.has_talent(from_id)):
-		color = LINE_AVAILABLE
-	if player != null and player.has_talent(to_id):
-		color = LINE_UNLOCKED
-	canvas.draw_line(from_point, to_point, color, 6.0, true)
-	var branch_color: Color = LINE_LOCKED
+	var branch_color: Color = Color(0.6, 0.64, 0.72, 1.0)
 	if BRANCH_COLORS.has(branch_id):
-		branch_color = BRANCH_COLORS[branch_id]
-	canvas.draw_circle(to_point, 4.0, branch_color)
+		branch_color = BRANCH_COLORS[branch_id] as Color
+	var line_color: Color = branch_color.darkened(0.4)
+	line_color.a = 0.45
+	var line_width: float = 3.0
+	var is_from_unlocked: bool = player != null and (from_id == "" or player.has_talent(from_id))
+	var is_to_unlocked: bool = player != null and player.has_talent(to_id)
+	if is_to_unlocked:
+		line_color = LINE_UNLOCKED
+		line_width = 6.0
+	elif is_from_unlocked:
+		line_color = branch_color
+		line_color.a = 0.9
+		line_width = 4.5
+	canvas.draw_line(from_point, to_point, line_color, line_width, true)
+	var dot_color: Color = branch_color if is_from_unlocked else branch_color.darkened(0.3)
+	dot_color.a = 0.7 if not is_from_unlocked else 1.0
+	canvas.draw_circle(to_point, 4.0, dot_color)
 
 
 func _branch_prefix(branch_id: String) -> String:
