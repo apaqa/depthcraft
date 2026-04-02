@@ -40,6 +40,7 @@ var _active_tween: Tween = null
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	if get_node_or_null("CollisionShape2D") == null:
 		var col: CollisionShape2D = CollisionShape2D.new()
 		var shape: CircleShape2D = CircleShape2D.new()
@@ -319,6 +320,12 @@ func _show_opening_animation(box_id: String, loot: Dictionary) -> void:
 	_active_tween.tween_interval(0.15)
 	_active_tween.tween_callback(_show_loot_result.bind(loot, box_id))
 
+	var safety_ref: ColorRect = _anim_overlay
+	get_tree().create_timer(5.0, true).timeout.connect(func() -> void:
+		if _anim_overlay == safety_ref:
+			_force_close_opening()
+	)
+
 
 func _swap_to_open_icon(box_id: String) -> void:
 	if _anim_icon == null:
@@ -426,6 +433,12 @@ func _show_dismiss_after(delay: float) -> void:
 	t.set_process_mode(Tween.TWEEN_PROCESS_IDLE)
 	t.tween_interval(delay)
 	t.tween_callback(_dismiss_anim_overlay)
+
+
+func _force_close_opening() -> void:
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_dismiss_anim_overlay()
 
 
 func _dismiss_anim_overlay() -> void:
