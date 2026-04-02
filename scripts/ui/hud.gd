@@ -788,6 +788,13 @@ func _is_modal_open() -> bool:
 	return crafting_menu.visible or storage_ui.visible or repair_ui.visible or talent_tree.visible or equipment_panel.visible or skill_equip_ui.visible or achievement_panel.visible or quest_board_ui.visible or tavern_ui.visible or buff_select.visible or (_blessing_panel != null and _blessing_panel.visible) or (settings_menu != null and settings_menu.visible) or (_codex_panel != null and _codex_panel.visible)
 
 
+func queue_achievement_popup(achievement_name: String) -> void:
+	if achievement_popup == null or not achievement_popup.has_method("show_achievement"):
+		return
+	var stub: Dictionary = {"name": achievement_name, "description": ""}
+	achievement_popup.show_achievement(stub)
+
+
 func _on_achievement_unlocked(id: String) -> void:
 	var achievement_manager = get_node_or_null("/root/AchievementManager")
 	if achievement_manager == null:
