@@ -578,11 +578,12 @@ func _on_resource_respawned() -> void:
 	_update_prompt()
 
 
-func _show_floating_text(world_position: Vector2, text_value: String, color: Color) -> void:
+func _show_floating_text(world_position: Vector2, text_value: String, color: Color, font_size: int = 12) -> void:
 	var floating_text = FLOATING_TEXT_SCENE.instantiate()
 	floating_text.position = world_position + Vector2(0, -12)
 	floating_text.display_text = text_value
 	floating_text.text_color = color
+	floating_text.font_size = font_size
 	var floating_text_parent = get_tree().current_scene
 	if floating_text_parent == null:
 		floating_text_parent = get_tree().root
@@ -661,6 +662,7 @@ func take_damage(amount: int, hit_direction: Vector2 = Vector2.ZERO) -> void:
 	var defense_value: int = int(round(float(player_stats.get_total_defense()) * (1.0 + def_bonus)))
 	var reduced_amount: int = max(int(round(float(max(amount - defense_value, 1)) * (1.0 - armor_reduction))), 1)
 	current_hp = max(current_hp - reduced_amount, 0)
+	_show_floating_text(global_position + Vector2(randf_range(-8.0, 8.0), -20.0), str(reduced_amount), Color(1.0, 0.35, 0.35, 1.0))
 	AudioManager.play_sfx("player_hurt")
 	equipment_system.consume_damage_durability()
 	var dragon_triggered: bool = _try_trigger_dragon_guard()
@@ -800,6 +802,15 @@ func _apply_single_hit(collider: Variant, attack_direction: Vector2, guaranteed_
 		if enemy_max_hp > 0 and float(enemy_hp) / float(enemy_max_hp) <= 0.3:
 			attack_damage = int(round(float(attack_damage) * (1.0 + player_stats.get_execute_bonus())))
 	collider.take_damage(attack_damage, attack_direction)
+	if is_instance_valid(collider as Object):
+		var dmg_text: String = str(attack_damage)
+		var dmg_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+		var dmg_font_size: int = 12
+		if is_critical:
+			dmg_text = str(attack_damage) + "!"
+			dmg_color = Color(1.0, 0.85, 0.0, 1.0)
+			dmg_font_size = 18
+		_show_floating_text((collider as Node2D).global_position + Vector2(randf_range(-15.0, 15.0), -20.0), dmg_text, dmg_color, dmg_font_size)
 	if collider.has_method("apply_knockback"):
 		collider.apply_knockback(attack_direction, 120.0)
 	_apply_blessing_on_hit(collider, attack_damage, _current_hit_slot)

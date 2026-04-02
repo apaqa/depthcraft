@@ -578,6 +578,7 @@ func _tick_status_effects(delta: float) -> void:
 			_burn_tick_timer = 1.0
 			var bdmg: int = maxi(int(round(burn_dps)), 1)
 			take_damage(bdmg, Vector2.ZERO)
+			_spawn_damage_number(bdmg, "burn", global_position)
 		if burn_time_left <= 0.0:
 			burn_dps = 0.0
 	if poison_stacks > 0:
@@ -586,8 +587,47 @@ func _tick_status_effects(delta: float) -> void:
 			_poison_tick_timer = 1.0
 			var pdmg: int = maxi(int(round(poison_dps_per_stack * float(poison_stacks))), 1)
 			take_damage(pdmg, Vector2.ZERO)
+			_spawn_damage_number(pdmg, "poison", global_position)
 	if is_frozen:
 		freeze_time_left = maxf(freeze_time_left - delta, 0.0)
 		if freeze_time_left <= 0.0:
 			is_frozen = false
 			slow_multiplier = 1.0
+
+
+func _spawn_damage_number(amount: int, dot_type: String, pos: Vector2) -> void:
+	var container: Node2D = Node2D.new()
+	var label: Label = Label.new()
+	var font_size: int = 10
+	var color: Color = Color.WHITE
+	match dot_type:
+		"burn":
+			label.text = str(amount)
+			color = Color(1.0, 0.5, 0.1, 1.0)
+		"poison":
+			label.text = str(amount)
+			color = Color(0.3, 0.9, 0.2, 1.0)
+		"chill":
+			label.text = str(amount)
+			color = Color(0.3, 0.7, 1.0, 1.0)
+		_:
+			label.text = str(amount)
+			color = Color(1.0, 1.0, 1.0, 1.0)
+			font_size = 12
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.z_index = 100
+	container.z_index = 100
+	container.add_child(label)
+	var root: Node = get_tree().current_scene
+	if root == null:
+		root = get_tree().root
+	root.add_child(container)
+	container.global_position = pos + Vector2(randf_range(-15.0, 15.0), -20.0)
+	var start_y: float = container.position.y
+	var tween: Tween = container.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(container, "position:y", start_y - 30.0, 0.8)
+	tween.tween_property(label, "modulate:a", 0.0, 0.8)
+	tween.chain().tween_callback(container.queue_free)
