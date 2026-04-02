@@ -315,7 +315,7 @@ func _get_enemies_in_arc(center: Vector2, direction: Vector2, radius: float, ang
 		var to_enemy: Vector2 = enemy_node.global_position - center
 		if to_enemy.length() > radius:
 			continue
-		if direction.angle_to(to_enemy.normalized()) <= half_angle:
+		if absf(direction.angle_to(to_enemy.normalized())) <= half_angle:
 			result.append(enemy_node)
 	return result
 
@@ -326,8 +326,8 @@ func _spawn_ring_vfx(center: Vector2, radius: float, color: Color, duration: flo
 		return
 	var vfx_node: Node2D = Node2D.new()
 	vfx_node.set_script(load("res://scripts/skills/skill_vfx.gd"))
-	vfx_node.global_position = center
 	root.add_child(vfx_node)
+	vfx_node.global_position = center
 	vfx_node.set("mode", "ring")
 	vfx_node.set("max_radius", radius)
 	vfx_node.set("duration", duration)

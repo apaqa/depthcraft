@@ -1603,7 +1603,7 @@ func remove_tavern_buff(buff_type: String, buff_value: float) -> void:
 		var b: Dictionary = _tavern_buffs[i] as Dictionary
 		if str(b.get("type", "")) == buff_type and absf(float(b.get("value", 0.0)) - buff_value) < 0.0001:
 			_tavern_buffs.remove_at(i)
-			_recalculate_stats()
+			_refresh_all_stats()
 			return
 
 
