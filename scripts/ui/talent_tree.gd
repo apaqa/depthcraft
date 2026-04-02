@@ -95,6 +95,7 @@ var zoom_level: float = 1.0
 var dragging_map: bool = false
 var last_drag_position: Vector2 = Vector2.ZERO
 var _reset_confirm_dialog: ConfirmationDialog = null
+var _zoom_label: Label = null
 
 
 func _ready() -> void:
@@ -118,6 +119,7 @@ func _ready() -> void:
 	tt_style.border_width_right = 1
 	tt_style.border_width_bottom = 1
 	panel_container.add_theme_stylebox_override("panel", tt_style)
+	_setup_zoom_controls()
 
 
 func _notification(what: int) -> void:
@@ -131,6 +133,8 @@ func open_for_player(target_player, target_facility = null) -> void:
 	visible = true
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(true)
+	zoom_level = 0.75
+	_update_zoom()
 	_refresh()
 	_center_on_point.call_deferred(MAP_CENTER)
 
@@ -621,20 +625,14 @@ func _jump_to_branch(branch_id: String) -> void:
 func _on_map_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_button: InputEventMouseButton = event as InputEventMouseButton
-		if mouse_button.button_index == MOUSE_BUTTON_LEFT:
+		if mouse_button.button_index == MOUSE_BUTTON_LEFT or mouse_button.button_index == MOUSE_BUTTON_MIDDLE:
 			dragging_map = mouse_button.pressed
 			last_drag_position = mouse_button.position
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_UP:
-			if mouse_button.ctrl_pressed:
-				_apply_zoom(zoom_level * 1.1, mouse_button.position)
-			else:
-				_set_scroll(Vector2(float(map_scroll.scroll_horizontal), float(map_scroll.scroll_vertical) - 60.0))
+			_apply_zoom(zoom_level * 1.1, mouse_button.position)
 			get_viewport().set_input_as_handled()
 		elif mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			if mouse_button.ctrl_pressed:
-				_apply_zoom(zoom_level / 1.1, mouse_button.position)
-			else:
-				_set_scroll(Vector2(float(map_scroll.scroll_horizontal), float(map_scroll.scroll_vertical) + 60.0))
+			_apply_zoom(zoom_level / 1.1, mouse_button.position)
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and dragging_map:
 		var mouse_motion: InputEventMouseMotion = event as InputEventMouseMotion
@@ -663,6 +661,7 @@ func _update_zoom() -> void:
 	map_canvas.size = BASE_MAP_SIZE
 	map_canvas.position = Vector2.ZERO
 	map_canvas.queue_redraw()
+	_update_zoom_label()
 
 
 func _center_on_point(map_point: Vector2) -> void:
@@ -743,3 +742,39 @@ func _on_reset_confirmed() -> void:
 	if player.has_method("reset_all_talents"):
 		player.reset_all_talents()
 	_refresh()
+
+
+func _setup_zoom_controls() -> void:
+	var top_bar: HBoxContainer = panel_container.get_node_or_null("MarginContainer/VBoxContainer/TopBar") as HBoxContainer
+	if top_bar == null:
+		return
+
+	_zoom_label = Label.new()
+	_zoom_label.name = "ZoomLabel"
+	_zoom_label.add_theme_font_size_override("font_size", 11)
+	_zoom_label.modulate = Color(0.75, 0.75, 0.75, 1.0)
+	_zoom_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_zoom_label.custom_minimum_size = Vector2(46, 0)
+	top_bar.add_child(_zoom_label)
+
+	var reset_view_btn: Button = Button.new()
+	reset_view_btn.name = "ResetViewButton"
+	reset_view_btn.text = "重置視角"
+	reset_view_btn.custom_minimum_size = Vector2(72, 28)
+	reset_view_btn.add_theme_font_size_override("font_size", 11)
+	reset_view_btn.pressed.connect(_reset_view)
+	top_bar.add_child(reset_view_btn)
+
+	_update_zoom_label()
+
+
+func _update_zoom_label() -> void:
+	if _zoom_label == null:
+		return
+	_zoom_label.text = "%d%%" % int(zoom_level * 100.0)
+
+
+func _reset_view() -> void:
+	zoom_level = 0.75
+	_update_zoom()
+	_center_on_point(MAP_CENTER)
