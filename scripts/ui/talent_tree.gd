@@ -88,6 +88,9 @@ var node_widgets: Dictionary = {}
 var branch_focus_points: Dictionary = {}
 var zoom_level: float = 1.0
 var _ultimate_overlay: Control = null
+var _gem_overlay: Panel = null
+var _gem_labels: Array[Label] = []
+var _detail_backdrop: ColorRect = null
 var dragging_map: bool = false
 var last_drag_position: Vector2 = Vector2.ZERO
 var _reset_confirm_dialog: ConfirmationDialog = null
@@ -106,6 +109,7 @@ func _ready() -> void:
 	_setup_detail_panel()
 	_ensure_close_button()
 	_setup_reset_button()
+	_build_gem_overlay()
 	_update_zoom()
 	var tt_style: StyleBoxFlat = StyleBoxFlat.new()
 	tt_style.bg_color = Color(0.12, 0.12, 0.15, 0.92)
@@ -140,8 +144,7 @@ func close_menu() -> void:
 		return
 	visible = false
 	dragging_map = false
-	selected_talent_id = ""
-	detail_panel.visible = false
+	_close_detail_panel()
 	if player != null and player.has_method("set_ui_blocked"):
 		player.set_ui_blocked(false)
 	release_focus()
@@ -155,11 +158,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _ultimate_overlay != null and _ultimate_overlay.visible:
 			_ultimate_overlay.visible = false
 		elif detail_panel.visible:
-			detail_panel.visible = false
-			selected_talent_id = ""
-			for talent: Dictionary in TALENT_DATA.get_all_talents():
-				_apply_node_visuals(talent)
-			map_canvas.queue_redraw()
+			_close_detail_panel()
 		else:
 			close_menu()
 		get_viewport().set_input_as_handled()
@@ -179,16 +178,27 @@ func _build_map_canvas() -> void:
 
 func _setup_top_controls() -> void:
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
+	# Hide altar upgrade UI from talent tree (upgrade via separate interaction)
+	upgrade_summary_label.visible = false
+	upgrade_button.visible = false
+	upgrade_summary_label.get_parent().visible = false
 	offense_jump_button.pressed.connect(_jump_to_branch.bind("offense"))
 	defense_jump_button.pressed.connect(_jump_to_branch.bind("defense"))
 	support_jump_button.pressed.connect(_jump_to_branch.bind("support"))
 	offense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("offense"))
 	defense_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("defense"))
 	support_jump_button.text = LocaleManager.L(TALENT_DATA.get_branch_label("support"))
+	# Compact tab button sizes
+	for btn: Button in [offense_jump_button, defense_jump_button, support_jump_button]:
+		btn.custom_minimum_size = Vector2(0, 28)
+		btn.add_theme_font_size_override("font_size", 14)
+	# Also hide shard_label (replaced by gem overlay)
+	shard_label.visible = false
 	var branch_btn_container: Node = offense_jump_button.get_parent()
 	var ultimate_btn: Button = Button.new()
 	ultimate_btn.text = LocaleManager.L(TALENT_DATA.get_branch_label("ultimate"))
-	ultimate_btn.custom_minimum_size = Vector2(80, 30)
+	ultimate_btn.custom_minimum_size = Vector2(0, 28)
+	ultimate_btn.add_theme_font_size_override("font_size", 14)
 	ultimate_btn.pressed.connect(_toggle_ultimate_overlay)
 	var ult_color: Color = BRANCH_COLORS.get("ultimate", Color.WHITE) as Color
 	var ult_style: StyleBoxFlat = StyleBoxFlat.new()
@@ -208,24 +218,19 @@ func _setup_detail_panel() -> void:
 	detail_desc.fit_content = true
 	detail_unlock_button.pressed.connect(_on_detail_unlock_pressed)
 	detail_unlock_button.custom_minimum_size = Vector2(120, 36)
-	var detail_vbox: VBoxContainer = detail_unlock_button.get_parent() as VBoxContainer
-	if detail_vbox != null and detail_vbox.get_node_or_null("BackButton") == null:
-		var back_btn: Button = Button.new()
-		back_btn.name = "BackButton"
-		back_btn.text = "返回"
-		back_btn.custom_minimum_size = Vector2(80, 28)
-		back_btn.pressed.connect(func() -> void:
-			selected_talent_id = ""
-			detail_panel.visible = false
-			for talent: Dictionary in TALENT_DATA.get_all_talents():
-				_apply_node_visuals(talent)
-			map_canvas.queue_redraw()
-		)
-		detail_vbox.add_child(back_btn)
 	detail_panel.visible = false
+	# Reposition to center of panel_container
+	detail_panel.anchor_left = 0.5
+	detail_panel.anchor_top = 0.5
+	detail_panel.anchor_right = 0.5
+	detail_panel.anchor_bottom = 0.5
+	detail_panel.offset_left = -200.0
+	detail_panel.offset_top = -140.0
+	detail_panel.offset_right = 200.0
+	detail_panel.offset_bottom = 140.0
 	# Style the detail panel for visual clarity
 	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.10, 0.12, 0.16, 0.96)
+	panel_style.bg_color = Color(0.10, 0.12, 0.16, 0.97)
 	panel_style.border_color = Color(0.60, 0.44, 0.22, 0.9)
 	panel_style.border_width_left = 2
 	panel_style.border_width_top = 2
@@ -236,6 +241,24 @@ func _setup_detail_panel() -> void:
 	panel_style.corner_radius_bottom_left = 6
 	panel_style.corner_radius_bottom_right = 6
 	detail_panel.add_theme_stylebox_override("panel", panel_style)
+	# Backdrop — full panel_container dimmer, click to close
+	_detail_backdrop = ColorRect.new()
+	_detail_backdrop.name = "DetailBackdrop"
+	_detail_backdrop.layout_mode = 0
+	_detail_backdrop.anchor_left = 0.0
+	_detail_backdrop.anchor_top = 0.0
+	_detail_backdrop.anchor_right = 1.0
+	_detail_backdrop.anchor_bottom = 1.0
+	_detail_backdrop.color = Color(0.0, 0.0, 0.0, 0.35)
+	_detail_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_detail_backdrop.visible = false
+	_detail_backdrop.z_index = detail_panel.z_index - 1
+	_detail_backdrop.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+			_close_detail_panel()
+	)
+	panel_container.add_child(_detail_backdrop)
+	panel_container.move_child(_detail_backdrop, detail_panel.get_index())
 
 
 func _refresh() -> void:
@@ -245,7 +268,9 @@ func _refresh() -> void:
 	var blue_count: int = player.inventory.get_item_count("gem_blue")
 	var purple_count: int = player.inventory.get_item_count("gem_purple")
 	var red_count: int = player.inventory.get_item_count("gem_red")
-	shard_label.text = "綠:%d 藍:%d 紫:%d 紅:%d" % [green_count, blue_count, purple_count, red_count]
+	var gem_counts_arr: Array[int] = [green_count, blue_count, purple_count, red_count]
+	for i: int in range(mini(_gem_labels.size(), gem_counts_arr.size())):
+		_gem_labels[i].text = str(gem_counts_arr[i])
 	_refresh_upgrade_controls()
 	_rebuild_map()
 	if _ultimate_overlay != null and _ultimate_overlay.visible:
@@ -254,6 +279,8 @@ func _refresh() -> void:
 		_show_talent_detail(selected_talent_id)
 	else:
 		detail_panel.visible = false
+		if _detail_backdrop != null:
+			_detail_backdrop.visible = false
 
 
 func _rebuild_map() -> void:
@@ -580,7 +607,19 @@ func _show_talent_detail(talent_id: String) -> void:
 		detail_unlock_button.disabled = true
 		detail_unlock_button.modulate = Color(0.55, 0.55, 0.55, 1.0)
 
+	if _detail_backdrop != null:
+		_detail_backdrop.visible = true
 	detail_panel.visible = true
+
+
+func _close_detail_panel() -> void:
+	selected_talent_id = ""
+	detail_panel.visible = false
+	if _detail_backdrop != null:
+		_detail_backdrop.visible = false
+	for talent: Dictionary in TALENT_DATA.get_all_talents():
+		_apply_node_visuals(talent)
+	map_canvas.queue_redraw()
 
 
 func _on_detail_unlock_pressed() -> void:
@@ -592,15 +631,14 @@ func _on_detail_unlock_pressed() -> void:
 			var talent: Dictionary = TALENT_DATA.get_talent(unlocked_id)
 			var talent_name: String = LocaleManager.L(str(talent.get("name", unlocked_id)))
 			player.show_status_message(LocaleManager.L("talent_unlocked") + ": " + talent_name, Color(1.0, 0.88, 0.3, 1.0), 1.5)
-		selected_talent_id = ""
-		detail_panel.visible = false
+		_close_detail_panel()
 		_refresh()
 
 
 func _refresh_upgrade_controls() -> void:
-	if facility == null or not facility.has_method("can_upgrade") or not facility.can_upgrade():
-		upgrade_summary_label.visible = false
-		upgrade_button.visible = false
+	upgrade_summary_label.visible = false
+	upgrade_button.visible = false
+	if true:
 		return
 
 	var cost: Dictionary = facility.get_upgrade_cost() if facility.has_method("get_upgrade_cost") else {}
@@ -726,7 +764,8 @@ func _setup_reset_button() -> void:
 	var reset_btn: Button = Button.new()
 	reset_btn.name = "ResetButton"
 	reset_btn.text = "重置天賦"
-	reset_btn.custom_minimum_size = Vector2(100, 36)
+	reset_btn.custom_minimum_size = Vector2(0, 28)
+	reset_btn.add_theme_font_size_override("font_size", 13)
 	reset_btn.pressed.connect(_on_reset_button_pressed)
 	var reset_style_normal: StyleBoxFlat = StyleBoxFlat.new()
 	reset_style_normal.bg_color = Color(0.42, 0.12, 0.12, 0.95)
@@ -767,27 +806,62 @@ func _on_reset_confirmed() -> void:
 
 
 func _setup_zoom_controls() -> void:
-	var top_bar: HBoxContainer = panel_container.get_node_or_null("MarginContainer/VBoxContainer/TopBar") as HBoxContainer
-	if top_bar == null:
-		return
-
-	_zoom_label = Label.new()
-	_zoom_label.name = "ZoomLabel"
-	_zoom_label.add_theme_font_size_override("font_size", 11)
-	_zoom_label.modulate = Color(0.75, 0.75, 0.75, 1.0)
-	_zoom_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_zoom_label.custom_minimum_size = Vector2(46, 0)
-	top_bar.add_child(_zoom_label)
-
-	var reset_view_btn: Button = Button.new()
-	reset_view_btn.name = "ResetViewButton"
-	reset_view_btn.text = "重置視角"
-	reset_view_btn.custom_minimum_size = Vector2(72, 28)
-	reset_view_btn.add_theme_font_size_override("font_size", 11)
-	reset_view_btn.pressed.connect(_reset_view)
-	top_bar.add_child(reset_view_btn)
-
 	_update_zoom_label()
+
+
+func _build_gem_overlay() -> void:
+	if _gem_overlay != null:
+		return
+	_gem_overlay = Panel.new()
+	_gem_overlay.name = "GemOverlay"
+	_gem_overlay.layout_mode = 0
+	_gem_overlay.anchor_left = 0.0
+	_gem_overlay.anchor_top = 0.0
+	_gem_overlay.anchor_right = 0.0
+	_gem_overlay.anchor_bottom = 0.0
+	_gem_overlay.offset_left = 20.0
+	_gem_overlay.offset_top = 86.0
+	_gem_overlay.offset_right = 110.0
+	_gem_overlay.offset_bottom = 166.0
+	_gem_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_gem_overlay.z_index = 10
+	var ov_style: StyleBoxFlat = StyleBoxFlat.new()
+	ov_style.bg_color = Color(0.0, 0.0, 0.0, 0.5)
+	ov_style.corner_radius_top_left = 4
+	ov_style.corner_radius_top_right = 4
+	ov_style.corner_radius_bottom_left = 4
+	ov_style.corner_radius_bottom_right = 4
+	_gem_overlay.add_theme_stylebox_override("panel", ov_style)
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.name = "GemVBox"
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.offset_left = 6.0
+	vbox.offset_top = 4.0
+	vbox.offset_right = -6.0
+	vbox.offset_bottom = -4.0
+	vbox.add_theme_constant_override("separation", 2)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_gem_overlay.add_child(vbox)
+	var gem_keys: Array[String] = ["talent_shard", "gem_blue", "gem_purple", "gem_red"]
+	_gem_labels.clear()
+	for gem_key: String in gem_keys:
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var dot: ColorRect = ColorRect.new()
+		dot.custom_minimum_size = Vector2(8, 8)
+		dot.color = GEM_COLORS.get(gem_key, Color.WHITE) as Color
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(dot)
+		var lbl: Label = Label.new()
+		lbl.text = "0"
+		lbl.add_theme_font_size_override("font_size", 12)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(lbl)
+		vbox.add_child(row)
+		_gem_labels.append(lbl)
+	panel_container.add_child(_gem_overlay)
 
 
 func _update_zoom_label() -> void:
