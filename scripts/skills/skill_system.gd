@@ -445,6 +445,130 @@ func _spawn_ring_vfx(center: Vector2, radius: float, color: Color, duration: flo
 	vfx_node.set("ring_color", color)
 
 
+func _spawn_shockwave_lines(center: Vector2, direction: Vector2, angle_deg: float, range_px: float) -> void:
+	var root: Node = get_tree().current_scene
+	if root == null:
+		return
+	var ray_count: int = 8
+	var half_angle: float = deg_to_rad(angle_deg * 0.5)
+	var base_angle: float = direction.angle()
+	for i: int in range(ray_count):
+		var t: float = float(i) / float(ray_count - 1)
+		var ray_angle: float = base_angle - half_angle + t * half_angle * 2.0
+		var ray_dir: Vector2 = Vector2(cos(ray_angle), sin(ray_angle))
+		var line: Line2D = Line2D.new()
+		line.default_color = Color(1.0, 0.75, 0.1, 0.85)
+		line.width = 2.0
+		line.add_point(Vector2.ZERO)
+		line.add_point(ray_dir * range_px)
+		line.global_position = center
+		root.add_child(line)
+		var tween: Tween = line.create_tween()
+		tween.tween_property(line, "modulate:a", 0.0, 0.25)
+		tween.tween_callback(func() -> void:
+			if is_instance_valid(line):
+				line.queue_free()
+		)
+
+
+func _spawn_afterimage_at(pos: Vector2) -> void:
+	var root: Node = get_tree().current_scene
+	if root == null or player == null:
+		return
+	var sprite_src: Node = player.get_node_or_null("AnimatedSprite2D")
+	if sprite_src == null:
+		return
+	var ghost: Sprite2D = Sprite2D.new()
+	ghost.texture = (sprite_src as AnimatedSprite2D).sprite_frames.get_frame_texture(
+		(sprite_src as AnimatedSprite2D).animation,
+		(sprite_src as AnimatedSprite2D).frame
+	) if (sprite_src as AnimatedSprite2D).sprite_frames != null else null
+	if ghost.texture == null:
+		ghost.queue_free()
+		return
+	ghost.global_position = pos
+	ghost.flip_h = (sprite_src as AnimatedSprite2D).flip_h
+	ghost.modulate = Color(0.5, 0.75, 1.0, 0.6)
+	ghost.scale = player.scale
+	root.add_child(ghost)
+	var tween: Tween = ghost.create_tween()
+	tween.tween_property(ghost, "modulate:a", 0.0, 0.25)
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(ghost):
+			ghost.queue_free()
+	)
+
+
+func _spawn_crystal_particles(center: Vector2, radius: float, count: int) -> void:
+	var root: Node = get_tree().current_scene
+	if root == null:
+		return
+	var tex: Texture2D = load("res://assets/icons/kyrise/crystal_01c.png") as Texture2D
+	for i: int in range(count):
+		var angle: float = float(i) / float(count) * TAU
+		var shard: Sprite2D = Sprite2D.new()
+		shard.texture = tex
+		shard.scale = Vector2(0.4, 0.4)
+		shard.global_position = center + Vector2(cos(angle), sin(angle)) * radius * 0.3
+		shard.modulate = Color(0.4, 0.8, 1.0, 1.0)
+		root.add_child(shard)
+		var target_offset: Vector2 = Vector2(cos(angle), sin(angle)) * radius
+		var tween: Tween = shard.create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(shard, "global_position", center + target_offset, 0.3)
+		tween.tween_property(shard, "modulate:a", 0.0, 0.35)
+		tween.tween_property(shard, "scale", Vector2(0.15, 0.15), 0.35)
+		tween.chain().tween_callback(func() -> void:
+			if is_instance_valid(shard):
+				shard.queue_free()
+		)
+
+
+func _spawn_arrow_rain(center: Vector2, radius: float, duration: float) -> void:
+	var root: Node = get_tree().current_scene
+	if root == null:
+		return
+	var tex: Texture2D = load("res://assets/icons/kyrise/arrow_01a.png") as Texture2D
+	var arrow_count: int = 12
+	var interval: float = duration / float(arrow_count)
+	for i: int in range(arrow_count):
+		var delay: float = float(i) * interval
+		get_tree().create_timer(delay).timeout.connect(func() -> void:
+			if root == null or not is_instance_valid(root):
+				return
+			var angle: float = randf() * TAU
+			var dist: float = randf() * radius
+			var land_pos: Vector2 = center + Vector2(cos(angle), sin(angle)) * dist
+			var arrow: Sprite2D = Sprite2D.new()
+			arrow.texture = tex
+			arrow.scale = Vector2(0.5, 0.5)
+			arrow.rotation = PI * 0.5
+			arrow.global_position = land_pos + Vector2(0.0, -60.0)
+			arrow.modulate = Color(1.0, 0.8, 0.3, 0.9)
+			root.add_child(arrow)
+			var tween: Tween = arrow.create_tween()
+			tween.tween_property(arrow, "global_position", land_pos, 0.15)
+			tween.tween_callback(func() -> void:
+				if is_instance_valid(arrow):
+					arrow.queue_free()
+			)
+		)
+
+
+func _spawn_blink_flash(pos: Vector2) -> void:
+	var root: Node = get_tree().current_scene
+	if root == null:
+		return
+	var ring: Node2D = Node2D.new()
+	ring.set_script(load("res://scripts/skills/skill_vfx.gd"))
+	root.add_child(ring)
+	ring.global_position = pos
+	ring.set("mode", "ring")
+	ring.set("max_radius", 40.0)
+	ring.set("duration", 0.25)
+	ring.set("ring_color", Color(0.6, 0.9, 1.0, 0.9))
+
+
 func _get_player_attack_damage() -> int:
 	if player == null:
 		return 10
@@ -493,6 +617,7 @@ func _cast_shield_bash(def: Dictionary) -> bool:
 		elif e.has_method("apply_slow"):
 			e.apply_slow(0.0, stun_dur)
 	_spawn_ring_vfx(player.global_position, range_px, Color(0.9, 0.6, 0.2, 0.7), 0.3)
+	_spawn_shockwave_lines(player.global_position, face_dir, angle_deg, range_px)
 	return true
 
 
@@ -509,6 +634,10 @@ func _cast_war_cry(def: Dictionary) -> bool:
 		if e.has_method("apply_slow"):
 			e.apply_slow(1.0 - slow_pct, slow_dur)
 	_spawn_ring_vfx(player.global_position, slow_range, Color(1.0, 0.85, 0.2, 0.6), 0.4)
+	get_tree().create_timer(0.18).timeout.connect(func() -> void:
+		if player != null:
+			_spawn_ring_vfx(player.global_position, slow_range * 1.2, Color(1.0, 0.65, 0.1, 0.45), 0.3)
+	)
 	if player.has_method("show_status_message"):
 		player.show_status_message(LocaleManager.L("skill_war_cry_active"), Color(1.0, 0.85, 0.2, 1.0))
 	return true
@@ -528,13 +657,16 @@ func _cast_leap_slam(def: Dictionary) -> bool:
 	var final_pos: Vector2 = player.global_position + dir * leap_range
 
 	# Disable physics during dash, tween to final pos, then AOE
+	var leap_start: Vector2 = player.global_position
 	if player.has_method("set_physics_process"):
 		player.set_physics_process(false)
 	var tween: Tween = player.create_tween()
+	_spawn_afterimage_at(leap_start)
 	tween.tween_property(player, "global_position", final_pos, 0.2)
 	tween.tween_callback(func() -> void:
 		if player.has_method("set_physics_process"):
 			player.set_physics_process(true)
+		_spawn_afterimage_at(player.global_position)
 		var dmg: int = maxi(int(round(float(_get_player_attack_damage()) * dmg_mult)), 1)
 		var hit_enemies: Array = _get_enemies_in_radius(player.global_position, aoe_radius)
 		for enemy: Variant in hit_enemies:
@@ -544,6 +676,9 @@ func _cast_leap_slam(def: Dictionary) -> bool:
 			if e.has_method("apply_knockback"):
 				e.apply_knockback((e.global_position - player.global_position).normalized(), 120.0)
 		_spawn_ring_vfx(player.global_position, aoe_radius, Color(1.0, 0.35, 0.1, 0.8), 0.3)
+		# Ground crack lines radiating from impact
+		var crack_dir: Vector2 = dir if dir != Vector2.ZERO else Vector2.RIGHT
+		_spawn_shockwave_lines(player.global_position, crack_dir, 360.0, aoe_radius * 0.85)
 	)
 	return true
 
@@ -563,13 +698,20 @@ func _cast_dodge_roll(def: Dictionary) -> bool:
 	if "invincible_time_left" in player:
 		player.invincible_time_left = maxf(float(player.invincible_time_left), invuln + 0.15)
 
+	var roll_start: Vector2 = player.global_position
 	if player.has_method("set_physics_process"):
 		player.set_physics_process(false)
 	var tween: Tween = player.create_tween()
 	var sprite_node: Node = player.get_node_or_null("AnimatedSprite2D")
+	_spawn_afterimage_at(roll_start)
 	if sprite_node != null:
 		tween.tween_property(sprite_node, "modulate:a", 0.5, 0.05)
-	tween.tween_property(player, "global_position", final_pos, 0.15)
+	var mid_pos: Vector2 = roll_start + direction * distance * 0.5
+	tween.tween_property(player, "global_position", mid_pos, 0.075)
+	tween.tween_callback(func() -> void:
+		_spawn_afterimage_at(player.global_position)
+	)
+	tween.tween_property(player, "global_position", final_pos, 0.075)
 	tween.tween_callback(func() -> void:
 		if player.has_method("set_physics_process"):
 			player.set_physics_process(true)
@@ -597,6 +739,7 @@ func _cast_rain_of_arrows(def: Dictionary) -> bool:
 		target_pos = player.global_position + (target_pos - player.global_position).normalized() * max_range
 
 	_spawn_ground_aoe_zone(target_pos, aoe_radius, duration, tick_interval, maxi(int(round(dmg_per_tick)), 1))
+	_spawn_arrow_rain(target_pos, aoe_radius, duration)
 	return true
 
 
@@ -691,6 +834,8 @@ func _cast_trap(def: Dictionary) -> bool:
 		body.take_damage(dmg, (body.global_position - trap.global_position).normalized())
 		if body.has_method("apply_slow"):
 			body.apply_slow(1.0 - slow_pct, slow_dur)
+		_spawn_ring_vfx(trap.global_position, 50.0, Color(1.0, 0.5, 0.1, 0.9), 0.3)
+		_spawn_shockwave_lines(trap.global_position, Vector2.RIGHT, 360.0, 48.0)
 		visual.color = Color(1.0, 0.5, 0.0, 0.8)
 		var tween: Tween = trap.create_tween()
 		tween.tween_property(visual, "modulate:a", 0.0, 0.3)
@@ -716,10 +861,13 @@ func _cast_blink(def: Dictionary) -> bool:
 	if dist > max_range:
 		target_pos = player.global_position + (target_pos - player.global_position).normalized() * max_range
 
+	var blink_origin: Vector2 = player.global_position
+	_spawn_blink_flash(blink_origin)
 	var sprite_node: Node = player.get_node_or_null("AnimatedSprite2D")
 	if sprite_node != null:
 		sprite_node.modulate.a = 0.3
 	player.global_position = target_pos
+	_spawn_blink_flash(target_pos)
 	var tween: Tween = player.create_tween()
 	if sprite_node != null:
 		tween.tween_property(sprite_node, "modulate:a", 1.0, 0.2)
@@ -745,6 +893,7 @@ func _cast_frost_nova(def: Dictionary) -> bool:
 		elif e.has_method("apply_slow"):
 			e.apply_slow(0.0, freeze_dur)
 	_spawn_ring_vfx(player.global_position, aoe_radius, Color(0.3, 0.7, 1.0, 0.7), 0.35)
+	_spawn_crystal_particles(player.global_position, aoe_radius, 12)
 	return true
 
 
@@ -765,6 +914,22 @@ func _cast_meteor(def: Dictionary) -> bool:
 	var root: Node = get_tree().current_scene
 	if root == null:
 		return false
+
+	# Falling meteor sprite
+	var meteor_sprite: Sprite2D = Sprite2D.new()
+	meteor_sprite.texture = load("res://assets/bomb_f0.png") as Texture2D
+	meteor_sprite.scale = Vector2(1.8, 1.8)
+	meteor_sprite.global_position = target_pos + Vector2(-30.0, -120.0)
+	meteor_sprite.modulate = Color(1.0, 0.6, 0.2, 0.9)
+	root.add_child(meteor_sprite)
+	var meteor_tween: Tween = meteor_sprite.create_tween()
+	meteor_tween.set_parallel(true)
+	meteor_tween.tween_property(meteor_sprite, "global_position", target_pos, delay)
+	meteor_tween.tween_property(meteor_sprite, "rotation", PI * 1.5, delay)
+	meteor_tween.chain().tween_callback(func() -> void:
+		if is_instance_valid(meteor_sprite):
+			meteor_sprite.queue_free()
+	)
 
 	# Warning indicator
 	var warning: Polygon2D = Polygon2D.new()
@@ -789,6 +954,8 @@ func _cast_meteor(def: Dictionary) -> bool:
 			var e: Node = enemy as Node
 			if e.has_method("take_damage"):
 				e.take_damage(dmg, (e.global_position - target_pos).normalized())
+		_spawn_ring_vfx(target_pos, aoe_radius * 1.1, Color(1.0, 0.4, 0.05, 0.9), 0.4)
+		_spawn_shockwave_lines(target_pos, Vector2.RIGHT, 360.0, aoe_radius * 0.9)
 		warning.color = Color(1.0, 0.5, 0.0, 0.8)
 		var fade: Tween = warning.create_tween()
 		fade.tween_property(warning, "modulate:a", 0.0, 0.4)
