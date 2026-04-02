@@ -1272,6 +1272,37 @@ func _get_current_floor_context() -> int:
 	return 0
 
 
+func _get_weapon_attack_texture() -> Texture2D:
+	var class_id: String = _get_current_class_id()
+	var weapon_item: Dictionary = equipment_system.get_equipped("weapon")
+	var rarity: String = str(weapon_item.get("rarity", "Common")).to_lower()
+	match class_id:
+		"ranger":
+			match rarity:
+				"rare", "epic", "legendary":
+					return preload("res://assets/weapon_bow_2.png")
+				_:
+					return preload("res://assets/weapon_bow.png")
+		"mage":
+			match rarity:
+				"epic", "legendary":
+					return preload("res://assets/weapon_red_magic_staff.png")
+				_:
+					return preload("res://assets/weapon_green_magic_staff.png")
+		_:
+			match rarity:
+				"uncommon":
+					return preload("res://assets/weapon_sword_green.png")
+				"rare":
+					return preload("res://assets/weapon_sword_silver.png")
+				"epic":
+					return preload("res://assets/weapon_golden_sword.png")
+				"legendary":
+					return preload("res://assets/weapon_lavish_sword.png")
+				_:
+					return preload("res://assets/weapon_sword_small.png")
+
+
 func _spawn_attack_effect(attack_direction: Vector2, effect_scale: float = 1.0) -> void:
 	var attack_effect = ATTACK_EFFECT_SCENE.instantiate()
 	var attack_effect_parent = get_parent()
@@ -1280,6 +1311,11 @@ func _spawn_attack_effect(attack_direction: Vector2, effect_scale: float = 1.0) 
 	if attack_effect_parent == null:
 		attack_effect_parent = get_tree().root
 	attack_effect_parent.add_child(attack_effect)
+	var weapon_sprite: Sprite2D = attack_effect.get_node_or_null("Sprite2D") as Sprite2D
+	if weapon_sprite != null:
+		var weapon_tex: Texture2D = _get_weapon_attack_texture()
+		if weapon_tex != null:
+			weapon_sprite.texture = weapon_tex
 	attack_effect.global_position = global_position + _get_attack_offset(attack_direction) * effect_scale
 	if effect_scale != 1.0:
 		attack_effect.scale = Vector2(effect_scale, effect_scale)
