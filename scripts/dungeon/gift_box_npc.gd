@@ -34,6 +34,7 @@ var _anim_panel: Panel = null
 var _anim_icon: TextureRect = null
 var _anim_result: Label = null
 var _anim_continue: Button = null
+var _anim_dismiss_btn: Button = null
 var _pending_blessing: bool = false
 var _pending_scroll: bool = false
 var _active_tween: Tween = null
@@ -314,10 +315,10 @@ func _show_opening_animation(box_id: String, loot: Dictionary) -> void:
 		_active_tween.kill()
 	_active_tween = create_tween()
 	_active_tween.set_process_mode(Tween.TWEEN_PROCESS_IDLE)
-	_active_tween.tween_property(_anim_panel, "scale", Vector2(1.2, 1.2), 0.18)
-	_active_tween.tween_property(_anim_panel, "scale", Vector2(1.0, 1.0), 0.12)
+	_active_tween.tween_property(_anim_panel, "scale", Vector2(1.2, 1.2), 0.12)
+	_active_tween.tween_property(_anim_panel, "scale", Vector2(1.0, 1.0), 0.08)
 	_active_tween.tween_callback(_swap_to_open_icon.bind(box_id))
-	_active_tween.tween_interval(0.15)
+	_active_tween.tween_interval(0.05)
 	_active_tween.tween_callback(_show_loot_result.bind(loot, box_id))
 
 	var safety_ref: ColorRect = _anim_overlay
@@ -350,7 +351,7 @@ func _show_loot_result(loot: Dictionary, box_id: String) -> void:
 			_anim_result.text = "獲得: %s ×%d" % [item_id, qty]
 			_anim_result.modulate = Color(0.6, 1.0, 0.7, 1.0)
 			_deliver_loot(loot)
-			_show_dismiss_after(1.8)
+			_enable_click_dismiss()
 		"blessing_choice":
 			_anim_result.text = "觸發祝福選擇！"
 			_anim_result.modulate = Color(0.85, 0.7, 1.0, 1.0)
@@ -366,21 +367,21 @@ func _show_loot_result(loot: Dictionary, box_id: String) -> void:
 			_anim_result.text = "酒館增益：%s" % str(buff.get("name", ""))
 			_anim_result.modulate = Color(0.5, 1.0, 0.6, 1.0)
 			_deliver_loot_buff(buff, false)
-			_show_dismiss_after(1.8)
+			_enable_click_dismiss()
 		"curse_debuff":
 			var curse: Dictionary = CURSE_POOL[randi() % CURSE_POOL.size()]
 			_anim_result.text = "詛咒！%s" % str(curse.get("name", ""))
 			_anim_result.modulate = Color(1.0, 0.35, 0.35, 1.0)
 			_deliver_loot_buff(curse, true)
-			_show_dismiss_after(1.8)
+			_enable_click_dismiss()
 		"nothing":
 			_anim_result.text = "空空如也…"
 			_anim_result.modulate = Color(0.55, 0.55, 0.55, 1.0)
-			_show_dismiss_after(1.8)
+			_enable_click_dismiss()
 		_:
 			_anim_result.text = "未知獎勵"
 			_anim_result.modulate = box_color
-			_show_dismiss_after(1.8)
+			_enable_click_dismiss()
 
 
 func _deliver_loot(loot: Dictionary) -> void:
@@ -428,11 +429,17 @@ func _on_anim_continue(loot: Dictionary) -> void:
 		_trigger_blessing_selection()
 
 
-func _show_dismiss_after(delay: float) -> void:
-	var t: Tween = create_tween()
-	t.set_process_mode(Tween.TWEEN_PROCESS_IDLE)
-	t.tween_interval(delay)
-	t.tween_callback(_dismiss_anim_overlay)
+func _enable_click_dismiss() -> void:
+	if _canvas == null:
+		return
+	_anim_dismiss_btn = Button.new()
+	_anim_dismiss_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_anim_dismiss_btn.flat = true
+	_anim_dismiss_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_anim_dismiss_btn.process_mode = Node.PROCESS_MODE_ALWAYS
+	_anim_dismiss_btn.modulate = Color(1, 1, 1, 0)
+	_anim_dismiss_btn.pressed.connect(_dismiss_anim_overlay)
+	_canvas.add_child(_anim_dismiss_btn)
 
 
 func _force_close_opening() -> void:
@@ -442,6 +449,9 @@ func _force_close_opening() -> void:
 
 
 func _dismiss_anim_overlay() -> void:
+	if _anim_dismiss_btn != null:
+		_anim_dismiss_btn.queue_free()
+		_anim_dismiss_btn = null
 	if _anim_overlay != null:
 		_anim_overlay.queue_free()
 		_anim_overlay = null
@@ -494,6 +504,7 @@ func _close_ui() -> void:
 	_anim_icon = null
 	_anim_result = null
 	_anim_continue = null
+	_anim_dismiss_btn = null
 	_pending_blessing = false
 	_pending_scroll = false
 
