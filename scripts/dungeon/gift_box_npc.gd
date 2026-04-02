@@ -348,34 +348,38 @@ func _show_loot_result(loot: Dictionary, box_id: String) -> void:
 		"item":
 			var item_id: String = str(loot.get("id", ""))
 			var qty: int = int(loot.get("qty", 1))
-			_anim_result.text = "獲得: %s ×%d" % [item_id, qty]
+			var display_name: String = ITEM_DATABASE.get_display_name(item_id)
+			_anim_result.text = LocaleManager.L("loot_obtained") + ": " + display_name + " ×%d" % qty
 			_anim_result.modulate = Color(0.6, 1.0, 0.7, 1.0)
+			var item_icon: Texture2D = ITEM_DATABASE.get_item_icon(item_id)
+			if item_icon != null and _anim_icon != null:
+				_anim_icon.texture = item_icon
 			_deliver_loot(loot)
 			_enable_click_dismiss()
 		"blessing_choice":
-			_anim_result.text = "觸發祝福選擇！"
+			_anim_result.text = LocaleManager.L("loot_blessing_trigger")
 			_anim_result.modulate = Color(0.85, 0.7, 1.0, 1.0)
 			_pending_blessing = true
 			_anim_continue.visible = true
 		"blessing_scroll":
-			_anim_result.text = "觸發祝福捲軸！"
+			_anim_result.text = LocaleManager.L("loot_scroll_trigger")
 			_anim_result.modulate = Color(0.7, 0.85, 1.0, 1.0)
 			_pending_scroll = true
 			_anim_continue.visible = true
 		"random_buff":
 			var buff: Dictionary = RANDOM_BUFF_POOL[randi() % RANDOM_BUFF_POOL.size()]
-			_anim_result.text = "酒館增益：%s" % str(buff.get("name", ""))
+			_anim_result.text = LocaleManager.L("loot_buff_gained") + "：%s" % str(buff.get("name", ""))
 			_anim_result.modulate = Color(0.5, 1.0, 0.6, 1.0)
 			_deliver_loot_buff(buff, false)
 			_enable_click_dismiss()
 		"curse_debuff":
 			var curse: Dictionary = CURSE_POOL[randi() % CURSE_POOL.size()]
-			_anim_result.text = "詛咒！%s" % str(curse.get("name", ""))
+			_anim_result.text = LocaleManager.L("loot_curse_gained") + "：%s" % str(curse.get("name", ""))
 			_anim_result.modulate = Color(1.0, 0.35, 0.35, 1.0)
 			_deliver_loot_buff(curse, true)
 			_enable_click_dismiss()
 		"nothing":
-			_anim_result.text = "空空如也…"
+			_anim_result.text = LocaleManager.L("loot_nothing")
 			_anim_result.modulate = Color(0.55, 0.55, 0.55, 1.0)
 			_enable_click_dismiss()
 		_:

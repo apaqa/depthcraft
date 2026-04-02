@@ -898,5 +898,11 @@
   "giftbox_cursed_name": "Cursed Gift Box",
   "giftbox_cursed_desc": "High risk, high reward — may bring curse or jackpot",
   "giftbox_celestial_name": "Celestial Gift Box",
-  "giftbox_celestial_desc": "The finest box, infused with divine energy"
+  "giftbox_celestial_desc": "The finest box, infused with divine energy",
+  "loot_obtained": "Obtained",
+  "loot_nothing": "Nothing...",
+  "loot_blessing_trigger": "Blessing Selection Triggered!",
+  "loot_scroll_trigger": "Blessing Scroll Triggered!",
+  "loot_buff_gained": "Buff Gained",
+  "loot_curse_gained": "Cursed!"
 }

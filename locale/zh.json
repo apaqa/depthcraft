@@ -898,5 +898,11 @@
   "giftbox_cursed_name": "詛咒禮盒",
   "giftbox_cursed_desc": "高風險高回報，可能帶來詛咒或大獎",
   "giftbox_celestial_name": "天界禮盒",
-  "giftbox_celestial_desc": "最頂級的禮盒，蘊含神聖能量"
+  "giftbox_celestial_desc": "最頂級的禮盒，蘊含神聖能量",
+  "loot_obtained": "獲得",
+  "loot_nothing": "空空如也…",
+  "loot_blessing_trigger": "觸發祝福選擇！",
+  "loot_scroll_trigger": "觸發祝福捲軸！",
+  "loot_buff_gained": "酒館增益",
+  "loot_curse_gained": "詛咒！"
 }
